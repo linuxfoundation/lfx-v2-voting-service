@@ -1,0 +1,111 @@
+# Copyright The Linux Foundation and each contributor to LFX.
+# SPDX-License-Identifier: MIT
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Go coverage
+*.cover
+*.coverprofile
+coverage.html
+coverage.txt
+
+# Go module cache
+go.sum.bak
+
+# Dependency directories
+vendor/
+
+# Goa generated files (keep gen/ in version control but ignore temporary files)
+*.gen.tmp
+
+# Linter reports
+megalinter-reports/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment and configuration files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.env
+config/local.yaml
+config/local.yml
+config/development.yaml
+config/development.yml
+*.local.yaml
+*.local.yml
+
+# Log files
+*.log
+logs/
+log/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Test artifacts
+testdata/output/
+test-results/
+*.xml
+
+# Build output
+bin/
+build/
+dist/
+/meeting-api
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Certificate files
+*.pem
+*.key
+*.crt
+*.cert
+*.p12
+*.pfx
+
+# Local development
+docker-compose.override.yml
+docker-compose.local.yml
+values.local.yaml
+*.pid
+
+# NATS related
+nats-server.log
+jetstream/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.backup
+*.bak
