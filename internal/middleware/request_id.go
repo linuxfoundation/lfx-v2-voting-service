@@ -9,7 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/linuxfoundation/lfx-v2-voting-service/internal/log"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 
 	"github.com/google/uuid"
@@ -36,7 +36,7 @@ func RequestIDMiddleware() func(http.Handler) http.Handler {
 			// Log the request ID using the context-aware logger
 			// So using slog along with the context
 			// This allows the request ID to be included in all logs for this request
-			ctx = log.AppendCtx(ctx, slog.String(constants.RequestIDHeader, requestID))
+			ctx = logging.AppendCtx(ctx, slog.String(constants.RequestIDHeader, requestID))
 
 			// Create a new request with the updated context
 			r = r.WithContext(ctx)

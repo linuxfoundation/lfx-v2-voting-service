@@ -14,4 +14,5 @@ const (
 	// Context Keys
 	AuthorizationContextID contextKey = "authorization"
 	RequestIDContextID     contextKey = "X-REQUEST-ID"
+	PrincipalContextID     contextKey = "principal"
 )

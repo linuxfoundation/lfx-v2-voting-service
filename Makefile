@@ -1,3 +1,6 @@
+# Copyright The Linux Foundation and each contributor to LFX.
+# SPDX-License-Identifier: MIT
+
 .PHONY: all help deps apigen build test clean run debug lint fmt check verify docker-build helm-install helm-install-local helm-templates helm-templates-local helm-uninstall
 
 # Default target

@@ -17,7 +17,7 @@ import (
 	votingsvc "github.com/linuxfoundation/lfx-v2-voting-service/gen/voting"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/auth"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/proxy"
-	"github.com/linuxfoundation/lfx-v2-voting-service/internal/log"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/middleware"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/service"
 	goahttp "goa.design/goa/v3/http"
@@ -39,7 +39,7 @@ func run() int {
 	cfg := loadConfig()
 
 	// Initialize structured logging
-	log.InitStructureLogConfig()
+	logging.InitStructureLogConfig()
 	logger := slog.Default()
 
 	logger.Info("Starting voting service",

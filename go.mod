@@ -1,3 +1,6 @@
+// Copyright The Linux Foundation and each contributor to LFX.
+// SPDX-License-Identifier: MIT
+
 module github.com/linuxfoundation/lfx-v2-voting-service
 
 go 1.25.4
@@ -5,7 +8,9 @@ go 1.25.4
 require (
 	github.com/auth0/go-jwt-middleware/v2 v2.2.2
 	github.com/google/uuid v1.6.0
+	github.com/remychantenay/slog-otel v1.3.4
 	goa.design/goa/v3 v3.24.1
+	golang.org/x/oauth2 v0.34.0
 )
 
 require (
@@ -17,9 +22,10 @@ require (
 	github.com/manveru/faker v0.0.0-20171103152722-9fbc68a78c4d // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
+	go.opentelemetry.io/otel v1.36.0 // indirect
+	go.opentelemetry.io/otel/trace v1.36.0 // indirect
 	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/mod v0.32.0 // indirect
-	golang.org/x/oauth2 v0.34.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/text v0.33.0 // indirect
 	golang.org/x/tools v0.41.0 // indirect

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 	"goa.design/goa/v3/security"
 )
@@ -41,7 +42,7 @@ func (s *VotingService) JWTAuth(ctx context.Context, token string, scheme *secur
 	}
 
 	// Store principal in context
-	ctx = context.WithValue(ctx, "principal", principal) //nolint:staticcheck // Common middleware pattern for storing principal in context
+	ctx = context.WithValue(ctx, constants.PrincipalContextID, principal)
 	s.logger.InfoContext(ctx, "JWT validated", "principal", principal)
 
 	return ctx, nil
@@ -50,7 +51,7 @@ func (s *VotingService) JWTAuth(ctx context.Context, token string, scheme *secur
 // CreateVote creates a new vote (proxies to ITX POST /voting/poll)
 func (s *VotingService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*itx.PollResponse, error) {
 	// Extract principal from context
-	principal, ok := ctx.Value("principal").(string)
+	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
 	if !ok {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
 		return nil, domain.NewValidationError("authentication required")
@@ -120,7 +121,7 @@ func (s *VotingService) CreateVote(ctx context.Context, req *CreateVoteRequest) 
 // GetVote retrieves vote details (proxies to ITX GET /voting/poll/{poll_id})
 func (s *VotingService) GetVote(ctx context.Context, voteID string) (*itx.PollResponse, error) {
 	// Extract principal from context
-	principal, ok := ctx.Value("principal").(string)
+	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
 	if !ok {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
 		return nil, domain.NewValidationError("authentication required")
@@ -143,7 +144,7 @@ func (s *VotingService) GetVote(ctx context.Context, voteID string) (*itx.PollRe
 // UpdateVote updates a vote (proxies to ITX PUT /voting/poll/{poll_id})
 func (s *VotingService) UpdateVote(ctx context.Context, voteID string, req *UpdateVoteRequest) (*itx.PollResponse, error) {
 	// Extract principal from context
-	principal, ok := ctx.Value("principal").(string)
+	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
 	if !ok {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
 		return nil, domain.NewValidationError("authentication required")
@@ -209,7 +210,7 @@ func (s *VotingService) UpdateVote(ctx context.Context, voteID string, req *Upda
 // DeleteVote deletes a vote (proxies to ITX DELETE /voting/poll/{poll_id})
 func (s *VotingService) DeleteVote(ctx context.Context, voteID string) error {
 	// Extract principal from context
-	principal, ok := ctx.Value("principal").(string)
+	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
 	if !ok {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
 		return domain.NewValidationError("authentication required")
