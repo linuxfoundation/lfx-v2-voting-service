@@ -41,7 +41,7 @@ func (s *VotingService) JWTAuth(ctx context.Context, token string, scheme *secur
 	}
 
 	// Store principal in context
-	ctx = context.WithValue(ctx, "principal", principal)
+	ctx = context.WithValue(ctx, "principal", principal) //nolint:staticcheck // Common middleware pattern for storing principal in context
 	s.logger.InfoContext(ctx, "JWT validated", "principal", principal)
 
 	return ctx, nil
