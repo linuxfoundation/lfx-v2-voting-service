@@ -8,6 +8,7 @@ import (
 	"log/slog"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 	"goa.design/goa/v3/security"
 )
 
@@ -47,7 +48,7 @@ func (s *VotingService) JWTAuth(ctx context.Context, token string, scheme *secur
 }
 
 // CreateVote creates a new vote (proxies to ITX POST /voting/poll)
-func (s *VotingService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*domain.PollProxyResponse, error) {
+func (s *VotingService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*itx.PollResponse, error) {
 	// Extract principal from context
 	principal, ok := ctx.Value("principal").(string)
 	if !ok {
@@ -63,7 +64,7 @@ func (s *VotingService) CreateVote(ctx context.Context, req *CreateVoteRequest) 
 	)
 
 	// Build proxy request - map from UID (LFXv2) to ID (ITX)
-	proxyReq := &domain.CreatePollProxyRequest{
+	proxyReq := &itx.CreatePollRequest{
 		Name:                        req.Name,
 		Description:                 req.Description,
 		EndTime:                     req.EndTime,
@@ -80,13 +81,13 @@ func (s *VotingService) CreateVote(ctx context.Context, req *CreateVoteRequest) 
 	}
 
 	// Convert poll questions
-	proxyReq.PollQuestions = make([]domain.PollQuestionInput, len(req.PollQuestions))
+	proxyReq.PollQuestions = make([]itx.PollQuestionInput, len(req.PollQuestions))
 	for i, q := range req.PollQuestions {
 		choices := make([]string, len(q.Choices))
 		for j, c := range q.Choices {
 			choices[j] = c.ChoiceText
 		}
-		proxyReq.PollQuestions[i] = domain.PollQuestionInput{
+		proxyReq.PollQuestions[i] = itx.PollQuestionInput{
 			Prompt:  q.Prompt,
 			Type:    q.Type,
 			Choices: choices,
@@ -94,9 +95,9 @@ func (s *VotingService) CreateVote(ctx context.Context, req *CreateVoteRequest) 
 	}
 
 	// Convert poll comment prompts
-	proxyReq.PollCommentPrompts = make([]domain.PollCommentPrompt, len(req.PollCommentPrompts))
+	proxyReq.PollCommentPrompts = make([]itx.PollCommentPrompt, len(req.PollCommentPrompts))
 	for i, p := range req.PollCommentPrompts {
-		proxyReq.PollCommentPrompts[i] = domain.PollCommentPrompt{
+		proxyReq.PollCommentPrompts[i] = itx.PollCommentPrompt{
 			Prompt: p.Prompt,
 		}
 	}
@@ -117,7 +118,7 @@ func (s *VotingService) CreateVote(ctx context.Context, req *CreateVoteRequest) 
 }
 
 // GetVote retrieves vote details (proxies to ITX GET /voting/poll/{poll_id})
-func (s *VotingService) GetVote(ctx context.Context, voteID string) (*domain.PollProxyResponse, error) {
+func (s *VotingService) GetVote(ctx context.Context, voteID string) (*itx.PollResponse, error) {
 	// Extract principal from context
 	principal, ok := ctx.Value("principal").(string)
 	if !ok {
@@ -140,7 +141,7 @@ func (s *VotingService) GetVote(ctx context.Context, voteID string) (*domain.Pol
 }
 
 // UpdateVote updates a vote (proxies to ITX PUT /voting/poll/{poll_id})
-func (s *VotingService) UpdateVote(ctx context.Context, voteID string, req *UpdateVoteRequest) (*domain.PollProxyResponse, error) {
+func (s *VotingService) UpdateVote(ctx context.Context, voteID string, req *UpdateVoteRequest) (*itx.PollResponse, error) {
 	// Extract principal from context
 	principal, ok := ctx.Value("principal").(string)
 	if !ok {
@@ -155,7 +156,7 @@ func (s *VotingService) UpdateVote(ctx context.Context, voteID string, req *Upda
 	)
 
 	// Build proxy request - map from UID (LFXv2) to ID (ITX)
-	proxyReq := &domain.UpdatePollProxyRequest{
+	proxyReq := &itx.UpdatePollRequest{
 		Name:                        req.Name,
 		Description:                 req.Description,
 		EndTime:                     req.EndTime,
@@ -172,13 +173,13 @@ func (s *VotingService) UpdateVote(ctx context.Context, voteID string, req *Upda
 	}
 
 	// Convert poll questions
-	proxyReq.PollQuestions = make([]domain.PollQuestionInput, len(req.PollQuestions))
+	proxyReq.PollQuestions = make([]itx.PollQuestionInput, len(req.PollQuestions))
 	for i, q := range req.PollQuestions {
 		choices := make([]string, len(q.Choices))
 		for j, c := range q.Choices {
 			choices[j] = c.ChoiceText
 		}
-		proxyReq.PollQuestions[i] = domain.PollQuestionInput{
+		proxyReq.PollQuestions[i] = itx.PollQuestionInput{
 			Prompt:  q.Prompt,
 			Type:    q.Type,
 			Choices: choices,
@@ -186,9 +187,9 @@ func (s *VotingService) UpdateVote(ctx context.Context, voteID string, req *Upda
 	}
 
 	// Convert poll comment prompts
-	proxyReq.PollCommentPrompts = make([]domain.PollCommentPrompt, len(req.PollCommentPrompts))
+	proxyReq.PollCommentPrompts = make([]itx.PollCommentPrompt, len(req.PollCommentPrompts))
 	for i, p := range req.PollCommentPrompts {
-		proxyReq.PollCommentPrompts[i] = domain.PollCommentPrompt{
+		proxyReq.PollCommentPrompts[i] = itx.PollCommentPrompt{
 			Prompt: p.Prompt,
 		}
 	}

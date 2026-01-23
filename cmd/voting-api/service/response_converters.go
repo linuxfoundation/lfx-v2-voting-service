@@ -5,12 +5,12 @@ package service
 
 import (
 	voting "github.com/linuxfoundation/lfx-v2-voting-service/gen/voting"
-	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/utils"
 )
 
-// ConvertPollResponseToVoteResult converts domain PollProxyResponse to Goa VoteResult
-func ConvertPollResponseToVoteResult(poll *domain.PollProxyResponse) *voting.VoteResult {
+// ConvertPollResponseToVoteResult converts ITX PollResponse to Goa VoteResult
+func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *voting.VoteResult {
 	result := &voting.VoteResult{
 		VoteUID:                       poll.PollID,      // Map PollID → VoteUID
 		Name:                          poll.Name,

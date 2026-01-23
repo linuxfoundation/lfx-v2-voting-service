@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
@@ -59,7 +60,7 @@ func NewClient(config Config) *Client {
 }
 
 // CreatePoll creates a new poll in ITX
-func (c *Client) CreatePoll(ctx context.Context, req *domain.CreatePollProxyRequest) (*domain.PollProxyResponse, error) {
+func (c *Client) CreatePoll(ctx context.Context, req *itx.CreatePollRequest) (*itx.PollResponse, error) {
 	// Marshal request
 	body, err := json.Marshal(req)
 	if err != nil {
@@ -99,7 +100,7 @@ func (c *Client) CreatePoll(ctx context.Context, req *domain.CreatePollProxyRequ
 	}
 
 	// Parse response directly into domain model
-	var result domain.PollProxyResponse
+	var result itx.PollResponse
 	if err := json.Unmarshal(respBody, &result); err != nil {
 		return nil, domain.NewInternalError("failed to parse response", err)
 	}
@@ -108,7 +109,7 @@ func (c *Client) CreatePoll(ctx context.Context, req *domain.CreatePollProxyRequ
 }
 
 // GetPoll retrieves poll details from ITX
-func (c *Client) GetPoll(ctx context.Context, pollID string) (*domain.PollProxyResponse, error) {
+func (c *Client) GetPoll(ctx context.Context, pollID string) (*itx.PollResponse, error) {
 	// Create HTTP request
 	url := fmt.Sprintf("%sv2/voting/poll/%s", c.config.BaseURL, pollID)
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -141,7 +142,7 @@ func (c *Client) GetPoll(ctx context.Context, pollID string) (*domain.PollProxyR
 	}
 
 	// Parse response
-	var result domain.PollProxyResponse
+	var result itx.PollResponse
 	if err := json.Unmarshal(respBody, &result); err != nil {
 		return nil, domain.NewInternalError("failed to parse response", err)
 	}
@@ -150,7 +151,7 @@ func (c *Client) GetPoll(ctx context.Context, pollID string) (*domain.PollProxyR
 }
 
 // UpdatePoll updates a poll in ITX (only when status is "disabled")
-func (c *Client) UpdatePoll(ctx context.Context, pollID string, req *domain.UpdatePollProxyRequest) (*domain.PollProxyResponse, error) {
+func (c *Client) UpdatePoll(ctx context.Context, pollID string, req *itx.UpdatePollRequest) (*itx.PollResponse, error) {
 	// Marshal request
 	body, err := json.Marshal(req)
 	if err != nil {
@@ -190,7 +191,7 @@ func (c *Client) UpdatePoll(ctx context.Context, pollID string, req *domain.Upda
 	}
 
 	// Parse response
-	var result domain.PollProxyResponse
+	var result itx.PollResponse
 	if err := json.Unmarshal(respBody, &result); err != nil {
 		return nil, domain.NewInternalError("failed to parse response", err)
 	}
