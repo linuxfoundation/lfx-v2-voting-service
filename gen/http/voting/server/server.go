@@ -21,6 +21,9 @@ import (
 type Server struct {
 	Mounts     []*MountPoint
 	CreateVote http.Handler
+	GetVote    http.Handler
+	UpdateVote http.Handler
+	DeleteVote http.Handler
 }
 
 // MountPoint holds information about the mounted endpoints.
@@ -51,8 +54,14 @@ func New(
 	return &Server{
 		Mounts: []*MountPoint{
 			{"CreateVote", "POST", "/votes"},
+			{"GetVote", "GET", "/votes/{vote_uid}"},
+			{"UpdateVote", "PUT", "/votes/{vote_uid}"},
+			{"DeleteVote", "DELETE", "/votes/{vote_uid}"},
 		},
 		CreateVote: NewCreateVoteHandler(e.CreateVote, mux, decoder, encoder, errhandler, formatter),
+		GetVote:    NewGetVoteHandler(e.GetVote, mux, decoder, encoder, errhandler, formatter),
+		UpdateVote: NewUpdateVoteHandler(e.UpdateVote, mux, decoder, encoder, errhandler, formatter),
+		DeleteVote: NewDeleteVoteHandler(e.DeleteVote, mux, decoder, encoder, errhandler, formatter),
 	}
 }
 
@@ -62,6 +71,9 @@ func (s *Server) Service() string { return "voting" }
 // Use wraps the server handlers with the given middleware.
 func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.CreateVote = m(s.CreateVote)
+	s.GetVote = m(s.GetVote)
+	s.UpdateVote = m(s.UpdateVote)
+	s.DeleteVote = m(s.DeleteVote)
 }
 
 // MethodNames returns the methods served.
@@ -70,6 +82,9 @@ func (s *Server) MethodNames() []string { return voting.MethodNames[:] }
 // Mount configures the mux to serve the voting endpoints.
 func Mount(mux goahttp.Muxer, h *Server) {
 	MountCreateVoteHandler(mux, h.CreateVote)
+	MountGetVoteHandler(mux, h.GetVote)
+	MountUpdateVoteHandler(mux, h.UpdateVote)
+	MountDeleteVoteHandler(mux, h.DeleteVote)
 }
 
 // Mount configures the mux to serve the voting endpoints.
@@ -107,6 +122,165 @@ func NewCreateVoteHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "create_vote")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "voting")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountGetVoteHandler configures the mux to serve the "voting" service
+// "get_vote" endpoint.
+func MountGetVoteHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("GET", "/votes/{vote_uid}", f)
+}
+
+// NewGetVoteHandler creates a HTTP handler which loads the HTTP request and
+// calls the "voting" service "get_vote" endpoint.
+func NewGetVoteHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeGetVoteRequest(mux, decoder)
+		encodeResponse = EncodeGetVoteResponse(encoder)
+		encodeError    = EncodeGetVoteError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "get_vote")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "voting")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountUpdateVoteHandler configures the mux to serve the "voting" service
+// "update_vote" endpoint.
+func MountUpdateVoteHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("PUT", "/votes/{vote_uid}", f)
+}
+
+// NewUpdateVoteHandler creates a HTTP handler which loads the HTTP request and
+// calls the "voting" service "update_vote" endpoint.
+func NewUpdateVoteHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeUpdateVoteRequest(mux, decoder)
+		encodeResponse = EncodeUpdateVoteResponse(encoder)
+		encodeError    = EncodeUpdateVoteError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "update_vote")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "voting")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountDeleteVoteHandler configures the mux to serve the "voting" service
+// "delete_vote" endpoint.
+func MountDeleteVoteHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("DELETE", "/votes/{vote_uid}", f)
+}
+
+// NewDeleteVoteHandler creates a HTTP handler which loads the HTTP request and
+// calls the "voting" service "delete_vote" endpoint.
+func NewDeleteVoteHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeDeleteVoteRequest(mux, decoder)
+		encodeResponse = EncodeDeleteVoteResponse(encoder)
+		encodeError    = EncodeDeleteVoteError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "delete_vote")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "voting")
 		payload, err := decodeRequest(r)
 		if err != nil {

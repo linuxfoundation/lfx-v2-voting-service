@@ -24,51 +24,47 @@ paths:
                             committee_filters:
                                 - Voting Rep
                                 - Alternate Voting Rep
-                            committee_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                            committee_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                            committee_uids:
+                                - a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                                - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                             description: Vote for the TSC members for Q1 2026
                             end_time: "2026-02-15T23:59:59Z"
                             name: Q1 2026 Technical Steering Committee Election
-                            num_winners: 6
+                            num_winners: 2
+                            poll_comment_prompts:
+                                - prompt: Please provide any additional feedback
+                                - prompt: Please provide any additional feedback
                             poll_questions:
                                 - choices:
-                                    - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                                       choice_text: John Doe
-                                    - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                                       choice_text: John Doe
-                                    - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                                       choice_text: John Doe
-                                    - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                                       choice_text: John Doe
                                   prompt: Who should be elected to the TSC?
-                                  question_id: 71afec48-b5c6-4a54-b489-bdac8c7d0501
+                                  question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
                                   type: single_choice
                                 - choices:
-                                    - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                                       choice_text: John Doe
-                                    - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                                       choice_text: John Doe
-                                    - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                                       choice_text: John Doe
-                                    - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
-                                      choice_text: John Doe
-                                  prompt: Who should be elected to the TSC?
-                                  question_id: 71afec48-b5c6-4a54-b489-bdac8c7d0501
-                                  type: single_choice
-                                - choices:
-                                    - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
-                                      choice_text: John Doe
-                                    - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
-                                      choice_text: John Doe
-                                    - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
-                                      choice_text: John Doe
-                                    - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                                       choice_text: John Doe
                                   prompt: Who should be elected to the TSC?
-                                  question_id: 71afec48-b5c6-4a54-b489-bdac8c7d0501
+                                  question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
                                   type: single_choice
-                            poll_type: condorcet_irv
-                            project_id: a09P000000DsCBuIRT
+                            poll_type: meek_stv
+                            project_uid: a09P000000DsCBuIRT
                             pseudo_anonymity: true
+                            quorum_percentage: 50
+                            winning_threshold_percentage: 51
             responses:
                 "201":
                     description: Created response.
@@ -78,54 +74,46 @@ paths:
                                 $ref: '#/components/schemas/VoteResult'
                             example:
                                 allow_abstain: true
-                                committee_id: Sit praesentium sint qui error.
-                                committee_name: Sint impedit quo ea ut maiores laudantium.
-                                committee_type: Iusto cum est tempora laboriosam eum sapiente.
-                                committee_voting_status: true
-                                creation_time: "1979-07-05T09:54:25Z"
-                                description: Sequi laudantium assumenda.
-                                end_time: "1997-11-09T17:02:32Z"
-                                last_modified_time: "1985-12-29T03:07:54Z"
-                                name: Iusto ut dignissimos.
-                                num_response_received: 6574475979321634966
-                                poll_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                                committee_name: Voluptatem iusto cum est tempora laboriosam.
+                                committee_type: Sapiente libero eius voluptas dicta alias autem.
+                                committee_uid: Quo ea ut maiores.
+                                committee_voting_status: false
+                                creation_time: "1978-01-22T13:04:12Z"
+                                description: Odit repellat eveniet.
+                                end_time: "2004-12-22T18:17:25Z"
+                                last_modified_time: "2004-11-30T18:37:58Z"
+                                name: Sequi laudantium assumenda.
+                                num_response_received: 2720608057966305340
                                 poll_questions:
                                     - choices:
-                                        - choice_id: 3269cd91-1b07-48dd-9587-22a0fbd1f712
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
                                           choice_text: John Doe
-                                        - choice_id: 3269cd91-1b07-48dd-9587-22a0fbd1f712
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
                                           choice_text: John Doe
                                       prompt: Who should be elected to the TSC?
-                                      question_id: e6360d94-9368-432f-9e8b-8643b024f862
+                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
                                       type: single_choice
                                     - choices:
-                                        - choice_id: 3269cd91-1b07-48dd-9587-22a0fbd1f712
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
                                           choice_text: John Doe
-                                        - choice_id: 3269cd91-1b07-48dd-9587-22a0fbd1f712
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
                                           choice_text: John Doe
                                       prompt: Who should be elected to the TSC?
-                                      question_id: e6360d94-9368-432f-9e8b-8643b024f862
+                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
                                       type: single_choice
                                     - choices:
-                                        - choice_id: 3269cd91-1b07-48dd-9587-22a0fbd1f712
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
                                           choice_text: John Doe
-                                        - choice_id: 3269cd91-1b07-48dd-9587-22a0fbd1f712
-                                          choice_text: John Doe
-                                      prompt: Who should be elected to the TSC?
-                                      question_id: e6360d94-9368-432f-9e8b-8643b024f862
-                                      type: single_choice
-                                    - choices:
-                                        - choice_id: 3269cd91-1b07-48dd-9587-22a0fbd1f712
-                                          choice_text: John Doe
-                                        - choice_id: 3269cd91-1b07-48dd-9587-22a0fbd1f712
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
                                           choice_text: John Doe
                                       prompt: Who should be elected to the TSC?
-                                      question_id: e6360d94-9368-432f-9e8b-8643b024f862
+                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
                                       type: single_choice
-                                project_id: Est exercitationem qui.
+                                project_uid: Praesentium sint qui error error sint.
                                 pseudo_anonymity: true
                                 status: disabled
-                                total_voting_request_invitations: 6966395354154532441
+                                total_voting_request_invitations: 6764439389026845501
+                                vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
                 "400":
                     description: 'BadRequest: Bad request'
                     content:
@@ -133,8 +121,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/BadRequestError'
                             example:
-                                code: Optio tenetur iure quaerat dolore placeat saepe.
-                                message: Autem ratione qui qui asperiores soluta laboriosam.
+                                code: Ratione qui qui asperiores soluta laboriosam dolorem.
+                                message: Dignissimos hic.
                 "401":
                     description: 'Unauthorized: Unauthorized'
                     content:
@@ -184,6 +172,398 @@ paths:
                 - jwt_header_Authorization:
                     - manage:projects
                     - manage:voting
+    /votes/{vote_uid}:
+        delete:
+            tags:
+                - voting
+            summary: delete_vote voting
+            description: Delete vote (proxies to ITX DELETE /voting/poll/{poll_id}). Only allowed when status is 'disabled'
+            operationId: voting#delete_vote
+            parameters:
+                - name: vote_uid
+                  in: path
+                  description: Vote UID
+                  required: true
+                  schema:
+                    type: string
+                    description: Vote UID
+                    example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                    format: uuid
+                  example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                code: Minima ea nulla praesentium aut enim nisi.
+                                message: Qui ut quia dolor.
+                "401":
+                    description: 'Unauthorized: Unauthorized'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedError'
+                            example:
+                                code: Quibusdam deleniti architecto aspernatur voluptates minus.
+                                message: Aut magnam et sed.
+                "403":
+                    description: 'Forbidden: Forbidden'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ForbiddenError'
+                            example:
+                                code: Veniam eos consequatur.
+                                message: Reiciendis quod ut occaecati cumque aperiam.
+                "404":
+                    description: 'NotFound: Not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                code: Magni ad.
+                                message: Nemo nobis eaque possimus esse omnis.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                code: Sed doloribus nemo consequatur.
+                                message: Aspernatur consequuntur et eligendi provident deserunt.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                code: Doloremque aut id non culpa voluptate.
+                                message: Voluptatibus quas rem.
+            security:
+                - jwt_header_Authorization:
+                    - manage:projects
+                    - manage:voting
+        get:
+            tags:
+                - voting
+            summary: get_vote voting
+            description: Get vote details (proxies to ITX GET /voting/poll/{poll_id})
+            operationId: voting#get_vote
+            parameters:
+                - name: vote_uid
+                  in: path
+                  description: Vote UID
+                  required: true
+                  schema:
+                    type: string
+                    description: Vote UID
+                    example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                    format: uuid
+                  example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/VoteResult'
+                            example:
+                                allow_abstain: false
+                                committee_name: Et explicabo repellat fugit architecto non.
+                                committee_type: Dolorem ut ipsa numquam molestiae.
+                                committee_uid: Modi consequatur consectetur ea voluptatibus autem laborum.
+                                committee_voting_status: true
+                                creation_time: "2008-03-02T14:38:09Z"
+                                description: Id natus ducimus eos quia.
+                                end_time: "1973-04-24T05:26:14Z"
+                                last_modified_time: "2007-05-31T03:30:46Z"
+                                name: Itaque omnis quia ut expedita laboriosam tenetur.
+                                num_response_received: 1372532664303468137
+                                poll_questions:
+                                    - choices:
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                          choice_text: John Doe
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                          choice_text: John Doe
+                                      prompt: Who should be elected to the TSC?
+                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      type: single_choice
+                                    - choices:
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                          choice_text: John Doe
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                          choice_text: John Doe
+                                      prompt: Who should be elected to the TSC?
+                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      type: single_choice
+                                    - choices:
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                          choice_text: John Doe
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                          choice_text: John Doe
+                                      prompt: Who should be elected to the TSC?
+                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      type: single_choice
+                                project_uid: Id adipisci aut.
+                                pseudo_anonymity: true
+                                status: disabled
+                                total_voting_request_invitations: 3034947320031014187
+                                vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                code: Omnis ut soluta ullam vitae et iste.
+                                message: Praesentium ab incidunt et et.
+                "401":
+                    description: 'Unauthorized: Unauthorized'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedError'
+                            example:
+                                code: Vitae aliquid neque excepturi nihil.
+                                message: Sequi ea fugit consectetur pariatur nobis aliquam.
+                "403":
+                    description: 'Forbidden: Forbidden'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ForbiddenError'
+                            example:
+                                code: Eaque non.
+                                message: Recusandae pariatur natus voluptas rerum commodi et.
+                "404":
+                    description: 'NotFound: Not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                code: Omnis perferendis minus beatae tempore.
+                                message: At vel quisquam.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                code: Quae nihil dolor inventore ullam.
+                                message: Ullam quidem.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                code: Illo porro fugit explicabo dolorem.
+                                message: Quia quos voluptatem velit doloremque minima.
+            security:
+                - jwt_header_Authorization:
+                    - manage:projects
+                    - manage:voting
+        put:
+            tags:
+                - voting
+            summary: update_vote voting
+            description: Update vote (proxies to ITX PUT /voting/poll/{poll_id}). Only allowed when status is 'disabled'
+            operationId: voting#update_vote
+            parameters:
+                - name: vote_uid
+                  in: path
+                  description: Vote UID
+                  required: true
+                  schema:
+                    type: string
+                    description: Vote UID
+                    example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                    format: uuid
+                  example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateVoteRequestBody'
+                        example:
+                            allow_abstain: true
+                            committee_filters:
+                                - Voting Rep
+                                - Alternate Voting Rep
+                            committee_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                            committee_uids:
+                                - a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                                - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                            description: Vote for the TSC members for Q1 2026
+                            end_time: "2026-02-15T23:59:59Z"
+                            name: Q1 2026 Technical Steering Committee Election
+                            num_winners: 4
+                            poll_comment_prompts:
+                                - prompt: Please provide any additional feedback
+                                - prompt: Please provide any additional feedback
+                                - prompt: Please provide any additional feedback
+                            poll_questions:
+                                - choices:
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                      choice_text: John Doe
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                      choice_text: John Doe
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                      choice_text: John Doe
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                      choice_text: John Doe
+                                  prompt: Who should be elected to the TSC?
+                                  question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                                  type: single_choice
+                                - choices:
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                      choice_text: John Doe
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                      choice_text: John Doe
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                      choice_text: John Doe
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                      choice_text: John Doe
+                                  prompt: Who should be elected to the TSC?
+                                  question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                                  type: single_choice
+                                - choices:
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                      choice_text: John Doe
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                      choice_text: John Doe
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                      choice_text: John Doe
+                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                      choice_text: John Doe
+                                  prompt: Who should be elected to the TSC?
+                                  question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                                  type: single_choice
+                            poll_type: condorcet_irv
+                            project_uid: a09P000000DsCBuIRT
+                            pseudo_anonymity: true
+                            quorum_percentage: 50
+                            winning_threshold_percentage: 51
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/VoteResult'
+                            example:
+                                allow_abstain: true
+                                committee_name: Vero et et.
+                                committee_type: Et eaque et autem.
+                                committee_uid: Qui reiciendis cumque doloremque.
+                                committee_voting_status: true
+                                creation_time: "2015-01-16T19:13:07Z"
+                                description: Impedit omnis ut perferendis aut mollitia.
+                                end_time: "2002-11-10T13:16:44Z"
+                                last_modified_time: "1999-12-22T05:28:35Z"
+                                name: Ad non.
+                                num_response_received: 6460008874362395156
+                                poll_questions:
+                                    - choices:
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                          choice_text: John Doe
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                          choice_text: John Doe
+                                      prompt: Who should be elected to the TSC?
+                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      type: single_choice
+                                    - choices:
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                          choice_text: John Doe
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                          choice_text: John Doe
+                                      prompt: Who should be elected to the TSC?
+                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      type: single_choice
+                                    - choices:
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                          choice_text: John Doe
+                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                          choice_text: John Doe
+                                      prompt: Who should be elected to the TSC?
+                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      type: single_choice
+                                project_uid: Minima officia voluptatem nihil nulla tempora.
+                                pseudo_anonymity: true
+                                status: disabled
+                                total_voting_request_invitations: 5711281358809261985
+                                vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                code: Ut maiores ea qui est necessitatibus.
+                                message: Totam reprehenderit est quaerat nesciunt.
+                "401":
+                    description: 'Unauthorized: Unauthorized'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedError'
+                            example:
+                                code: Et alias et ea.
+                                message: Atque amet dolore voluptas quis omnis.
+                "403":
+                    description: 'Forbidden: Forbidden'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ForbiddenError'
+                            example:
+                                code: Quia qui accusamus molestias a.
+                                message: Molestiae iusto.
+                "404":
+                    description: 'NotFound: Not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                code: Est enim error.
+                                message: Id reiciendis dolores rerum consequatur.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                code: Rerum nemo et quod.
+                                message: Architecto quas ipsa.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                code: Ex ab molestiae aspernatur.
+                                message: Sint dolores doloremque.
+            security:
+                - jwt_header_Authorization:
+                    - manage:projects
+                    - manage:voting
 components:
     schemas:
         BadRequestError:
@@ -192,15 +572,15 @@ components:
                 code:
                     type: string
                     description: HTTP status code
-                    example: Inventore et qui qui eveniet ipsa.
+                    example: Hic et.
                 message:
                     type: string
                     description: Error message
-                    example: Beatae laborum.
+                    example: Temporibus sint voluptas quibusdam.
             description: Bad request error response
             example:
-                code: Quam placeat dolores aperiam ut deleniti.
-                message: Ipsum blanditiis rerum sit inventore.
+                code: Cum perferendis.
+                message: Sunt eum.
             required:
                 - code
                 - message
@@ -210,15 +590,15 @@ components:
                 code:
                     type: string
                     description: HTTP status code
-                    example: Veniam voluptatibus ullam.
+                    example: Sint voluptas voluptatem incidunt.
                 message:
                     type: string
                     description: Error message
-                    example: Deleniti molestiae esse veniam soluta commodi ea.
+                    example: Quod aut maiores.
             description: Conflict error response
             example:
-                code: Unde aut libero doloremque vel aliquid autem.
-                message: Autem sunt.
+                code: Nihil ad quis qui consequatur et.
+                message: Impedit ullam est voluptas molestias deserunt.
             required:
                 - code
                 - message
@@ -229,12 +609,12 @@ components:
                     type: boolean
                     description: Allow voters to abstain
                     default: false
-                    example: false
+                    example: true
                 committee_filters:
                     type: array
                     items:
                         type: string
-                        example: Emeritus
+                        example: Alternate Voting Rep
                         enum:
                             - Voting Rep
                             - Alternate Voting Rep
@@ -244,11 +624,20 @@ components:
                     example:
                         - Voting Rep
                         - Alternate Voting Rep
-                committee_id:
+                committee_uid:
                     type: string
-                    description: LFX Committee ID
+                    description: LFX Committee UID
                     example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
                     format: uuid
+                committee_uids:
+                    type: array
+                    items:
+                        type: string
+                        example: Aut delectus quae aut.
+                    description: Multiple committee UIDs
+                    example:
+                        - a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                        - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                 description:
                     type: string
                     description: Vote description
@@ -268,10 +657,18 @@ components:
                     type: integer
                     description: Number of winners (meek_stv only)
                     default: 2
-                    example: 8
+                    example: 2
                     format: int64
                     minimum: 2
                     maximum: 10
+                poll_comment_prompts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PollCommentPrompt'
+                    description: Comment prompts for the vote
+                    example:
+                        - prompt: Please provide any additional feedback
+                        - prompt: Please provide any additional feedback
                 poll_questions:
                     type: array
                     items:
@@ -279,52 +676,52 @@ components:
                     description: Questions for the vote
                     example:
                         - choices:
-                            - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                               choice_text: John Doe
-                            - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                               choice_text: John Doe
-                            - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                               choice_text: John Doe
-                            - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                               choice_text: John Doe
                           prompt: Who should be elected to the TSC?
-                          question_id: 71afec48-b5c6-4a54-b489-bdac8c7d0501
+                          question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
                           type: single_choice
                         - choices:
-                            - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                               choice_text: John Doe
-                            - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                               choice_text: John Doe
-                            - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                               choice_text: John Doe
-                            - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                               choice_text: John Doe
                           prompt: Who should be elected to the TSC?
-                          question_id: 71afec48-b5c6-4a54-b489-bdac8c7d0501
+                          question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
                           type: single_choice
                         - choices:
-                            - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                               choice_text: John Doe
-                            - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                               choice_text: John Doe
-                            - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                               choice_text: John Doe
-                            - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                               choice_text: John Doe
                           prompt: Who should be elected to the TSC?
-                          question_id: 71afec48-b5c6-4a54-b489-bdac8c7d0501
+                          question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
                           type: single_choice
                         - choices:
-                            - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                               choice_text: John Doe
-                            - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                               choice_text: John Doe
-                            - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                               choice_text: John Doe
-                            - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                               choice_text: John Doe
                           prompt: Who should be elected to the TSC?
-                          question_id: 71afec48-b5c6-4a54-b489-bdac8c7d0501
+                          question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
                           type: single_choice
                 poll_type:
                     type: string
@@ -335,83 +732,95 @@ components:
                         - generic
                         - condorcet_irv
                         - meek_stv
-                project_id:
+                project_uid:
                     type: string
-                    description: LFX Project ID
+                    description: LFX Project UID
                     example: a09P000000DsCBuIRT
                 pseudo_anonymity:
                     type: boolean
                     description: Enable pseudo-anonymity
                     default: false
                     example: true
+                quorum_percentage:
+                    type: integer
+                    description: Quorum percentage required
+                    example: 50
+                    format: int64
+                    minimum: 0
+                    maximum: 100
+                winning_threshold_percentage:
+                    type: integer
+                    description: Winning threshold percentage
+                    example: 51
+                    format: int64
+                    minimum: 0
+                    maximum: 100
             example:
-                allow_abstain: false
+                allow_abstain: true
                 committee_filters:
                     - Voting Rep
                     - Alternate Voting Rep
-                committee_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                committee_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                committee_uids:
+                    - a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                    - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                 description: Vote for the TSC members for Q1 2026
                 end_time: "2026-02-15T23:59:59Z"
                 name: Q1 2026 Technical Steering Committee Election
-                num_winners: 3
+                num_winners: 7
+                poll_comment_prompts:
+                    - prompt: Please provide any additional feedback
+                    - prompt: Please provide any additional feedback
+                    - prompt: Please provide any additional feedback
+                    - prompt: Please provide any additional feedback
                 poll_questions:
                     - choices:
-                        - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                           choice_text: John Doe
-                        - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                           choice_text: John Doe
-                        - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                           choice_text: John Doe
-                        - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 71afec48-b5c6-4a54-b489-bdac8c7d0501
+                      question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
                       type: single_choice
                     - choices:
-                        - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                           choice_text: John Doe
-                        - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                           choice_text: John Doe
-                        - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                           choice_text: John Doe
-                        - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 71afec48-b5c6-4a54-b489-bdac8c7d0501
+                      question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
                       type: single_choice
                     - choices:
-                        - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                           choice_text: John Doe
-                        - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                           choice_text: John Doe
-                        - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                           choice_text: John Doe
-                        - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
-                          choice_text: John Doe
-                      prompt: Who should be elected to the TSC?
-                      question_id: 71afec48-b5c6-4a54-b489-bdac8c7d0501
-                      type: single_choice
-                    - choices:
-                        - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
-                          choice_text: John Doe
-                        - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
-                          choice_text: John Doe
-                        - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
-                          choice_text: John Doe
-                        - choice_id: 55b93540-31c4-43e4-9960-20cd8472f5df
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 71afec48-b5c6-4a54-b489-bdac8c7d0501
+                      question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
                       type: single_choice
-                poll_type: condorcet_irv
-                project_id: a09P000000DsCBuIRT
-                pseudo_anonymity: false
+                poll_type: generic
+                project_uid: a09P000000DsCBuIRT
+                pseudo_anonymity: true
+                quorum_percentage: 50
+                winning_threshold_percentage: 51
             required:
                 - name
                 - description
                 - end_time
-                - project_id
-                - committee_id
+                - project_uid
+                - committee_uid
                 - poll_questions
         ForbiddenError:
             type: object
@@ -419,15 +828,15 @@ components:
                 code:
                     type: string
                     description: HTTP status code
-                    example: Aut quia ut iste.
+                    example: Ut voluptatem.
                 message:
                     type: string
                     description: Error message
-                    example: Consectetur et omnis sint.
+                    example: Et eos.
             description: Forbidden error response
             example:
-                code: Sapiente odit.
-                message: Debitis quam doloremque et.
+                code: Est cumque voluptatem dignissimos.
+                message: Dolore rem consequatur.
             required:
                 - code
                 - message
@@ -437,15 +846,15 @@ components:
                 code:
                     type: string
                     description: HTTP status code
-                    example: Saepe quo quam.
+                    example: Temporibus quo incidunt quasi autem unde.
                 message:
                     type: string
                     description: Error message
-                    example: Et harum quis dolores ipsam officiis.
+                    example: Et exercitationem et.
             description: Internal server error response
             example:
-                code: Nihil tempora.
-                message: Sit ipsa dolorem nemo corrupti.
+                code: Dicta labore molestias accusantium est sed.
+                message: Veritatis consequuntur reiciendis accusantium molestiae dolores.
             required:
                 - code
                 - message
@@ -455,15 +864,15 @@ components:
                 code:
                     type: string
                     description: HTTP status code
-                    example: Inventore libero rerum.
+                    example: At aliquam.
                 message:
                     type: string
                     description: Error message
-                    example: Sit corrupti hic voluptate qui.
+                    example: Eligendi illum at aperiam rem consequatur qui.
             description: Not found error response
             example:
-                code: Quo ut.
-                message: Non possimus eos voluptates quidem vero.
+                code: Fugit ut.
+                message: Officia inventore ut accusantium.
             required:
                 - code
                 - message
@@ -473,7 +882,7 @@ components:
                 choice_id:
                     type: string
                     description: Choice identifier
-                    example: 14747037-58ad-49b4-90d4-e5c91e0b9e40
+                    example: 3d269d53-0ff2-4abb-a59b-a672901ecbd0
                     format: uuid
                 choice_text:
                     type: string
@@ -481,10 +890,22 @@ components:
                     example: John Doe
             description: Answer choice
             example:
-                choice_id: 690adde3-df71-48d2-b826-c51dc1e5026f
+                choice_id: 733bdb2c-82cc-4d8d-98d0-b20934c93347
                 choice_text: John Doe
             required:
                 - choice_text
+        PollCommentPrompt:
+            type: object
+            properties:
+                prompt:
+                    type: string
+                    description: Comment prompt text
+                    example: Please provide any additional feedback
+            description: Comment prompt for collecting feedback
+            example:
+                prompt: Please provide any additional feedback
+            required:
+                - prompt
         PollQuestion:
             type: object
             properties:
@@ -498,6 +919,10 @@ components:
                           choice_text: John Doe
                         - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
                           choice_text: John Doe
+                        - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
+                          choice_text: John Doe
+                        - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
+                          choice_text: John Doe
                 prompt:
                     type: string
                     description: Question prompt
@@ -505,7 +930,7 @@ components:
                 question_id:
                     type: string
                     description: Question identifier
-                    example: 350f90ab-6c77-40b0-96c0-18f8dc35d2b8
+                    example: 1a02770b-4ce4-4940-aeec-13d2b01bfcf5
                     format: uuid
                 type:
                     type: string
@@ -523,10 +948,8 @@ components:
                       choice_text: John Doe
                     - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
                       choice_text: John Doe
-                    - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
-                      choice_text: John Doe
                 prompt: Who should be elected to the TSC?
-                question_id: 90b23097-2d1b-4ab8-b186-8452d4155831
+                question_id: ca92f3d3-a952-498a-920c-5b1a584e9e0c
                 type: single_choice
             required:
                 - prompt
@@ -538,15 +961,15 @@ components:
                 code:
                     type: string
                     description: HTTP status code
-                    example: Autem placeat.
+                    example: Eum non nobis laboriosam cupiditate quidem molestias.
                 message:
                     type: string
                     description: Error message
-                    example: Dolores enim aut dolore ullam unde iure.
+                    example: Saepe accusantium voluptatum.
             description: Service unavailable error response
             example:
-                code: Sed temporibus vel et.
-                message: Officia earum laudantium commodi.
+                code: Ullam ea deserunt.
+                message: Repudiandae reprehenderit.
             required:
                 - code
                 - message
@@ -556,18 +979,224 @@ components:
                 code:
                     type: string
                     description: HTTP status code
-                    example: Itaque dolores harum blanditiis quaerat ex.
+                    example: Consequuntur in.
                 message:
                     type: string
                     description: Error message
-                    example: Dignissimos numquam.
+                    example: Culpa excepturi.
             description: Unauthorized error response
             example:
-                code: Incidunt quia.
-                message: Omnis esse omnis rerum nam.
+                code: Rerum odit molestias.
+                message: Beatae ut libero dolor.
             required:
                 - code
                 - message
+        UpdateVoteRequestBody:
+            type: object
+            properties:
+                allow_abstain:
+                    type: boolean
+                    description: Allow voters to abstain
+                    default: false
+                    example: true
+                committee_filters:
+                    type: array
+                    items:
+                        type: string
+                        example: Observer
+                        enum:
+                            - Voting Rep
+                            - Alternate Voting Rep
+                            - Observer
+                            - Emeritus
+                    description: Committee voting status filters
+                    example:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                committee_uid:
+                    type: string
+                    description: LFX Committee UID
+                    example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                    format: uuid
+                committee_uids:
+                    type: array
+                    items:
+                        type: string
+                        example: Aliquam et tempore esse minus itaque.
+                    description: Multiple committee UIDs
+                    example:
+                        - a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                        - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                description:
+                    type: string
+                    description: Vote description
+                    example: Vote for the TSC members for Q1 2026
+                end_time:
+                    type: string
+                    description: End time in RFC3339 format
+                    example: "2026-02-15T23:59:59Z"
+                    format: date-time
+                name:
+                    type: string
+                    description: Vote name
+                    example: Q1 2026 Technical Steering Committee Election
+                    minLength: 1
+                    maxLength: 255
+                num_winners:
+                    type: integer
+                    description: Number of winners (meek_stv only)
+                    default: 2
+                    example: 2
+                    format: int64
+                    minimum: 2
+                    maximum: 10
+                poll_comment_prompts:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PollCommentPrompt'
+                    description: Comment prompts for the vote
+                    example:
+                        - prompt: Please provide any additional feedback
+                        - prompt: Please provide any additional feedback
+                poll_questions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PollQuestion'
+                    description: Questions for the vote
+                    example:
+                        - choices:
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                              choice_text: John Doe
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                              choice_text: John Doe
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                              choice_text: John Doe
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                              choice_text: John Doe
+                          prompt: Who should be elected to the TSC?
+                          question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                          type: single_choice
+                        - choices:
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                              choice_text: John Doe
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                              choice_text: John Doe
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                              choice_text: John Doe
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                              choice_text: John Doe
+                          prompt: Who should be elected to the TSC?
+                          question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                          type: single_choice
+                        - choices:
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                              choice_text: John Doe
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                              choice_text: John Doe
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                              choice_text: John Doe
+                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                              choice_text: John Doe
+                          prompt: Who should be elected to the TSC?
+                          question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                          type: single_choice
+                poll_type:
+                    type: string
+                    description: Type of poll
+                    default: generic
+                    example: meek_stv
+                    enum:
+                        - generic
+                        - condorcet_irv
+                        - meek_stv
+                project_uid:
+                    type: string
+                    description: LFX Project UID
+                    example: a09P000000DsCBuIRT
+                pseudo_anonymity:
+                    type: boolean
+                    description: Enable pseudo-anonymity
+                    default: false
+                    example: true
+                quorum_percentage:
+                    type: integer
+                    description: Quorum percentage required
+                    example: 50
+                    format: int64
+                    minimum: 0
+                    maximum: 100
+                winning_threshold_percentage:
+                    type: integer
+                    description: Winning threshold percentage
+                    example: 51
+                    format: int64
+                    minimum: 0
+                    maximum: 100
+            example:
+                allow_abstain: true
+                committee_filters:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                committee_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                committee_uids:
+                    - a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                    - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                description: Vote for the TSC members for Q1 2026
+                end_time: "2026-02-15T23:59:59Z"
+                name: Q1 2026 Technical Steering Committee Election
+                num_winners: 4
+                poll_comment_prompts:
+                    - prompt: Please provide any additional feedback
+                    - prompt: Please provide any additional feedback
+                    - prompt: Please provide any additional feedback
+                    - prompt: Please provide any additional feedback
+                poll_questions:
+                    - choices:
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                      prompt: Who should be elected to the TSC?
+                      question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                      type: single_choice
+                    - choices:
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                      prompt: Who should be elected to the TSC?
+                      question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                      type: single_choice
+                    - choices:
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                      prompt: Who should be elected to the TSC?
+                      question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                      type: single_choice
+                poll_type: generic
+                project_uid: a09P000000DsCBuIRT
+                pseudo_anonymity: true
+                quorum_percentage: 50
+                winning_threshold_percentage: 51
+            required:
+                - name
+                - description
+                - end_time
+                - poll_questions
         VoteResult:
             type: object
             properties:
@@ -575,18 +1204,18 @@ components:
                     type: boolean
                     description: Allow abstain
                     example: false
-                committee_id:
-                    type: string
-                    description: Committee ID
-                    example: Iste facere quia doloremque officiis omnis.
                 committee_name:
                     type: string
                     description: Committee name
-                    example: Omnis saepe eum eius amet aut.
+                    example: Possimus eum.
                 committee_type:
                     type: string
                     description: Committee type
-                    example: Ex reiciendis harum natus consectetur suscipit ratione.
+                    example: Ea in in sit ut sed.
+                committee_uid:
+                    type: string
+                    description: Committee UID
+                    example: Molestiae aliquid quae.
                 committee_voting_status:
                     type: boolean
                     description: Committee voting status
@@ -594,36 +1223,31 @@ components:
                 creation_time:
                     type: string
                     description: Creation time
-                    example: "1985-08-17T10:13:16Z"
+                    example: "1997-07-25T01:33:02Z"
                     format: date-time
                 description:
                     type: string
                     description: Vote description
-                    example: Harum voluptatibus ut voluptas quidem molestias consectetur.
+                    example: Aut eos quia vel qui dicta.
                 end_time:
                     type: string
                     description: End time
-                    example: "2012-06-16T08:22:34Z"
+                    example: "1992-09-23T16:46:10Z"
                     format: date-time
                 last_modified_time:
                     type: string
                     description: Last modified time
-                    example: "2005-06-06T03:31:04Z"
+                    example: "1992-02-15T09:57:37Z"
                     format: date-time
                 name:
                     type: string
                     description: Vote name
-                    example: Sit porro.
+                    example: Ipsam porro.
                 num_response_received:
                     type: integer
                     description: Responses received
-                    example: 7619583436641651303
+                    example: 3038502324190104075
                     format: int64
-                poll_id:
-                    type: string
-                    description: Vote identifier (ITX poll_id)
-                    example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
-                    format: uuid
                 poll_questions:
                     type: array
                     items:
@@ -660,10 +1284,10 @@ components:
                           prompt: Who should be elected to the TSC?
                           question_id: 5de700c1-f574-4766-9ebf-bca757ef9343
                           type: single_choice
-                project_id:
+                project_uid:
                     type: string
-                    description: Project ID
-                    example: Sapiente fugiat.
+                    description: Project UID
+                    example: Blanditiis quisquam alias laborum.
                 pseudo_anonymity:
                     type: boolean
                     description: Pseudo-anonymity enabled
@@ -679,22 +1303,26 @@ components:
                 total_voting_request_invitations:
                     type: integer
                     description: Total invitations sent
-                    example: 5491820807781387194
+                    example: 6045556178858296078
                     format: int64
+                vote_uid:
+                    type: string
+                    description: Vote identifier
+                    example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                    format: uuid
             description: Vote details
             example:
                 allow_abstain: false
-                committee_id: Et itaque ut et consequatur voluptatem vel.
-                committee_name: Perspiciatis sed ratione iusto rerum pariatur itaque.
-                committee_type: Qui in voluptas quos.
+                committee_name: Dolore dolores.
+                committee_type: Laboriosam odio minima est aliquid vel.
+                committee_uid: Et quia consequatur ea consequatur aut.
                 committee_voting_status: false
-                creation_time: "1980-07-28T20:33:26Z"
-                description: Vel nobis distinctio sunt deleniti.
-                end_time: "1989-12-29T04:42:39Z"
-                last_modified_time: "1983-08-30T09:57:43Z"
-                name: Pariatur amet.
-                num_response_received: 8580183324472389929
-                poll_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                creation_time: "1997-04-04T20:40:34Z"
+                description: Nam rem sit soluta velit voluptatem.
+                end_time: "1972-03-10T20:28:54Z"
+                last_modified_time: "1983-01-30T11:54:31Z"
+                name: Cum placeat amet aliquam repellat ut.
+                num_response_received: 7916493695561423378
                 poll_questions:
                     - choices:
                         - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
@@ -716,17 +1344,18 @@ components:
                       prompt: Who should be elected to the TSC?
                       question_id: 5de700c1-f574-4766-9ebf-bca757ef9343
                       type: single_choice
-                project_id: Magni modi.
+                project_uid: Sed asperiores.
                 pseudo_anonymity: false
                 status: disabled
-                total_voting_request_invitations: 4613039769043529539
+                total_voting_request_invitations: 658458878382569848
+                vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
             required:
-                - poll_id
+                - vote_uid
                 - name
                 - description
                 - status
-                - project_id
-                - committee_id
+                - project_uid
+                - committee_uid
     securitySchemes:
         jwt_header_Authorization:
             type: http

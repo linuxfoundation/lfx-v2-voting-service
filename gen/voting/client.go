@@ -17,12 +17,18 @@ import (
 // Client is the "voting" service client.
 type Client struct {
 	CreateVoteEndpoint goa.Endpoint
+	GetVoteEndpoint    goa.Endpoint
+	UpdateVoteEndpoint goa.Endpoint
+	DeleteVoteEndpoint goa.Endpoint
 }
 
 // NewClient initializes a "voting" service client given the endpoints.
-func NewClient(createVote goa.Endpoint) *Client {
+func NewClient(createVote, getVote, updateVote, deleteVote goa.Endpoint) *Client {
 	return &Client{
 		CreateVoteEndpoint: createVote,
+		GetVoteEndpoint:    getVote,
+		UpdateVoteEndpoint: updateVote,
+		DeleteVoteEndpoint: deleteVote,
 	}
 }
 
@@ -43,4 +49,57 @@ func (c *Client) CreateVote(ctx context.Context, p *CreateVotePayload) (res *Vot
 		return
 	}
 	return ires.(*VoteResult), nil
+}
+
+// GetVote calls the "get_vote" endpoint of the "voting" service.
+// GetVote may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "Unauthorized" (type *UnauthorizedError): Unauthorized
+//   - "Forbidden" (type *ForbiddenError): Forbidden
+//   - "NotFound" (type *NotFoundError): Not found
+//   - "Conflict" (type *ConflictError): Conflict
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) GetVote(ctx context.Context, p *GetVotePayload) (res *VoteResult, err error) {
+	var ires any
+	ires, err = c.GetVoteEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*VoteResult), nil
+}
+
+// UpdateVote calls the "update_vote" endpoint of the "voting" service.
+// UpdateVote may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "Unauthorized" (type *UnauthorizedError): Unauthorized
+//   - "Forbidden" (type *ForbiddenError): Forbidden
+//   - "NotFound" (type *NotFoundError): Not found
+//   - "Conflict" (type *ConflictError): Conflict
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) UpdateVote(ctx context.Context, p *UpdateVotePayload) (res *VoteResult, err error) {
+	var ires any
+	ires, err = c.UpdateVoteEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*VoteResult), nil
+}
+
+// DeleteVote calls the "delete_vote" endpoint of the "voting" service.
+// DeleteVote may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "Unauthorized" (type *UnauthorizedError): Unauthorized
+//   - "Forbidden" (type *ForbiddenError): Forbidden
+//   - "NotFound" (type *NotFoundError): Not found
+//   - "Conflict" (type *ConflictError): Conflict
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) DeleteVote(ctx context.Context, p *DeleteVotePayload) (err error) {
+	_, err = c.DeleteVoteEndpoint(ctx, p)
+	return
 }

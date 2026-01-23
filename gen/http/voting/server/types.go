@@ -24,14 +24,18 @@ type CreateVoteRequestBody struct {
 	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
 	// End time in RFC3339 format
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
-	// LFX Project ID
-	ProjectID *string `form:"project_id,omitempty" json:"project_id,omitempty" xml:"project_id,omitempty"`
-	// LFX Committee ID
-	CommitteeID *string `form:"committee_id,omitempty" json:"committee_id,omitempty" xml:"committee_id,omitempty"`
+	// LFX Project UID
+	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	// LFX Committee UID
+	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
+	// Multiple committee UIDs
+	CommitteeUids []string `form:"committee_uids,omitempty" json:"committee_uids,omitempty" xml:"committee_uids,omitempty"`
 	// Committee voting status filters
 	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
 	// Questions for the vote
 	PollQuestions []*PollQuestionRequestBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Comment prompts for the vote
+	PollCommentPrompts []*PollCommentPromptRequestBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
 	// Enable pseudo-anonymity
 	PseudoAnonymity *bool `form:"pseudo_anonymity,omitempty" json:"pseudo_anonymity,omitempty" xml:"pseudo_anonymity,omitempty"`
 	// Type of poll
@@ -40,13 +44,52 @@ type CreateVoteRequestBody struct {
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow voters to abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Quorum percentage required
+	QuorumPercentage *int `form:"quorum_percentage,omitempty" json:"quorum_percentage,omitempty" xml:"quorum_percentage,omitempty"`
+	// Winning threshold percentage
+	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
+}
+
+// UpdateVoteRequestBody is the type of the "voting" service "update_vote"
+// endpoint HTTP request body.
+type UpdateVoteRequestBody struct {
+	// Vote name
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// Vote description
+	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	// End time in RFC3339 format
+	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// LFX Project UID
+	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	// LFX Committee UID
+	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
+	// Multiple committee UIDs
+	CommitteeUids []string `form:"committee_uids,omitempty" json:"committee_uids,omitempty" xml:"committee_uids,omitempty"`
+	// Committee voting status filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Questions for the vote
+	PollQuestions []*PollQuestionRequestBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Comment prompts for the vote
+	PollCommentPrompts []*PollCommentPromptRequestBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
+	// Enable pseudo-anonymity
+	PseudoAnonymity *bool `form:"pseudo_anonymity,omitempty" json:"pseudo_anonymity,omitempty" xml:"pseudo_anonymity,omitempty"`
+	// Type of poll
+	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
+	// Number of winners (meek_stv only)
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
+	// Allow voters to abstain
+	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Quorum percentage required
+	QuorumPercentage *int `form:"quorum_percentage,omitempty" json:"quorum_percentage,omitempty" xml:"quorum_percentage,omitempty"`
+	// Winning threshold percentage
+	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
 }
 
 // CreateVoteResponseBody is the type of the "voting" service "create_vote"
 // endpoint HTTP response body.
 type CreateVoteResponseBody struct {
-	// Vote identifier (ITX poll_id)
-	PollID string `form:"poll_id" json:"poll_id" xml:"poll_id"`
+	// Vote identifier
+	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
 	// Vote name
 	Name string `form:"name" json:"name" xml:"name"`
 	// Vote description
@@ -59,10 +102,88 @@ type CreateVoteResponseBody struct {
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
 	// Vote status
 	Status string `form:"status" json:"status" xml:"status"`
-	// Project ID
-	ProjectID string `form:"project_id" json:"project_id" xml:"project_id"`
-	// Committee ID
-	CommitteeID string `form:"committee_id" json:"committee_id" xml:"committee_id"`
+	// Project UID
+	ProjectUID string `form:"project_uid" json:"project_uid" xml:"project_uid"`
+	// Committee UID
+	CommitteeUID string `form:"committee_uid" json:"committee_uid" xml:"committee_uid"`
+	// Committee name
+	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee type
+	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
+	// Committee voting status
+	CommitteeVotingStatus *bool `form:"committee_voting_status,omitempty" json:"committee_voting_status,omitempty" xml:"committee_voting_status,omitempty"`
+	// Pseudo-anonymity enabled
+	PseudoAnonymity *bool `form:"pseudo_anonymity,omitempty" json:"pseudo_anonymity,omitempty" xml:"pseudo_anonymity,omitempty"`
+	// Total invitations sent
+	TotalVotingRequestInvitations *int `form:"total_voting_request_invitations,omitempty" json:"total_voting_request_invitations,omitempty" xml:"total_voting_request_invitations,omitempty"`
+	// Responses received
+	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
+	// Vote questions
+	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Allow abstain
+	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+}
+
+// GetVoteResponseBody is the type of the "voting" service "get_vote" endpoint
+// HTTP response body.
+type GetVoteResponseBody struct {
+	// Vote identifier
+	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
+	// Vote name
+	Name string `form:"name" json:"name" xml:"name"`
+	// Vote description
+	Description string `form:"description" json:"description" xml:"description"`
+	// Creation time
+	CreationTime *string `form:"creation_time,omitempty" json:"creation_time,omitempty" xml:"creation_time,omitempty"`
+	// Last modified time
+	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
+	// End time
+	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// Vote status
+	Status string `form:"status" json:"status" xml:"status"`
+	// Project UID
+	ProjectUID string `form:"project_uid" json:"project_uid" xml:"project_uid"`
+	// Committee UID
+	CommitteeUID string `form:"committee_uid" json:"committee_uid" xml:"committee_uid"`
+	// Committee name
+	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee type
+	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
+	// Committee voting status
+	CommitteeVotingStatus *bool `form:"committee_voting_status,omitempty" json:"committee_voting_status,omitempty" xml:"committee_voting_status,omitempty"`
+	// Pseudo-anonymity enabled
+	PseudoAnonymity *bool `form:"pseudo_anonymity,omitempty" json:"pseudo_anonymity,omitempty" xml:"pseudo_anonymity,omitempty"`
+	// Total invitations sent
+	TotalVotingRequestInvitations *int `form:"total_voting_request_invitations,omitempty" json:"total_voting_request_invitations,omitempty" xml:"total_voting_request_invitations,omitempty"`
+	// Responses received
+	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
+	// Vote questions
+	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Allow abstain
+	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+}
+
+// UpdateVoteResponseBody is the type of the "voting" service "update_vote"
+// endpoint HTTP response body.
+type UpdateVoteResponseBody struct {
+	// Vote identifier
+	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
+	// Vote name
+	Name string `form:"name" json:"name" xml:"name"`
+	// Vote description
+	Description string `form:"description" json:"description" xml:"description"`
+	// Creation time
+	CreationTime *string `form:"creation_time,omitempty" json:"creation_time,omitempty" xml:"creation_time,omitempty"`
+	// Last modified time
+	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
+	// End time
+	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// Vote status
+	Status string `form:"status" json:"status" xml:"status"`
+	// Project UID
+	ProjectUID string `form:"project_uid" json:"project_uid" xml:"project_uid"`
+	// Committee UID
+	CommitteeUID string `form:"committee_uid" json:"committee_uid" xml:"committee_uid"`
 	// Committee name
 	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
 	// Committee type
@@ -136,6 +257,170 @@ type CreateVoteUnauthorizedResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// GetVoteBadRequestResponseBody is the type of the "voting" service "get_vote"
+// endpoint HTTP response body for the "BadRequest" error.
+type GetVoteBadRequestResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetVoteForbiddenResponseBody is the type of the "voting" service "get_vote"
+// endpoint HTTP response body for the "Forbidden" error.
+type GetVoteForbiddenResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetVoteInternalServerErrorResponseBody is the type of the "voting" service
+// "get_vote" endpoint HTTP response body for the "InternalServerError" error.
+type GetVoteInternalServerErrorResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetVoteNotFoundResponseBody is the type of the "voting" service "get_vote"
+// endpoint HTTP response body for the "NotFound" error.
+type GetVoteNotFoundResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetVoteServiceUnavailableResponseBody is the type of the "voting" service
+// "get_vote" endpoint HTTP response body for the "ServiceUnavailable" error.
+type GetVoteServiceUnavailableResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetVoteUnauthorizedResponseBody is the type of the "voting" service
+// "get_vote" endpoint HTTP response body for the "Unauthorized" error.
+type GetVoteUnauthorizedResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UpdateVoteBadRequestResponseBody is the type of the "voting" service
+// "update_vote" endpoint HTTP response body for the "BadRequest" error.
+type UpdateVoteBadRequestResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UpdateVoteForbiddenResponseBody is the type of the "voting" service
+// "update_vote" endpoint HTTP response body for the "Forbidden" error.
+type UpdateVoteForbiddenResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UpdateVoteInternalServerErrorResponseBody is the type of the "voting"
+// service "update_vote" endpoint HTTP response body for the
+// "InternalServerError" error.
+type UpdateVoteInternalServerErrorResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UpdateVoteNotFoundResponseBody is the type of the "voting" service
+// "update_vote" endpoint HTTP response body for the "NotFound" error.
+type UpdateVoteNotFoundResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UpdateVoteServiceUnavailableResponseBody is the type of the "voting" service
+// "update_vote" endpoint HTTP response body for the "ServiceUnavailable" error.
+type UpdateVoteServiceUnavailableResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UpdateVoteUnauthorizedResponseBody is the type of the "voting" service
+// "update_vote" endpoint HTTP response body for the "Unauthorized" error.
+type UpdateVoteUnauthorizedResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// DeleteVoteBadRequestResponseBody is the type of the "voting" service
+// "delete_vote" endpoint HTTP response body for the "BadRequest" error.
+type DeleteVoteBadRequestResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// DeleteVoteForbiddenResponseBody is the type of the "voting" service
+// "delete_vote" endpoint HTTP response body for the "Forbidden" error.
+type DeleteVoteForbiddenResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// DeleteVoteInternalServerErrorResponseBody is the type of the "voting"
+// service "delete_vote" endpoint HTTP response body for the
+// "InternalServerError" error.
+type DeleteVoteInternalServerErrorResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// DeleteVoteNotFoundResponseBody is the type of the "voting" service
+// "delete_vote" endpoint HTTP response body for the "NotFound" error.
+type DeleteVoteNotFoundResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// DeleteVoteServiceUnavailableResponseBody is the type of the "voting" service
+// "delete_vote" endpoint HTTP response body for the "ServiceUnavailable" error.
+type DeleteVoteServiceUnavailableResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// DeleteVoteUnauthorizedResponseBody is the type of the "voting" service
+// "delete_vote" endpoint HTTP response body for the "Unauthorized" error.
+type DeleteVoteUnauthorizedResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // PollQuestionResponseBody is used to define fields on response body types.
 type PollQuestionResponseBody struct {
 	// Question identifier
@@ -176,19 +461,93 @@ type PollChoiceRequestBody struct {
 	ChoiceText *string `form:"choice_text,omitempty" json:"choice_text,omitempty" xml:"choice_text,omitempty"`
 }
 
+// PollCommentPromptRequestBody is used to define fields on request body types.
+type PollCommentPromptRequestBody struct {
+	// Comment prompt text
+	Prompt *string `form:"prompt,omitempty" json:"prompt,omitempty" xml:"prompt,omitempty"`
+}
+
 // NewCreateVoteResponseBody builds the HTTP response body from the result of
 // the "create_vote" endpoint of the "voting" service.
 func NewCreateVoteResponseBody(res *voting.VoteResult) *CreateVoteResponseBody {
 	body := &CreateVoteResponseBody{
-		PollID:                        res.PollID,
+		VoteUID:                       res.VoteUID,
 		Name:                          res.Name,
 		Description:                   res.Description,
 		CreationTime:                  res.CreationTime,
 		LastModifiedTime:              res.LastModifiedTime,
 		EndTime:                       res.EndTime,
 		Status:                        res.Status,
-		ProjectID:                     res.ProjectID,
-		CommitteeID:                   res.CommitteeID,
+		ProjectUID:                    res.ProjectUID,
+		CommitteeUID:                  res.CommitteeUID,
+		CommitteeName:                 res.CommitteeName,
+		CommitteeType:                 res.CommitteeType,
+		CommitteeVotingStatus:         res.CommitteeVotingStatus,
+		PseudoAnonymity:               res.PseudoAnonymity,
+		TotalVotingRequestInvitations: res.TotalVotingRequestInvitations,
+		NumResponseReceived:           res.NumResponseReceived,
+		AllowAbstain:                  res.AllowAbstain,
+	}
+	if res.PollQuestions != nil {
+		body.PollQuestions = make([]*PollQuestionResponseBody, len(res.PollQuestions))
+		for i, val := range res.PollQuestions {
+			if val == nil {
+				body.PollQuestions[i] = nil
+				continue
+			}
+			body.PollQuestions[i] = marshalVotingPollQuestionToPollQuestionResponseBody(val)
+		}
+	}
+	return body
+}
+
+// NewGetVoteResponseBody builds the HTTP response body from the result of the
+// "get_vote" endpoint of the "voting" service.
+func NewGetVoteResponseBody(res *voting.VoteResult) *GetVoteResponseBody {
+	body := &GetVoteResponseBody{
+		VoteUID:                       res.VoteUID,
+		Name:                          res.Name,
+		Description:                   res.Description,
+		CreationTime:                  res.CreationTime,
+		LastModifiedTime:              res.LastModifiedTime,
+		EndTime:                       res.EndTime,
+		Status:                        res.Status,
+		ProjectUID:                    res.ProjectUID,
+		CommitteeUID:                  res.CommitteeUID,
+		CommitteeName:                 res.CommitteeName,
+		CommitteeType:                 res.CommitteeType,
+		CommitteeVotingStatus:         res.CommitteeVotingStatus,
+		PseudoAnonymity:               res.PseudoAnonymity,
+		TotalVotingRequestInvitations: res.TotalVotingRequestInvitations,
+		NumResponseReceived:           res.NumResponseReceived,
+		AllowAbstain:                  res.AllowAbstain,
+	}
+	if res.PollQuestions != nil {
+		body.PollQuestions = make([]*PollQuestionResponseBody, len(res.PollQuestions))
+		for i, val := range res.PollQuestions {
+			if val == nil {
+				body.PollQuestions[i] = nil
+				continue
+			}
+			body.PollQuestions[i] = marshalVotingPollQuestionToPollQuestionResponseBody(val)
+		}
+	}
+	return body
+}
+
+// NewUpdateVoteResponseBody builds the HTTP response body from the result of
+// the "update_vote" endpoint of the "voting" service.
+func NewUpdateVoteResponseBody(res *voting.VoteResult) *UpdateVoteResponseBody {
+	body := &UpdateVoteResponseBody{
+		VoteUID:                       res.VoteUID,
+		Name:                          res.Name,
+		Description:                   res.Description,
+		CreationTime:                  res.CreationTime,
+		LastModifiedTime:              res.LastModifiedTime,
+		EndTime:                       res.EndTime,
+		Status:                        res.Status,
+		ProjectUID:                    res.ProjectUID,
+		CommitteeUID:                  res.CommitteeUID,
 		CommitteeName:                 res.CommitteeName,
 		CommitteeType:                 res.CommitteeType,
 		CommitteeVotingStatus:         res.CommitteeVotingStatus,
@@ -270,14 +629,196 @@ func NewCreateVoteUnauthorizedResponseBody(res *voting.UnauthorizedError) *Creat
 	return body
 }
 
+// NewGetVoteBadRequestResponseBody builds the HTTP response body from the
+// result of the "get_vote" endpoint of the "voting" service.
+func NewGetVoteBadRequestResponseBody(res *voting.BadRequestError) *GetVoteBadRequestResponseBody {
+	body := &GetVoteBadRequestResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetVoteForbiddenResponseBody builds the HTTP response body from the
+// result of the "get_vote" endpoint of the "voting" service.
+func NewGetVoteForbiddenResponseBody(res *voting.ForbiddenError) *GetVoteForbiddenResponseBody {
+	body := &GetVoteForbiddenResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetVoteInternalServerErrorResponseBody builds the HTTP response body from
+// the result of the "get_vote" endpoint of the "voting" service.
+func NewGetVoteInternalServerErrorResponseBody(res *voting.InternalServerError) *GetVoteInternalServerErrorResponseBody {
+	body := &GetVoteInternalServerErrorResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetVoteNotFoundResponseBody builds the HTTP response body from the result
+// of the "get_vote" endpoint of the "voting" service.
+func NewGetVoteNotFoundResponseBody(res *voting.NotFoundError) *GetVoteNotFoundResponseBody {
+	body := &GetVoteNotFoundResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetVoteServiceUnavailableResponseBody builds the HTTP response body from
+// the result of the "get_vote" endpoint of the "voting" service.
+func NewGetVoteServiceUnavailableResponseBody(res *voting.ServiceUnavailableError) *GetVoteServiceUnavailableResponseBody {
+	body := &GetVoteServiceUnavailableResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetVoteUnauthorizedResponseBody builds the HTTP response body from the
+// result of the "get_vote" endpoint of the "voting" service.
+func NewGetVoteUnauthorizedResponseBody(res *voting.UnauthorizedError) *GetVoteUnauthorizedResponseBody {
+	body := &GetVoteUnauthorizedResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewUpdateVoteBadRequestResponseBody builds the HTTP response body from the
+// result of the "update_vote" endpoint of the "voting" service.
+func NewUpdateVoteBadRequestResponseBody(res *voting.BadRequestError) *UpdateVoteBadRequestResponseBody {
+	body := &UpdateVoteBadRequestResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewUpdateVoteForbiddenResponseBody builds the HTTP response body from the
+// result of the "update_vote" endpoint of the "voting" service.
+func NewUpdateVoteForbiddenResponseBody(res *voting.ForbiddenError) *UpdateVoteForbiddenResponseBody {
+	body := &UpdateVoteForbiddenResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewUpdateVoteInternalServerErrorResponseBody builds the HTTP response body
+// from the result of the "update_vote" endpoint of the "voting" service.
+func NewUpdateVoteInternalServerErrorResponseBody(res *voting.InternalServerError) *UpdateVoteInternalServerErrorResponseBody {
+	body := &UpdateVoteInternalServerErrorResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewUpdateVoteNotFoundResponseBody builds the HTTP response body from the
+// result of the "update_vote" endpoint of the "voting" service.
+func NewUpdateVoteNotFoundResponseBody(res *voting.NotFoundError) *UpdateVoteNotFoundResponseBody {
+	body := &UpdateVoteNotFoundResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewUpdateVoteServiceUnavailableResponseBody builds the HTTP response body
+// from the result of the "update_vote" endpoint of the "voting" service.
+func NewUpdateVoteServiceUnavailableResponseBody(res *voting.ServiceUnavailableError) *UpdateVoteServiceUnavailableResponseBody {
+	body := &UpdateVoteServiceUnavailableResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewUpdateVoteUnauthorizedResponseBody builds the HTTP response body from the
+// result of the "update_vote" endpoint of the "voting" service.
+func NewUpdateVoteUnauthorizedResponseBody(res *voting.UnauthorizedError) *UpdateVoteUnauthorizedResponseBody {
+	body := &UpdateVoteUnauthorizedResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewDeleteVoteBadRequestResponseBody builds the HTTP response body from the
+// result of the "delete_vote" endpoint of the "voting" service.
+func NewDeleteVoteBadRequestResponseBody(res *voting.BadRequestError) *DeleteVoteBadRequestResponseBody {
+	body := &DeleteVoteBadRequestResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewDeleteVoteForbiddenResponseBody builds the HTTP response body from the
+// result of the "delete_vote" endpoint of the "voting" service.
+func NewDeleteVoteForbiddenResponseBody(res *voting.ForbiddenError) *DeleteVoteForbiddenResponseBody {
+	body := &DeleteVoteForbiddenResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewDeleteVoteInternalServerErrorResponseBody builds the HTTP response body
+// from the result of the "delete_vote" endpoint of the "voting" service.
+func NewDeleteVoteInternalServerErrorResponseBody(res *voting.InternalServerError) *DeleteVoteInternalServerErrorResponseBody {
+	body := &DeleteVoteInternalServerErrorResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewDeleteVoteNotFoundResponseBody builds the HTTP response body from the
+// result of the "delete_vote" endpoint of the "voting" service.
+func NewDeleteVoteNotFoundResponseBody(res *voting.NotFoundError) *DeleteVoteNotFoundResponseBody {
+	body := &DeleteVoteNotFoundResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewDeleteVoteServiceUnavailableResponseBody builds the HTTP response body
+// from the result of the "delete_vote" endpoint of the "voting" service.
+func NewDeleteVoteServiceUnavailableResponseBody(res *voting.ServiceUnavailableError) *DeleteVoteServiceUnavailableResponseBody {
+	body := &DeleteVoteServiceUnavailableResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewDeleteVoteUnauthorizedResponseBody builds the HTTP response body from the
+// result of the "delete_vote" endpoint of the "voting" service.
+func NewDeleteVoteUnauthorizedResponseBody(res *voting.UnauthorizedError) *DeleteVoteUnauthorizedResponseBody {
+	body := &DeleteVoteUnauthorizedResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewCreateVotePayload builds a voting service create_vote endpoint payload.
 func NewCreateVotePayload(body *CreateVoteRequestBody, token *string) *voting.CreateVotePayload {
 	v := &voting.CreateVotePayload{
-		Name:        *body.Name,
-		Description: *body.Description,
-		EndTime:     *body.EndTime,
-		ProjectID:   *body.ProjectID,
-		CommitteeID: *body.CommitteeID,
+		Name:                       *body.Name,
+		Description:                *body.Description,
+		EndTime:                    *body.EndTime,
+		ProjectUID:                 *body.ProjectUID,
+		CommitteeUID:               *body.CommitteeUID,
+		QuorumPercentage:           body.QuorumPercentage,
+		WinningThresholdPercentage: body.WinningThresholdPercentage,
 	}
 	if body.PseudoAnonymity != nil {
 		v.PseudoAnonymity = *body.PseudoAnonymity
@@ -290,6 +831,12 @@ func NewCreateVotePayload(body *CreateVoteRequestBody, token *string) *voting.Cr
 	}
 	if body.AllowAbstain != nil {
 		v.AllowAbstain = *body.AllowAbstain
+	}
+	if body.CommitteeUids != nil {
+		v.CommitteeUids = make([]string, len(body.CommitteeUids))
+		for i, val := range body.CommitteeUids {
+			v.CommitteeUids[i] = val
+		}
 	}
 	if body.CommitteeFilters != nil {
 		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
@@ -304,6 +851,16 @@ func NewCreateVotePayload(body *CreateVoteRequestBody, token *string) *voting.Cr
 			continue
 		}
 		v.PollQuestions[i] = unmarshalPollQuestionRequestBodyToVotingPollQuestion(val)
+	}
+	if body.PollCommentPrompts != nil {
+		v.PollCommentPrompts = make([]*voting.PollCommentPrompt, len(body.PollCommentPrompts))
+		for i, val := range body.PollCommentPrompts {
+			if val == nil {
+				v.PollCommentPrompts[i] = nil
+				continue
+			}
+			v.PollCommentPrompts[i] = unmarshalPollCommentPromptRequestBodyToVotingPollCommentPrompt(val)
+		}
 	}
 	if body.PseudoAnonymity == nil {
 		v.PseudoAnonymity = false
@@ -322,6 +879,95 @@ func NewCreateVotePayload(body *CreateVoteRequestBody, token *string) *voting.Cr
 	return v
 }
 
+// NewGetVotePayload builds a voting service get_vote endpoint payload.
+func NewGetVotePayload(voteUID string, token *string) *voting.GetVotePayload {
+	v := &voting.GetVotePayload{}
+	v.VoteUID = voteUID
+	v.Token = token
+
+	return v
+}
+
+// NewUpdateVotePayload builds a voting service update_vote endpoint payload.
+func NewUpdateVotePayload(body *UpdateVoteRequestBody, voteUID string, token *string) *voting.UpdateVotePayload {
+	v := &voting.UpdateVotePayload{
+		Name:                       *body.Name,
+		Description:                *body.Description,
+		EndTime:                    *body.EndTime,
+		ProjectUID:                 body.ProjectUID,
+		CommitteeUID:               body.CommitteeUID,
+		QuorumPercentage:           body.QuorumPercentage,
+		WinningThresholdPercentage: body.WinningThresholdPercentage,
+	}
+	if body.PseudoAnonymity != nil {
+		v.PseudoAnonymity = *body.PseudoAnonymity
+	}
+	if body.PollType != nil {
+		v.PollType = *body.PollType
+	}
+	if body.NumWinners != nil {
+		v.NumWinners = *body.NumWinners
+	}
+	if body.AllowAbstain != nil {
+		v.AllowAbstain = *body.AllowAbstain
+	}
+	if body.CommitteeUids != nil {
+		v.CommitteeUids = make([]string, len(body.CommitteeUids))
+		for i, val := range body.CommitteeUids {
+			v.CommitteeUids[i] = val
+		}
+	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
+	}
+	v.PollQuestions = make([]*voting.PollQuestion, len(body.PollQuestions))
+	for i, val := range body.PollQuestions {
+		if val == nil {
+			v.PollQuestions[i] = nil
+			continue
+		}
+		v.PollQuestions[i] = unmarshalPollQuestionRequestBodyToVotingPollQuestion(val)
+	}
+	if body.PollCommentPrompts != nil {
+		v.PollCommentPrompts = make([]*voting.PollCommentPrompt, len(body.PollCommentPrompts))
+		for i, val := range body.PollCommentPrompts {
+			if val == nil {
+				v.PollCommentPrompts[i] = nil
+				continue
+			}
+			v.PollCommentPrompts[i] = unmarshalPollCommentPromptRequestBodyToVotingPollCommentPrompt(val)
+		}
+	}
+	if body.PseudoAnonymity == nil {
+		v.PseudoAnonymity = false
+	}
+	if body.PollType == nil {
+		v.PollType = "generic"
+	}
+	if body.NumWinners == nil {
+		v.NumWinners = 2
+	}
+	if body.AllowAbstain == nil {
+		v.AllowAbstain = false
+	}
+	v.VoteUID = voteUID
+	v.Token = token
+
+	return v
+}
+
+// NewDeleteVotePayload builds a voting service delete_vote endpoint payload.
+func NewDeleteVotePayload(voteUID string, token *string) *voting.DeleteVotePayload {
+	v := &voting.DeleteVotePayload{}
+	v.VoteUID = voteUID
+	v.Token = token
+
+	return v
+}
+
 // ValidateCreateVoteRequestBody runs the validations defined on
 // create_vote_request_body
 func ValidateCreateVoteRequestBody(body *CreateVoteRequestBody) (err error) {
@@ -334,11 +980,11 @@ func ValidateCreateVoteRequestBody(body *CreateVoteRequestBody) (err error) {
 	if body.EndTime == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("end_time", "body"))
 	}
-	if body.ProjectID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("project_id", "body"))
+	if body.ProjectUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("project_uid", "body"))
 	}
-	if body.CommitteeID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("committee_id", "body"))
+	if body.CommitteeUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
 	if body.PollQuestions == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("poll_questions", "body"))
@@ -356,8 +1002,8 @@ func ValidateCreateVoteRequestBody(body *CreateVoteRequestBody) (err error) {
 	if body.EndTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", *body.EndTime, goa.FormatDateTime))
 	}
-	if body.CommitteeID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_id", *body.CommitteeID, goa.FormatUUID))
+	if body.CommitteeUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
 	}
 	for _, e := range body.CommitteeFilters {
 		if !(e == "Voting Rep" || e == "Alternate Voting Rep" || e == "Observer" || e == "Emeritus") {
@@ -367,6 +1013,13 @@ func ValidateCreateVoteRequestBody(body *CreateVoteRequestBody) (err error) {
 	for _, e := range body.PollQuestions {
 		if e != nil {
 			if err2 := ValidatePollQuestionRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.PollCommentPrompts {
+		if e != nil {
+			if err2 := ValidatePollCommentPromptRequestBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -384,6 +1037,114 @@ func ValidateCreateVoteRequestBody(body *CreateVoteRequestBody) (err error) {
 	if body.NumWinners != nil {
 		if *body.NumWinners > 10 {
 			err = goa.MergeErrors(err, goa.InvalidRangeError("body.num_winners", *body.NumWinners, 10, false))
+		}
+	}
+	if body.QuorumPercentage != nil {
+		if *body.QuorumPercentage < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.quorum_percentage", *body.QuorumPercentage, 0, true))
+		}
+	}
+	if body.QuorumPercentage != nil {
+		if *body.QuorumPercentage > 100 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.quorum_percentage", *body.QuorumPercentage, 100, false))
+		}
+	}
+	if body.WinningThresholdPercentage != nil {
+		if *body.WinningThresholdPercentage < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.winning_threshold_percentage", *body.WinningThresholdPercentage, 0, true))
+		}
+	}
+	if body.WinningThresholdPercentage != nil {
+		if *body.WinningThresholdPercentage > 100 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.winning_threshold_percentage", *body.WinningThresholdPercentage, 100, false))
+		}
+	}
+	return
+}
+
+// ValidateUpdateVoteRequestBody runs the validations defined on
+// update_vote_request_body
+func ValidateUpdateVoteRequestBody(body *UpdateVoteRequestBody) (err error) {
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Description == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("description", "body"))
+	}
+	if body.EndTime == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("end_time", "body"))
+	}
+	if body.PollQuestions == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("poll_questions", "body"))
+	}
+	if body.Name != nil {
+		if utf8.RuneCountInString(*body.Name) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", *body.Name, utf8.RuneCountInString(*body.Name), 1, true))
+		}
+	}
+	if body.Name != nil {
+		if utf8.RuneCountInString(*body.Name) > 255 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", *body.Name, utf8.RuneCountInString(*body.Name), 255, false))
+		}
+	}
+	if body.EndTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", *body.EndTime, goa.FormatDateTime))
+	}
+	if body.CommitteeUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
+	}
+	for _, e := range body.CommitteeFilters {
+		if !(e == "Voting Rep" || e == "Alternate Voting Rep" || e == "Observer" || e == "Emeritus") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.committee_filters[*]", e, []any{"Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus"}))
+		}
+	}
+	for _, e := range body.PollQuestions {
+		if e != nil {
+			if err2 := ValidatePollQuestionRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.PollCommentPrompts {
+		if e != nil {
+			if err2 := ValidatePollCommentPromptRequestBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if body.PollType != nil {
+		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv"}))
+		}
+	}
+	if body.NumWinners != nil {
+		if *body.NumWinners < 2 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.num_winners", *body.NumWinners, 2, true))
+		}
+	}
+	if body.NumWinners != nil {
+		if *body.NumWinners > 10 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.num_winners", *body.NumWinners, 10, false))
+		}
+	}
+	if body.QuorumPercentage != nil {
+		if *body.QuorumPercentage < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.quorum_percentage", *body.QuorumPercentage, 0, true))
+		}
+	}
+	if body.QuorumPercentage != nil {
+		if *body.QuorumPercentage > 100 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.quorum_percentage", *body.QuorumPercentage, 100, false))
+		}
+	}
+	if body.WinningThresholdPercentage != nil {
+		if *body.WinningThresholdPercentage < 0 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.winning_threshold_percentage", *body.WinningThresholdPercentage, 0, true))
+		}
+	}
+	if body.WinningThresholdPercentage != nil {
+		if *body.WinningThresholdPercentage > 100 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError("body.winning_threshold_percentage", *body.WinningThresholdPercentage, 100, false))
 		}
 	}
 	return
@@ -427,6 +1188,15 @@ func ValidatePollChoiceRequestBody(body *PollChoiceRequestBody) (err error) {
 	}
 	if body.ChoiceID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.choice_id", *body.ChoiceID, goa.FormatUUID))
+	}
+	return
+}
+
+// ValidatePollCommentPromptRequestBody runs the validations defined on
+// PollCommentPromptRequestBody
+func ValidatePollCommentPromptRequestBody(body *PollCommentPromptRequestBody) (err error) {
+	if body.Prompt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("prompt", "body"))
 	}
 	return
 }

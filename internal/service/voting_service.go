@@ -47,7 +47,7 @@ func (s *VotingService) JWTAuth(ctx context.Context, token string, scheme *secur
 }
 
 // CreateVote creates a new vote (proxies to ITX POST /voting/poll)
-func (s *VotingService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*domain.PollResponse, error) {
+func (s *VotingService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*domain.PollProxyResponse, error) {
 	// Extract principal from context
 	principal, ok := ctx.Value("principal").(string)
 	if !ok {
@@ -58,22 +58,25 @@ func (s *VotingService) CreateVote(ctx context.Context, req *CreateVoteRequest) 
 	s.logger.InfoContext(ctx, "Creating vote",
 		"principal", principal,
 		"name", req.Name,
-		"project_id", req.ProjectID,
-		"committee_id", req.CommitteeID,
+		"project_uid", req.ProjectUID,
+		"committee_uid", req.CommitteeUID,
 	)
 
-	// Build proxy request
-	proxyReq := &domain.CreatePollRequest{
-		Name:             req.Name,
-		Description:      req.Description,
-		EndTime:          req.EndTime,
-		ProjectID:        req.ProjectID,
-		CommitteeID:      req.CommitteeID,
-		CommitteeFilters: req.CommitteeFilters,
-		PseudoAnonymity:  req.PseudoAnonymity,
-		PollType:         req.PollType,
-		NumWinners:       req.NumWinners,
-		AllowAbstain:     req.AllowAbstain,
+	// Build proxy request - map from UID (LFXv2) to ID (ITX)
+	proxyReq := &domain.CreatePollProxyRequest{
+		Name:                        req.Name,
+		Description:                 req.Description,
+		EndTime:                     req.EndTime,
+		ProjectID:                   req.ProjectUID,   // Map ProjectUID → ProjectID for ITX
+		CommitteeID:                 req.CommitteeUID, // Map CommitteeUID → CommitteeID for ITX
+		CommitteeIDs:                req.CommitteeUIDs, // Map CommitteeUIDs → CommitteeIDs for ITX
+		CommitteeFilters:            req.CommitteeFilters,
+		PseudoAnonymity:             req.PseudoAnonymity,
+		PollType:                    req.PollType,
+		NumWinners:                  req.NumWinners,
+		AllowAbstain:                req.AllowAbstain,
+		QuorumPercentage:            req.QuorumPercentage,
+		WinningThresholdPercentage:  req.WinningThresholdPercentage,
 	}
 
 	// Convert poll questions
@@ -87,6 +90,14 @@ func (s *VotingService) CreateVote(ctx context.Context, req *CreateVoteRequest) 
 			Prompt:  q.Prompt,
 			Type:    q.Type,
 			Choices: choices,
+		}
+	}
+
+	// Convert poll comment prompts
+	proxyReq.PollCommentPrompts = make([]domain.PollCommentPrompt, len(req.PollCommentPrompts))
+	for i, p := range req.PollCommentPrompts {
+		proxyReq.PollCommentPrompts[i] = domain.PollCommentPrompt{
+			Prompt: p.Prompt,
 		}
 	}
 
@@ -105,19 +116,135 @@ func (s *VotingService) CreateVote(ctx context.Context, req *CreateVoteRequest) 
 	return proxyResp, nil
 }
 
+// GetVote retrieves vote details (proxies to ITX GET /voting/poll/{poll_id})
+func (s *VotingService) GetVote(ctx context.Context, voteID string) (*domain.PollProxyResponse, error) {
+	// Extract principal from context
+	principal, ok := ctx.Value("principal").(string)
+	if !ok {
+		s.logger.ErrorContext(ctx, "Principal not found in context")
+		return nil, domain.NewValidationError("authentication required")
+	}
+
+	s.logger.InfoContext(ctx, "Getting vote", "principal", principal, "vote_id", voteID)
+
+	// Call ITX proxy
+	pollResp, err := s.proxyClient.GetPoll(ctx, voteID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to get poll from ITX", "error", err)
+		return nil, err // Return domain error as-is
+	}
+
+	s.logger.InfoContext(ctx, "Vote retrieved successfully", "poll_id", pollResp.PollID)
+
+	return pollResp, nil
+}
+
+// UpdateVote updates a vote (proxies to ITX PUT /voting/poll/{poll_id})
+func (s *VotingService) UpdateVote(ctx context.Context, voteID string, req *UpdateVoteRequest) (*domain.PollProxyResponse, error) {
+	// Extract principal from context
+	principal, ok := ctx.Value("principal").(string)
+	if !ok {
+		s.logger.ErrorContext(ctx, "Principal not found in context")
+		return nil, domain.NewValidationError("authentication required")
+	}
+
+	s.logger.InfoContext(ctx, "Updating vote",
+		"principal", principal,
+		"vote_id", voteID,
+		"name", req.Name,
+	)
+
+	// Build proxy request - map from UID (LFXv2) to ID (ITX)
+	proxyReq := &domain.UpdatePollProxyRequest{
+		Name:                        req.Name,
+		Description:                 req.Description,
+		EndTime:                     req.EndTime,
+		ProjectID:                   req.ProjectUID,   // Map ProjectUID → ProjectID for ITX
+		CommitteeID:                 req.CommitteeUID, // Map CommitteeUID → CommitteeID for ITX
+		CommitteeIDs:                req.CommitteeUIDs, // Map CommitteeUIDs → CommitteeIDs for ITX
+		CommitteeFilters:            req.CommitteeFilters,
+		PseudoAnonymity:             req.PseudoAnonymity,
+		PollType:                    req.PollType,
+		NumWinners:                  req.NumWinners,
+		AllowAbstain:                req.AllowAbstain,
+		QuorumPercentage:            req.QuorumPercentage,
+		WinningThresholdPercentage:  req.WinningThresholdPercentage,
+	}
+
+	// Convert poll questions
+	proxyReq.PollQuestions = make([]domain.PollQuestionInput, len(req.PollQuestions))
+	for i, q := range req.PollQuestions {
+		choices := make([]string, len(q.Choices))
+		for j, c := range q.Choices {
+			choices[j] = c.ChoiceText
+		}
+		proxyReq.PollQuestions[i] = domain.PollQuestionInput{
+			Prompt:  q.Prompt,
+			Type:    q.Type,
+			Choices: choices,
+		}
+	}
+
+	// Convert poll comment prompts
+	proxyReq.PollCommentPrompts = make([]domain.PollCommentPrompt, len(req.PollCommentPrompts))
+	for i, p := range req.PollCommentPrompts {
+		proxyReq.PollCommentPrompts[i] = domain.PollCommentPrompt{
+			Prompt: p.Prompt,
+		}
+	}
+
+	// Call ITX proxy
+	pollResp, err := s.proxyClient.UpdatePoll(ctx, voteID, proxyReq)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to update poll in ITX", "error", err)
+		return nil, err // Return domain error as-is
+	}
+
+	s.logger.InfoContext(ctx, "Vote updated successfully", "poll_id", pollResp.PollID)
+
+	return pollResp, nil
+}
+
+// DeleteVote deletes a vote (proxies to ITX DELETE /voting/poll/{poll_id})
+func (s *VotingService) DeleteVote(ctx context.Context, voteID string) error {
+	// Extract principal from context
+	principal, ok := ctx.Value("principal").(string)
+	if !ok {
+		s.logger.ErrorContext(ctx, "Principal not found in context")
+		return domain.NewValidationError("authentication required")
+	}
+
+	s.logger.InfoContext(ctx, "Deleting vote", "principal", principal, "vote_id", voteID)
+
+	// Call ITX proxy
+	err := s.proxyClient.DeletePoll(ctx, voteID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to delete poll from ITX", "error", err)
+		return err // Return domain error as-is
+	}
+
+	s.logger.InfoContext(ctx, "Vote deleted successfully", "poll_id", voteID)
+
+	return nil
+}
+
 // CreateVoteRequest is the internal request type for creating a vote
 type CreateVoteRequest struct {
-	Name             string
-	Description      string
-	EndTime          string
-	ProjectID        string
-	CommitteeID      string
-	CommitteeFilters []string
-	PollQuestions    []PollQuestionRequest
-	PseudoAnonymity  bool
-	PollType         string
-	NumWinners       *int
-	AllowAbstain     bool
+	Name                        string
+	Description                 string
+	EndTime                     string
+	ProjectUID                  string
+	CommitteeUID                string
+	CommitteeUIDs               []string
+	CommitteeFilters            []string
+	PollQuestions               []PollQuestionRequest
+	PollCommentPrompts          []PollCommentPromptRequest
+	PseudoAnonymity             bool
+	PollType                    string
+	NumWinners                  *int
+	AllowAbstain                bool
+	QuorumPercentage            *int
+	WinningThresholdPercentage  *int
 }
 
 // PollQuestionRequest represents a question in the request
@@ -130,4 +257,28 @@ type PollQuestionRequest struct {
 // PollChoiceRequest represents a choice in the request
 type PollChoiceRequest struct {
 	ChoiceText string
+}
+
+// PollCommentPromptRequest represents a comment prompt in the request
+type PollCommentPromptRequest struct {
+	Prompt string
+}
+
+// UpdateVoteRequest is the internal request type for updating a vote
+type UpdateVoteRequest struct {
+	Name                        string
+	Description                 string
+	EndTime                     string
+	ProjectUID                  string
+	CommitteeUID                string
+	CommitteeUIDs               []string
+	CommitteeFilters            []string
+	PollQuestions               []PollQuestionRequest
+	PollCommentPrompts          []PollCommentPromptRequest
+	PseudoAnonymity             bool
+	PollType                    string
+	NumWinners                  *int
+	AllowAbstain                bool
+	QuorumPercentage            *int
+	WinningThresholdPercentage  *int
 }

@@ -47,62 +47,24 @@ var _ = Service("voting", func() {
 		})
 
 		Payload(func() {
-			Token("token", String, "JWT token", func() {
-				Example("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")
-			})
+			BearerTokenAttribute()
+			VoteNameAttribute()
+			VoteDescriptionAttribute()
+			EndTimeAttribute()
+			ProjectIDAttribute()
+			CommitteeIDAttribute()
+			CommitteeIDsAttribute()
+			CommitteeFiltersAttribute()
+			PollQuestionsAttribute()
+			PollCommentPromptsAttribute()
+			PseudoAnonymityAttribute()
+			PollTypeAttribute()
+			NumWinnersAttribute()
+			AllowAbstainAttribute()
+			QuorumPercentageAttribute()
+			WinningThresholdPercentageAttribute()
 
-			Attribute("name", String, "Vote name", func() {
-				Example("Q1 2026 Technical Steering Committee Election")
-				MinLength(1)
-				MaxLength(255)
-			})
-
-			Attribute("description", String, "Vote description", func() {
-				Example("Vote for the TSC members for Q1 2026")
-			})
-
-			Attribute("end_time", String, "End time in RFC3339 format", func() {
-				Format(FormatDateTime)
-				Example("2026-02-15T23:59:59Z")
-			})
-
-			Attribute("project_id", String, "LFX Project ID", func() {
-				Example("a09P000000DsCBuIRT")
-			})
-
-			Attribute("committee_id", String, "LFX Committee ID", func() {
-				Format(FormatUUID)
-				Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
-			})
-
-			Attribute("committee_filters", ArrayOf(String, func() {
-				Enum("Voting Rep", "Alternate Voting Rep", "Observer", "Emeritus")
-			}), "Committee voting status filters", func() {
-				Example([]string{"Voting Rep", "Alternate Voting Rep"})
-			})
-
-			Attribute("poll_questions", ArrayOf(PollQuestion), "Questions for the vote")
-
-			Attribute("pseudo_anonymity", Boolean, "Enable pseudo-anonymity", func() {
-				Default(false)
-			})
-
-			Attribute("poll_type", String, "Type of poll", func() {
-				Enum("generic", "condorcet_irv", "meek_stv")
-				Default("generic")
-			})
-
-			Attribute("num_winners", Int, "Number of winners (meek_stv only)", func() {
-				Minimum(2)
-				Maximum(10)
-				Default(2)
-			})
-
-			Attribute("allow_abstain", Boolean, "Allow voters to abstain", func() {
-				Default(false)
-			})
-
-			Required("name", "description", "end_time", "project_id", "committee_id", "poll_questions")
+			Required("name", "description", "end_time", "project_uid", "committee_uid", "poll_questions")
 		})
 
 		Result(VoteResult)
@@ -115,6 +77,106 @@ var _ = Service("voting", func() {
 			Response("Unauthorized", StatusUnauthorized)
 			Response("Forbidden", StatusForbidden)
 			Response("Conflict", StatusConflict)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
+	Method("get_vote", func() {
+		Description("Get vote details (proxies to ITX GET /voting/poll/{poll_id})")
+
+		Security(JWTAuth, func() {
+			Scope("manage:projects")
+			Scope("manage:voting")
+		})
+
+		Payload(func() {
+			BearerTokenAttribute()
+			VoteIDAttribute()
+
+			Required("vote_uid")
+		})
+
+		Result(VoteResult)
+
+		HTTP(func() {
+			GET("/votes/{vote_uid}")
+			Response(StatusOK)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
+	Method("update_vote", func() {
+		Description("Update vote (proxies to ITX PUT /voting/poll/{poll_id}). Only allowed when status is 'disabled'")
+
+		Security(JWTAuth, func() {
+			Scope("manage:projects")
+			Scope("manage:voting")
+		})
+
+		Payload(func() {
+			BearerTokenAttribute()
+			VoteIDAttribute()
+			VoteNameAttribute()
+			VoteDescriptionAttribute()
+			EndTimeAttribute()
+			ProjectIDAttribute()
+			CommitteeIDAttribute()
+			CommitteeIDsAttribute()
+			CommitteeFiltersAttribute()
+			PollQuestionsAttribute()
+			PollCommentPromptsAttribute()
+			PseudoAnonymityAttribute()
+			PollTypeAttribute()
+			NumWinnersAttribute()
+			AllowAbstainAttribute()
+			QuorumPercentageAttribute()
+			WinningThresholdPercentageAttribute()
+
+			Required("vote_uid", "name", "description", "end_time", "poll_questions")
+		})
+
+		Result(VoteResult)
+
+		HTTP(func() {
+			PUT("/votes/{vote_uid}")
+			Response(StatusOK)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
+	Method("delete_vote", func() {
+		Description("Delete vote (proxies to ITX DELETE /voting/poll/{poll_id}). Only allowed when status is 'disabled'")
+
+		Security(JWTAuth, func() {
+			Scope("manage:projects")
+			Scope("manage:voting")
+		})
+
+		Payload(func() {
+			BearerTokenAttribute()
+			VoteIDAttribute()
+
+			Required("vote_uid")
+		})
+
+		HTTP(func() {
+			DELETE("/votes/{vote_uid}")
+			Response(StatusNoContent)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
 			Response("InternalServerError", StatusInternalServerError)
 			Response("ServiceUnavailable", StatusServiceUnavailable)
 		})

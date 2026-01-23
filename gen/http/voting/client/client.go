@@ -22,6 +22,18 @@ type Client struct {
 	// endpoint.
 	CreateVoteDoer goahttp.Doer
 
+	// GetVote Doer is the HTTP client used to make requests to the get_vote
+	// endpoint.
+	GetVoteDoer goahttp.Doer
+
+	// UpdateVote Doer is the HTTP client used to make requests to the update_vote
+	// endpoint.
+	UpdateVoteDoer goahttp.Doer
+
+	// DeleteVote Doer is the HTTP client used to make requests to the delete_vote
+	// endpoint.
+	DeleteVoteDoer goahttp.Doer
+
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
 	RestoreResponseBody bool
@@ -43,6 +55,9 @@ func NewClient(
 ) *Client {
 	return &Client{
 		CreateVoteDoer:      doer,
+		GetVoteDoer:         doer,
+		UpdateVoteDoer:      doer,
+		DeleteVoteDoer:      doer,
 		RestoreResponseBody: restoreBody,
 		scheme:              scheme,
 		host:                host,
@@ -70,6 +85,78 @@ func (c *Client) CreateVote() goa.Endpoint {
 		resp, err := c.CreateVoteDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("voting", "create_vote", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GetVote returns an endpoint that makes HTTP requests to the voting service
+// get_vote server.
+func (c *Client) GetVote() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeGetVoteRequest(c.encoder)
+		decodeResponse = DecodeGetVoteResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetVoteRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetVoteDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("voting", "get_vote", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// UpdateVote returns an endpoint that makes HTTP requests to the voting
+// service update_vote server.
+func (c *Client) UpdateVote() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeUpdateVoteRequest(c.encoder)
+		decodeResponse = DecodeUpdateVoteResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildUpdateVoteRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.UpdateVoteDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("voting", "update_vote", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// DeleteVote returns an endpoint that makes HTTP requests to the voting
+// service delete_vote server.
+func (c *Client) DeleteVote() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeDeleteVoteRequest(c.encoder)
+		decodeResponse = DecodeDeleteVoteResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildDeleteVoteRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.DeleteVoteDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("voting", "delete_vote", err)
 		}
 		return decodeResponse(resp)
 	}

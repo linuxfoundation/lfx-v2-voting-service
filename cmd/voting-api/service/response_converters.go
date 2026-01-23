@@ -9,18 +9,18 @@ import (
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/utils"
 )
 
-// ConvertPollResponseToVoteResult converts domain PollResponse to Goa VoteResult
-func ConvertPollResponseToVoteResult(poll *domain.PollResponse) *voting.VoteResult {
+// ConvertPollResponseToVoteResult converts domain PollProxyResponse to Goa VoteResult
+func ConvertPollResponseToVoteResult(poll *domain.PollProxyResponse) *voting.VoteResult {
 	result := &voting.VoteResult{
-		PollID:                        poll.PollID,
+		VoteUID:                       poll.PollID,      // Map PollID → VoteUID
 		Name:                          poll.Name,
 		Description:                   poll.Description,
 		CreationTime:                  utils.StringPtr(poll.CreationTime),
 		LastModifiedTime:              utils.StringPtr(poll.LastModifiedTime),
 		EndTime:                       utils.StringPtr(poll.EndTime),
 		Status:                        poll.Status,
-		ProjectID:                     poll.ProjectID,
-		CommitteeID:                   poll.CommitteeID,
+		ProjectUID:                    poll.ProjectID,   // Map ProjectID → ProjectUID
+		CommitteeUID:                  poll.CommitteeID, // Map CommitteeID → CommitteeUID
 		CommitteeName:                 utils.StringPtr(poll.CommitteeName),
 		CommitteeType:                 utils.StringPtr(poll.CommitteeType),
 		CommitteeVotingStatus:         utils.BoolPtr(poll.CommitteeVotingStatus),

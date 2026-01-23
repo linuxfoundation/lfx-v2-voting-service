@@ -18,6 +18,14 @@ import (
 type Service interface {
 	// Create a new vote (proxies to ITX POST /voting/poll)
 	CreateVote(context.Context, *CreateVotePayload) (res *VoteResult, err error)
+	// Get vote details (proxies to ITX GET /voting/poll/{poll_id})
+	GetVote(context.Context, *GetVotePayload) (res *VoteResult, err error)
+	// Update vote (proxies to ITX PUT /voting/poll/{poll_id}). Only allowed when
+	// status is 'disabled'
+	UpdateVote(context.Context, *UpdateVotePayload) (res *VoteResult, err error)
+	// Delete vote (proxies to ITX DELETE /voting/poll/{poll_id}). Only allowed
+	// when status is 'disabled'
+	DeleteVote(context.Context, *DeleteVotePayload) (err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -40,7 +48,7 @@ const ServiceName = "voting"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [1]string{"create_vote"}
+var MethodNames = [4]string{"create_vote", "get_vote", "update_vote", "delete_vote"}
 
 // Bad request error response
 type BadRequestError struct {
@@ -69,14 +77,18 @@ type CreateVotePayload struct {
 	Description string
 	// End time in RFC3339 format
 	EndTime string
-	// LFX Project ID
-	ProjectID string
-	// LFX Committee ID
-	CommitteeID string
+	// LFX Project UID
+	ProjectUID string
+	// LFX Committee UID
+	CommitteeUID string
+	// Multiple committee UIDs
+	CommitteeUids []string
 	// Committee voting status filters
 	CommitteeFilters []string
 	// Questions for the vote
 	PollQuestions []*PollQuestion
+	// Comment prompts for the vote
+	PollCommentPrompts []*PollCommentPrompt
 	// Enable pseudo-anonymity
 	PseudoAnonymity bool
 	// Type of poll
@@ -85,6 +97,19 @@ type CreateVotePayload struct {
 	NumWinners int
 	// Allow voters to abstain
 	AllowAbstain bool
+	// Quorum percentage required
+	QuorumPercentage *int
+	// Winning threshold percentage
+	WinningThresholdPercentage *int
+}
+
+// DeleteVotePayload is the payload type of the voting service delete_vote
+// method.
+type DeleteVotePayload struct {
+	// JWT token
+	Token *string
+	// Vote UID
+	VoteUID string
 }
 
 // Forbidden error response
@@ -93,6 +118,14 @@ type ForbiddenError struct {
 	Code string
 	// Error message
 	Message string
+}
+
+// GetVotePayload is the payload type of the voting service get_vote method.
+type GetVotePayload struct {
+	// JWT token
+	Token *string
+	// Vote UID
+	VoteUID string
 }
 
 // Internal server error response
@@ -117,6 +150,12 @@ type PollChoice struct {
 	ChoiceID *string
 	// Choice text
 	ChoiceText string
+}
+
+// Comment prompt for collecting feedback
+type PollCommentPrompt struct {
+	// Comment prompt text
+	Prompt string
 }
 
 // Vote question
@@ -147,10 +186,49 @@ type UnauthorizedError struct {
 	Message string
 }
 
+// UpdateVotePayload is the payload type of the voting service update_vote
+// method.
+type UpdateVotePayload struct {
+	// JWT token
+	Token *string
+	// Vote UID
+	VoteUID string
+	// Vote name
+	Name string
+	// Vote description
+	Description string
+	// End time in RFC3339 format
+	EndTime string
+	// LFX Project UID
+	ProjectUID *string
+	// LFX Committee UID
+	CommitteeUID *string
+	// Multiple committee UIDs
+	CommitteeUids []string
+	// Committee voting status filters
+	CommitteeFilters []string
+	// Questions for the vote
+	PollQuestions []*PollQuestion
+	// Comment prompts for the vote
+	PollCommentPrompts []*PollCommentPrompt
+	// Enable pseudo-anonymity
+	PseudoAnonymity bool
+	// Type of poll
+	PollType string
+	// Number of winners (meek_stv only)
+	NumWinners int
+	// Allow voters to abstain
+	AllowAbstain bool
+	// Quorum percentage required
+	QuorumPercentage *int
+	// Winning threshold percentage
+	WinningThresholdPercentage *int
+}
+
 // VoteResult is the result type of the voting service create_vote method.
 type VoteResult struct {
-	// Vote identifier (ITX poll_id)
-	PollID string
+	// Vote identifier
+	VoteUID string
 	// Vote name
 	Name string
 	// Vote description
@@ -163,10 +241,10 @@ type VoteResult struct {
 	EndTime *string
 	// Vote status
 	Status string
-	// Project ID
-	ProjectID string
-	// Committee ID
-	CommitteeID string
+	// Project UID
+	ProjectUID string
+	// Committee UID
+	CommitteeUID string
 	// Committee name
 	CommitteeName *string
 	// Committee type

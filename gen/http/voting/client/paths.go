@@ -8,7 +8,26 @@
 
 package client
 
+import (
+	"fmt"
+)
+
 // CreateVoteVotingPath returns the URL path to the voting service create_vote HTTP endpoint.
 func CreateVoteVotingPath() string {
 	return "/votes"
+}
+
+// GetVoteVotingPath returns the URL path to the voting service get_vote HTTP endpoint.
+func GetVoteVotingPath(voteUID string) string {
+	return fmt.Sprintf("/votes/%v", voteUID)
+}
+
+// UpdateVoteVotingPath returns the URL path to the voting service update_vote HTTP endpoint.
+func UpdateVoteVotingPath(voteUID string) string {
+	return fmt.Sprintf("/votes/%v", voteUID)
+}
+
+// DeleteVoteVotingPath returns the URL path to the voting service delete_vote HTTP endpoint.
+func DeleteVoteVotingPath(voteUID string) string {
+	return fmt.Sprintf("/votes/%v", voteUID)
 }

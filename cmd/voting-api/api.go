@@ -104,8 +104,8 @@ func (s *VotingAPI) CreateVote(ctx context.Context, payload *votingsvc.CreateVot
 
 	logger.InfoContext(ctx, "Create vote request received",
 		"name", payload.Name,
-		"project_id", payload.ProjectID,
-		"committee_id", payload.CommitteeID,
+		"project_uid", payload.ProjectUID,
+		"committee_uid", payload.CommitteeUID,
 	)
 
 	// Convert Goa payload to service request
@@ -122,9 +122,75 @@ func (s *VotingAPI) CreateVote(ctx context.Context, payload *votingsvc.CreateVot
 	result := apiservice.ConvertPollResponseToVoteResult(pollResp)
 
 	logger.InfoContext(ctx, "Vote created successfully",
-		"poll_id", result.PollID,
+		"vote_uid", result.VoteUID,
 		"status", result.Status,
 	)
 
 	return result, nil
+}
+
+// GetVote retrieves vote details (proxies to ITX GET /voting/poll/{poll_id})
+func (s *VotingAPI) GetVote(ctx context.Context, payload *votingsvc.GetVotePayload) (*votingsvc.VoteResult, error) {
+	logger := slog.With("component", "voting_api", "method", "GetVote")
+
+	logger.InfoContext(ctx, "Get vote request received", "vote_uid", payload.VoteUID)
+
+	// Call service layer
+	pollResp, err := s.votingService.GetVote(ctx, payload.VoteUID)
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to get vote", "error", err)
+		return nil, handleError(err)
+	}
+
+	// Convert domain response to Goa result
+	result := apiservice.ConvertPollResponseToVoteResult(pollResp)
+
+	logger.InfoContext(ctx, "Vote retrieved successfully", "vote_uid", result.VoteUID)
+
+	return result, nil
+}
+
+// UpdateVote updates a vote (proxies to ITX PUT /voting/poll/{poll_id})
+func (s *VotingAPI) UpdateVote(ctx context.Context, payload *votingsvc.UpdateVotePayload) (*votingsvc.VoteResult, error) {
+	logger := slog.With("component", "voting_api", "method", "UpdateVote")
+
+	logger.InfoContext(ctx, "Update vote request received",
+		"vote_uid", payload.VoteUID,
+		"name", payload.Name,
+	)
+
+	// Convert Goa payload to service request
+	req := apiservice.ConvertUpdateVotePayloadToDomain(payload)
+
+	// Call service layer
+	pollResp, err := s.votingService.UpdateVote(ctx, payload.VoteUID, req)
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to update vote", "error", err)
+		return nil, handleError(err)
+	}
+
+	// Convert domain response to Goa result
+	result := apiservice.ConvertPollResponseToVoteResult(pollResp)
+
+	logger.InfoContext(ctx, "Vote updated successfully", "vote_uid", result.VoteUID)
+
+	return result, nil
+}
+
+// DeleteVote deletes a vote (proxies to ITX DELETE /voting/poll/{poll_id})
+func (s *VotingAPI) DeleteVote(ctx context.Context, payload *votingsvc.DeleteVotePayload) error {
+	logger := slog.With("component", "voting_api", "method", "DeleteVote")
+
+	logger.InfoContext(ctx, "Delete vote request received", "vote_uid", payload.VoteUID)
+
+	// Call service layer
+	err := s.votingService.DeleteVote(ctx, payload.VoteUID)
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to delete vote", "error", err)
+		return handleError(err)
+	}
+
+	logger.InfoContext(ctx, "Vote deleted successfully", "vote_uid", payload.VoteUID)
+
+	return nil
 }
