@@ -33,10 +33,12 @@ jobs:
       - name: MegaLinter
         id: ml
         # Use the Go flavor.
-        uses: oxsecurity/megalinter/flavors/go@62c799d895af9bcbca5eacfebca29d527f125a57  # 9.1.0
+        uses: oxsecurity/megalinter/flavors/go@5a91fb06c83d0e69fbd23756d47438aa723b4a5a  # 8.7.0
         env:
           # All available variables are described in documentation
           # https://megalinter.io/configuration/
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Allow GITHUB_TOKEN for working around rate limits (aquasecurity/trivy#7668).
           REPOSITORY_TRIVY_UNSECURED_ENV_VARIABLES: GITHUB_TOKEN
+          # Set the Go toolchain to auto so that megalinter uses the correct go version for the service.
+          GOTOOLCHAIN: auto
