@@ -1,0 +1,1500 @@
+---
+openapi: "3.0.0"
+info:
+  title: IT Service Automation
+  version: 2.0.0
+paths:
+  /voting/poll:
+    get:
+      summary: Get all the polls for a given project, committee, or user
+      description: >-
+        Get voting polls by project, committee, or user.
+      security:
+        - lf_auth:
+            - read:projects
+            - manage:projects
+            - manage:voting
+      tags:
+        - Voting
+      parameters:
+        - $ref: "#/components/parameters/ProjectIDQuery"
+        - $ref: "#/components/parameters/CommitteeIDQuery"
+        - $ref: "#/components/parameters/LFUserIDQuery"
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/X-Scope"
+      responses:
+        200:
+          description: The list of polls
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/PageMetadata"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PollService"
+        205:
+          $ref: "#/components/responses/205"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        400:
+          $ref: "#/components/responses/400"
+    post:
+      summary: Create a new voting poll for a specific project
+      description: >-
+        Create a new poll for a given project. Poll will be in a disabled state on creation.
+        Modifications to a given poll is allowed until the poll is enabled (active)
+        Poll can be enabled on a PUT request
+        Poll creation will fail if a project's committee don't have voting status enabled.
+      security:
+        - lf_auth:
+            - manage:projects
+            - manage:voting
+      tags:
+        - Voting
+      parameters:
+        - $ref: "#/components/parameters/X-Scope"
+      requestBody:
+        $ref: "#/components/requestBodies/PollServicePost"
+      responses:
+        201:
+          description: The created poll
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PollService"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        409:
+          $ref: "#/components/responses/409"
+  /voting/poll/{poll_id}:
+    get:
+      summary: Get details of a poll
+      description: Get poll details
+      security:
+        - lf_auth:
+            - read:projects
+            - manage:projects
+            - manage:voting
+      tags:
+        - Voting
+      parameters:
+        - $ref: "#/components/parameters/PollID"
+        - $ref: "#/components/parameters/X-Scope"
+      responses:
+        200:
+          description: The poll details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PollService"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        404:
+          $ref: "#/components/responses/404"
+    put:
+      summary: Updates a poll
+      description: >-
+        Update poll for a given project. Poll can be modified
+        if state is disabled.
+      security:
+        - lf_auth:
+            - manage:projects
+            - manage:voting
+      tags:
+        - Voting
+      parameters:
+        - $ref: "#/components/parameters/PollID"
+        - $ref: "#/components/parameters/X-Scope"
+      requestBody:
+        $ref: "#/components/requestBodies/PollServicePut"
+      responses:
+        200:
+          description: The updated poll
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PollService"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        404:
+          $ref: "#/components/responses/404"
+    delete:
+      summary: Deletes a poll
+      description: >-
+        Deleting a poll is only allowed if it's in disabled state
+      security:
+        - lf_auth:
+            - manage:projects
+            - manage:voting
+      tags:
+        - Voting
+      parameters:
+        - $ref: "#/components/parameters/PollID"
+        - $ref: "#/components/parameters/X-Scope"
+      responses:
+        204:
+          description: The poll and its votes were removed.
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        404:
+          $ref: "#/components/responses/404"
+  /voting/poll/{poll_id}/enable:
+    put:
+      summary: Enables a poll
+      description: >-
+        Enable poll for voting.
+      security:
+        - lf_auth:
+            - manage:projects
+            - manage:voting
+      tags:
+        - Voting
+      parameters:
+        - $ref: "#/components/parameters/PollID"
+        - $ref: "#/components/parameters/X-Scope"
+      responses:
+        204:
+          description: The poll was enabled
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        404:
+          $ref: "#/components/responses/404"
+  /voting/poll/{poll_id}/bulk_resend:
+    post:
+      description: Bulk resend a poll email to select recipients
+      summary: Bulk resend a poll email to select recipients
+      security:
+        - lf_auth:
+            - manage:projects
+            - manage:voting
+      parameters:
+        - $ref: "#/components/parameters/PollID"
+        - $ref: "#/components/parameters/X-Scope"
+      requestBody:
+        $ref: "#/components/requestBodies/VotingBulkResendRequestBody"
+      tags:
+        - Voting
+      responses:
+        204:
+          description: Successfully dispatched events to async bulk resend a poll email to select recipients
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        404:
+          $ref: "#/components/responses/404"
+        500:
+          $ref: "#/components/responses/500"
+  /voting/poll/{poll_id}/extend:
+    post:
+      summary: Extend a poll's end time
+      description: >-
+        Extend a poll's end time.
+      security:
+        - lf_auth:
+            - manage:projects
+            - manage:voting
+      tags:
+        - Voting
+      parameters:
+        - $ref: "#/components/parameters/PollID"
+        - $ref: "#/components/parameters/X-Scope"
+      requestBody:
+        $ref: "#/components/requestBodies/PollExtendPost"
+      responses:
+        200:
+          description: The poll was extended
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PollService"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        404:
+          $ref: "#/components/responses/404"
+        500:
+          $ref: "#/components/responses/500"
+  /voting/poll/{poll_id}/results:
+    get:
+      summary: Get results of a poll
+      description: >-
+        Get poll results for each question of the poll, as well as
+        some statistics about how many votes were cast.
+      security:
+        - lf_auth:
+            - read:projects
+            - manage:projects
+            - manage:voting
+      tags:
+        - Voting
+      parameters:
+        - $ref: "#/components/parameters/PollID"
+        - $ref: "#/components/parameters/X-Scope"
+      responses:
+        200:
+          description: The poll results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PollResults"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        404:
+          $ref: "#/components/responses/404"
+        500:
+          $ref: "#/components/responses/500"
+  /voting/vote:
+    post:
+      summary: Submit a vote for a given poll.
+      description: >-
+        Submits a vote for a given poll.
+        Vote submission is rejected if the user's voting status is disabled or user is not part of the committee
+        during the time of the vote.
+        Vote submission is also rejected if the voting happens after the end time of the poll.
+      security:
+        - lf_auth:
+            - manage:projects
+            - manage:voting
+      tags:
+        - Voting
+      parameters:
+        - $ref: "#/components/parameters/X-Scope"
+      requestBody:
+        $ref: "#/components/requestBodies/VoteServicePost"
+      responses:
+        201:
+          description: The vote was submitted
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+    get:
+      summary: Get all the votes for a given project, poll, or user
+      description: >-
+        Get all votes for a project, poll, or user. It can also be filtered by vote status.
+        If a project or user has multiple polls assigned to it, then multiple polls with their own
+        vote responses will be returned.
+      security:
+        - lf_auth:
+            - read:projects
+            - manage:projects
+            - manage:voting
+      tags:
+        - Voting
+      parameters:
+        - $ref: "#/components/parameters/ProjectIDQuery"
+        - $ref: "#/components/parameters/LFUserIDQuery"
+        - $ref: "#/components/parameters/PollIDQuery"
+        - $ref: "#/components/parameters/PageToken"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/X-Scope"
+      responses:
+        200:
+          description: The list of votes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  meta:
+                    $ref: "#/components/schemas/PageMetadata"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/VoteServices"
+        205:
+          $ref: "#/components/responses/205"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        404:
+          $ref: "#/components/responses/404"
+  /voting/vote/{vote_id}:
+    get:
+      summary: Get details of a vote
+      description: Get vote details
+      security:
+        - lf_auth:
+            - read:projects
+            - manage:projects
+            - manage:voting
+      tags:
+        - Voting
+      parameters:
+        - $ref: "#/components/parameters/VoteID"
+        - $ref: "#/components/parameters/X-Scope"
+      responses:
+        200:
+          description: The vote details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoteService"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        404:
+          $ref: "#/components/responses/404"
+    put:
+      summary: Update a vote for a given poll.
+      description: >-
+        Update a vote for a given poll.
+        Vote submission is rejected if the user's voting status is disabled or user is not part of the committee
+        during the time of the vote.
+        Vote submission is also rejected if the voting happens after the end time of the poll.
+      security:
+        - lf_auth:
+            - manage:projects
+            - manage:voting
+      tags:
+        - Voting
+      parameters:
+        - $ref: "#/components/parameters/VoteID"
+        - $ref: "#/components/parameters/X-Scope"
+      requestBody:
+        $ref: "#/components/requestBodies/VoteServicePut"
+      responses:
+        204:
+          description: The vote was updated
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        404:
+          $ref: "#/components/responses/404"
+        500:
+          $ref: "#/components/responses/500"
+  /voting/vote/{vote_id}/resend:
+    post:
+      description: >-
+        Resend the poll email to a committee member
+      summary: Resend the poll email to a committee member
+      security:
+        - lf_auth:
+            - manage:projects
+            - manage:voting
+      tags:
+        - Voting
+      parameters:
+        - $ref: "#/components/parameters/VoteID"
+        - $ref: "#/components/parameters/X-Scope"
+      responses:
+        204:
+          description: Email resent
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        404:
+          description: Vote does not exist
+components:
+  parameters:
+    X-Scope:
+      name: x-scope
+      in: header
+      description: Authorization scope header (note that "manage:projects" gives access to all endpoints)
+      schema:
+        type: string
+        example: manage:voting
+      required: false
+    ProjectIDQuery:
+      name: project_id
+      in: query
+      required: false
+      description: An LFX Project ID
+      schema:
+        type: string
+        example: a09P000000DsCBuIRT
+    CommitteeIDQuery:
+      name: committee_id
+      in: query
+      required: false
+      description: An LFX Project Committee ID
+      schema:
+        type: string
+        example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+    LFUserIDQuery:
+      name: user_id
+      in: query
+      required: false
+      description: LF user ID
+      schema:
+        type: string
+        example: 003P000001cRZVVI9A
+    PageToken:
+      name: page_token
+      in: query
+      required: false
+      description: >-
+        The next page token. Initial calls should leave this empty, and subsequent calls
+        will include the token from the metadata in the response of the previous call.
+      schema:
+        type: string
+        example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+    PerPage:
+      name: per_page
+      in: query
+      required: false
+      description: >-
+        The maximum number of items per page. Default is undefined and may vary per service.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        example: 20
+    PollIDQuery:
+      name: poll_id
+      in: query
+      required: false
+      description: a poll identifier query parameter
+      schema:
+        type: string
+    PollID:
+      name: poll_id
+      in: path
+      required: true
+      description: a poll identifier
+      schema:
+        type: string
+    VoteFilter:
+      name: vote_id
+      in: query
+      required: false
+      description: a vote identifier
+      schema:
+        type: string
+    VoteID:
+      name: vote_id
+      in: path
+      required: true
+      description: a vote identifier
+      schema:
+        type: string
+  schemas:
+    PageMetadata:
+      type: object
+      properties:
+        page_token:
+          type: string
+          description: opaque identifier to retrieve the next page. If the current page is the final page, this is blank
+          example: "2"
+        total_pages:
+          type: integer
+          description: >-
+            The total number of records present across all pages, if known.
+            Stays consistent across subsequent page requests; NOT a count of items remaining.
+          example: 11
+        total_results:
+          type: integer
+          description: The total number of items present across all pages, if known.
+          example: 106
+        per_page:
+          type: integer
+          description: The per_page used in the query
+          example: 10
+    PollServices:
+      type: array
+      items:
+        $ref: "#/components/schemas/PollService"
+    PollService:
+      type: object
+      properties:
+        poll_id:
+          type: string
+          description: >-
+            A UUID that uniquely represents a Poll object.
+            A poll is associated for a project and for a specific committee. Members of the committee can
+            vote for a given poll once the poll is active.
+          readOnly: true
+        name:
+          type: string
+          description: >-
+            The name of the poll. This is a short description that describes what the polling is about.
+          readOnly: true
+        description:
+          type: string
+          description: >-
+            The description of the poll. This is a longer written format of what the poll is about.
+          readOnly: true
+        creation_time:
+          type: string
+          description: >-
+            Poll creation time.
+        last_modified_time:
+          type: string
+          description: >-
+            Poll last modified time. Poll can be updated until the status is enabled.
+        end_time:
+          type: string
+          description: >-
+            Poll end time. Voting cannot occur past the poll end time.
+        pseudo_anonymity:
+          type: boolean
+          description: >-
+            Whether or not pseudo-anonymity should be enabled for the poll. This setting
+            when enabled means nothing on the backend, but is rather an indicator to the frontend
+            that user data should be made anonymous or not shown.
+        total_voting_request_invitations:
+          type: integer
+          description: >-
+            The number of unique recipients who were sent an email to vote for the poll.
+        num_response_received:
+          type: integer
+          description: >-
+            The number of responses received for this poll.
+        status:
+          type: string
+          description: >-
+            Will be disabled by default. Can be set to active via a PUT request.
+            No changes to the poll are allowed once the status is active.
+            Status will be set to ended once the poll is past the endtime.
+          enum:
+            - disabled
+            - active
+            - ended
+        project_id:
+          type: string
+          description: >-
+            The unique project id that's associated with this poll
+        committee_id:
+          type: string
+          description: >-
+            The unique committee id whose members can vote for this poll. Stored for historical record only.
+        committee_name:
+          type: string
+          description: >-
+            The committee name whose members can vote for this poll. Stored for historical record only.
+        committee_type:
+          type: string
+          description: >-
+            The committee type this belonged to at the time of poll creation. Stored for historical record only.
+        committee_voting_status:
+          type: boolean
+          description: >-
+            The committee voting status the committee was part of at the time of poll creation.
+            Stored for historical record only.
+        poll_questions:
+          type: array
+          description: An array of questions that's part of this poll.
+          items:
+            $ref: "#/components/schemas/PollQuestion"
+        allow_abstain:
+          type: boolean
+          description: >-
+            Whether voters are allowed to abstain from voting.
+            When enabled, voters can submit their vote without selecting any choices.
+            Abstained votes are counted as responses but excluded from results calculation.
+    VoteServices:
+      type: object
+      properties:
+        poll_id:
+          type: string
+          description: >-
+            A UUID that uniquely represents a poll associated with this vote
+          readOnly: true
+        project_id:
+          type: string
+          description: >-
+            The unique project id that's associated with this poll
+        committee_id:
+          type: string
+          description: >-
+            The unique committee id whose members can vote for this poll. Stored for historical record only.
+        committee_name:
+          type: string
+          description: >-
+            The committee name whose members can vote for this poll. Stored for historical record only.
+        name:
+          type: string
+          description: >-
+            The name of the poll. This is a short description that describes what the polling is about.
+          readOnly: true
+        description:
+          type: string
+          description: >-
+            The description of the poll. This is a longer written format of what the poll is about.
+        end_time:
+          type: string
+          description: >-
+            Poll end time. Voting cannot occur past the poll end time.
+        poll_status:
+          type: string
+          description: >-
+            The current voting status of the overall poll
+        num_response_received:
+          type: integer
+          description: >-
+            The number of responses received for this poll so far
+        num_response_sent:
+          type: integer
+          description: >-
+            The number of invitations sent for this poll
+        poll_questions:
+          type: array
+          description: An array of questions that's part of this poll.
+          items:
+            $ref: "#/components/schemas/PollQuestion"
+        allow_abstain:
+          type: boolean
+          description: >-
+            Whether voters are allowed to abstain from voting.
+            When enabled, voters can submit their vote without selecting any choices.
+            Abstained votes are counted as responses but excluded from results calculation.
+        vote_responses:
+          type: array
+          description: The vote responses from every voter.
+          items:
+            $ref: "#/components/schemas/VoteService"
+    PollResults:
+      type: object
+      properties:
+        num_votes_cast:
+          type: integer
+          description: >-
+            The number of votes that were cast for the entire poll (one vote per user),
+            including abstained votes
+          readOnly: true
+        num_abstained:
+          type: integer
+          description: >-
+            The number of voters who explicitly chose to abstain from voting
+            (only applicable if allow_abstain was enabled on the poll)
+          readOnly: true
+        num_recipients:
+          type: integer
+          description: The number of recipients of the poll who were eligible to vote
+          readOnly: true
+        poll_end_time:
+          type: string
+          description: The time at which the poll closes
+          readOnly: true
+        poll_results:
+          type: array
+          description: The results of the poll for each question
+          items:
+            type: object
+            properties:
+              question:
+                $ref: "#/components/schemas/PollQuestion"
+              generic_choice_votes:
+                type: array
+                description: The number of votes that were cast for each choice (for generic voting)
+                items:
+                  $ref: "#/components/schemas/GenericChoiceVotes"
+              ranked_choice_votes:
+                type: array
+                description: >-
+                  The number of votes that were cast for each choice with
+                  rank counts (for ranked-choice voting)
+                items:
+                  $ref: "#/components/schemas/RankedChoiceVotes"
+              irv_round_summary:
+                type: array
+                description: >-
+                  The summary of an IRV election.
+                  Only populated if IRV is used in the ranked-choice voting.
+                items:
+                  $ref: "#/components/schemas/RoundSummary"
+              meek_stv_round_summary:
+                type: array
+                description: >-
+                  The summary of a Meek-STV election.
+                  Only populated if Meek-STV is used in the ranked-choice voting.
+                items:
+                  $ref: "#/components/schemas/MeekSTVRoundSummary"
+              ranked_choice_winner_info:
+                type: object
+                description: >-
+                  The choice winner of the poll question (for ranked-choice voting)
+                  Only populated for ranked-choice voting
+                properties:
+                  poll_choices:
+                    type: array
+                    description: The choice winner of the poll question (for ranked-choice voting)
+                    items:
+                      $ref: "#/components/schemas/PollChoice"
+                  condorcet_irv_used_for_eliminations:
+                    type: boolean
+                    description: >-
+                      Whether IRV was used for eliminations in the calculation of the choice's rank
+                      Only populated for condorcet_irv ranked-choice voting
+    GenericChoiceVotes:
+      type: object
+      properties:
+        choice_id:
+          type: string
+          description: UUID that represents the choice
+          readOnly: true
+        vote_count:
+          type: integer
+          description: The number of votes that were cast for this choice
+    RankedChoiceVotes:
+      type: object
+      properties:
+        choice_id:
+          type: string
+          description: UUID that represents the choice
+        condorcet_matrix:
+          type: array
+          description: >-
+            The condorcet matrix for the given choice. Populated in the format wins(losses) ex: 23(10)
+            Only populated for condorcet_irv ranked-choice voting
+          items:
+            type: object
+            properties:
+              choice_id:
+                type: string
+                description: The choice identifier that is being compared
+              other_choice_id:
+                type: string
+                description: The other choice identifier that is being compared
+              choice_id_wins:
+                type: integer
+                description: The number of times the choice identifier wins over the other choice identifier
+              other_choice_id_wins:
+                type: integer
+                description: The number of times the other choice identifier wins over the choice identifier
+              result:
+                type: string
+                description: >-
+                  The result of the matchup between the choice and the other choice identifier
+                  Format: wins(losses) ex: 23(10)
+                example: "23(10)"
+        rank_counts:
+          type: array
+          description: The number of votes that were cast for each rank
+          items:
+            type: object
+            properties:
+              rank:
+                type: integer
+                description: The rank of the choice
+              count:
+                type: integer
+                description: The number of votes that were cast for this rank
+    PollQuestion:
+      type: object
+      properties:
+        question_id:
+          type: string
+          description: >-
+            Unique identifier for this poll question
+        prompt:
+          type: string
+          description: >-
+            Prompt is a simple question that user should answer
+        type:
+          type: string
+          description: >-
+            One of several choices, single or multiple
+          enum:
+            - single_choice
+            - multiple_choice
+        choices:
+          type: array
+          description: >-
+            List of strings which will be presented as choices to the question
+          items:
+            $ref: "#/components/schemas/PollChoice"
+    PollAnswer:
+      type: object
+      properties:
+        question_id:
+          type: string
+          description: >-
+            Unique identifier for this poll question
+        prompt:
+          type: string
+          description: >-
+            Prompt is a simple question that user should answer
+        type:
+          type: string
+          description: >-
+            One of several choices, single or multiple
+          enum:
+            - single_choice
+            - multiple_choice
+        user_choice:
+          type: array
+          description: >-
+            For single_choice type, array should contain a single choice
+            For multiple_choice, array can contain one or more choices
+            Populated only if the poll is a generic poll type
+          items:
+            $ref: "#/components/schemas/PollChoiceAnswer"
+        ranked_user_choice:
+          type: array
+          description: >-
+            Populated only for ranked poll type
+          items:
+            $ref: "#/components/schemas/RankedPollChoiceAnswer"
+    PollAnswerPost:
+      type: object
+      properties:
+        question_id:
+          type: string
+          description: >-
+            Unique identifier for this poll question
+        choice_ids:
+          type: array
+          description: >-
+            For single_choice type, array should contain a single choice
+            For multiple_choice, array can contain one or more choices
+            Used only to submit the answer for a generic poll type
+          items:
+            type: string
+        ranked_choices:
+          type: array
+          description: >-
+            Used only to submit the answer for a ranked poll type
+          items:
+            type: object
+            properties:
+              choice_id:
+                type: string
+                description: >-
+                  Unique identifier for this question choice
+              choice_rank:
+                type: integer
+                description: >-
+                  The ranked position of the choice
+    PollChoiceAnswer:
+      type: object
+      properties:
+        choice_id:
+          type: string
+          description: Unique identifier for this question choice
+        choice_text:
+          type: string
+          description: The plain text response that this choice represents
+    RankedPollChoiceAnswer:
+      type: object
+      properties:
+        choice_id:
+          type: string
+          description: Unique identifier for this question choice
+        choice_text:
+          type: string
+          description: The plain text response that this choice represents
+        choice_rank:
+          type: integer
+          description: The ranked position of the choice (this is only relevant for ranked-choice voting)
+    PollChoice:
+      type: object
+      properties:
+        choice_id:
+          type: string
+          description: >-
+            Unique identifier for this question choice
+        choice_text:
+          type: string
+          description: >-
+            The plain text response that this choice represents
+    MeekSTVRoundSummary:
+      type: object
+      properties:
+        round_number:
+          type: integer
+          description: The round number
+        votes:
+          type: array
+          description: The votes for this round
+          items:
+            $ref: "#/components/schemas/MeekSTVRoundVote"
+        total_votes:
+          type: integer
+          description: The total number of votes for this round
+        exhausted_votes:
+          type: number
+          format: float
+          description: The number of votes that were exhausted in this round
+        threshold:
+          type: number
+          format: float
+          description: The threshold to be met for a choice to be elected
+        message:
+          type: string
+          description: The message that summarizes the results of this round
+        elected_choices:
+          type: array
+          description: The choices that were elected in this round
+          items:
+            $ref: "#/components/schemas/MeekSTVElectedChoice"
+        eliminated_choices:
+          type: array
+          description: The choices that were eliminated in this round
+          items:
+            $ref: "#/components/schemas/MeekSTVEliminatedChoice"
+        transferred_votes:
+          type: array
+          description: The choices that had votes transferred to them in this round
+          items:
+            $ref: "#/components/schemas/MeekSTVTransferredVotes"
+        surplus_votes:
+          type: array
+          description: The choices that had surplus votes transferred to them in this round
+          items:
+            $ref: "#/components/schemas/MeekSTVSurplusVotes"
+    MeekSTVRoundVote:
+      type: object
+      properties:
+        choice_id:
+          type: string
+          description: The choice identifier
+        vote_count:
+          type: number
+          format: float
+          description: The number of votes for this choice in this round
+    MeekSTVElectedChoice:
+      type: object
+      properties:
+        choice_id:
+          type: string
+          description: The choice identifier
+        vote_count:
+          type: number
+          format: float
+          description: The number of votes for this choice in this round
+        surplus_votes:
+          type: number
+          format: float
+          description: The number of surplus votes for this choice in this round
+    MeekSTVEliminatedChoice:
+      type: object
+      properties:
+        choice_id:
+          type: string
+          description: The choice identifier
+        vote_count:
+          type: number
+          format: float
+          description: The number of votes for this choice in this round
+    MeekSTVTransferredVotes:
+      type: object
+      properties:
+        choice_id:
+          type: string
+          description: The choice identifier
+        vote_count:
+          type: number
+          format: float
+          description: The number of votes transferred to this choice from the previous round
+    MeekSTVSurplusVotes:
+      type: object
+      properties:
+        choice_id:
+          type: string
+          description: The choice identifier
+        vote_count:
+          type: number
+          format: float
+          description: The number of votes received as surplus for this choice from the previous round
+    RoundSummary:
+      type: object
+      properties:
+        round_number:
+          type: integer
+          description: The round number
+        votes:
+          type: array
+          description: The votes for this round
+          items:
+            $ref: "#/components/schemas/RoundVote"
+        total_votes:
+          type: integer
+          description: The total number of votes for this round
+        min_votes:
+          type: integer
+          description: The minimum number of votes that's voted for the choice in this round
+        exhausted_votes:
+          type: integer
+          description: The number of votes that were exhausted in this round
+        transferred_votes:
+          type: array
+          description: >-
+            The number of votes that were transferred to other choices in this round
+          items:
+            $ref: "#/components/schemas/TransferredVotes"
+        threshold:
+          type: integer
+          description: The threshold to be met for a choice to be elected
+        eliminated_choice_id:
+          type: string
+          description: The choice that was eliminated in this round
+        message:
+          type: string
+          description: The message that summarizes the results of this round
+    TransferredVotes:
+      type: object
+      properties:
+        choice_id:
+          type: string
+          description: >-
+            The choice identifier that the votes were transferred to.
+        vote_count:
+          type: integer
+          description: >-
+            The number of votes transferred to the choice identifier.
+    RoundVote:
+      type: object
+      properties:
+        choice_id:
+          type: string
+          description: The choice identifier
+        vote_count:
+          type: integer
+          description: The number of votes for this choice in this round
+        percentage:
+          type: number
+          description: The percentage of votes for this choice in this round
+    VoteService:
+      type: object
+      properties:
+        vote_id:
+          type: string
+          description: >-
+            A UUID that uniquely represents a Vote object.
+            A vote is associated for a specific user who voted for a given poll.
+          readOnly: true
+        poll_id:
+          type: string
+          description: >-
+            The associated poll for this vote.
+          readOnly: true
+        project_id:
+          type: string
+          description: >-
+            The associated project for this vote.
+          readOnly: true
+        vote_status:
+          type: string
+          description: >-
+            The user's vote status, will be awaiting_response until user voted.
+            Once user votes, this should change to responded
+            Once the poll is past the end time status set to ended (if user has responded)
+            Set status to awaiting_response_but_poll_ended if poll is ended but user not responded
+          enum:
+            - awaiting_response
+            - responded
+            - ended
+            - awaiting_response_but_poll_ended
+        abstained:
+          type: boolean
+          description: >-
+            Whether the user chose to abstain from voting.
+            Will be true if the user explicitly checked the abstain option when submitting their vote
+            (when allow_abstain is enabled on the poll).
+        allow_abstain:
+          type: boolean
+          description: >-
+            Whether voters are allowed to abstain from voting for this poll.
+            This flag is inherited from the associated poll and indicates if the abstain option is available.
+        vote_creation_time:
+          type: string
+          description: >-
+            The time in UTC the user voted for this poll
+        user_name:
+          type: string
+          description: >-
+            The user voted for this poll
+        profile_picture:
+          type: string
+          description: >-
+            The user's profile picture URL
+        user_id:
+          type: string
+          description: >-
+            The user LFX identifier
+        user_email:
+          type: string
+          description: >-
+            The user LFX identifier
+        user_role:
+          type: string
+          description: >-
+            The user role associated with the committeed at the time of voting
+        user_voting_status:
+          type: string
+          description: >-
+            The user voting status at the time of voting
+          enum:
+            - Voting Rep
+            - Alternate Voting Rep
+            - Observer
+            - Emeritus
+        user_org_name:
+          type: string
+          description: >-
+            The user organization name at the time of voting
+        user_org_id:
+          type: string
+          description: >-
+            The user organization identifier at the time of voting
+        ses_message_id:
+          type: string
+          description: >-
+            A unique email message identifier returned from the SendEmail action
+        ses_message_last_sent_time:
+          type: string
+          description: >-
+            The last time that the recipient received the voting email.
+        ses_bounce_type:
+          type: string
+          description: (only applicable for bounced emails) The bounce type of the voting email
+            sent to the recipient, as determined by Amazon SES -
+            https://docs.aws.amazon.com/ses/latest/dg/notification-contents.html#bounce-types
+          enum:
+            - Undetermined
+            - Permanent
+            - Transient
+        ses_bounce_subtype:
+          type: string
+          description: (only applicable for bounced emails) The bounce subtype of the voting email
+            sent to the recipient, as determined by Amazon SES -
+            https://docs.aws.amazon.com/ses/latest/dg/notification-contents.html#bounce-types
+          enum:
+            - Undetermined
+            - General
+            - NoEmail
+            - Suppressed
+            - OnAccountSuppressionList
+            - MailboxFull
+            - MessageTooLarge
+            - ContentRejected
+            - AttachmentRejected
+        ses_complaint_exists:
+          type: boolean
+          description: Whether or not the ISP of the recipient sent a complaint regarding the vote email the
+            recipient received. This can happen when the recipient marks the email as spam or reports
+            the email address that sent the vote email. This helps to determine who should not be sent
+            the vote again.
+        ses_complaint_type:
+          type: string
+          description:
+            (only applicable when ses_complaint_exists field is set to true) The complaint type for the vote email
+            sent to the recipient, as assigned by the reporting ISP according to IANA -
+            https://docs.aws.amazon.com/ses/latest/dg/notification-contents.html#complaint-types
+          enum:
+            - abuse
+            - auth-failure
+            - fraud
+            - not-spam
+            - other
+            - virus
+        ses_complaint_date:
+          type: string
+          description: (only applicable when ses_complaint_exists field is set to true) The date in RFC3339 format of
+            the complaint regarding the vote email sent to the recipient.
+        ses_delivery_successful:
+          type: boolean
+          description: >-
+            Whether the voting email was successfully received by the recipient
+        ses_email_opened:
+          type: boolean
+          description: |
+            Whether or not the recipient opened the email sent from the vote email address.
+            Note that it is possible that the recipient opened the email but that it was not tracked
+            because their email server provider blocks the method by which Amazon SES tracks email opens.
+            Reference: https://docs.aws.amazon.com/ses/latest/dg/faqs-metrics.html
+        ses_email_opened_last_time:
+          type: string
+          description: |
+            The last time (in RFC3339 format) that the recipient opened the email sent from the vote email address.
+        ses_link_clicked:
+          type: boolean
+          description: |
+            Whether or not the recipient clicked the vote link in the email sent from the vote email address.
+            Note that it is possible that the recipient clicked the link but that it was not tracked
+            because their email server provider blocks the method by which Amazon SES tracks link clicks.
+            Reference: https://docs.aws.amazon.com/ses/latest/dg/faqs-metrics.html
+        ses_link_clicked_last_time:
+          type: string
+          description: |
+            The last time (in RFC3339 format) that the recipient clicked the vote link sent in the vote email.
+        poll_answers:
+          type: array
+          description: An answers that's part of this vote.
+          items:
+            $ref: "#/components/schemas/PollAnswer"
+    PollQuestionBody:
+      type: object
+      properties:
+        prompt:
+          type: string
+          description: >-
+            Prompt is a simple question that user should answer
+        type:
+          type: string
+          description: >-
+            One of several choices: single, multiple
+          enum:
+            - single_choice
+            - multiple_choice
+        choices:
+          type: array
+          description: >-
+            List of strings which will be presented as choices to the question
+          items:
+            type: string
+  requestBodies:
+    PollServicePost:
+      description: Request body for creating a new poll
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              poll_questions:
+                description: >-
+                  Questions related to this poll.
+                type: array
+                items:
+                  $ref: "#/components/schemas/PollQuestionBody"
+              name:
+                type: string
+                description: >-
+                  The poll name
+              description:
+                type: string
+                description: >-
+                  The description of the poll. This is a longer written format of what the poll is about.
+              end_time:
+                type: string
+                description: >-
+                  The end time in UTC after which the voting is not accepted for this poll.
+              pseudo_anonymity:
+                type: boolean
+                description: >-
+                  Whether or not pseudo-anonymity should be enabled for the poll. This setting
+                  when enabled means nothing on the backend, but is rather an indicator to the frontend
+                  that user data should be made anonymous or not shown.
+              project_id:
+                type: string
+                description: >-
+                  The unique project id
+              committee_id:
+                type: string
+                description: >-
+                  The unique committee id the polling should be created for.
+              committee_filters:
+                type: array
+                description: >-
+                  The committee filters that should be applied to the poll. It is a list of
+                  committee voting statuses that  a member must have one of in order to be able to vote.
+                items:
+                  type: string
+                  enum:
+                    - Voting Rep
+                    - Alternate Voting Rep
+                    - Observer
+                    - Emeritus
+              poll_type:
+                type: string
+                description: >-
+                  The type of poll that is being created.
+                  Defaults to generic if not specified. Generic poll is a non-ranked poll
+                  that's used for general voting and do not claim a winner.
+                  It just collects votes and shows the results.
+                enum:
+                  - generic
+                  - condorcet_irv
+                  - meek_stv
+              num_winners:
+                type: integer
+                minimum: 2
+                maximum: 10
+                description: >-
+                  The number of winners that should be selected for the poll.
+                  This is only applicable for ranked-choice meek-stv based voting.
+                  Defaults to 2 if not specified.
+                  This field is ignored for generic and all ranked-choice based voting except meek-stv.
+              allow_abstain:
+                type: boolean
+                description: >-
+                  Whether to allow voters to abstain from voting.
+                  When enabled, voters can submit their vote without selecting any choices.
+                  Abstained votes are counted as responses but excluded from results calculation.
+                  Defaults to false if not specified.
+    PollServicePut:
+      description: Request body for updating a poll
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              poll_questions:
+                description: >-
+                  Questions related to this poll.
+                type: array
+                items:
+                  $ref: "#/components/schemas/PollQuestionBody"
+              name:
+                type: string
+                description: >-
+                  The poll name
+              description:
+                type: string
+                description: >-
+                  The description of the poll. This is a longer written format of what the poll is about.
+              end_time:
+                type: string
+                description: >-
+                  The end time in UTC after which the voting is not accepted for this poll.
+              pseudo_anonymity:
+                type: boolean
+                description: >-
+                  Whether or not pseudo-anonymity should be enabled for the poll. This setting
+                  when enabled means nothing on the backend, but is rather an indicator to the frontend
+                  that user data should be made anonymous or not shown.
+              project_id:
+                type: string
+                description: >-
+                  The unique project id
+              committee_id:
+                type: string
+                description: >-
+                  The unique committee id the polling should be created for.
+    PollExtendPost:
+      description: Request body for extending a poll's end time
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              end_time:
+                type: string
+                description: >-
+                  The end time in UTC after which the voting is not accepted for this poll.
+    VoteServicePost:
+      description: Request body for submitting a new vote
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              vote_id:
+                type: string
+                description: >-
+                  The vote identifier
+              user_vote_content:
+                description: >-
+                  Answers related to this poll.
+                  Must be empty if abstain is true.
+                  Must not be empty if abstain is false.
+                type: array
+                items:
+                  $ref: "#/components/schemas/PollAnswerPost"
+              abstain:
+                type: boolean
+                description: >
+                  Explicit flag indicating the user chose to abstain from voting.
+                  When true, user_vote_content must be empty and poll must have allow_abstain enabled.
+                  When false or omitted, user must provide vote choices in user_vote_content.
+                  Defaults to false if not specified.
+    VoteServicePut:
+      description: Request body for updating a vote
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              user_vote_content:
+                description: >-
+                  Answers related to this poll.
+                  Must be empty if abstain is true.
+                  Must not be empty if abstain is false.
+                type: array
+                items:
+                  $ref: "#/components/schemas/PollAnswerPost"
+              abstain:
+                type: boolean
+                description: >-
+                  Explicit flag indicating the user chose to abstain from voting.
+                  When true, user_vote_content must be empty and poll must have allow_abstain enabled.
+                  When false or omitted, user must provide vote choices in user_vote_content.
+                  Defaults to false if not specified.
+    VotingBulkResendRequestBody:
+      description: Request body for the bulk resend poll endpoint
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              recipient_ids:
+                type: array
+                description: list of recipient IDs who should receive the poll email
+                items:
+                  type: string
+            example:
+              recipient_ids:
+                [
+                  "cba14f40-1636-11ec-9621-0242ac130002",
+                  "cba14f40-1636-11ec-9621-0242ac130003",
+                  "cba14f40-1636-11ec-9621-0242ac130004",
+                ]
+  responses:
+    205:
+      description: Pagination token has expired or is invalid.
+    400:
+      description: Invalid input
+    401:
+      description: Invalid or missing credentials
+    403:
+      description: Insufficient authentication scope for request
+    404:
+      description: Resource not found
+    409:
+      description: Resource conflicts with existing resource
+    413:
+      description: Response Too Large
+    422:
+      description: Unprocessable entity
+    429:
+      description: Too many requests
+    500:
+      description: Unexpected server error.
