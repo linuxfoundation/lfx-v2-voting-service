@@ -1,0 +1,39 @@
+# Copyright The Linux Foundation and each contributor to LFX.
+# SPDX-License-Identifier: MIT
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: lfx-v2-voting-service
+  namespace: {{ .Values.lfx.namespace }}
+spec:
+  parentRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: {{ .Values.traefik.gateway.name }}
+    namespace: {{ .Values.traefik.gateway.namespace }}
+  hostnames:
+  - "lfx-api.{{ .Values.lfx.domain }}"
+  rules:
+  # Main application endpoints (with authentication)
+  - matches:
+    - path:
+        type: Exact
+        value: /votes
+    - path:
+        type: PathPrefix
+        value: /votes/
+    {{- if .Values.heimdall.enabled }}
+    filters:
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: heimdall-forward-body
+    {{- end }}
+    backendRefs:
+    - group: ''
+      kind: Service
+      name: lfx-v2-voting-service
+      port: {{ .Values.service.port }}
+      weight: 1

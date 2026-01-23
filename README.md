@@ -98,7 +98,8 @@ export ITX_CLIENT_SECRET=<your-oauth2-client-secret>
 export JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL=test-user@example.com
 
 # Run the service
-./bin/voting-api
+make run
+make debug # or run with debug log level
 ```
 
 The service will start on <http://localhost:8080>
@@ -115,6 +116,53 @@ docker run -p 8080:8080 \
   -e ITX_CLIENT_SECRET=<your-client-secret> \
   lfx-v2-voting-service
 ```
+
+### Deploying with Helm
+
+The service includes Helm charts for Kubernetes deployment.
+
+#### Install with production values
+
+```bash
+make helm-install
+```
+
+#### Install with local development values
+
+```bash
+make helm-install-local
+```
+
+#### Preview Helm templates
+
+```bash
+# With production values
+make helm-templates
+
+# With local values
+make helm-templates-local
+```
+
+#### Uninstall
+
+```bash
+make helm-uninstall
+```
+
+#### Helm Configuration
+
+- **Chart location**: `charts/lfx-v2-voting-service/`
+- **Production values**: `charts/lfx-v2-voting-service/values.yaml`
+- **Local values**: `charts/lfx-v2-voting-service/values.local.yaml`
+
+The Helm chart includes:
+- Kubernetes Deployment with health checks
+- ClusterIP Service
+- ServiceAccount with RBAC
+- HTTPRoute (Gateway API) for Traefik ingress
+- Heimdall middleware for authentication
+- Heimdall RuleSet for authorization rules
+- OpenFGA integration (optional)
 
 ## API Endpoints
 

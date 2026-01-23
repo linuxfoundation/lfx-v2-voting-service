@@ -72,7 +72,7 @@ test-results/
 bin/
 build/
 dist/
-/meeting-api
+/voting-api
 
 # OS generated files
 .DS_Store
@@ -94,8 +94,10 @@ Thumbs.db
 # Local development
 docker-compose.override.yml
 docker-compose.local.yml
-values.local.yaml
 *.pid
+
+# Helm local values (keep template in charts/)
+/**/values.local.yaml
 
 # NATS related
 nats-server.log
