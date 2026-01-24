@@ -58,10 +58,6 @@ app:
     ITX_AUDIENCE:
       value: https://api.dev.itx.linuxfoundation.org/
 
-    # Environment designation
-    LFX_ENVIRONMENT:
-      value: prod
-
     # OpenTelemetry configuration (optional)
     # OTEL_SERVICE_NAME:
     #   value: lfx-v2-voting-service

@@ -22,7 +22,7 @@ This service provides a proxy layer between LFXv2 clients and the legacy ITX vot
 
 ### Project Structure
 
-```
+```text
 lfx-v2-voting-service/
 ├── api/voting/v1/design/    # Goa DSL API definitions
 ├── gen/                      # Generated Goa code (auto-generated)
@@ -156,6 +156,7 @@ make helm-uninstall
 - **Local values**: `charts/lfx-v2-voting-service/values.local.yaml`
 
 The Helm chart includes:
+
 - Kubernetes Deployment with health checks
 - ClusterIP Service
 - ServiceAccount with RBAC
@@ -164,75 +165,53 @@ The Helm chart includes:
 - Heimdall RuleSet for authorization rules
 - OpenFGA integration (optional)
 
-## API Endpoints
+## API Documentation
 
-### Health Checks
+### API Design Files
 
-- **GET /health** - Basic health check
-- **GET /livez** - Kubernetes liveness probe
-- **GET /readyz** - Kubernetes readiness probe
+The API is defined using [Goa DSL](https://goa.design/) (Design-first approach):
 
-### Voting Endpoints
+- **API Design**: [`api/voting/v1/design/voting.go`](api/voting/v1/design/voting.go) - Service and method definitions
+- **Type Definitions**: [`api/voting/v1/design/types.go`](api/voting/v1/design/types.go) - Request/response types
 
-#### Create Vote
+### Generating OpenAPI/Swagger Documentation
 
-**POST /votes**
+Generate OpenAPI 3.0 specification and Swagger UI:
 
-Creates a new vote (proxies to ITX `POST /voting/poll`).
+```bash
+# Generate API code and OpenAPI spec
+make apigen
 
-**Authentication**: Required (JWT Bearer token)
-
-**Request Body**:
-
-```json
-{
-  "name": "Q1 2026 Technical Steering Committee Election",
-  "description": "Vote for the TSC members for Q1 2026",
-  "end_time": "2026-02-15T23:59:59Z",
-  "project_id": "a09P000000DsCBuIRT",
-  "committee_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
-  "committee_filters": ["Voting Rep", "Alternate Voting Rep"],
-  "poll_questions": [
-    {
-      "prompt": "Select TSC members (up to 5)",
-      "type": "multiple_choice",
-      "choices": [
-        {"choice_text": "Alice Johnson"},
-        {"choice_text": "Bob Smith"},
-        {"choice_text": "Carol White"}
-      ]
-    }
-  ],
-  "pseudo_anonymity": false,
-  "poll_type": "generic",
-  "allow_abstain": false
-}
+# The generated files will be in:
+# - gen/http/openapi.json  - OpenAPI 3.0 JSON spec
+# - gen/http/openapi.yaml  - OpenAPI 3.0 YAML spec
+# - gen/http/openapi3.json - OpenAPI 3.0 JSON spec (alternative)
+# - gen/http/openapi3.yaml - OpenAPI 3.0 YAML spec (alternative)
 ```
 
-**Response** (201 Created):
+### Viewing API Documentation
 
-```json
-{
-  "poll_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
-  "name": "Q1 2026 Technical Steering Committee Election",
-  "description": "Vote for the TSC members for Q1 2026",
-  "status": "disabled",
-  "creation_time": "2026-01-22T10:00:00Z",
-  "end_time": "2026-02-15T23:59:59Z",
-  "project_id": "a09P000000DsCBuIRT",
-  "committee_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
-  "poll_questions": [...]
-}
+To view the interactive Swagger UI documentation:
+
+1. **Generate the OpenAPI spec**: `make apigen`
+2. **Start the service**: `make run`
+3. **Access Swagger UI**: Use a tool like [Swagger Editor](https://editor.swagger.io/) and import `gen/http/openapi.yaml`
+
+Alternatively, you can serve the Swagger UI locally:
+
+```bash
+# Using npx and swagger-ui-watcher
+npx swagger-ui-watcher gen/http/openapi.yaml
 ```
 
-**Error Responses**:
+### Available Endpoints
 
-- `400 Bad Request` - Invalid request payload
-- `401 Unauthorized` - Invalid or missing JWT token
-- `403 Forbidden` - Insufficient permissions
-- `409 Conflict` - Vote already exists
-- `500 Internal Server Error` - Server error
-- `503 Service Unavailable` - ITX service unavailable
+The service provides the following endpoints:
+
+- **Health Checks**: `/health`, `/livez`, `/readyz`
+- **Voting Operations**: `POST`, `GET`, `PUT`, `DELETE` operations on `/api/v1/votes`
+
+For detailed request/response schemas, authentication requirements, and examples, refer to the generated OpenAPI specification or the Goa design files.
 
 ## Development
 
