@@ -31,3 +31,18 @@ func UpdateVoteVotingPath(voteUID string) string {
 func DeleteVoteVotingPath(voteUID string) string {
 	return fmt.Sprintf("/votes/%v", voteUID)
 }
+
+// ExtendVoteVotingPath returns the URL path to the voting service extend_vote HTTP endpoint.
+func ExtendVoteVotingPath(voteUID string) string {
+	return fmt.Sprintf("/votes/%v/extend", voteUID)
+}
+
+// EnableVoteVotingPath returns the URL path to the voting service enable_vote HTTP endpoint.
+func EnableVoteVotingPath(voteUID string) string {
+	return fmt.Sprintf("/votes/%v/enable", voteUID)
+}
+
+// BulkResendVoteVotingPath returns the URL path to the voting service bulk_resend_vote HTTP endpoint.
+func BulkResendVoteVotingPath(voteUID string) string {
+	return fmt.Sprintf("/votes/%v/bulk_resend", voteUID)
+}

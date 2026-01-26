@@ -85,6 +85,20 @@ type UpdateVoteRequestBody struct {
 	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
 }
 
+// ExtendVoteRequestBody is the type of the "voting" service "extend_vote"
+// endpoint HTTP request body.
+type ExtendVoteRequestBody struct {
+	// End time in RFC3339 format
+	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+}
+
+// BulkResendVoteRequestBody is the type of the "voting" service
+// "bulk_resend_vote" endpoint HTTP request body.
+type BulkResendVoteRequestBody struct {
+	// List of recipient IDs to resend vote email to
+	RecipientIds []string `form:"recipient_ids,omitempty" json:"recipient_ids,omitempty" xml:"recipient_ids,omitempty"`
+}
+
 // CreateVoteResponseBody is the type of the "voting" service "create_vote"
 // endpoint HTTP response body.
 type CreateVoteResponseBody struct {
@@ -166,6 +180,45 @@ type GetVoteResponseBody struct {
 // UpdateVoteResponseBody is the type of the "voting" service "update_vote"
 // endpoint HTTP response body.
 type UpdateVoteResponseBody struct {
+	// Vote identifier
+	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
+	// Vote name
+	Name string `form:"name" json:"name" xml:"name"`
+	// Vote description
+	Description string `form:"description" json:"description" xml:"description"`
+	// Creation time
+	CreationTime *string `form:"creation_time,omitempty" json:"creation_time,omitempty" xml:"creation_time,omitempty"`
+	// Last modified time
+	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
+	// End time
+	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// Vote status
+	Status string `form:"status" json:"status" xml:"status"`
+	// Project UID
+	ProjectUID string `form:"project_uid" json:"project_uid" xml:"project_uid"`
+	// Committee UID
+	CommitteeUID string `form:"committee_uid" json:"committee_uid" xml:"committee_uid"`
+	// Committee name
+	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee type
+	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
+	// Committee voting status
+	CommitteeVotingStatus *bool `form:"committee_voting_status,omitempty" json:"committee_voting_status,omitempty" xml:"committee_voting_status,omitempty"`
+	// Pseudo-anonymity enabled
+	PseudoAnonymity *bool `form:"pseudo_anonymity,omitempty" json:"pseudo_anonymity,omitempty" xml:"pseudo_anonymity,omitempty"`
+	// Total invitations sent
+	TotalVotingRequestInvitations *int `form:"total_voting_request_invitations,omitempty" json:"total_voting_request_invitations,omitempty" xml:"total_voting_request_invitations,omitempty"`
+	// Responses received
+	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
+	// Vote questions
+	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Allow abstain
+	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+}
+
+// ExtendVoteResponseBody is the type of the "voting" service "extend_vote"
+// endpoint HTTP response body.
+type ExtendVoteResponseBody struct {
 	// Vote identifier
 	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
 	// Vote name
@@ -421,6 +474,172 @@ type DeleteVoteUnauthorizedResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// ExtendVoteBadRequestResponseBody is the type of the "voting" service
+// "extend_vote" endpoint HTTP response body for the "BadRequest" error.
+type ExtendVoteBadRequestResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// ExtendVoteForbiddenResponseBody is the type of the "voting" service
+// "extend_vote" endpoint HTTP response body for the "Forbidden" error.
+type ExtendVoteForbiddenResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// ExtendVoteInternalServerErrorResponseBody is the type of the "voting"
+// service "extend_vote" endpoint HTTP response body for the
+// "InternalServerError" error.
+type ExtendVoteInternalServerErrorResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// ExtendVoteNotFoundResponseBody is the type of the "voting" service
+// "extend_vote" endpoint HTTP response body for the "NotFound" error.
+type ExtendVoteNotFoundResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// ExtendVoteServiceUnavailableResponseBody is the type of the "voting" service
+// "extend_vote" endpoint HTTP response body for the "ServiceUnavailable" error.
+type ExtendVoteServiceUnavailableResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// ExtendVoteUnauthorizedResponseBody is the type of the "voting" service
+// "extend_vote" endpoint HTTP response body for the "Unauthorized" error.
+type ExtendVoteUnauthorizedResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// EnableVoteBadRequestResponseBody is the type of the "voting" service
+// "enable_vote" endpoint HTTP response body for the "BadRequest" error.
+type EnableVoteBadRequestResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// EnableVoteForbiddenResponseBody is the type of the "voting" service
+// "enable_vote" endpoint HTTP response body for the "Forbidden" error.
+type EnableVoteForbiddenResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// EnableVoteInternalServerErrorResponseBody is the type of the "voting"
+// service "enable_vote" endpoint HTTP response body for the
+// "InternalServerError" error.
+type EnableVoteInternalServerErrorResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// EnableVoteNotFoundResponseBody is the type of the "voting" service
+// "enable_vote" endpoint HTTP response body for the "NotFound" error.
+type EnableVoteNotFoundResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// EnableVoteServiceUnavailableResponseBody is the type of the "voting" service
+// "enable_vote" endpoint HTTP response body for the "ServiceUnavailable" error.
+type EnableVoteServiceUnavailableResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// EnableVoteUnauthorizedResponseBody is the type of the "voting" service
+// "enable_vote" endpoint HTTP response body for the "Unauthorized" error.
+type EnableVoteUnauthorizedResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// BulkResendVoteBadRequestResponseBody is the type of the "voting" service
+// "bulk_resend_vote" endpoint HTTP response body for the "BadRequest" error.
+type BulkResendVoteBadRequestResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// BulkResendVoteForbiddenResponseBody is the type of the "voting" service
+// "bulk_resend_vote" endpoint HTTP response body for the "Forbidden" error.
+type BulkResendVoteForbiddenResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// BulkResendVoteInternalServerErrorResponseBody is the type of the "voting"
+// service "bulk_resend_vote" endpoint HTTP response body for the
+// "InternalServerError" error.
+type BulkResendVoteInternalServerErrorResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// BulkResendVoteNotFoundResponseBody is the type of the "voting" service
+// "bulk_resend_vote" endpoint HTTP response body for the "NotFound" error.
+type BulkResendVoteNotFoundResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// BulkResendVoteServiceUnavailableResponseBody is the type of the "voting"
+// service "bulk_resend_vote" endpoint HTTP response body for the
+// "ServiceUnavailable" error.
+type BulkResendVoteServiceUnavailableResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// BulkResendVoteUnauthorizedResponseBody is the type of the "voting" service
+// "bulk_resend_vote" endpoint HTTP response body for the "Unauthorized" error.
+type BulkResendVoteUnauthorizedResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // PollQuestionResponseBody is used to define fields on response body types.
 type PollQuestionResponseBody struct {
 	// Question identifier
@@ -539,6 +758,40 @@ func NewGetVoteResponseBody(res *voting.VoteResult) *GetVoteResponseBody {
 // the "update_vote" endpoint of the "voting" service.
 func NewUpdateVoteResponseBody(res *voting.VoteResult) *UpdateVoteResponseBody {
 	body := &UpdateVoteResponseBody{
+		VoteUID:                       res.VoteUID,
+		Name:                          res.Name,
+		Description:                   res.Description,
+		CreationTime:                  res.CreationTime,
+		LastModifiedTime:              res.LastModifiedTime,
+		EndTime:                       res.EndTime,
+		Status:                        res.Status,
+		ProjectUID:                    res.ProjectUID,
+		CommitteeUID:                  res.CommitteeUID,
+		CommitteeName:                 res.CommitteeName,
+		CommitteeType:                 res.CommitteeType,
+		CommitteeVotingStatus:         res.CommitteeVotingStatus,
+		PseudoAnonymity:               res.PseudoAnonymity,
+		TotalVotingRequestInvitations: res.TotalVotingRequestInvitations,
+		NumResponseReceived:           res.NumResponseReceived,
+		AllowAbstain:                  res.AllowAbstain,
+	}
+	if res.PollQuestions != nil {
+		body.PollQuestions = make([]*PollQuestionResponseBody, len(res.PollQuestions))
+		for i, val := range res.PollQuestions {
+			if val == nil {
+				body.PollQuestions[i] = nil
+				continue
+			}
+			body.PollQuestions[i] = marshalVotingPollQuestionToPollQuestionResponseBody(val)
+		}
+	}
+	return body
+}
+
+// NewExtendVoteResponseBody builds the HTTP response body from the result of
+// the "extend_vote" endpoint of the "voting" service.
+func NewExtendVoteResponseBody(res *voting.VoteResult) *ExtendVoteResponseBody {
+	body := &ExtendVoteResponseBody{
 		VoteUID:                       res.VoteUID,
 		Name:                          res.Name,
 		Description:                   res.Description,
@@ -809,6 +1062,188 @@ func NewDeleteVoteUnauthorizedResponseBody(res *voting.UnauthorizedError) *Delet
 	return body
 }
 
+// NewExtendVoteBadRequestResponseBody builds the HTTP response body from the
+// result of the "extend_vote" endpoint of the "voting" service.
+func NewExtendVoteBadRequestResponseBody(res *voting.BadRequestError) *ExtendVoteBadRequestResponseBody {
+	body := &ExtendVoteBadRequestResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewExtendVoteForbiddenResponseBody builds the HTTP response body from the
+// result of the "extend_vote" endpoint of the "voting" service.
+func NewExtendVoteForbiddenResponseBody(res *voting.ForbiddenError) *ExtendVoteForbiddenResponseBody {
+	body := &ExtendVoteForbiddenResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewExtendVoteInternalServerErrorResponseBody builds the HTTP response body
+// from the result of the "extend_vote" endpoint of the "voting" service.
+func NewExtendVoteInternalServerErrorResponseBody(res *voting.InternalServerError) *ExtendVoteInternalServerErrorResponseBody {
+	body := &ExtendVoteInternalServerErrorResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewExtendVoteNotFoundResponseBody builds the HTTP response body from the
+// result of the "extend_vote" endpoint of the "voting" service.
+func NewExtendVoteNotFoundResponseBody(res *voting.NotFoundError) *ExtendVoteNotFoundResponseBody {
+	body := &ExtendVoteNotFoundResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewExtendVoteServiceUnavailableResponseBody builds the HTTP response body
+// from the result of the "extend_vote" endpoint of the "voting" service.
+func NewExtendVoteServiceUnavailableResponseBody(res *voting.ServiceUnavailableError) *ExtendVoteServiceUnavailableResponseBody {
+	body := &ExtendVoteServiceUnavailableResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewExtendVoteUnauthorizedResponseBody builds the HTTP response body from the
+// result of the "extend_vote" endpoint of the "voting" service.
+func NewExtendVoteUnauthorizedResponseBody(res *voting.UnauthorizedError) *ExtendVoteUnauthorizedResponseBody {
+	body := &ExtendVoteUnauthorizedResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewEnableVoteBadRequestResponseBody builds the HTTP response body from the
+// result of the "enable_vote" endpoint of the "voting" service.
+func NewEnableVoteBadRequestResponseBody(res *voting.BadRequestError) *EnableVoteBadRequestResponseBody {
+	body := &EnableVoteBadRequestResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewEnableVoteForbiddenResponseBody builds the HTTP response body from the
+// result of the "enable_vote" endpoint of the "voting" service.
+func NewEnableVoteForbiddenResponseBody(res *voting.ForbiddenError) *EnableVoteForbiddenResponseBody {
+	body := &EnableVoteForbiddenResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewEnableVoteInternalServerErrorResponseBody builds the HTTP response body
+// from the result of the "enable_vote" endpoint of the "voting" service.
+func NewEnableVoteInternalServerErrorResponseBody(res *voting.InternalServerError) *EnableVoteInternalServerErrorResponseBody {
+	body := &EnableVoteInternalServerErrorResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewEnableVoteNotFoundResponseBody builds the HTTP response body from the
+// result of the "enable_vote" endpoint of the "voting" service.
+func NewEnableVoteNotFoundResponseBody(res *voting.NotFoundError) *EnableVoteNotFoundResponseBody {
+	body := &EnableVoteNotFoundResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewEnableVoteServiceUnavailableResponseBody builds the HTTP response body
+// from the result of the "enable_vote" endpoint of the "voting" service.
+func NewEnableVoteServiceUnavailableResponseBody(res *voting.ServiceUnavailableError) *EnableVoteServiceUnavailableResponseBody {
+	body := &EnableVoteServiceUnavailableResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewEnableVoteUnauthorizedResponseBody builds the HTTP response body from the
+// result of the "enable_vote" endpoint of the "voting" service.
+func NewEnableVoteUnauthorizedResponseBody(res *voting.UnauthorizedError) *EnableVoteUnauthorizedResponseBody {
+	body := &EnableVoteUnauthorizedResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewBulkResendVoteBadRequestResponseBody builds the HTTP response body from
+// the result of the "bulk_resend_vote" endpoint of the "voting" service.
+func NewBulkResendVoteBadRequestResponseBody(res *voting.BadRequestError) *BulkResendVoteBadRequestResponseBody {
+	body := &BulkResendVoteBadRequestResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewBulkResendVoteForbiddenResponseBody builds the HTTP response body from
+// the result of the "bulk_resend_vote" endpoint of the "voting" service.
+func NewBulkResendVoteForbiddenResponseBody(res *voting.ForbiddenError) *BulkResendVoteForbiddenResponseBody {
+	body := &BulkResendVoteForbiddenResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewBulkResendVoteInternalServerErrorResponseBody builds the HTTP response
+// body from the result of the "bulk_resend_vote" endpoint of the "voting"
+// service.
+func NewBulkResendVoteInternalServerErrorResponseBody(res *voting.InternalServerError) *BulkResendVoteInternalServerErrorResponseBody {
+	body := &BulkResendVoteInternalServerErrorResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewBulkResendVoteNotFoundResponseBody builds the HTTP response body from the
+// result of the "bulk_resend_vote" endpoint of the "voting" service.
+func NewBulkResendVoteNotFoundResponseBody(res *voting.NotFoundError) *BulkResendVoteNotFoundResponseBody {
+	body := &BulkResendVoteNotFoundResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewBulkResendVoteServiceUnavailableResponseBody builds the HTTP response
+// body from the result of the "bulk_resend_vote" endpoint of the "voting"
+// service.
+func NewBulkResendVoteServiceUnavailableResponseBody(res *voting.ServiceUnavailableError) *BulkResendVoteServiceUnavailableResponseBody {
+	body := &BulkResendVoteServiceUnavailableResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewBulkResendVoteUnauthorizedResponseBody builds the HTTP response body from
+// the result of the "bulk_resend_vote" endpoint of the "voting" service.
+func NewBulkResendVoteUnauthorizedResponseBody(res *voting.UnauthorizedError) *BulkResendVoteUnauthorizedResponseBody {
+	body := &BulkResendVoteUnauthorizedResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewCreateVotePayload builds a voting service create_vote endpoint payload.
 func NewCreateVotePayload(body *CreateVoteRequestBody, token *string) *voting.CreateVotePayload {
 	v := &voting.CreateVotePayload{
@@ -962,6 +1397,40 @@ func NewUpdateVotePayload(body *UpdateVoteRequestBody, voteUID string, token *st
 // NewDeleteVotePayload builds a voting service delete_vote endpoint payload.
 func NewDeleteVotePayload(voteUID string, token *string) *voting.DeleteVotePayload {
 	v := &voting.DeleteVotePayload{}
+	v.VoteUID = voteUID
+	v.Token = token
+
+	return v
+}
+
+// NewExtendVotePayload builds a voting service extend_vote endpoint payload.
+func NewExtendVotePayload(body *ExtendVoteRequestBody, voteUID string, token *string) *voting.ExtendVotePayload {
+	v := &voting.ExtendVotePayload{
+		EndTime: *body.EndTime,
+	}
+	v.VoteUID = voteUID
+	v.Token = token
+
+	return v
+}
+
+// NewEnableVotePayload builds a voting service enable_vote endpoint payload.
+func NewEnableVotePayload(voteUID string, token *string) *voting.EnableVotePayload {
+	v := &voting.EnableVotePayload{}
+	v.VoteUID = voteUID
+	v.Token = token
+
+	return v
+}
+
+// NewBulkResendVotePayload builds a voting service bulk_resend_vote endpoint
+// payload.
+func NewBulkResendVotePayload(body *BulkResendVoteRequestBody, voteUID string, token *string) *voting.BulkResendVotePayload {
+	v := &voting.BulkResendVotePayload{}
+	v.RecipientIds = make([]string, len(body.RecipientIds))
+	for i, val := range body.RecipientIds {
+		v.RecipientIds[i] = val
+	}
 	v.VoteUID = voteUID
 	v.Token = token
 
@@ -1146,6 +1615,27 @@ func ValidateUpdateVoteRequestBody(body *UpdateVoteRequestBody) (err error) {
 		if *body.WinningThresholdPercentage > 100 {
 			err = goa.MergeErrors(err, goa.InvalidRangeError("body.winning_threshold_percentage", *body.WinningThresholdPercentage, 100, false))
 		}
+	}
+	return
+}
+
+// ValidateExtendVoteRequestBody runs the validations defined on
+// extend_vote_request_body
+func ValidateExtendVoteRequestBody(body *ExtendVoteRequestBody) (err error) {
+	if body.EndTime == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("end_time", "body"))
+	}
+	if body.EndTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", *body.EndTime, goa.FormatDateTime))
+	}
+	return
+}
+
+// ValidateBulkResendVoteRequestBody runs the validations defined on
+// bulk_resend_vote_request_body
+func ValidateBulkResendVoteRequestBody(body *BulkResendVoteRequestBody) (err error) {
+	if body.RecipientIds == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("recipient_ids", "body"))
 	}
 	return
 }

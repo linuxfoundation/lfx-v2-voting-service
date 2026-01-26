@@ -136,4 +136,97 @@ spec:
           config:
             values:
               aud: {{ .Values.app.audience }}
+
+    - id: "rule:lfx:lfx-v2-voting-service:votes:vote:extend"
+      match:
+        methods:
+          - POST
+        routes:
+          - path: /votes/:id/extend
+      allow_encoded_slashes: "off"
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        {{- if .Values.openfga.enabled }}
+        - authorizer: openfga_check
+          config:
+            values:
+              relation: writer
+              object: "vote:{{ "{{- .Request.URL.Captures.id -}}" }}"
+        {{- else }}
+        {{/*
+          When OpenFGA is disabled, allow all requests
+          (Only meant for *local development* because OpenFGA should be enabled when deployed)
+        */}}
+        - authorizer: allow_all
+        {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
+
+    - id: "rule:lfx:lfx-v2-voting-service:votes:vote:enable"
+      match:
+        methods:
+          - PUT
+        routes:
+          - path: /votes/:id/enable
+      allow_encoded_slashes: "off"
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        {{- if .Values.openfga.enabled }}
+        - authorizer: openfga_check
+          config:
+            values:
+              relation: writer
+              object: "vote:{{ "{{- .Request.URL.Captures.id -}}" }}"
+        {{- else }}
+        {{/*
+          When OpenFGA is disabled, allow all requests
+          (Only meant for *local development* because OpenFGA should be enabled when deployed)
+        */}}
+        - authorizer: allow_all
+        {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
+
+    - id: "rule:lfx:lfx-v2-voting-service:votes:vote:bulk_resend"
+      match:
+        methods:
+          - POST
+        routes:
+          - path: /votes/:id/bulk_resend
+      allow_encoded_slashes: "off"
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        {{- if .Values.openfga.enabled }}
+        - authorizer: openfga_check
+          config:
+            values:
+              relation: writer
+              object: "vote:{{ "{{- .Request.URL.Captures.id -}}" }}"
+        {{- else }}
+        {{/*
+          When OpenFGA is disabled, allow all requests
+          (Only meant for *local development* because OpenFGA should be enabled when deployed)
+        */}}
+        - authorizer: allow_all
+        {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
 {{- end }}

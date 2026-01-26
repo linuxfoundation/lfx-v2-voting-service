@@ -24,7 +24,7 @@ import (
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() []string {
 	return []string{
-		"voting (create-vote|get-vote|update-vote|delete-vote)",
+		"voting (create-vote|get-vote|update-vote|delete-vote|extend-vote|enable-vote|bulk-resend-vote)",
 	}
 }
 
@@ -62,12 +62,29 @@ func ParseEndpoint(
 		votingDeleteVoteFlags       = flag.NewFlagSet("delete-vote", flag.ExitOnError)
 		votingDeleteVoteVoteUIDFlag = votingDeleteVoteFlags.String("vote-uid", "REQUIRED", "Vote UID")
 		votingDeleteVoteTokenFlag   = votingDeleteVoteFlags.String("token", "", "")
+
+		votingExtendVoteFlags       = flag.NewFlagSet("extend-vote", flag.ExitOnError)
+		votingExtendVoteBodyFlag    = votingExtendVoteFlags.String("body", "REQUIRED", "")
+		votingExtendVoteVoteUIDFlag = votingExtendVoteFlags.String("vote-uid", "REQUIRED", "Vote UID")
+		votingExtendVoteTokenFlag   = votingExtendVoteFlags.String("token", "", "")
+
+		votingEnableVoteFlags       = flag.NewFlagSet("enable-vote", flag.ExitOnError)
+		votingEnableVoteVoteUIDFlag = votingEnableVoteFlags.String("vote-uid", "REQUIRED", "Vote UID")
+		votingEnableVoteTokenFlag   = votingEnableVoteFlags.String("token", "", "")
+
+		votingBulkResendVoteFlags       = flag.NewFlagSet("bulk-resend-vote", flag.ExitOnError)
+		votingBulkResendVoteBodyFlag    = votingBulkResendVoteFlags.String("body", "REQUIRED", "")
+		votingBulkResendVoteVoteUIDFlag = votingBulkResendVoteFlags.String("vote-uid", "REQUIRED", "Vote UID")
+		votingBulkResendVoteTokenFlag   = votingBulkResendVoteFlags.String("token", "", "")
 	)
 	votingFlags.Usage = votingUsage
 	votingCreateVoteFlags.Usage = votingCreateVoteUsage
 	votingGetVoteFlags.Usage = votingGetVoteUsage
 	votingUpdateVoteFlags.Usage = votingUpdateVoteUsage
 	votingDeleteVoteFlags.Usage = votingDeleteVoteUsage
+	votingExtendVoteFlags.Usage = votingExtendVoteUsage
+	votingEnableVoteFlags.Usage = votingEnableVoteUsage
+	votingBulkResendVoteFlags.Usage = votingBulkResendVoteUsage
 
 	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
 		return nil, nil, err
@@ -115,6 +132,15 @@ func ParseEndpoint(
 			case "delete-vote":
 				epf = votingDeleteVoteFlags
 
+			case "extend-vote":
+				epf = votingExtendVoteFlags
+
+			case "enable-vote":
+				epf = votingEnableVoteFlags
+
+			case "bulk-resend-vote":
+				epf = votingBulkResendVoteFlags
+
 			}
 
 		}
@@ -152,6 +178,15 @@ func ParseEndpoint(
 			case "delete-vote":
 				endpoint = c.DeleteVote()
 				data, err = votingc.BuildDeleteVotePayload(*votingDeleteVoteVoteUIDFlag, *votingDeleteVoteTokenFlag)
+			case "extend-vote":
+				endpoint = c.ExtendVote()
+				data, err = votingc.BuildExtendVotePayload(*votingExtendVoteBodyFlag, *votingExtendVoteVoteUIDFlag, *votingExtendVoteTokenFlag)
+			case "enable-vote":
+				endpoint = c.EnableVote()
+				data, err = votingc.BuildEnableVotePayload(*votingEnableVoteVoteUIDFlag, *votingEnableVoteTokenFlag)
+			case "bulk-resend-vote":
+				endpoint = c.BulkResendVote()
+				data, err = votingc.BuildBulkResendVotePayload(*votingBulkResendVoteBodyFlag, *votingBulkResendVoteVoteUIDFlag, *votingBulkResendVoteTokenFlag)
 			}
 		}
 	}
@@ -171,6 +206,9 @@ func votingUsage() {
 	fmt.Fprintln(os.Stderr, `    get-vote: Get vote details (proxies to ITX GET /voting/poll/{poll_id})`)
 	fmt.Fprintln(os.Stderr, `    update-vote: Update vote (proxies to ITX PUT /voting/poll/{poll_id}). Only allowed when status is 'disabled'`)
 	fmt.Fprintln(os.Stderr, `    delete-vote: Delete vote (proxies to ITX DELETE /voting/poll/{poll_id}). Only allowed when status is 'disabled'`)
+	fmt.Fprintln(os.Stderr, `    extend-vote: Extend a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)`)
+	fmt.Fprintln(os.Stderr, `    enable-vote: Enable a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)`)
+	fmt.Fprintln(os.Stderr, `    bulk-resend-vote: Bulk resend vote email to select recipients (proxies to ITX POST /voting/poll/{poll_id}/bulk_resend)`)
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Additional help:")
 	fmt.Fprintf(os.Stderr, "    %s voting COMMAND --help\n", os.Args[0])
@@ -255,4 +293,68 @@ func votingDeleteVoteUsage() {
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
 	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "voting delete-vote --vote-uid \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\" --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
+}
+
+func votingExtendVoteUsage() {
+	// Header with flags
+	fmt.Fprintf(os.Stderr, "%s [flags] voting extend-vote", os.Args[0])
+	fmt.Fprint(os.Stderr, " -body JSON")
+	fmt.Fprint(os.Stderr, " -vote-uid STRING")
+	fmt.Fprint(os.Stderr, " -token STRING")
+	fmt.Fprintln(os.Stderr)
+
+	// Description
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, `Extend a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)`)
+
+	// Flags list
+	fmt.Fprintln(os.Stderr, `    -body JSON: `)
+	fmt.Fprintln(os.Stderr, `    -vote-uid STRING: Vote UID`)
+	fmt.Fprintln(os.Stderr, `    -token STRING: `)
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Example:")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "voting extend-vote --body '{\n      \"end_time\": \"2026-02-15T23:59:59Z\"\n   }' --vote-uid \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\" --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
+}
+
+func votingEnableVoteUsage() {
+	// Header with flags
+	fmt.Fprintf(os.Stderr, "%s [flags] voting enable-vote", os.Args[0])
+	fmt.Fprint(os.Stderr, " -vote-uid STRING")
+	fmt.Fprint(os.Stderr, " -token STRING")
+	fmt.Fprintln(os.Stderr)
+
+	// Description
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, `Enable a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)`)
+
+	// Flags list
+	fmt.Fprintln(os.Stderr, `    -vote-uid STRING: Vote UID`)
+	fmt.Fprintln(os.Stderr, `    -token STRING: `)
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Example:")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "voting enable-vote --vote-uid \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\" --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
+}
+
+func votingBulkResendVoteUsage() {
+	// Header with flags
+	fmt.Fprintf(os.Stderr, "%s [flags] voting bulk-resend-vote", os.Args[0])
+	fmt.Fprint(os.Stderr, " -body JSON")
+	fmt.Fprint(os.Stderr, " -vote-uid STRING")
+	fmt.Fprint(os.Stderr, " -token STRING")
+	fmt.Fprintln(os.Stderr)
+
+	// Description
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, `Bulk resend vote email to select recipients (proxies to ITX POST /voting/poll/{poll_id}/bulk_resend)`)
+
+	// Flags list
+	fmt.Fprintln(os.Stderr, `    -body JSON: `)
+	fmt.Fprintln(os.Stderr, `    -vote-uid STRING: Vote UID`)
+	fmt.Fprintln(os.Stderr, `    -token STRING: `)
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Example:")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "voting bulk-resend-vote --body '{\n      \"recipient_ids\": [\n         \"cba14f40-1636-11ec-9621-0242ac130002\",\n         \"cba14f40-1636-11ec-9621-0242ac130003\"\n      ]\n   }' --vote-uid \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\" --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
 }

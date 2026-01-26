@@ -16,19 +16,25 @@ import (
 
 // Client is the "voting" service client.
 type Client struct {
-	CreateVoteEndpoint goa.Endpoint
-	GetVoteEndpoint    goa.Endpoint
-	UpdateVoteEndpoint goa.Endpoint
-	DeleteVoteEndpoint goa.Endpoint
+	CreateVoteEndpoint     goa.Endpoint
+	GetVoteEndpoint        goa.Endpoint
+	UpdateVoteEndpoint     goa.Endpoint
+	DeleteVoteEndpoint     goa.Endpoint
+	ExtendVoteEndpoint     goa.Endpoint
+	EnableVoteEndpoint     goa.Endpoint
+	BulkResendVoteEndpoint goa.Endpoint
 }
 
 // NewClient initializes a "voting" service client given the endpoints.
-func NewClient(createVote, getVote, updateVote, deleteVote goa.Endpoint) *Client {
+func NewClient(createVote, getVote, updateVote, deleteVote, extendVote, enableVote, bulkResendVote goa.Endpoint) *Client {
 	return &Client{
-		CreateVoteEndpoint: createVote,
-		GetVoteEndpoint:    getVote,
-		UpdateVoteEndpoint: updateVote,
-		DeleteVoteEndpoint: deleteVote,
+		CreateVoteEndpoint:     createVote,
+		GetVoteEndpoint:        getVote,
+		UpdateVoteEndpoint:     updateVote,
+		DeleteVoteEndpoint:     deleteVote,
+		ExtendVoteEndpoint:     extendVote,
+		EnableVoteEndpoint:     enableVote,
+		BulkResendVoteEndpoint: bulkResendVote,
 	}
 }
 
@@ -101,5 +107,54 @@ func (c *Client) UpdateVote(ctx context.Context, p *UpdateVotePayload) (res *Vot
 //   - error: internal error
 func (c *Client) DeleteVote(ctx context.Context, p *DeleteVotePayload) (err error) {
 	_, err = c.DeleteVoteEndpoint(ctx, p)
+	return
+}
+
+// ExtendVote calls the "extend_vote" endpoint of the "voting" service.
+// ExtendVote may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "Unauthorized" (type *UnauthorizedError): Unauthorized
+//   - "Forbidden" (type *ForbiddenError): Forbidden
+//   - "NotFound" (type *NotFoundError): Not found
+//   - "Conflict" (type *ConflictError): Conflict
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) ExtendVote(ctx context.Context, p *ExtendVotePayload) (res *VoteResult, err error) {
+	var ires any
+	ires, err = c.ExtendVoteEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*VoteResult), nil
+}
+
+// EnableVote calls the "enable_vote" endpoint of the "voting" service.
+// EnableVote may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "Unauthorized" (type *UnauthorizedError): Unauthorized
+//   - "Forbidden" (type *ForbiddenError): Forbidden
+//   - "NotFound" (type *NotFoundError): Not found
+//   - "Conflict" (type *ConflictError): Conflict
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) EnableVote(ctx context.Context, p *EnableVotePayload) (err error) {
+	_, err = c.EnableVoteEndpoint(ctx, p)
+	return
+}
+
+// BulkResendVote calls the "bulk_resend_vote" endpoint of the "voting" service.
+// BulkResendVote may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "Unauthorized" (type *UnauthorizedError): Unauthorized
+//   - "Forbidden" (type *ForbiddenError): Forbidden
+//   - "NotFound" (type *NotFoundError): Not found
+//   - "Conflict" (type *ConflictError): Conflict
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) BulkResendVote(ctx context.Context, p *BulkResendVotePayload) (err error) {
+	_, err = c.BulkResendVoteEndpoint(ctx, p)
 	return
 }

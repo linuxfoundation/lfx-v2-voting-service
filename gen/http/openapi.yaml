@@ -346,6 +346,248 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
+    /votes/{vote_uid}/bulk_resend:
+        post:
+            tags:
+                - voting
+            summary: bulk_resend_vote voting
+            description: |-
+                Bulk resend vote email to select recipients (proxies to ITX POST /voting/poll/{poll_id}/bulk_resend)
+
+                **Required security scopes for jwt**:
+                  * `manage:projects`
+                  * `manage:voting`
+            operationId: voting#bulk_resend_vote
+            parameters:
+                - name: vote_uid
+                  in: path
+                  description: Vote UID
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token
+                  required: false
+                  type: string
+                - name: bulk_resend_vote_request_body
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/VotingBulkResendVoteRequestBody'
+                    required:
+                        - recipient_ids
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - code
+                            - message
+                "401":
+                    description: Unauthorized response.
+                    schema:
+                        $ref: '#/definitions/UnauthorizedError'
+                        required:
+                            - code
+                            - message
+                "403":
+                    description: Forbidden response.
+                    schema:
+                        $ref: '#/definitions/ForbiddenError'
+                        required:
+                            - code
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - code
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - code
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - code
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+    /votes/{vote_uid}/enable:
+        put:
+            tags:
+                - voting
+            summary: enable_vote voting
+            description: |-
+                Enable a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)
+
+                **Required security scopes for jwt**:
+                  * `manage:projects`
+                  * `manage:voting`
+            operationId: voting#enable_vote
+            parameters:
+                - name: vote_uid
+                  in: path
+                  description: Vote UID
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token
+                  required: false
+                  type: string
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - code
+                            - message
+                "401":
+                    description: Unauthorized response.
+                    schema:
+                        $ref: '#/definitions/UnauthorizedError'
+                        required:
+                            - code
+                            - message
+                "403":
+                    description: Forbidden response.
+                    schema:
+                        $ref: '#/definitions/ForbiddenError'
+                        required:
+                            - code
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - code
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - code
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - code
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
+    /votes/{vote_uid}/extend:
+        post:
+            tags:
+                - voting
+            summary: extend_vote voting
+            description: |-
+                Extend a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)
+
+                **Required security scopes for jwt**:
+                  * `manage:projects`
+                  * `manage:voting`
+            operationId: voting#extend_vote
+            parameters:
+                - name: vote_uid
+                  in: path
+                  description: Vote UID
+                  required: true
+                  type: string
+                  format: uuid
+                - name: Authorization
+                  in: header
+                  description: JWT token
+                  required: false
+                  type: string
+                - name: extend_vote_request_body
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/VotingExtendVoteRequestBody'
+                    required:
+                        - end_time
+            responses:
+                "200":
+                    description: OK response.
+                    schema:
+                        $ref: '#/definitions/VoteResult'
+                        required:
+                            - vote_uid
+                            - name
+                            - description
+                            - status
+                            - project_uid
+                            - committee_uid
+                "400":
+                    description: Bad Request response.
+                    schema:
+                        $ref: '#/definitions/BadRequestError'
+                        required:
+                            - code
+                            - message
+                "401":
+                    description: Unauthorized response.
+                    schema:
+                        $ref: '#/definitions/UnauthorizedError'
+                        required:
+                            - code
+                            - message
+                "403":
+                    description: Forbidden response.
+                    schema:
+                        $ref: '#/definitions/ForbiddenError'
+                        required:
+                            - code
+                            - message
+                "404":
+                    description: Not Found response.
+                    schema:
+                        $ref: '#/definitions/NotFoundError'
+                        required:
+                            - code
+                            - message
+                "500":
+                    description: Internal Server Error response.
+                    schema:
+                        $ref: '#/definitions/InternalServerError'
+                        required:
+                            - code
+                            - message
+                "503":
+                    description: Service Unavailable response.
+                    schema:
+                        $ref: '#/definitions/ServiceUnavailableError'
+                        required:
+                            - code
+                            - message
+            schemes:
+                - http
+            security:
+                - jwt_header_Authorization: []
 definitions:
     BadRequestError:
         title: BadRequestError
@@ -354,15 +596,15 @@ definitions:
             code:
                 type: string
                 description: HTTP status code
-                example: Rerum eaque ipsam eos.
+                example: Mollitia consequatur ipsam.
             message:
                 type: string
                 description: Error message
-                example: Enim aut.
+                example: Velit quia suscipit rem ipsam porro.
         description: Bad request
         example:
-            code: Fugit vel fugit aut.
-            message: Voluptas et.
+            code: Aut eos quia vel qui dicta.
+            message: Sed ut voluptatibus.
         required:
             - code
             - message
@@ -373,15 +615,15 @@ definitions:
             code:
                 type: string
                 description: HTTP status code
-                example: Fugiat quidem aut aspernatur mollitia quis sed.
+                example: Ab et possimus aut.
             message:
                 type: string
                 description: Error message
-                example: Animi placeat.
+                example: Dignissimos quo sunt.
         description: Conflict
         example:
-            code: Dolorem cumque provident.
-            message: Quia voluptatem reiciendis sit saepe earum.
+            code: Quas nihil dolore.
+            message: Recusandae ut laudantium.
         required:
             - code
             - message
@@ -392,15 +634,15 @@ definitions:
             code:
                 type: string
                 description: HTTP status code
-                example: Rem hic ex quibusdam architecto excepturi.
+                example: Tempora sunt unde aut possimus quaerat.
             message:
                 type: string
                 description: Error message
-                example: Eaque est quaerat neque quis enim rem.
+                example: Quos odit commodi sint ullam sequi ipsam.
         description: Forbidden
         example:
-            code: Molestiae natus.
-            message: Quis corrupti eius dolore est.
+            code: Beatae et.
+            message: Veniam adipisci dicta.
         required:
             - code
             - message
@@ -411,15 +653,15 @@ definitions:
             code:
                 type: string
                 description: HTTP status code
-                example: Repellat quaerat quas debitis aut perspiciatis.
+                example: Velit voluptatem.
             message:
                 type: string
                 description: Error message
-                example: Tempore dolor dolores quibusdam.
+                example: Et blanditiis itaque natus quaerat atque est.
         description: Internal server error
         example:
-            code: Quia suscipit accusantium natus nam accusamus est.
-            message: Sed consequatur consectetur non aut.
+            code: Minima iste et.
+            message: Vel ut animi.
         required:
             - code
             - message
@@ -430,15 +672,15 @@ definitions:
             code:
                 type: string
                 description: HTTP status code
-                example: Et consequatur voluptatem vel.
+                example: Magnam quia temporibus qui pariatur.
             message:
                 type: string
                 description: Error message
-                example: Perspiciatis sed ratione iusto rerum pariatur itaque.
+                example: Iste ut culpa ipsam.
         description: Not found
         example:
-            code: Qui in voluptas quos.
-            message: Qui alias totam.
+            code: Quia autem quae et quis.
+            message: Enim soluta ut qui voluptas.
         required:
             - code
             - message
@@ -449,7 +691,7 @@ definitions:
             choice_id:
                 type: string
                 description: Choice identifier
-                example: 7baa4e86-5dd6-45af-bf9a-e795b3ddf9fa
+                example: 77058784-cbfd-425f-b737-e1ef589df5b3
                 format: uuid
             choice_text:
                 type: string
@@ -457,7 +699,7 @@ definitions:
                 example: John Doe
         description: Answer choice
         example:
-            choice_id: 06811683-33a8-4ea5-b8ab-6c906cb40bbe
+            choice_id: 95d1a5fa-0d51-459e-8947-dc31cb47e9c6
             choice_text: John Doe
         required:
             - choice_text
@@ -495,7 +737,7 @@ definitions:
             question_id:
                 type: string
                 description: Question identifier
-                example: 4654b4e4-85dd-4837-8670-947733e1b3e0
+                example: 05e2b461-9dd1-492b-b29e-258219af2be6
                 format: uuid
             type:
                 type: string
@@ -516,7 +758,7 @@ definitions:
                 - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
                   choice_text: John Doe
             prompt: Who should be elected to the TSC?
-            question_id: 86cef335-7304-47c0-a9b8-d1d70ae470d1
+            question_id: d3c7551a-b823-4e3e-8036-7de3ffdc1488
             type: single_choice
         required:
             - prompt
@@ -529,15 +771,15 @@ definitions:
             code:
                 type: string
                 description: HTTP status code
-                example: Ut iure eaque.
+                example: Enim repellendus placeat dolorem nostrum.
             message:
                 type: string
                 description: Error message
-                example: Quo quidem iure.
+                example: Et saepe totam autem ut.
         description: Service unavailable
         example:
-            code: Sint necessitatibus molestias similique ut asperiores.
-            message: Molestias ipsam.
+            code: Libero repellat.
+            message: Quaerat quaerat voluptatem eum voluptatem iure et.
         required:
             - code
             - message
@@ -548,15 +790,15 @@ definitions:
             code:
                 type: string
                 description: HTTP status code
-                example: Laboriosam molestiae.
+                example: Tenetur officiis illum vel placeat quasi natus.
             message:
                 type: string
                 description: Error message
-                example: Explicabo sunt porro fugiat.
+                example: Velit tempore sed fugit deserunt necessitatibus.
         description: Unauthorized
         example:
-            code: Laborum a tempora eaque officia.
-            message: Maiores eum reiciendis beatae.
+            code: Qui sit debitis harum ut tempora.
+            message: Et voluptas nihil dolorem.
         required:
             - code
             - message
@@ -567,19 +809,19 @@ definitions:
             allow_abstain:
                 type: boolean
                 description: Allow abstain
-                example: false
+                example: true
             committee_name:
                 type: string
                 description: Committee name
-                example: Libero provident ratione quibusdam magni ipsa omnis.
+                example: Suscipit ratione ut aut.
             committee_type:
                 type: string
                 description: Committee type
-                example: Mollitia labore.
+                example: Eius error vel perspiciatis pariatur.
             committee_uid:
                 type: string
                 description: Committee UID
-                example: Non itaque velit.
+                example: Aut numquam ex reiciendis harum natus.
             committee_voting_status:
                 type: boolean
                 description: Committee voting status
@@ -587,30 +829,30 @@ definitions:
             creation_time:
                 type: string
                 description: Creation time
-                example: "1979-04-20T15:08:44Z"
+                example: "2005-09-13T04:41:03Z"
                 format: date-time
             description:
                 type: string
                 description: Vote description
-                example: Aspernatur et hic rerum non expedita ea.
+                example: Rerum perferendis ex quod harum numquam.
             end_time:
                 type: string
                 description: End time
-                example: "1996-06-26T06:24:14Z"
+                example: "1996-12-25T08:36:38Z"
                 format: date-time
             last_modified_time:
                 type: string
                 description: Last modified time
-                example: "2012-06-11T12:08:01Z"
+                example: "1984-12-16T07:02:24Z"
                 format: date-time
             name:
                 type: string
                 description: Vote name
-                example: Provident voluptatem quis provident nulla quia.
+                example: Molestias consectetur iste temporibus.
             num_response_received:
                 type: integer
                 description: Responses received
-                example: 35568202025658232
+                example: 5330836118803411887
                 format: int64
             poll_questions:
                 type: array
@@ -642,22 +884,14 @@ definitions:
                       prompt: Who should be elected to the TSC?
                       question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
                       type: single_choice
-                    - choices:
-                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
-                          choice_text: John Doe
-                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
-                          choice_text: John Doe
-                      prompt: Who should be elected to the TSC?
-                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
-                      type: single_choice
             project_uid:
                 type: string
                 description: Project UID
-                example: Et dicta ut eveniet.
+                example: Eum eius.
             pseudo_anonymity:
                 type: boolean
                 description: Pseudo-anonymity enabled
-                example: false
+                example: true
             status:
                 type: string
                 description: Vote status
@@ -669,7 +903,7 @@ definitions:
             total_voting_request_invitations:
                 type: integer
                 description: Total invitations sent
-                example: 3900342179432466240
+                example: 4797917587653404989
                 format: int64
             vote_uid:
                 type: string
@@ -678,16 +912,16 @@ definitions:
                 format: uuid
         example:
             allow_abstain: false
-            committee_name: Assumenda accusamus nihil iste dolore ut.
-            committee_type: Molestiae ut.
-            committee_uid: Ut voluptatem ipsum.
+            committee_name: Repudiandae voluptatem reprehenderit officiis sapiente tempore pariatur.
+            committee_type: Iste aliquid facilis.
+            committee_uid: Quibusdam sunt voluptas sed vero quis unde.
             committee_voting_status: true
-            creation_time: "1978-10-01T17:57:04Z"
-            description: Accusamus odit aut ratione.
-            end_time: "1976-06-19T01:45:18Z"
-            last_modified_time: "1974-07-08T19:36:53Z"
-            name: Dolor nisi aut distinctio.
-            num_response_received: 1603899179203311529
+            creation_time: "2007-11-02T13:29:05Z"
+            description: Quo ut.
+            end_time: "1992-07-18T19:40:34Z"
+            last_modified_time: "1972-11-03T17:50:49Z"
+            name: Hic voluptate qui.
+            num_response_received: 8976121667180691541
             poll_questions:
                 - choices:
                     - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
@@ -705,10 +939,18 @@ definitions:
                   prompt: Who should be elected to the TSC?
                   question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
                   type: single_choice
-            project_uid: Sed numquam aut totam.
+                - choices:
+                    - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                      choice_text: John Doe
+                    - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                      choice_text: John Doe
+                  prompt: Who should be elected to the TSC?
+                  question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                  type: single_choice
+            project_uid: Est possimus ipsa itaque maiores eos quis.
             pseudo_anonymity: true
             status: disabled
-            total_voting_request_invitations: 2056769997941245897
+            total_voting_request_invitations: 5533442698434648331
             vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
         required:
             - vote_uid
@@ -717,6 +959,25 @@ definitions:
             - status
             - project_uid
             - committee_uid
+    VotingBulkResendVoteRequestBody:
+        title: VotingBulkResendVoteRequestBody
+        type: object
+        properties:
+            recipient_ids:
+                type: array
+                items:
+                    type: string
+                    example: Blanditiis quisquam alias laborum.
+                description: List of recipient IDs to resend vote email to
+                example:
+                    - cba14f40-1636-11ec-9621-0242ac130002
+                    - cba14f40-1636-11ec-9621-0242ac130003
+        example:
+            recipient_ids:
+                - cba14f40-1636-11ec-9621-0242ac130002
+                - cba14f40-1636-11ec-9621-0242ac130003
+        required:
+            - recipient_ids
     VotingCreateVoteRequestBody:
         title: VotingCreateVoteRequestBody
         type: object
@@ -725,12 +986,12 @@ definitions:
                 type: boolean
                 description: Allow voters to abstain
                 default: false
-                example: true
+                example: false
             committee_filters:
                 type: array
                 items:
                     type: string
-                    example: Alternate Voting Rep
+                    example: Observer
                     enum:
                         - Voting Rep
                         - Alternate Voting Rep
@@ -749,215 +1010,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Cum est provident vel quia quod quidem.
-                description: Multiple committee UIDs
-                example:
-                    - a02bdbaf-53b1-4d47-bc04-dd7e459dd308
-                    - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
-            description:
-                type: string
-                description: Vote description
-                example: Vote for the TSC members for Q1 2026
-            end_time:
-                type: string
-                description: End time in RFC3339 format
-                example: "2026-02-15T23:59:59Z"
-                format: date-time
-            name:
-                type: string
-                description: Vote name
-                example: Q1 2026 Technical Steering Committee Election
-                minLength: 1
-                maxLength: 255
-            num_winners:
-                type: integer
-                description: Number of winners (meek_stv only)
-                default: 2
-                example: 7
-                format: int64
-                minimum: 2
-                maximum: 10
-            poll_comment_prompts:
-                type: array
-                items:
-                    $ref: '#/definitions/PollCommentPrompt'
-                description: Comment prompts for the vote
-                example:
-                    - prompt: Please provide any additional feedback
-                    - prompt: Please provide any additional feedback
-                    - prompt: Please provide any additional feedback
-            poll_questions:
-                type: array
-                items:
-                    $ref: '#/definitions/PollQuestion'
-                description: Questions for the vote
-                example:
-                    - choices:
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                          choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                          choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                          choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                          choice_text: John Doe
-                      prompt: Who should be elected to the TSC?
-                      question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
-                      type: single_choice
-                    - choices:
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                          choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                          choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                          choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                          choice_text: John Doe
-                      prompt: Who should be elected to the TSC?
-                      question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
-                      type: single_choice
-            poll_type:
-                type: string
-                description: Type of poll
-                default: generic
-                example: condorcet_irv
-                enum:
-                    - generic
-                    - condorcet_irv
-                    - meek_stv
-            project_uid:
-                type: string
-                description: LFX Project UID
-                example: a09P000000DsCBuIRT
-            pseudo_anonymity:
-                type: boolean
-                description: Enable pseudo-anonymity
-                default: false
-                example: false
-            quorum_percentage:
-                type: integer
-                description: Quorum percentage required
-                example: 50
-                format: int64
-                minimum: 0
-                maximum: 100
-            winning_threshold_percentage:
-                type: integer
-                description: Winning threshold percentage
-                example: 51
-                format: int64
-                minimum: 0
-                maximum: 100
-        example:
-            allow_abstain: false
-            committee_filters:
-                - Voting Rep
-                - Alternate Voting Rep
-            committee_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
-            committee_uids:
-                - a02bdbaf-53b1-4d47-bc04-dd7e459dd308
-                - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
-            description: Vote for the TSC members for Q1 2026
-            end_time: "2026-02-15T23:59:59Z"
-            name: Q1 2026 Technical Steering Committee Election
-            num_winners: 5
-            poll_comment_prompts:
-                - prompt: Please provide any additional feedback
-                - prompt: Please provide any additional feedback
-            poll_questions:
-                - choices:
-                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                      choice_text: John Doe
-                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                      choice_text: John Doe
-                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                      choice_text: John Doe
-                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                      choice_text: John Doe
-                  prompt: Who should be elected to the TSC?
-                  question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
-                  type: single_choice
-                - choices:
-                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                      choice_text: John Doe
-                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                      choice_text: John Doe
-                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                      choice_text: John Doe
-                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                      choice_text: John Doe
-                  prompt: Who should be elected to the TSC?
-                  question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
-                  type: single_choice
-                - choices:
-                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                      choice_text: John Doe
-                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                      choice_text: John Doe
-                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                      choice_text: John Doe
-                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                      choice_text: John Doe
-                  prompt: Who should be elected to the TSC?
-                  question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
-                  type: single_choice
-                - choices:
-                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                      choice_text: John Doe
-                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                      choice_text: John Doe
-                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                      choice_text: John Doe
-                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                      choice_text: John Doe
-                  prompt: Who should be elected to the TSC?
-                  question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
-                  type: single_choice
-            poll_type: generic
-            project_uid: a09P000000DsCBuIRT
-            pseudo_anonymity: true
-            quorum_percentage: 50
-            winning_threshold_percentage: 51
-        required:
-            - name
-            - description
-            - end_time
-            - project_uid
-            - committee_uid
-            - poll_questions
-    VotingUpdateVoteRequestBody:
-        title: VotingUpdateVoteRequestBody
-        type: object
-        properties:
-            allow_abstain:
-                type: boolean
-                description: Allow voters to abstain
-                default: false
-                example: false
-            committee_filters:
-                type: array
-                items:
-                    type: string
-                    example: Emeritus
-                    enum:
-                        - Voting Rep
-                        - Alternate Voting Rep
-                        - Observer
-                        - Emeritus
-                description: Committee voting status filters
-                example:
-                    - Voting Rep
-                    - Alternate Voting Rep
-            committee_uid:
-                type: string
-                description: LFX Committee UID
-                example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
-                format: uuid
-            committee_uids:
-                type: array
-                items:
-                    type: string
-                    example: Et consequatur inventore et qui qui.
+                    example: Est molestiae cum in labore similique illo.
                 description: Multiple committee UIDs
                 example:
                     - a02bdbaf-53b1-4d47-bc04-dd7e459dd308
@@ -991,6 +1044,8 @@ definitions:
                     $ref: '#/definitions/PollCommentPrompt'
                 description: Comment prompts for the vote
                 example:
+                    - prompt: Please provide any additional feedback
+                    - prompt: Please provide any additional feedback
                     - prompt: Please provide any additional feedback
                     - prompt: Please provide any additional feedback
             poll_questions:
@@ -1064,6 +1119,203 @@ definitions:
                 type: boolean
                 description: Enable pseudo-anonymity
                 default: false
+                example: true
+            quorum_percentage:
+                type: integer
+                description: Quorum percentage required
+                example: 50
+                format: int64
+                minimum: 0
+                maximum: 100
+            winning_threshold_percentage:
+                type: integer
+                description: Winning threshold percentage
+                example: 51
+                format: int64
+                minimum: 0
+                maximum: 100
+        example:
+            allow_abstain: false
+            committee_filters:
+                - Voting Rep
+                - Alternate Voting Rep
+            committee_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+            committee_uids:
+                - a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+            description: Vote for the TSC members for Q1 2026
+            end_time: "2026-02-15T23:59:59Z"
+            name: Q1 2026 Technical Steering Committee Election
+            num_winners: 4
+            poll_comment_prompts:
+                - prompt: Please provide any additional feedback
+                - prompt: Please provide any additional feedback
+                - prompt: Please provide any additional feedback
+            poll_questions:
+                - choices:
+                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                      choice_text: John Doe
+                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                      choice_text: John Doe
+                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                      choice_text: John Doe
+                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                      choice_text: John Doe
+                  prompt: Who should be elected to the TSC?
+                  question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                  type: single_choice
+                - choices:
+                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                      choice_text: John Doe
+                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                      choice_text: John Doe
+                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                      choice_text: John Doe
+                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                      choice_text: John Doe
+                  prompt: Who should be elected to the TSC?
+                  question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                  type: single_choice
+            poll_type: meek_stv
+            project_uid: a09P000000DsCBuIRT
+            pseudo_anonymity: false
+            quorum_percentage: 50
+            winning_threshold_percentage: 51
+        required:
+            - name
+            - description
+            - end_time
+            - project_uid
+            - committee_uid
+            - poll_questions
+    VotingExtendVoteRequestBody:
+        title: VotingExtendVoteRequestBody
+        type: object
+        properties:
+            end_time:
+                type: string
+                description: End time in RFC3339 format
+                example: "2026-02-15T23:59:59Z"
+                format: date-time
+        example:
+            end_time: "2026-02-15T23:59:59Z"
+        required:
+            - end_time
+    VotingUpdateVoteRequestBody:
+        title: VotingUpdateVoteRequestBody
+        type: object
+        properties:
+            allow_abstain:
+                type: boolean
+                description: Allow voters to abstain
+                default: false
+                example: true
+            committee_filters:
+                type: array
+                items:
+                    type: string
+                    example: Emeritus
+                    enum:
+                        - Voting Rep
+                        - Alternate Voting Rep
+                        - Observer
+                        - Emeritus
+                description: Committee voting status filters
+                example:
+                    - Voting Rep
+                    - Alternate Voting Rep
+            committee_uid:
+                type: string
+                description: LFX Committee UID
+                example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                format: uuid
+            committee_uids:
+                type: array
+                items:
+                    type: string
+                    example: Praesentium debitis nam minima consequatur.
+                description: Multiple committee UIDs
+                example:
+                    - a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                    - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+            description:
+                type: string
+                description: Vote description
+                example: Vote for the TSC members for Q1 2026
+            end_time:
+                type: string
+                description: End time in RFC3339 format
+                example: "2026-02-15T23:59:59Z"
+                format: date-time
+            name:
+                type: string
+                description: Vote name
+                example: Q1 2026 Technical Steering Committee Election
+                minLength: 1
+                maxLength: 255
+            num_winners:
+                type: integer
+                description: Number of winners (meek_stv only)
+                default: 2
+                example: 8
+                format: int64
+                minimum: 2
+                maximum: 10
+            poll_comment_prompts:
+                type: array
+                items:
+                    $ref: '#/definitions/PollCommentPrompt'
+                description: Comment prompts for the vote
+                example:
+                    - prompt: Please provide any additional feedback
+                    - prompt: Please provide any additional feedback
+            poll_questions:
+                type: array
+                items:
+                    $ref: '#/definitions/PollQuestion'
+                description: Questions for the vote
+                example:
+                    - choices:
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                      prompt: Who should be elected to the TSC?
+                      question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                      type: single_choice
+                    - choices:
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                          choice_text: John Doe
+                      prompt: Who should be elected to the TSC?
+                      question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                      type: single_choice
+            poll_type:
+                type: string
+                description: Type of poll
+                default: generic
+                example: meek_stv
+                enum:
+                    - generic
+                    - condorcet_irv
+                    - meek_stv
+            project_uid:
+                type: string
+                description: LFX Project UID
+                example: a09P000000DsCBuIRT
+            pseudo_anonymity:
+                type: boolean
+                description: Enable pseudo-anonymity
+                default: false
                 example: false
             quorum_percentage:
                 type: integer
@@ -1080,7 +1332,7 @@ definitions:
                 minimum: 0
                 maximum: 100
         example:
-            allow_abstain: true
+            allow_abstain: false
             committee_filters:
                 - Voting Rep
                 - Alternate Voting Rep
@@ -1091,8 +1343,10 @@ definitions:
             description: Vote for the TSC members for Q1 2026
             end_time: "2026-02-15T23:59:59Z"
             name: Q1 2026 Technical Steering Committee Election
-            num_winners: 7
+            num_winners: 9
             poll_comment_prompts:
+                - prompt: Please provide any additional feedback
+                - prompt: Please provide any additional feedback
                 - prompt: Please provide any additional feedback
                 - prompt: Please provide any additional feedback
             poll_questions:
@@ -1144,9 +1398,9 @@ definitions:
                   prompt: Who should be elected to the TSC?
                   question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
                   type: single_choice
-            poll_type: generic
+            poll_type: condorcet_irv
             project_uid: a09P000000DsCBuIRT
-            pseudo_anonymity: false
+            pseudo_anonymity: true
             quorum_percentage: 50
             winning_threshold_percentage: 51
         required:

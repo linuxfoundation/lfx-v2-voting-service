@@ -230,6 +230,92 @@ func (s *VotingService) DeleteVote(ctx context.Context, voteID string) error {
 	return nil
 }
 
+// ExtendVote extends a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)
+func (s *VotingService) ExtendVote(ctx context.Context, voteID string, endTime string) (*itx.PollResponse, error) {
+	// Extract principal from context
+	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
+	if !ok {
+		s.logger.ErrorContext(ctx, "Principal not found in context")
+		return nil, domain.NewValidationError("authentication required")
+	}
+
+	s.logger.InfoContext(ctx, "Extending vote", "principal", principal, "vote_id", voteID, "end_time", endTime)
+
+	// Build proxy request
+	proxyReq := &itx.ExtendPollRequest{
+		EndTime: endTime,
+	}
+
+	// Call ITX proxy
+	pollResp, err := s.proxyClient.ExtendPoll(ctx, voteID, proxyReq)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to extend poll in ITX", "error", err)
+		return nil, err // Return domain error as-is
+	}
+
+	s.logger.InfoContext(ctx, "Vote extended successfully", "poll_id", pollResp.PollID, "end_time", pollResp.EndTime)
+
+	return pollResp, nil
+}
+
+// EnableVote enables a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)
+func (s *VotingService) EnableVote(ctx context.Context, voteID string) error {
+	// Extract principal from context
+	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
+	if !ok {
+		s.logger.ErrorContext(ctx, "Principal not found in context")
+		return domain.NewValidationError("authentication required")
+	}
+
+	s.logger.InfoContext(ctx, "Enabling vote", "principal", principal, "vote_id", voteID)
+
+	// Call ITX proxy
+	err := s.proxyClient.EnablePoll(ctx, voteID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to enable poll in ITX", "error", err)
+		return err // Return domain error as-is
+	}
+
+	s.logger.InfoContext(ctx, "Vote enabled successfully", "poll_id", voteID)
+
+	return nil
+}
+
+// BulkResendVote bulk resends vote emails to select recipients (proxies to ITX POST /voting/poll/{poll_id}/bulk_resend)
+func (s *VotingService) BulkResendVote(ctx context.Context, voteID string, recipientIDs []string) error {
+	// Extract principal from context
+	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
+	if !ok {
+		s.logger.ErrorContext(ctx, "Principal not found in context")
+		return domain.NewValidationError("authentication required")
+	}
+
+	s.logger.InfoContext(ctx, "Bulk resending vote emails",
+		"principal", principal,
+		"vote_id", voteID,
+		"recipient_count", len(recipientIDs),
+	)
+
+	// Build proxy request
+	proxyReq := &itx.BulkResendRequest{
+		RecipientIDs: recipientIDs,
+	}
+
+	// Call ITX proxy
+	err := s.proxyClient.BulkResendPoll(ctx, voteID, proxyReq)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to bulk resend poll emails in ITX", "error", err)
+		return err // Return domain error as-is
+	}
+
+	s.logger.InfoContext(ctx, "Vote emails bulk resent successfully",
+		"poll_id", voteID,
+		"recipient_count", len(recipientIDs),
+	)
+
+	return nil
+}
+
 // CreateVoteRequest is the internal request type for creating a vote
 type CreateVoteRequest struct {
 	Name                        string

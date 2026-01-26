@@ -26,6 +26,13 @@ type Service interface {
 	// Delete vote (proxies to ITX DELETE /voting/poll/{poll_id}). Only allowed
 	// when status is 'disabled'
 	DeleteVote(context.Context, *DeleteVotePayload) (err error)
+	// Extend a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)
+	ExtendVote(context.Context, *ExtendVotePayload) (res *VoteResult, err error)
+	// Enable a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)
+	EnableVote(context.Context, *EnableVotePayload) (err error)
+	// Bulk resend vote email to select recipients (proxies to ITX POST
+	// /voting/poll/{poll_id}/bulk_resend)
+	BulkResendVote(context.Context, *BulkResendVotePayload) (err error)
 }
 
 // Auther defines the authorization functions to be implemented by the service.
@@ -48,7 +55,7 @@ const ServiceName = "voting"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [4]string{"create_vote", "get_vote", "update_vote", "delete_vote"}
+var MethodNames = [7]string{"create_vote", "get_vote", "update_vote", "delete_vote", "extend_vote", "enable_vote", "bulk_resend_vote"}
 
 // Bad request error response
 type BadRequestError struct {
@@ -56,6 +63,17 @@ type BadRequestError struct {
 	Code string
 	// Error message
 	Message string
+}
+
+// BulkResendVotePayload is the payload type of the voting service
+// bulk_resend_vote method.
+type BulkResendVotePayload struct {
+	// JWT token
+	Token *string
+	// Vote UID
+	VoteUID string
+	// List of recipient IDs to resend vote email to
+	RecipientIds []string
 }
 
 // Conflict error response
@@ -110,6 +128,26 @@ type DeleteVotePayload struct {
 	Token *string
 	// Vote UID
 	VoteUID string
+}
+
+// EnableVotePayload is the payload type of the voting service enable_vote
+// method.
+type EnableVotePayload struct {
+	// JWT token
+	Token *string
+	// Vote UID
+	VoteUID string
+}
+
+// ExtendVotePayload is the payload type of the voting service extend_vote
+// method.
+type ExtendVotePayload struct {
+	// JWT token
+	Token *string
+	// Vote UID
+	VoteUID string
+	// End time in RFC3339 format
+	EndTime string
 }
 
 // Forbidden error response

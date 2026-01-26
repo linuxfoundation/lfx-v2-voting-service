@@ -19,11 +19,14 @@ import (
 
 // Server lists the voting service endpoint HTTP handlers.
 type Server struct {
-	Mounts     []*MountPoint
-	CreateVote http.Handler
-	GetVote    http.Handler
-	UpdateVote http.Handler
-	DeleteVote http.Handler
+	Mounts         []*MountPoint
+	CreateVote     http.Handler
+	GetVote        http.Handler
+	UpdateVote     http.Handler
+	DeleteVote     http.Handler
+	ExtendVote     http.Handler
+	EnableVote     http.Handler
+	BulkResendVote http.Handler
 }
 
 // MountPoint holds information about the mounted endpoints.
@@ -57,11 +60,17 @@ func New(
 			{"GetVote", "GET", "/votes/{vote_uid}"},
 			{"UpdateVote", "PUT", "/votes/{vote_uid}"},
 			{"DeleteVote", "DELETE", "/votes/{vote_uid}"},
+			{"ExtendVote", "POST", "/votes/{vote_uid}/extend"},
+			{"EnableVote", "PUT", "/votes/{vote_uid}/enable"},
+			{"BulkResendVote", "POST", "/votes/{vote_uid}/bulk_resend"},
 		},
-		CreateVote: NewCreateVoteHandler(e.CreateVote, mux, decoder, encoder, errhandler, formatter),
-		GetVote:    NewGetVoteHandler(e.GetVote, mux, decoder, encoder, errhandler, formatter),
-		UpdateVote: NewUpdateVoteHandler(e.UpdateVote, mux, decoder, encoder, errhandler, formatter),
-		DeleteVote: NewDeleteVoteHandler(e.DeleteVote, mux, decoder, encoder, errhandler, formatter),
+		CreateVote:     NewCreateVoteHandler(e.CreateVote, mux, decoder, encoder, errhandler, formatter),
+		GetVote:        NewGetVoteHandler(e.GetVote, mux, decoder, encoder, errhandler, formatter),
+		UpdateVote:     NewUpdateVoteHandler(e.UpdateVote, mux, decoder, encoder, errhandler, formatter),
+		DeleteVote:     NewDeleteVoteHandler(e.DeleteVote, mux, decoder, encoder, errhandler, formatter),
+		ExtendVote:     NewExtendVoteHandler(e.ExtendVote, mux, decoder, encoder, errhandler, formatter),
+		EnableVote:     NewEnableVoteHandler(e.EnableVote, mux, decoder, encoder, errhandler, formatter),
+		BulkResendVote: NewBulkResendVoteHandler(e.BulkResendVote, mux, decoder, encoder, errhandler, formatter),
 	}
 }
 
@@ -74,6 +83,9 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.GetVote = m(s.GetVote)
 	s.UpdateVote = m(s.UpdateVote)
 	s.DeleteVote = m(s.DeleteVote)
+	s.ExtendVote = m(s.ExtendVote)
+	s.EnableVote = m(s.EnableVote)
+	s.BulkResendVote = m(s.BulkResendVote)
 }
 
 // MethodNames returns the methods served.
@@ -85,6 +97,9 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountGetVoteHandler(mux, h.GetVote)
 	MountUpdateVoteHandler(mux, h.UpdateVote)
 	MountDeleteVoteHandler(mux, h.DeleteVote)
+	MountExtendVoteHandler(mux, h.ExtendVote)
+	MountEnableVoteHandler(mux, h.EnableVote)
+	MountBulkResendVoteHandler(mux, h.BulkResendVote)
 }
 
 // Mount configures the mux to serve the voting endpoints.
@@ -281,6 +296,165 @@ func NewDeleteVoteHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "delete_vote")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "voting")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountExtendVoteHandler configures the mux to serve the "voting" service
+// "extend_vote" endpoint.
+func MountExtendVoteHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/votes/{vote_uid}/extend", f)
+}
+
+// NewExtendVoteHandler creates a HTTP handler which loads the HTTP request and
+// calls the "voting" service "extend_vote" endpoint.
+func NewExtendVoteHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeExtendVoteRequest(mux, decoder)
+		encodeResponse = EncodeExtendVoteResponse(encoder)
+		encodeError    = EncodeExtendVoteError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "extend_vote")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "voting")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountEnableVoteHandler configures the mux to serve the "voting" service
+// "enable_vote" endpoint.
+func MountEnableVoteHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("PUT", "/votes/{vote_uid}/enable", f)
+}
+
+// NewEnableVoteHandler creates a HTTP handler which loads the HTTP request and
+// calls the "voting" service "enable_vote" endpoint.
+func NewEnableVoteHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeEnableVoteRequest(mux, decoder)
+		encodeResponse = EncodeEnableVoteResponse(encoder)
+		encodeError    = EncodeEnableVoteError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "enable_vote")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "voting")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountBulkResendVoteHandler configures the mux to serve the "voting" service
+// "bulk_resend_vote" endpoint.
+func MountBulkResendVoteHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/votes/{vote_uid}/bulk_resend", f)
+}
+
+// NewBulkResendVoteHandler creates a HTTP handler which loads the HTTP request
+// and calls the "voting" service "bulk_resend_vote" endpoint.
+func NewBulkResendVoteHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeBulkResendVoteRequest(mux, decoder)
+		encodeResponse = EncodeBulkResendVoteResponse(encoder)
+		encodeError    = EncodeBulkResendVoteError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "bulk_resend_vote")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "voting")
 		payload, err := decodeRequest(r)
 		if err != nil {

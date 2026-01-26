@@ -373,3 +373,112 @@ func BuildDeleteVotePayload(votingDeleteVoteVoteUID string, votingDeleteVoteToke
 
 	return v, nil
 }
+
+// BuildExtendVotePayload builds the payload for the voting extend_vote
+// endpoint from CLI flags.
+func BuildExtendVotePayload(votingExtendVoteBody string, votingExtendVoteVoteUID string, votingExtendVoteToken string) (*voting.ExtendVotePayload, error) {
+	var err error
+	var body ExtendVoteRequestBody
+	{
+		err = json.Unmarshal([]byte(votingExtendVoteBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"end_time\": \"2026-02-15T23:59:59Z\"\n   }'")
+		}
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", body.EndTime, goa.FormatDateTime))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var voteUID string
+	{
+		voteUID = votingExtendVoteVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var token *string
+	{
+		if votingExtendVoteToken != "" {
+			token = &votingExtendVoteToken
+		}
+	}
+	v := &voting.ExtendVotePayload{
+		EndTime: body.EndTime,
+	}
+	v.VoteUID = voteUID
+	v.Token = token
+
+	return v, nil
+}
+
+// BuildEnableVotePayload builds the payload for the voting enable_vote
+// endpoint from CLI flags.
+func BuildEnableVotePayload(votingEnableVoteVoteUID string, votingEnableVoteToken string) (*voting.EnableVotePayload, error) {
+	var err error
+	var voteUID string
+	{
+		voteUID = votingEnableVoteVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var token *string
+	{
+		if votingEnableVoteToken != "" {
+			token = &votingEnableVoteToken
+		}
+	}
+	v := &voting.EnableVotePayload{}
+	v.VoteUID = voteUID
+	v.Token = token
+
+	return v, nil
+}
+
+// BuildBulkResendVotePayload builds the payload for the voting
+// bulk_resend_vote endpoint from CLI flags.
+func BuildBulkResendVotePayload(votingBulkResendVoteBody string, votingBulkResendVoteVoteUID string, votingBulkResendVoteToken string) (*voting.BulkResendVotePayload, error) {
+	var err error
+	var body BulkResendVoteRequestBody
+	{
+		err = json.Unmarshal([]byte(votingBulkResendVoteBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"recipient_ids\": [\n         \"cba14f40-1636-11ec-9621-0242ac130002\",\n         \"cba14f40-1636-11ec-9621-0242ac130003\"\n      ]\n   }'")
+		}
+		if body.RecipientIds == nil {
+			err = goa.MergeErrors(err, goa.MissingFieldError("recipient_ids", "body"))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var voteUID string
+	{
+		voteUID = votingBulkResendVoteVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var token *string
+	{
+		if votingBulkResendVoteToken != "" {
+			token = &votingBulkResendVoteToken
+		}
+	}
+	v := &voting.BulkResendVotePayload{}
+	if body.RecipientIds != nil {
+		v.RecipientIds = make([]string, len(body.RecipientIds))
+		for i, val := range body.RecipientIds {
+			v.RecipientIds[i] = val
+		}
+	} else {
+		v.RecipientIds = []string{}
+	}
+	v.VoteUID = voteUID
+	v.Token = token
+
+	return v, nil
+}

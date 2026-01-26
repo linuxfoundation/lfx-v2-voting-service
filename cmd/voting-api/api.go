@@ -194,3 +194,72 @@ func (s *VotingAPI) DeleteVote(ctx context.Context, payload *votingsvc.DeleteVot
 
 	return nil
 }
+
+// ExtendVote extends a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)
+func (s *VotingAPI) ExtendVote(ctx context.Context, payload *votingsvc.ExtendVotePayload) (*votingsvc.VoteResult, error) {
+	logger := slog.With("component", "voting_api", "method", "ExtendVote")
+
+	logger.InfoContext(ctx, "Extend vote request received",
+		"vote_uid", payload.VoteUID,
+		"end_time", payload.EndTime,
+	)
+
+	// Call service layer
+	pollResp, err := s.votingService.ExtendVote(ctx, payload.VoteUID, payload.EndTime)
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to extend vote", "error", err)
+		return nil, handleError(err)
+	}
+
+	// Convert domain response to Goa result
+	result := apiservice.ConvertPollResponseToVoteResult(pollResp)
+
+	logger.InfoContext(ctx, "Vote extended successfully",
+		"vote_uid", result.VoteUID,
+		"end_time", result.EndTime,
+	)
+
+	return result, nil
+}
+
+// EnableVote enables a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)
+func (s *VotingAPI) EnableVote(ctx context.Context, payload *votingsvc.EnableVotePayload) error {
+	logger := slog.With("component", "voting_api", "method", "EnableVote")
+
+	logger.InfoContext(ctx, "Enable vote request received", "vote_uid", payload.VoteUID)
+
+	// Call service layer
+	err := s.votingService.EnableVote(ctx, payload.VoteUID)
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to enable vote", "error", err)
+		return handleError(err)
+	}
+
+	logger.InfoContext(ctx, "Vote enabled successfully", "vote_uid", payload.VoteUID)
+
+	return nil
+}
+
+// BulkResendVote bulk resends vote emails to select recipients (proxies to ITX POST /voting/poll/{poll_id}/bulk_resend)
+func (s *VotingAPI) BulkResendVote(ctx context.Context, payload *votingsvc.BulkResendVotePayload) error {
+	logger := slog.With("component", "voting_api", "method", "BulkResendVote")
+
+	logger.InfoContext(ctx, "Bulk resend vote request received",
+		"vote_uid", payload.VoteUID,
+		"recipient_count", len(payload.RecipientIds),
+	)
+
+	// Call service layer
+	err := s.votingService.BulkResendVote(ctx, payload.VoteUID, payload.RecipientIds)
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to bulk resend vote emails", "error", err)
+		return handleError(err)
+	}
+
+	logger.InfoContext(ctx, "Vote emails bulk resent successfully",
+		"vote_uid", payload.VoteUID,
+		"recipient_count", len(payload.RecipientIds),
+	)
+
+	return nil
+}

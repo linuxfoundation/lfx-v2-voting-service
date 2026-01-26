@@ -34,6 +34,18 @@ type Client struct {
 	// endpoint.
 	DeleteVoteDoer goahttp.Doer
 
+	// ExtendVote Doer is the HTTP client used to make requests to the extend_vote
+	// endpoint.
+	ExtendVoteDoer goahttp.Doer
+
+	// EnableVote Doer is the HTTP client used to make requests to the enable_vote
+	// endpoint.
+	EnableVoteDoer goahttp.Doer
+
+	// BulkResendVote Doer is the HTTP client used to make requests to the
+	// bulk_resend_vote endpoint.
+	BulkResendVoteDoer goahttp.Doer
+
 	// RestoreResponseBody controls whether the response bodies are reset after
 	// decoding so they can be read again.
 	RestoreResponseBody bool
@@ -58,6 +70,9 @@ func NewClient(
 		GetVoteDoer:         doer,
 		UpdateVoteDoer:      doer,
 		DeleteVoteDoer:      doer,
+		ExtendVoteDoer:      doer,
+		EnableVoteDoer:      doer,
+		BulkResendVoteDoer:  doer,
 		RestoreResponseBody: restoreBody,
 		scheme:              scheme,
 		host:                host,
@@ -157,6 +172,78 @@ func (c *Client) DeleteVote() goa.Endpoint {
 		resp, err := c.DeleteVoteDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("voting", "delete_vote", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// ExtendVote returns an endpoint that makes HTTP requests to the voting
+// service extend_vote server.
+func (c *Client) ExtendVote() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeExtendVoteRequest(c.encoder)
+		decodeResponse = DecodeExtendVoteResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildExtendVoteRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.ExtendVoteDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("voting", "extend_vote", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// EnableVote returns an endpoint that makes HTTP requests to the voting
+// service enable_vote server.
+func (c *Client) EnableVote() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeEnableVoteRequest(c.encoder)
+		decodeResponse = DecodeEnableVoteResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildEnableVoteRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.EnableVoteDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("voting", "enable_vote", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// BulkResendVote returns an endpoint that makes HTTP requests to the voting
+// service bulk_resend_vote server.
+func (c *Client) BulkResendVote() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeBulkResendVoteRequest(c.encoder)
+		decodeResponse = DecodeBulkResendVoteResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildBulkResendVoteRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.BulkResendVoteDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("voting", "bulk_resend_vote", err)
 		}
 		return decodeResponse(resp)
 	}

@@ -184,4 +184,91 @@ var _ = Service("voting", func() {
 			Response("ServiceUnavailable", StatusServiceUnavailable)
 		})
 	})
+
+	Method("extend_vote", func() {
+		Description("Extend a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)")
+
+		Security(JWTAuth, func() {
+			Scope("manage:projects")
+			Scope("manage:voting")
+		})
+
+		Payload(func() {
+			BearerTokenAttribute()
+			VoteIDAttribute()
+			EndTimeAttribute()
+
+			Required("vote_uid", "end_time")
+		})
+
+		Result(VoteResult)
+
+		HTTP(func() {
+			POST("/votes/{vote_uid}/extend")
+			Response(StatusOK)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
+	Method("enable_vote", func() {
+		Description("Enable a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)")
+
+		Security(JWTAuth, func() {
+			Scope("manage:projects")
+			Scope("manage:voting")
+		})
+
+		Payload(func() {
+			BearerTokenAttribute()
+			VoteIDAttribute()
+
+			Required("vote_uid")
+		})
+
+		HTTP(func() {
+			PUT("/votes/{vote_uid}/enable")
+			Response(StatusNoContent)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
+	Method("bulk_resend_vote", func() {
+		Description("Bulk resend vote email to select recipients (proxies to ITX POST /voting/poll/{poll_id}/bulk_resend)")
+
+		Security(JWTAuth, func() {
+			Scope("manage:projects")
+			Scope("manage:voting")
+		})
+
+		Payload(func() {
+			BearerTokenAttribute()
+			VoteIDAttribute()
+			Attribute("recipient_ids", ArrayOf(String), "List of recipient IDs to resend vote email to", func() {
+				Example([]string{"cba14f40-1636-11ec-9621-0242ac130002", "cba14f40-1636-11ec-9621-0242ac130003"})
+			})
+
+			Required("vote_uid", "recipient_ids")
+		})
+
+		HTTP(func() {
+			POST("/votes/{vote_uid}/bulk_resend")
+			Response(StatusNoContent)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
 })

@@ -41,6 +41,16 @@ type UpdatePollRequest struct {
 	WinningThresholdPercentage  *int                `json:"winning_threshold_percentage,omitempty"`
 }
 
+// ExtendPollRequest represents the request to extend a poll's end time in ITX
+type ExtendPollRequest struct {
+	EndTime string `json:"end_time"`
+}
+
+// BulkResendRequest represents the request to bulk resend poll emails in ITX
+type BulkResendRequest struct {
+	RecipientIDs []string `json:"recipient_ids"`
+}
+
 // PollQuestionInput represents a question in the request
 type PollQuestionInput struct {
 	Prompt  string   `json:"prompt"`

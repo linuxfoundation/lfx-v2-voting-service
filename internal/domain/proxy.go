@@ -22,4 +22,13 @@ type ITXProxyClient interface {
 
 	// DeletePoll deletes a poll in ITX (only when status is "disabled")
 	DeletePoll(ctx context.Context, pollID string) error
+
+	// ExtendPoll extends a poll's end time in ITX
+	ExtendPoll(ctx context.Context, pollID string, req *itx.ExtendPollRequest) (*itx.PollResponse, error)
+
+	// EnablePoll enables a poll for voting in ITX
+	EnablePoll(ctx context.Context, pollID string) error
+
+	// BulkResendPoll bulk resends poll emails to select recipients in ITX
+	BulkResendPoll(ctx context.Context, pollID string, req *itx.BulkResendRequest) error
 }
