@@ -13,7 +13,7 @@ import (
 // ConvertCreateVoteResponsePayloadToDomain converts Goa payload to service request
 func ConvertCreateVoteResponsePayloadToDomain(payload *votesvc.CreateVoteResponsePayload) *service.CreateVoteResponseRequest {
 	req := &service.CreateVoteResponseRequest{
-		VoteID:          payload.VoteResponseID,
+		VoteID:          payload.VoteResponseUID,
 		UserVoteContent: make([]service.VoteAnswerRequest, 0),
 		Abstain:         payload.Abstain,
 	}
@@ -74,27 +74,27 @@ func ConvertUpdateVoteResponsePayloadToDomain(payload *votesvc.UpdateVoteRespons
 // ConvertVoteResponseToResult converts ITX response to Goa result
 func ConvertVoteResponseToResult(resp *itx.VoteResponse) *votesvc.VoteResponseResult {
 	result := &votesvc.VoteResponseResult{
-		VoteID:                   resp.VoteID,
-		PollID:                   resp.PollID,
-		ProjectID:                resp.ProjectID,
-		VoteStatus:               resp.VoteStatus,
-		Abstained:                utils.BoolPtr(resp.Abstained),
-		AllowAbstain:             utils.BoolPtr(resp.AllowAbstain),
-		VoteCreationTime:         &resp.VoteCreationTime,
-		UserName:                 &resp.UserName,
-		ProfilePicture:           &resp.ProfilePicture,
-		UserID:                   &resp.UserID,
-		UserEmail:                &resp.UserEmail,
-		UserRole:                 &resp.UserRole,
-		UserVotingStatus:         &resp.UserVotingStatus,
-		UserOrgName:              &resp.UserOrgName,
-		UserOrgID:                &resp.UserOrgID,
-		SesMessageID:             &resp.SESMessageID,
-		SesMessageLastSentTime:   &resp.SESMessageLastSentTime,
-		SesComplaintExists:       utils.BoolPtr(resp.SESComplaintExists),
-		SesDeliverySuccessful:    utils.BoolPtr(resp.SESDeliverySuccessful),
-		SesEmailOpened:           utils.BoolPtr(resp.SESEmailOpened),
-		SesLinkClicked:           utils.BoolPtr(resp.SESLinkClicked),
+		VoteResponseUID:        resp.VoteID,
+		VoteUID:                resp.PollID,
+		ProjectUID:             resp.ProjectID,
+		VoteStatus:             resp.VoteStatus,
+		Abstained:              utils.BoolPtr(resp.Abstained),
+		AllowAbstain:           utils.BoolPtr(resp.AllowAbstain),
+		VoteCreationTime:       &resp.VoteCreationTime,
+		UserName:               &resp.UserName,
+		ProfilePicture:         &resp.ProfilePicture,
+		UserID:                 &resp.UserID,
+		UserEmail:              &resp.UserEmail,
+		UserRole:               &resp.UserRole,
+		UserVotingStatus:       &resp.UserVotingStatus,
+		UserOrgName:            &resp.UserOrgName,
+		UserOrgID:              &resp.UserOrgID,
+		SesMessageID:           &resp.SESMessageID,
+		SesMessageLastSentTime: &resp.SESMessageLastSentTime,
+		SesComplaintExists:     utils.BoolPtr(resp.SESComplaintExists),
+		SesDeliverySuccessful:  utils.BoolPtr(resp.SESDeliverySuccessful),
+		SesEmailOpened:         utils.BoolPtr(resp.SESEmailOpened),
+		SesLinkClicked:         utils.BoolPtr(resp.SESLinkClicked),
 	}
 
 	// Handle optional SES fields

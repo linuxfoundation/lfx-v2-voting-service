@@ -50,15 +50,15 @@ func EndTimeAttribute() {
 	})
 }
 
-// ProjectIDAttribute is the DSL attribute for project ID.
-func ProjectIDAttribute() {
+// ProjectUIDAttribute is the DSL attribute for project UID.
+func ProjectUIDAttribute() {
 	Attribute("project_uid", String, "LFX Project UID", func() {
 		Example("a09P000000DsCBuIRT")
 	})
 }
 
-// CommitteeIDAttribute is the DSL attribute for committee ID.
-func CommitteeIDAttribute() {
+// CommitteeUIDAttribute is the DSL attribute for committee UID.
+func CommitteeUIDAttribute() {
 	Attribute("committee_uid", String, "LFX Committee UID", func() {
 		Format(FormatUUID)
 		Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
@@ -89,7 +89,7 @@ func PseudoAnonymityAttribute() {
 // PollTypeAttribute is the DSL attribute for poll type.
 func PollTypeAttribute() {
 	Attribute("poll_type", String, "Type of poll", func() {
-		Enum("generic", "condorcet_irv", "meek_stv")
+		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
 		Default("generic")
 	})
 }
@@ -110,8 +110,8 @@ func AllowAbstainAttribute() {
 	})
 }
 
-// CommitteeIDsAttribute is the DSL attribute for multiple committee IDs.
-func CommitteeIDsAttribute() {
+// CommitteeUIDsAttribute is the DSL attribute for multiple committee UIDs.
+func CommitteeUIDsAttribute() {
 	Attribute("committee_uids", ArrayOf(String), "Multiple committee UIDs", func() {
 		Example([]string{"a02bdbaf-53b1-4d47-bc04-dd7e459dd308", "b03cdbaf-53b1-4d47-bc04-dd7e459dd309"})
 	})
@@ -294,17 +294,17 @@ var ForbiddenError = Type("ForbiddenError", func() {
 var VoteResponseResult = Type("VoteResponseResult", func() {
 	Description("Vote response details")
 
-	Attribute("vote_id", String, "Vote identifier", func() {
+	Attribute("vote_response_uid", String, "Vote response identifier", func() {
 		Format(FormatUUID)
 		Example("b03cdbaf-53b1-4d47-bc04-dd7e459dd309")
 	})
 
-	Attribute("poll_id", String, "Poll identifier", func() {
+	Attribute("vote_uid", String, "Vote/poll identifier", func() {
 		Format(FormatUUID)
 		Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
 	})
 
-	Attribute("project_id", String, "Project identifier")
+	Attribute("project_uid", String, "Project identifier")
 	Attribute("vote_status", String, "Vote status", func() {
 		Example("submitted")
 	})
@@ -335,7 +335,7 @@ var VoteResponseResult = Type("VoteResponseResult", func() {
 	Attribute("ses_link_clicked_last_time", String, "SES link clicked last time")
 	Attribute("poll_answers", ArrayOf(VoteAnswer), "Vote answers")
 
-	Required("vote_id", "poll_id", "project_id", "vote_status")
+	Required("vote_response_uid", "vote_uid", "project_uid", "vote_status")
 })
 
 // VoteAnswer represents an answer to a poll question

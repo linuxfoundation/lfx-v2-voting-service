@@ -144,7 +144,7 @@ type CreateVoteResponsePayload struct {
 	// JWT token
 	Token *string
 	// Vote response identifier
-	VoteResponseID string
+	VoteResponseUID string
 	// Vote/poll identifier this response belongs to
 	VoteUID string
 	// Vote answers
@@ -211,7 +211,7 @@ type GetVoteResponsePayload struct {
 	// JWT token
 	Token *string
 	// Vote response identifier
-	VoteResponseID string
+	VoteResponseUID string
 }
 
 // GetVoteResultsPayload is the payload type of the vote service
@@ -343,7 +343,7 @@ type ResendVoteResponsePayload struct {
 	// JWT token
 	Token *string
 	// Vote response identifier
-	VoteResponseID string
+	VoteResponseUID string
 }
 
 // Service unavailable error response
@@ -406,7 +406,7 @@ type UpdateVoteResponsePayload struct {
 	// JWT token
 	Token *string
 	// Vote response identifier
-	VoteResponseID string
+	VoteResponseUID string
 	// Updated vote answers
 	UserVoteContent []*VoteAnswerInput
 	// Whether to abstain from voting
@@ -448,12 +448,12 @@ type VoteChoiceAnswer struct {
 // VoteResponseResult is the result type of the vote service get_vote_response
 // method.
 type VoteResponseResult struct {
-	// Vote identifier
-	VoteID string
-	// Poll identifier
-	PollID string
+	// Vote response identifier
+	VoteResponseUID string
+	// Vote/poll identifier
+	VoteUID string
 	// Project identifier
-	ProjectID string
+	ProjectUID string
 	// Vote status
 	VoteStatus string
 	// Whether the voter abstained

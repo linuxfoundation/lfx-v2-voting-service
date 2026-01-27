@@ -1566,16 +1566,16 @@ func DecodeCreateVoteResponseResponse(decoder func(*http.Response) goahttp.Decod
 // and path set to call the "vote" service "get_vote_response" endpoint
 func (c *Client) BuildGetVoteResponseRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteResponseID string
+		voteResponseUID string
 	)
 	{
 		p, ok := v.(*vote.GetVoteResponsePayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "get_vote_response", "*vote.GetVoteResponsePayload", v)
 		}
-		voteResponseID = p.VoteResponseID
+		voteResponseUID = p.VoteResponseUID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteResponseVotePath(voteResponseID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteResponseVotePath(voteResponseUID)}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "get_vote_response", u.String(), err)
@@ -1744,16 +1744,16 @@ func DecodeGetVoteResponseResponse(decoder func(*http.Response) goahttp.Decoder,
 // endpoint
 func (c *Client) BuildUpdateVoteResponseRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteResponseID string
+		voteResponseUID string
 	)
 	{
 		p, ok := v.(*vote.UpdateVoteResponsePayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "update_vote_response", "*vote.UpdateVoteResponsePayload", v)
 		}
-		voteResponseID = p.VoteResponseID
+		voteResponseUID = p.VoteResponseUID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateVoteResponseVotePath(voteResponseID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateVoteResponseVotePath(voteResponseUID)}
 	req, err := http.NewRequest("PUT", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "update_vote_response", u.String(), err)
@@ -1913,16 +1913,16 @@ func DecodeUpdateVoteResponseResponse(decoder func(*http.Response) goahttp.Decod
 // endpoint
 func (c *Client) BuildResendVoteResponseRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteResponseID string
+		voteResponseUID string
 	)
 	{
 		p, ok := v.(*vote.ResendVoteResponsePayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "resend_vote_response", "*vote.ResendVoteResponsePayload", v)
 		}
-		voteResponseID = p.VoteResponseID
+		voteResponseUID = p.VoteResponseUID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ResendVoteResponseVotePath(voteResponseID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ResendVoteResponseVotePath(voteResponseUID)}
 	req, err := http.NewRequest("POST", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "resend_vote_response", u.String(), err)

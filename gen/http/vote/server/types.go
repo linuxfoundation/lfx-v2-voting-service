@@ -103,7 +103,7 @@ type BulkResendVoteRequestBody struct {
 // "create_vote_response" endpoint HTTP request body.
 type CreateVoteResponseRequestBody struct {
 	// Vote response identifier
-	VoteResponseID *string `form:"vote_response_id,omitempty" json:"vote_response_id,omitempty" xml:"vote_response_id,omitempty"`
+	VoteResponseUID *string `form:"vote_response_uid,omitempty" json:"vote_response_uid,omitempty" xml:"vote_response_uid,omitempty"`
 	// Vote/poll identifier this response belongs to
 	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
 	// Vote answers
@@ -297,12 +297,12 @@ type GetVoteResultsResponseBody struct {
 // GetVoteResponseResponseBody is the type of the "vote" service
 // "get_vote_response" endpoint HTTP response body.
 type GetVoteResponseResponseBody struct {
-	// Vote identifier
-	VoteID string `form:"vote_id" json:"vote_id" xml:"vote_id"`
-	// Poll identifier
-	PollID string `form:"poll_id" json:"poll_id" xml:"poll_id"`
+	// Vote response identifier
+	VoteResponseUID string `form:"vote_response_uid" json:"vote_response_uid" xml:"vote_response_uid"`
+	// Vote/poll identifier
+	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
 	// Project identifier
-	ProjectID string `form:"project_id" json:"project_id" xml:"project_id"`
+	ProjectUID string `form:"project_uid" json:"project_uid" xml:"project_uid"`
 	// Vote status
 	VoteStatus string `form:"vote_status" json:"vote_status" xml:"vote_status"`
 	// Whether the voter abstained
@@ -1373,9 +1373,9 @@ func NewGetVoteResultsResponseBody(res *vote.VoteResultsResult) *GetVoteResultsR
 // of the "get_vote_response" endpoint of the "vote" service.
 func NewGetVoteResponseResponseBody(res *vote.VoteResponseResult) *GetVoteResponseResponseBody {
 	body := &GetVoteResponseResponseBody{
-		VoteID:                 res.VoteID,
-		PollID:                 res.PollID,
-		ProjectID:              res.ProjectID,
+		VoteResponseUID:        res.VoteResponseUID,
+		VoteUID:                res.VoteUID,
+		ProjectUID:             res.ProjectUID,
 		VoteStatus:             res.VoteStatus,
 		Abstained:              res.Abstained,
 		AllowAbstain:           res.AllowAbstain,
@@ -2353,9 +2353,9 @@ func NewGetVoteResultsPayload(voteUID string, token *string) *vote.GetVoteResult
 // endpoint payload.
 func NewCreateVoteResponsePayload(body *CreateVoteResponseRequestBody, token *string) *vote.CreateVoteResponsePayload {
 	v := &vote.CreateVoteResponsePayload{
-		VoteResponseID: *body.VoteResponseID,
-		VoteUID:        *body.VoteUID,
-		Abstain:        *body.Abstain,
+		VoteResponseUID: *body.VoteResponseUID,
+		VoteUID:         *body.VoteUID,
+		Abstain:         *body.Abstain,
 	}
 	if body.UserVoteContent != nil {
 		v.UserVoteContent = make([]*vote.VoteAnswerInput, len(body.UserVoteContent))
@@ -2374,9 +2374,9 @@ func NewCreateVoteResponsePayload(body *CreateVoteResponseRequestBody, token *st
 
 // NewGetVoteResponsePayload builds a vote service get_vote_response endpoint
 // payload.
-func NewGetVoteResponsePayload(voteResponseID string, token *string) *vote.GetVoteResponsePayload {
+func NewGetVoteResponsePayload(voteResponseUID string, token *string) *vote.GetVoteResponsePayload {
 	v := &vote.GetVoteResponsePayload{}
-	v.VoteResponseID = voteResponseID
+	v.VoteResponseUID = voteResponseUID
 	v.Token = token
 
 	return v
@@ -2384,7 +2384,7 @@ func NewGetVoteResponsePayload(voteResponseID string, token *string) *vote.GetVo
 
 // NewUpdateVoteResponsePayload builds a vote service update_vote_response
 // endpoint payload.
-func NewUpdateVoteResponsePayload(body *UpdateVoteResponseRequestBody, voteResponseID string, token *string) *vote.UpdateVoteResponsePayload {
+func NewUpdateVoteResponsePayload(body *UpdateVoteResponseRequestBody, voteResponseUID string, token *string) *vote.UpdateVoteResponsePayload {
 	v := &vote.UpdateVoteResponsePayload{
 		Abstain: *body.Abstain,
 	}
@@ -2398,7 +2398,7 @@ func NewUpdateVoteResponsePayload(body *UpdateVoteResponseRequestBody, voteRespo
 			v.UserVoteContent[i] = unmarshalVoteAnswerInputRequestBodyToVoteVoteAnswerInput(val)
 		}
 	}
-	v.VoteResponseID = voteResponseID
+	v.VoteResponseUID = voteResponseUID
 	v.Token = token
 
 	return v
@@ -2406,9 +2406,9 @@ func NewUpdateVoteResponsePayload(body *UpdateVoteResponseRequestBody, voteRespo
 
 // NewResendVoteResponsePayload builds a vote service resend_vote_response
 // endpoint payload.
-func NewResendVoteResponsePayload(voteResponseID string, token *string) *vote.ResendVoteResponsePayload {
+func NewResendVoteResponsePayload(voteResponseUID string, token *string) *vote.ResendVoteResponsePayload {
 	v := &vote.ResendVoteResponsePayload{}
-	v.VoteResponseID = voteResponseID
+	v.VoteResponseUID = voteResponseUID
 	v.Token = token
 
 	return v
@@ -2471,8 +2471,8 @@ func ValidateCreateVoteRequestBody(body *CreateVoteRequestBody) (err error) {
 		}
 	}
 	if body.PollType != nil {
-		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv"}))
+		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
 		}
 	}
 	if body.NumWinners != nil {
@@ -2559,8 +2559,8 @@ func ValidateUpdateVoteRequestBody(body *UpdateVoteRequestBody) (err error) {
 		}
 	}
 	if body.PollType != nil {
-		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv"}))
+		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
 		}
 	}
 	if body.NumWinners != nil {
@@ -2620,8 +2620,8 @@ func ValidateBulkResendVoteRequestBody(body *BulkResendVoteRequestBody) (err err
 // ValidateCreateVoteResponseRequestBody runs the validations defined on
 // create_vote_response_request_body
 func ValidateCreateVoteResponseRequestBody(body *CreateVoteResponseRequestBody) (err error) {
-	if body.VoteResponseID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_response_id", "body"))
+	if body.VoteResponseUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_response_uid", "body"))
 	}
 	if body.VoteUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
@@ -2629,8 +2629,8 @@ func ValidateCreateVoteResponseRequestBody(body *CreateVoteResponseRequestBody) 
 	if body.Abstain == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("abstain", "body"))
 	}
-	if body.VoteResponseID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_response_id", *body.VoteResponseID, goa.FormatUUID))
+	if body.VoteResponseUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_response_uid", *body.VoteResponseUID, goa.FormatUUID))
 	}
 	if body.VoteUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))

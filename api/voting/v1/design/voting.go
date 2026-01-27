@@ -54,9 +54,9 @@ var _ = Service("vote", func() {
 			VoteNameAttribute()
 			VoteDescriptionAttribute()
 			EndTimeAttribute()
-			ProjectIDAttribute()
-			CommitteeIDAttribute()
-			CommitteeIDsAttribute()
+			ProjectUIDAttribute()
+			CommitteeUIDAttribute()
+			CommitteeUIDsAttribute()
 			CommitteeFiltersAttribute()
 			PollQuestionsAttribute()
 			PollCommentPromptsAttribute()
@@ -128,9 +128,9 @@ var _ = Service("vote", func() {
 			VoteNameAttribute()
 			VoteDescriptionAttribute()
 			EndTimeAttribute()
-			ProjectIDAttribute()
-			CommitteeIDAttribute()
-			CommitteeIDsAttribute()
+			ProjectUIDAttribute()
+			CommitteeUIDAttribute()
+			CommitteeUIDsAttribute()
 			CommitteeFiltersAttribute()
 			PollQuestionsAttribute()
 			PollCommentPromptsAttribute()
@@ -314,7 +314,7 @@ var _ = Service("vote", func() {
 		Payload(func() {
 			BearerTokenAttribute()
 
-			Attribute("vote_response_id", String, "Vote response identifier", func() {
+			Attribute("vote_response_uid", String, "Vote response identifier", func() {
 				Format(FormatUUID)
 				Example("b03cdbaf-53b1-4d47-bc04-dd7e459dd309")
 			})
@@ -337,7 +337,7 @@ var _ = Service("vote", func() {
 				Default(false)
 			})
 
-			Required("vote_response_id", "vote_uid", "abstain")
+			Required("vote_response_uid", "vote_uid", "abstain")
 		})
 
 		HTTP(func() {
@@ -363,18 +363,18 @@ var _ = Service("vote", func() {
 		Payload(func() {
 			BearerTokenAttribute()
 
-			Attribute("vote_response_id", String, "Vote response identifier", func() {
+			Attribute("vote_response_uid", String, "Vote response identifier", func() {
 				Format(FormatUUID)
 				Example("b03cdbaf-53b1-4d47-bc04-dd7e459dd309")
 			})
 
-			Required("vote_response_id")
+			Required("vote_response_uid")
 		})
 
 		Result(VoteResponseResult)
 
 		HTTP(func() {
-			GET("/vote_responses/{vote_response_id}")
+			GET("/vote_responses/{vote_response_uid}")
 			Response(StatusOK)
 			Response("BadRequest", StatusBadRequest)
 			Response("Unauthorized", StatusUnauthorized)
@@ -396,7 +396,7 @@ var _ = Service("vote", func() {
 		Payload(func() {
 			BearerTokenAttribute()
 
-			Attribute("vote_response_id", String, "Vote response identifier", func() {
+			Attribute("vote_response_uid", String, "Vote response identifier", func() {
 				Format(FormatUUID)
 				Example("b03cdbaf-53b1-4d47-bc04-dd7e459dd309")
 			})
@@ -414,11 +414,11 @@ var _ = Service("vote", func() {
 				Default(false)
 			})
 
-			Required("vote_response_id", "abstain")
+			Required("vote_response_uid", "abstain")
 		})
 
 		HTTP(func() {
-			PUT("/vote_responses/{vote_response_id}")
+			PUT("/vote_responses/{vote_response_uid}")
 			Response(StatusNoContent)
 			Response("BadRequest", StatusBadRequest)
 			Response("Unauthorized", StatusUnauthorized)
@@ -440,16 +440,16 @@ var _ = Service("vote", func() {
 		Payload(func() {
 			BearerTokenAttribute()
 
-			Attribute("vote_response_id", String, "Vote response identifier", func() {
+			Attribute("vote_response_uid", String, "Vote response identifier", func() {
 				Format(FormatUUID)
 				Example("b03cdbaf-53b1-4d47-bc04-dd7e459dd309")
 			})
 
-			Required("vote_response_id")
+			Required("vote_response_uid")
 		})
 
 		HTTP(func() {
-			POST("/vote_responses/{vote_response_id}/resend")
+			POST("/vote_responses/{vote_response_uid}/resend")
 			Response(StatusNoContent)
 			Response("BadRequest", StatusBadRequest)
 			Response("Unauthorized", StatusUnauthorized)

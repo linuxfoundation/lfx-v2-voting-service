@@ -25,7 +25,7 @@ paths:
                                 - choice_ids:
                                     - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                                   question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
-                            vote_response_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                            vote_response_uid: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                             vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
             responses:
                 "204":
@@ -88,7 +88,7 @@ paths:
                 - jwt_header_Authorization:
                     - manage:projects
                     - manage:voting
-    /vote_responses/{vote_response_id}:
+    /vote_responses/{vote_response_uid}:
         get:
             tags:
                 - vote
@@ -96,7 +96,7 @@ paths:
             description: Get vote response details (proxies to ITX GET /voting/vote/{vote_id})
             operationId: vote#get_vote_response
             parameters:
-                - name: vote_response_id
+                - name: vote_response_uid
                   in: path
                   description: Vote response identifier
                   required: true
@@ -205,9 +205,8 @@ paths:
                                           choice_text: Voluptatem dignissimos ex dolore rem.
                                         - choice_id: 597510a9-a083-4c05-8804-2d2fb451be64
                                           choice_text: Voluptatem dignissimos ex dolore rem.
-                                poll_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
                                 profile_picture: Eligendi reiciendis ut praesentium animi.
-                                project_id: Quo quos et explicabo sequi dolorem.
+                                project_uid: Quo quos et explicabo sequi dolorem.
                                 ses_bounce_subtype: Nobis maxime aut beatae.
                                 ses_bounce_type: Omnis molestiae deserunt.
                                 ses_complaint_date: Excepturi vel dolorem ipsam voluptas totam.
@@ -228,8 +227,9 @@ paths:
                                 user_role: Quia molestias.
                                 user_voting_status: Dolorem error quasi.
                                 vote_creation_time: "1996-06-27T08:55:15Z"
-                                vote_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                                vote_response_uid: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                                 vote_status: submitted
+                                vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
                 "400":
                     description: 'BadRequest: Bad request'
                     content:
@@ -295,7 +295,7 @@ paths:
             description: Update vote response (proxies to ITX PUT /voting/vote/{vote_id})
             operationId: vote#update_vote_response
             parameters:
-                - name: vote_response_id
+                - name: vote_response_uid
                   in: path
                   description: Vote response identifier
                   required: true
@@ -378,7 +378,7 @@ paths:
                 - jwt_header_Authorization:
                     - manage:projects
                     - manage:voting
-    /vote_responses/{vote_response_id}/resend:
+    /vote_responses/{vote_response_uid}/resend:
         post:
             tags:
                 - vote
@@ -386,7 +386,7 @@ paths:
             description: Resend vote email (proxies to ITX POST /voting/vote/{vote_id}/resend)
             operationId: vote#resend_vote_response
             parameters:
-                - name: vote_response_id
+                - name: vote_response_uid
                   in: path
                   description: Vote response identifier
                   required: true
@@ -523,7 +523,7 @@ paths:
                                   prompt: Who should be elected to the TSC?
                                   question_id: 8423e9d7-592f-44bd-8763-53582f20de12
                                   type: single_choice
-                            poll_type: condorcet_irv
+                            poll_type: instant_runoff_vote
                             project_uid: a09P000000DsCBuIRT
                             pseudo_anonymity: false
                             quorum_percentage: 50
@@ -902,7 +902,7 @@ paths:
                                   prompt: Who should be elected to the TSC?
                                   question_id: 8423e9d7-592f-44bd-8763-53582f20de12
                                   type: single_choice
-                            poll_type: generic
+                            poll_type: instant_runoff_vote
                             project_uid: a09P000000DsCBuIRT
                             pseudo_anonymity: false
                             quorum_percentage: 50
@@ -1825,6 +1825,7 @@ components:
                         - generic
                         - condorcet_irv
                         - meek_stv
+                        - instant_runoff_vote
                 project_uid:
                     type: string
                     description: LFX Project UID
@@ -1890,7 +1891,7 @@ components:
                       prompt: Who should be elected to the TSC?
                       question_id: 8423e9d7-592f-44bd-8763-53582f20de12
                       type: single_choice
-                poll_type: generic
+                poll_type: meek_stv
                 project_uid: a09P000000DsCBuIRT
                 pseudo_anonymity: false
                 quorum_percentage: 50
@@ -1919,7 +1920,7 @@ components:
                         - choice_ids:
                             - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                           question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
-                vote_response_id:
+                vote_response_uid:
                     type: string
                     description: Vote response identifier
                     example: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
@@ -1935,10 +1936,10 @@ components:
                     - choice_ids:
                         - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                       question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
-                vote_response_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                vote_response_uid: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                 vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
             required:
-                - vote_response_id
+                - vote_response_uid
                 - vote_uid
                 - abstain
         ExtendVoteRequestBody:
@@ -2546,11 +2547,12 @@ components:
                     type: string
                     description: Type of poll
                     default: generic
-                    example: generic
+                    example: instant_runoff_vote
                     enum:
                         - generic
                         - condorcet_irv
                         - meek_stv
+                        - instant_runoff_vote
                 project_uid:
                     type: string
                     description: LFX Project UID
@@ -2639,7 +2641,7 @@ components:
                       prompt: Who should be elected to the TSC?
                       question_id: 8423e9d7-592f-44bd-8763-53582f20de12
                       type: single_choice
-                poll_type: generic
+                poll_type: instant_runoff_vote
                 project_uid: a09P000000DsCBuIRT
                 pseudo_anonymity: false
                 quorum_percentage: 50
@@ -2855,16 +2857,11 @@ components:
                               choice_text: Delectus odio et magnam at.
                             - choice_id: 2bae232a-9c52-4be6-81d3-58e789337c6f
                               choice_text: Delectus odio et magnam at.
-                poll_id:
-                    type: string
-                    description: Poll identifier
-                    example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
-                    format: uuid
                 profile_picture:
                     type: string
                     description: Voter profile picture URL
                     example: Voluptas et.
-                project_id:
+                project_uid:
                     type: string
                     description: Project identifier
                     example: Laborum perferendis dicta est fugiat perferendis.
@@ -2949,15 +2946,20 @@ components:
                     description: Vote creation time
                     example: "2006-07-12T00:59:52Z"
                     format: date-time
-                vote_id:
+                vote_response_uid:
                     type: string
-                    description: Vote identifier
+                    description: Vote response identifier
                     example: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                     format: uuid
                 vote_status:
                     type: string
                     description: Vote status
                     example: submitted
+                vote_uid:
+                    type: string
+                    description: Vote/poll identifier
+                    example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                    format: uuid
             description: Vote response details
             example:
                 abstained: false
@@ -3043,9 +3045,8 @@ components:
                           choice_text: Delectus odio et magnam at.
                         - choice_id: 2bae232a-9c52-4be6-81d3-58e789337c6f
                           choice_text: Delectus odio et magnam at.
-                poll_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
                 profile_picture: Ea quis aliquam.
-                project_id: Modi doloribus iure officia sed adipisci non.
+                project_uid: Modi doloribus iure officia sed adipisci non.
                 ses_bounce_subtype: In veritatis accusantium a similique fugiat.
                 ses_bounce_type: Consequatur nihil adipisci.
                 ses_complaint_date: Explicabo voluptate amet delectus est nihil.
@@ -3066,12 +3067,13 @@ components:
                 user_role: Atque dolorem qui quo.
                 user_voting_status: Rerum omnis cumque quisquam aut.
                 vote_creation_time: "1981-07-10T06:00:02Z"
-                vote_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                vote_response_uid: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                 vote_status: submitted
+                vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
             required:
-                - vote_id
-                - poll_id
-                - project_id
+                - vote_response_uid
+                - vote_uid
+                - project_uid
                 - vote_status
         VoteResult:
             type: object

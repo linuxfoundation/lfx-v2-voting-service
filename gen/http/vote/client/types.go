@@ -101,7 +101,7 @@ type BulkResendVoteRequestBody struct {
 // "create_vote_response" endpoint HTTP request body.
 type CreateVoteResponseRequestBody struct {
 	// Vote response identifier
-	VoteResponseID string `form:"vote_response_id" json:"vote_response_id" xml:"vote_response_id"`
+	VoteResponseUID string `form:"vote_response_uid" json:"vote_response_uid" xml:"vote_response_uid"`
 	// Vote/poll identifier this response belongs to
 	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
 	// Vote answers
@@ -295,12 +295,12 @@ type GetVoteResultsResponseBody struct {
 // GetVoteResponseResponseBody is the type of the "vote" service
 // "get_vote_response" endpoint HTTP response body.
 type GetVoteResponseResponseBody struct {
-	// Vote identifier
-	VoteID *string `form:"vote_id,omitempty" json:"vote_id,omitempty" xml:"vote_id,omitempty"`
-	// Poll identifier
-	PollID *string `form:"poll_id,omitempty" json:"poll_id,omitempty" xml:"poll_id,omitempty"`
+	// Vote response identifier
+	VoteResponseUID *string `form:"vote_response_uid,omitempty" json:"vote_response_uid,omitempty" xml:"vote_response_uid,omitempty"`
+	// Vote/poll identifier
+	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
 	// Project identifier
-	ProjectID *string `form:"project_id,omitempty" json:"project_id,omitempty" xml:"project_id,omitempty"`
+	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// Vote status
 	VoteStatus *string `form:"vote_status,omitempty" json:"vote_status,omitempty" xml:"vote_status,omitempty"`
 	// Whether the voter abstained
@@ -1379,9 +1379,9 @@ func NewBulkResendVoteRequestBody(p *vote.BulkResendVotePayload) *BulkResendVote
 // payload of the "create_vote_response" endpoint of the "vote" service.
 func NewCreateVoteResponseRequestBody(p *vote.CreateVoteResponsePayload) *CreateVoteResponseRequestBody {
 	body := &CreateVoteResponseRequestBody{
-		VoteResponseID: p.VoteResponseID,
-		VoteUID:        p.VoteUID,
-		Abstain:        p.Abstain,
+		VoteResponseUID: p.VoteResponseUID,
+		VoteUID:         p.VoteUID,
+		Abstain:         p.Abstain,
 	}
 	if p.UserVoteContent != nil {
 		body.UserVoteContent = make([]*VoteAnswerInputRequestBody, len(p.UserVoteContent))
@@ -2182,9 +2182,9 @@ func NewCreateVoteResponseUnauthorized(body *CreateVoteResponseUnauthorizedRespo
 // "get_vote_response" endpoint result from a HTTP "OK" response.
 func NewGetVoteResponseVoteResponseResultOK(body *GetVoteResponseResponseBody) *vote.VoteResponseResult {
 	v := &vote.VoteResponseResult{
-		VoteID:                 *body.VoteID,
-		PollID:                 *body.PollID,
-		ProjectID:              *body.ProjectID,
+		VoteResponseUID:        *body.VoteResponseUID,
+		VoteUID:                *body.VoteUID,
+		ProjectUID:             *body.ProjectUID,
 		VoteStatus:             *body.VoteStatus,
 		Abstained:              body.Abstained,
 		AllowAbstain:           body.AllowAbstain,
@@ -2652,23 +2652,23 @@ func ValidateGetVoteResultsResponseBody(body *GetVoteResultsResponseBody) (err e
 // ValidateGetVoteResponseResponseBody runs the validations defined on
 // get_vote_response_response_body
 func ValidateGetVoteResponseResponseBody(body *GetVoteResponseResponseBody) (err error) {
-	if body.VoteID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_id", "body"))
+	if body.VoteResponseUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_response_uid", "body"))
 	}
-	if body.PollID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("poll_id", "body"))
+	if body.VoteUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
 	}
-	if body.ProjectID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("project_id", "body"))
+	if body.ProjectUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("project_uid", "body"))
 	}
 	if body.VoteStatus == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("vote_status", "body"))
 	}
-	if body.VoteID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_id", *body.VoteID, goa.FormatUUID))
+	if body.VoteResponseUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_response_uid", *body.VoteResponseUID, goa.FormatUUID))
 	}
-	if body.PollID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.poll_id", *body.PollID, goa.FormatUUID))
+	if body.VoteUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))
 	}
 	if body.VoteCreationTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_creation_time", *body.VoteCreationTime, goa.FormatDateTime))

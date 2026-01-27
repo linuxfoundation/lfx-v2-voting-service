@@ -37,7 +37,7 @@ paths:
                   schema:
                     $ref: '#/definitions/VoteCreateVoteResponseRequestBody'
                     required:
-                        - vote_response_id
+                        - vote_response_uid
                         - vote_uid
                         - abstain
             responses:
@@ -89,7 +89,7 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
-    /vote_responses/{vote_response_id}:
+    /vote_responses/{vote_response_uid}:
         get:
             tags:
                 - vote
@@ -102,7 +102,7 @@ paths:
                   * `manage:voting`
             operationId: vote#get_vote_response
             parameters:
-                - name: vote_response_id
+                - name: vote_response_uid
                   in: path
                   description: Vote response identifier
                   required: true
@@ -119,9 +119,9 @@ paths:
                     schema:
                         $ref: '#/definitions/VoteResponseResult'
                         required:
-                            - vote_id
-                            - poll_id
-                            - project_id
+                            - vote_response_uid
+                            - vote_uid
+                            - project_uid
                             - vote_status
                 "400":
                     description: Bad Request response.
@@ -181,7 +181,7 @@ paths:
                   * `manage:voting`
             operationId: vote#update_vote_response
             parameters:
-                - name: vote_response_id
+                - name: vote_response_uid
                   in: path
                   description: Vote response identifier
                   required: true
@@ -248,7 +248,7 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
-    /vote_responses/{vote_response_id}/resend:
+    /vote_responses/{vote_response_uid}/resend:
         post:
             tags:
                 - vote
@@ -261,7 +261,7 @@ paths:
                   * `manage:voting`
             operationId: vote#resend_vote_response
             parameters:
-                - name: vote_response_id
+                - name: vote_response_uid
                   in: path
                   description: Vote response identifier
                   required: true
@@ -1797,11 +1797,12 @@ definitions:
                 type: string
                 description: Type of poll
                 default: generic
-                example: meek_stv
+                example: condorcet_irv
                 enum:
                     - generic
                     - condorcet_irv
                     - meek_stv
+                    - instant_runoff_vote
             project_uid:
                 type: string
                 description: LFX Project UID
@@ -1891,7 +1892,7 @@ definitions:
                   prompt: Who should be elected to the TSC?
                   question_id: 8423e9d7-592f-44bd-8763-53582f20de12
                   type: single_choice
-            poll_type: condorcet_irv
+            poll_type: generic
             project_uid: a09P000000DsCBuIRT
             pseudo_anonymity: true
             quorum_percentage: 50
@@ -1921,7 +1922,7 @@ definitions:
                     - choice_ids:
                         - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                       question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
-            vote_response_id:
+            vote_response_uid:
                 type: string
                 description: Vote response identifier
                 example: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
@@ -1937,10 +1938,10 @@ definitions:
                 - choice_ids:
                     - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                   question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
-            vote_response_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+            vote_response_uid: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
             vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
         required:
-            - vote_response_id
+            - vote_response_uid
             - vote_uid
             - abstain
     VoteExtendVoteRequestBody:
@@ -2040,16 +2041,11 @@ definitions:
                           choice_text: Voluptatem dignissimos ex dolore rem.
                         - choice_id: 597510a9-a083-4c05-8804-2d2fb451be64
                           choice_text: Voluptatem dignissimos ex dolore rem.
-            poll_id:
-                type: string
-                description: Poll identifier
-                example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
-                format: uuid
             profile_picture:
                 type: string
                 description: Voter profile picture URL
                 example: Repellat blanditiis laudantium molestias.
-            project_id:
+            project_uid:
                 type: string
                 description: Project identifier
                 example: Placeat illo in.
@@ -2134,15 +2130,20 @@ definitions:
                 description: Vote creation time
                 example: "2001-09-09T18:59:38Z"
                 format: date-time
-            vote_id:
+            vote_response_uid:
                 type: string
-                description: Vote identifier
+                description: Vote response identifier
                 example: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                 format: uuid
             vote_status:
                 type: string
                 description: Vote status
                 example: submitted
+            vote_uid:
+                type: string
+                description: Vote/poll identifier
+                example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                format: uuid
         example:
             abstained: true
             allow_abstain: false
@@ -2191,9 +2192,8 @@ definitions:
                       choice_text: Voluptatem dignissimos ex dolore rem.
                     - choice_id: 597510a9-a083-4c05-8804-2d2fb451be64
                       choice_text: Voluptatem dignissimos ex dolore rem.
-            poll_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
             profile_picture: Doloremque eum quas.
-            project_id: Occaecati minus corrupti quia amet.
+            project_uid: Occaecati minus corrupti quia amet.
             ses_bounce_subtype: Dolores labore quia ut qui reiciendis.
             ses_bounce_type: Error tempora provident sint tempora velit illo.
             ses_complaint_date: Et sequi officiis pariatur perspiciatis.
@@ -2214,12 +2214,13 @@ definitions:
             user_role: Reprehenderit tempore repellat minus nihil qui.
             user_voting_status: Occaecati et nulla.
             vote_creation_time: "1978-11-10T02:50:16Z"
-            vote_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+            vote_response_uid: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
             vote_status: submitted
+            vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
         required:
-            - vote_id
-            - poll_id
-            - project_id
+            - vote_response_uid
+            - vote_uid
+            - project_uid
             - vote_status
     VoteResult:
         title: VoteResult
@@ -3023,11 +3024,12 @@ definitions:
                 type: string
                 description: Type of poll
                 default: generic
-                example: generic
+                example: instant_runoff_vote
                 enum:
                     - generic
                     - condorcet_irv
                     - meek_stv
+                    - instant_runoff_vote
             project_uid:
                 type: string
                 description: LFX Project UID
@@ -3094,7 +3096,7 @@ definitions:
                   prompt: Who should be elected to the TSC?
                   question_id: 8423e9d7-592f-44bd-8763-53582f20de12
                   type: single_choice
-            poll_type: condorcet_irv
+            poll_type: instant_runoff_vote
             project_uid: a09P000000DsCBuIRT
             pseudo_anonymity: true
             quorum_percentage: 50

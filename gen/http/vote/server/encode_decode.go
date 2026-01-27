@@ -1355,14 +1355,14 @@ func EncodeGetVoteResponseResponse(encoder func(context.Context, http.ResponseWr
 func DecodeGetVoteResponseRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*vote.GetVoteResponsePayload, error) {
 	return func(r *http.Request) (*vote.GetVoteResponsePayload, error) {
 		var (
-			voteResponseID string
-			token          *string
-			err            error
+			voteResponseUID string
+			token           *string
+			err             error
 
 			params = mux.Vars(r)
 		)
-		voteResponseID = params["vote_response_id"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_response_id", voteResponseID, goa.FormatUUID))
+		voteResponseUID = params["vote_response_uid"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("vote_response_uid", voteResponseUID, goa.FormatUUID))
 		tokenRaw := r.Header.Get("Authorization")
 		if tokenRaw != "" {
 			token = &tokenRaw
@@ -1370,7 +1370,7 @@ func DecodeGetVoteResponseRequest(mux goahttp.Muxer, decoder func(*http.Request)
 		if err != nil {
 			return nil, err
 		}
-		payload := NewGetVoteResponsePayload(voteResponseID, token)
+		payload := NewGetVoteResponsePayload(voteResponseUID, token)
 		if payload.Token != nil {
 			if strings.Contains(*payload.Token, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -1511,13 +1511,13 @@ func DecodeUpdateVoteResponseRequest(mux goahttp.Muxer, decoder func(*http.Reque
 		}
 
 		var (
-			voteResponseID string
-			token          *string
+			voteResponseUID string
+			token           *string
 
 			params = mux.Vars(r)
 		)
-		voteResponseID = params["vote_response_id"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_response_id", voteResponseID, goa.FormatUUID))
+		voteResponseUID = params["vote_response_uid"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("vote_response_uid", voteResponseUID, goa.FormatUUID))
 		tokenRaw := r.Header.Get("Authorization")
 		if tokenRaw != "" {
 			token = &tokenRaw
@@ -1525,7 +1525,7 @@ func DecodeUpdateVoteResponseRequest(mux goahttp.Muxer, decoder func(*http.Reque
 		if err != nil {
 			return nil, err
 		}
-		payload := NewUpdateVoteResponsePayload(&body, voteResponseID, token)
+		payload := NewUpdateVoteResponsePayload(&body, voteResponseUID, token)
 		if payload.Token != nil {
 			if strings.Contains(*payload.Token, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -1646,14 +1646,14 @@ func EncodeResendVoteResponseResponse(encoder func(context.Context, http.Respons
 func DecodeResendVoteResponseRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*vote.ResendVoteResponsePayload, error) {
 	return func(r *http.Request) (*vote.ResendVoteResponsePayload, error) {
 		var (
-			voteResponseID string
-			token          *string
-			err            error
+			voteResponseUID string
+			token           *string
+			err             error
 
 			params = mux.Vars(r)
 		)
-		voteResponseID = params["vote_response_id"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_response_id", voteResponseID, goa.FormatUUID))
+		voteResponseUID = params["vote_response_uid"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("vote_response_uid", voteResponseUID, goa.FormatUUID))
 		tokenRaw := r.Header.Get("Authorization")
 		if tokenRaw != "" {
 			token = &tokenRaw
@@ -1661,7 +1661,7 @@ func DecodeResendVoteResponseRequest(mux goahttp.Muxer, decoder func(*http.Reque
 		if err != nil {
 			return nil, err
 		}
-		payload := NewResendVoteResponsePayload(voteResponseID, token)
+		payload := NewResendVoteResponsePayload(voteResponseUID, token)
 		if payload.Token != nil {
 			if strings.Contains(*payload.Token, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")

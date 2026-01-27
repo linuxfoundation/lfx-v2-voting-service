@@ -70,9 +70,9 @@ func New(
 			{"BulkResendVote", "POST", "/votes/{vote_uid}/bulk_resend"},
 			{"GetVoteResults", "GET", "/votes/{vote_uid}/results"},
 			{"CreateVoteResponse", "POST", "/vote_responses"},
-			{"GetVoteResponse", "GET", "/vote_responses/{vote_response_id}"},
-			{"UpdateVoteResponse", "PUT", "/vote_responses/{vote_response_id}"},
-			{"ResendVoteResponse", "POST", "/vote_responses/{vote_response_id}/resend"},
+			{"GetVoteResponse", "GET", "/vote_responses/{vote_response_uid}"},
+			{"UpdateVoteResponse", "PUT", "/vote_responses/{vote_response_uid}"},
+			{"ResendVoteResponse", "POST", "/vote_responses/{vote_response_uid}/resend"},
 		},
 		CreateVote:         NewCreateVoteHandler(e.CreateVote, mux, decoder, encoder, errhandler, formatter),
 		GetVote:            NewGetVoteHandler(e.GetVote, mux, decoder, encoder, errhandler, formatter),
@@ -618,7 +618,7 @@ func MountGetVoteResponseHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("GET", "/vote_responses/{vote_response_id}", f)
+	mux.Handle("GET", "/vote_responses/{vote_response_uid}", f)
 }
 
 // NewGetVoteResponseHandler creates a HTTP handler which loads the HTTP
@@ -671,7 +671,7 @@ func MountUpdateVoteResponseHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("PUT", "/vote_responses/{vote_response_id}", f)
+	mux.Handle("PUT", "/vote_responses/{vote_response_uid}", f)
 }
 
 // NewUpdateVoteResponseHandler creates a HTTP handler which loads the HTTP
@@ -724,7 +724,7 @@ func MountResendVoteResponseHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("POST", "/vote_responses/{vote_response_id}/resend", f)
+	mux.Handle("POST", "/vote_responses/{vote_response_uid}/resend", f)
 }
 
 // NewResendVoteResponseHandler creates a HTTP handler which loads the HTTP
