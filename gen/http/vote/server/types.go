@@ -277,6 +277,23 @@ type ExtendVoteResponseBody struct {
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 }
 
+// GetVoteResultsResponseBody is the type of the "vote" service
+// "get_vote_results" endpoint HTTP response body.
+type GetVoteResultsResponseBody struct {
+	// Poll results data
+	PollResults []*PollResultItemResponseBody `form:"poll_results" json:"poll_results" xml:"poll_results"`
+	// Comment results
+	CommentResults []*CommentResultItemResponseBody `form:"comment_results,omitempty" json:"comment_results,omitempty" xml:"comment_results,omitempty"`
+	// Number of recipients
+	NumRecipients int `form:"num_recipients" json:"num_recipients" xml:"num_recipients"`
+	// Number of votes cast
+	NumVotesCast int `form:"num_votes_cast" json:"num_votes_cast" xml:"num_votes_cast"`
+	// Number who abstained
+	NumAbstained int `form:"num_abstained" json:"num_abstained" xml:"num_abstained"`
+	// Poll end time
+	PollEndTime *string `form:"poll_end_time,omitempty" json:"poll_end_time,omitempty" xml:"poll_end_time,omitempty"`
+}
+
 // GetVoteResponseResponseBody is the type of the "vote" service
 // "get_vote_response" endpoint HTTP response body.
 type GetVoteResponseResponseBody struct {
@@ -723,6 +740,62 @@ type BulkResendVoteUnauthorizedResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// GetVoteResultsBadRequestResponseBody is the type of the "vote" service
+// "get_vote_results" endpoint HTTP response body for the "BadRequest" error.
+type GetVoteResultsBadRequestResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetVoteResultsForbiddenResponseBody is the type of the "vote" service
+// "get_vote_results" endpoint HTTP response body for the "Forbidden" error.
+type GetVoteResultsForbiddenResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetVoteResultsInternalServerErrorResponseBody is the type of the "vote"
+// service "get_vote_results" endpoint HTTP response body for the
+// "InternalServerError" error.
+type GetVoteResultsInternalServerErrorResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetVoteResultsNotFoundResponseBody is the type of the "vote" service
+// "get_vote_results" endpoint HTTP response body for the "NotFound" error.
+type GetVoteResultsNotFoundResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetVoteResultsServiceUnavailableResponseBody is the type of the "vote"
+// service "get_vote_results" endpoint HTTP response body for the
+// "ServiceUnavailable" error.
+type GetVoteResultsServiceUnavailableResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetVoteResultsUnauthorizedResponseBody is the type of the "vote" service
+// "get_vote_results" endpoint HTTP response body for the "Unauthorized" error.
+type GetVoteResultsUnauthorizedResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // CreateVoteResponseBadRequestResponseBody is the type of the "vote" service
 // "create_vote_response" endpoint HTTP response body for the "BadRequest"
 // error.
@@ -973,6 +1046,82 @@ type PollChoiceResponseBody struct {
 	ChoiceText string `form:"choice_text" json:"choice_text" xml:"choice_text"`
 }
 
+// PollResultItemResponseBody is used to define fields on response body types.
+type PollResultItemResponseBody struct {
+	// Question details
+	Question *PollQuestionDetailResponseBody `form:"question" json:"question" xml:"question"`
+	// Vote counts for non-ranked questions
+	GenericChoiceVotes []*GenericChoiceVoteResponseBody `form:"generic_choice_votes,omitempty" json:"generic_choice_votes,omitempty" xml:"generic_choice_votes,omitempty"`
+	// Ranked choice voting results
+	RankedChoiceVotes []*RankedChoiceVoteResponseBody `form:"ranked_choice_votes,omitempty" json:"ranked_choice_votes,omitempty" xml:"ranked_choice_votes,omitempty"`
+	// Winner information for ranked choice
+	RankedChoiceWinnerInfo *RankedChoiceWinnerInfoResponseBody `form:"ranked_choice_winner_info,omitempty" json:"ranked_choice_winner_info,omitempty" xml:"ranked_choice_winner_info,omitempty"`
+	// IRV round summary
+	IrvRoundSummary any `form:"irv_round_summary,omitempty" json:"irv_round_summary,omitempty" xml:"irv_round_summary,omitempty"`
+	// Meek STV round summary
+	MeekStvRoundSummary any `form:"meek_stv_round_summary,omitempty" json:"meek_stv_round_summary,omitempty" xml:"meek_stv_round_summary,omitempty"`
+}
+
+// PollQuestionDetailResponseBody is used to define fields on response body
+// types.
+type PollQuestionDetailResponseBody struct {
+	// Question identifier
+	QuestionID string `form:"question_id" json:"question_id" xml:"question_id"`
+	// Question prompt
+	Prompt string `form:"prompt" json:"prompt" xml:"prompt"`
+	// Question type
+	Type string `form:"type" json:"type" xml:"type"`
+	// Answer choices
+	Choices []*PollChoiceResponseBody `form:"choices" json:"choices" xml:"choices"`
+}
+
+// GenericChoiceVoteResponseBody is used to define fields on response body
+// types.
+type GenericChoiceVoteResponseBody struct {
+	// Choice identifier
+	ChoiceID string `form:"choice_id" json:"choice_id" xml:"choice_id"`
+	// Number of votes
+	VoteCount int `form:"vote_count" json:"vote_count" xml:"vote_count"`
+	// Percentage of votes
+	Percentage float64 `form:"percentage" json:"percentage" xml:"percentage"`
+}
+
+// RankedChoiceVoteResponseBody is used to define fields on response body types.
+type RankedChoiceVoteResponseBody struct {
+	// Choice identifier
+	ChoiceID string `form:"choice_id" json:"choice_id" xml:"choice_id"`
+	// Vote counts per rank
+	RankCounts []*RankCountResponseBody `form:"rank_counts" json:"rank_counts" xml:"rank_counts"`
+	// Condorcet matrix
+	CondorcetMatrix any `form:"condorcet_matrix,omitempty" json:"condorcet_matrix,omitempty" xml:"condorcet_matrix,omitempty"`
+}
+
+// RankCountResponseBody is used to define fields on response body types.
+type RankCountResponseBody struct {
+	// Rank position
+	Rank int `form:"rank" json:"rank" xml:"rank"`
+	// Number of votes at this rank
+	Count int `form:"count" json:"count" xml:"count"`
+}
+
+// RankedChoiceWinnerInfoResponseBody is used to define fields on response body
+// types.
+type RankedChoiceWinnerInfoResponseBody struct {
+	// Winning choices
+	PollChoices []*PollChoiceResponseBody `form:"poll_choices" json:"poll_choices" xml:"poll_choices"`
+	// Whether Condorcet IRV was used
+	CondorcetIrvUsedForEliminations *bool `form:"condorcet_irv_used_for_eliminations,omitempty" json:"condorcet_irv_used_for_eliminations,omitempty" xml:"condorcet_irv_used_for_eliminations,omitempty"`
+}
+
+// CommentResultItemResponseBody is used to define fields on response body
+// types.
+type CommentResultItemResponseBody struct {
+	// Comment prompt
+	Prompt string `form:"prompt" json:"prompt" xml:"prompt"`
+	// List of comments
+	Comments []string `form:"comments" json:"comments" xml:"comments"`
+}
+
 // VoteAnswerResponseBody is used to define fields on response body types.
 type VoteAnswerResponseBody struct {
 	// Question identifier
@@ -1181,6 +1330,40 @@ func NewExtendVoteResponseBody(res *vote.VoteResult) *ExtendVoteResponseBody {
 				continue
 			}
 			body.PollQuestions[i] = marshalVotePollQuestionToPollQuestionResponseBody(val)
+		}
+	}
+	return body
+}
+
+// NewGetVoteResultsResponseBody builds the HTTP response body from the result
+// of the "get_vote_results" endpoint of the "vote" service.
+func NewGetVoteResultsResponseBody(res *vote.VoteResultsResult) *GetVoteResultsResponseBody {
+	body := &GetVoteResultsResponseBody{
+		NumRecipients: res.NumRecipients,
+		NumVotesCast:  res.NumVotesCast,
+		NumAbstained:  res.NumAbstained,
+		PollEndTime:   res.PollEndTime,
+	}
+	if res.PollResults != nil {
+		body.PollResults = make([]*PollResultItemResponseBody, len(res.PollResults))
+		for i, val := range res.PollResults {
+			if val == nil {
+				body.PollResults[i] = nil
+				continue
+			}
+			body.PollResults[i] = marshalVotePollResultItemToPollResultItemResponseBody(val)
+		}
+	} else {
+		body.PollResults = []*PollResultItemResponseBody{}
+	}
+	if res.CommentResults != nil {
+		body.CommentResults = make([]*CommentResultItemResponseBody, len(res.CommentResults))
+		for i, val := range res.CommentResults {
+			if val == nil {
+				body.CommentResults[i] = nil
+				continue
+			}
+			body.CommentResults[i] = marshalVoteCommentResultItemToCommentResultItemResponseBody(val)
 		}
 	}
 	return body
@@ -1653,6 +1836,68 @@ func NewBulkResendVoteUnauthorizedResponseBody(res *vote.UnauthorizedError) *Bul
 	return body
 }
 
+// NewGetVoteResultsBadRequestResponseBody builds the HTTP response body from
+// the result of the "get_vote_results" endpoint of the "vote" service.
+func NewGetVoteResultsBadRequestResponseBody(res *vote.BadRequestError) *GetVoteResultsBadRequestResponseBody {
+	body := &GetVoteResultsBadRequestResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetVoteResultsForbiddenResponseBody builds the HTTP response body from
+// the result of the "get_vote_results" endpoint of the "vote" service.
+func NewGetVoteResultsForbiddenResponseBody(res *vote.ForbiddenError) *GetVoteResultsForbiddenResponseBody {
+	body := &GetVoteResultsForbiddenResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetVoteResultsInternalServerErrorResponseBody builds the HTTP response
+// body from the result of the "get_vote_results" endpoint of the "vote"
+// service.
+func NewGetVoteResultsInternalServerErrorResponseBody(res *vote.InternalServerError) *GetVoteResultsInternalServerErrorResponseBody {
+	body := &GetVoteResultsInternalServerErrorResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetVoteResultsNotFoundResponseBody builds the HTTP response body from the
+// result of the "get_vote_results" endpoint of the "vote" service.
+func NewGetVoteResultsNotFoundResponseBody(res *vote.NotFoundError) *GetVoteResultsNotFoundResponseBody {
+	body := &GetVoteResultsNotFoundResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetVoteResultsServiceUnavailableResponseBody builds the HTTP response
+// body from the result of the "get_vote_results" endpoint of the "vote"
+// service.
+func NewGetVoteResultsServiceUnavailableResponseBody(res *vote.ServiceUnavailableError) *GetVoteResultsServiceUnavailableResponseBody {
+	body := &GetVoteResultsServiceUnavailableResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetVoteResultsUnauthorizedResponseBody builds the HTTP response body from
+// the result of the "get_vote_results" endpoint of the "vote" service.
+func NewGetVoteResultsUnauthorizedResponseBody(res *vote.UnauthorizedError) *GetVoteResultsUnauthorizedResponseBody {
+	body := &GetVoteResultsUnauthorizedResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewCreateVoteResponseBadRequestResponseBody builds the HTTP response body
 // from the result of the "create_vote_response" endpoint of the "vote" service.
 func NewCreateVoteResponseBadRequestResponseBody(res *vote.BadRequestError) *CreateVoteResponseBadRequestResponseBody {
@@ -2088,6 +2333,16 @@ func NewBulkResendVotePayload(body *BulkResendVoteRequestBody, voteUID string, t
 	for i, val := range body.RecipientIds {
 		v.RecipientIds[i] = val
 	}
+	v.VoteUID = voteUID
+	v.Token = token
+
+	return v
+}
+
+// NewGetVoteResultsPayload builds a vote service get_vote_results endpoint
+// payload.
+func NewGetVoteResultsPayload(voteUID string, token *string) *vote.GetVoteResultsPayload {
+	v := &vote.GetVoteResultsPayload{}
 	v.VoteUID = voteUID
 	v.Token = token
 

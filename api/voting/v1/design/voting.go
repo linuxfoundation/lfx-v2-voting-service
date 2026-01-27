@@ -272,6 +272,35 @@ var _ = Service("vote", func() {
 		})
 	})
 
+	Method("get_vote_results", func() {
+		Description("Get vote results (proxies to ITX GET /voting/poll/{poll_id}/results)")
+
+		Security(JWTAuth, func() {
+			Scope("manage:projects")
+			Scope("manage:voting")
+		})
+
+		Payload(func() {
+			BearerTokenAttribute()
+			VoteIDAttribute()
+
+			Required("vote_uid")
+		})
+
+		Result(VoteResultsResult)
+
+		HTTP(func() {
+			GET("/votes/{vote_uid}/results")
+			Response(StatusOK)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
 	// Vote Response Methods (ballot submission)
 
 	Method("create_vote_response", func() {

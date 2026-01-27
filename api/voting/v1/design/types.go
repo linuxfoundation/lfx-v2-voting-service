@@ -413,3 +413,105 @@ var RankedChoiceInput = Type("RankedChoiceInput", func() {
 
 	Required("choice_id", "choice_rank")
 })
+
+// VoteResultsResult represents aggregated poll/vote results (matches ITX structure)
+var VoteResultsResult = Type("VoteResultsResult", func() {
+	Description("Aggregated poll/vote results")
+
+	Attribute("poll_results", ArrayOf(PollResultItem), "Poll results data")
+	Attribute("comment_results", ArrayOf(CommentResultItem), "Comment results")
+	Attribute("num_recipients", Int, "Number of recipients")
+	Attribute("num_votes_cast", Int, "Number of votes cast")
+	Attribute("num_abstained", Int, "Number who abstained")
+	Attribute("poll_end_time", String, "Poll end time", func() {
+		Format(FormatDateTime)
+	})
+
+	Required("poll_results", "num_recipients", "num_votes_cast", "num_abstained")
+})
+
+// PollResultItem represents results for a single poll question
+var PollResultItem = Type("PollResultItem", func() {
+	Description("Results for a single poll question")
+
+	Attribute("question", PollQuestionDetail, "Question details")
+	Attribute("generic_choice_votes", ArrayOf(GenericChoiceVote), "Vote counts for non-ranked questions")
+	Attribute("ranked_choice_votes", ArrayOf(RankedChoiceVote), "Ranked choice voting results")
+	Attribute("ranked_choice_winner_info", RankedChoiceWinnerInfo, "Winner information for ranked choice")
+	Attribute("irv_round_summary", Any, "IRV round summary")
+	Attribute("meek_stv_round_summary", Any, "Meek STV round summary")
+
+	Required("question")
+})
+
+// PollQuestionDetail represents question details in results
+var PollQuestionDetail = Type("PollQuestionDetail", func() {
+	Description("Question details")
+
+	Attribute("question_id", String, "Question identifier", func() {
+		Format(FormatUUID)
+	})
+	Attribute("prompt", String, "Question prompt")
+	Attribute("type", String, "Question type")
+	Attribute("choices", ArrayOf(PollChoice), "Answer choices")
+
+	Required("question_id", "prompt", "type", "choices")
+})
+
+// GenericChoiceVote represents vote counts for non-ranked questions
+var GenericChoiceVote = Type("GenericChoiceVote", func() {
+	Description("Vote count for a single choice")
+
+	Attribute("choice_id", String, "Choice identifier", func() {
+		Format(FormatUUID)
+	})
+	Attribute("vote_count", Int, "Number of votes")
+	Attribute("percentage", Float64, "Percentage of votes")
+
+	Required("choice_id", "vote_count", "percentage")
+})
+
+// RankedChoiceVote represents ranked choice voting results
+var RankedChoiceVote = Type("RankedChoiceVote", func() {
+	Description("Ranked choice voting results for a choice")
+
+	Attribute("choice_id", String, "Choice identifier", func() {
+		Format(FormatUUID)
+	})
+	Attribute("rank_counts", ArrayOf(RankCount), "Vote counts per rank")
+	Attribute("condorcet_matrix", Any, "Condorcet matrix")
+
+	Required("choice_id", "rank_counts")
+})
+
+// RankCount represents vote count at a specific rank
+var RankCount = Type("RankCount", func() {
+	Description("Vote count at a specific rank")
+
+	Attribute("rank", Int, "Rank position", func() {
+		Minimum(1)
+	})
+	Attribute("count", Int, "Number of votes at this rank")
+
+	Required("rank", "count")
+})
+
+// RankedChoiceWinnerInfo represents winner information for ranked choice
+var RankedChoiceWinnerInfo = Type("RankedChoiceWinnerInfo", func() {
+	Description("Winner information for ranked choice voting")
+
+	Attribute("poll_choices", ArrayOf(PollChoice), "Winning choices")
+	Attribute("condorcet_irv_used_for_eliminations", Boolean, "Whether Condorcet IRV was used")
+
+	Required("poll_choices")
+})
+
+// CommentResultItem represents comment results
+var CommentResultItem = Type("CommentResultItem", func() {
+	Description("Comment results")
+
+	Attribute("prompt", String, "Comment prompt")
+	Attribute("comments", ArrayOf(String), "List of comments")
+
+	Required("prompt", "comments")
+})

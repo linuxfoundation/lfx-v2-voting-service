@@ -31,6 +31,9 @@ type PollClient interface {
 
 	// BulkResendPoll bulk resends poll emails to select recipients in ITX
 	BulkResendPoll(ctx context.Context, pollID string, req *itx.BulkResendRequest) error
+
+	// GetPollResults retrieves aggregated poll results from ITX
+	GetPollResults(ctx context.Context, pollID string) (*itx.VoteResults, error)
 }
 
 // VoteResponseClient defines the interface for vote response operations in ITX

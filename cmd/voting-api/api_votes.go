@@ -176,3 +176,24 @@ func (s *VotingAPI) BulkResendVote(ctx context.Context, payload *votesvc.BulkRes
 
 	return nil
 }
+
+// GetVoteResults retrieves aggregated vote results (proxies to ITX GET /voting/poll/{poll_id}/results)
+func (s *VotingAPI) GetVoteResults(ctx context.Context, payload *votesvc.GetVoteResultsPayload) (*votesvc.VoteResultsResult, error) {
+	logger := slog.With("component", "voting_api", "method", "GetVoteResults")
+
+	logger.InfoContext(ctx, "Get vote results request received", "vote_uid", payload.VoteUID)
+
+	// Call service layer
+	results, err := s.voteService.GetVoteResults(ctx, payload.VoteUID)
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to get vote results", "error", err)
+		return nil, handleError(err)
+	}
+
+	// Convert domain response to Goa result
+	result := apiservice.ConvertVoteResultsToResult(results)
+
+	logger.InfoContext(ctx, "Vote results retrieved successfully", "vote_uid", payload.VoteUID)
+
+	return result, nil
+}

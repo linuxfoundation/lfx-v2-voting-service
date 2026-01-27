@@ -1052,6 +1052,145 @@ func EncodeBulkResendVoteError(encoder func(context.Context, http.ResponseWriter
 	}
 }
 
+// EncodeGetVoteResultsResponse returns an encoder for responses returned by
+// the vote get_vote_results endpoint.
+func EncodeGetVoteResultsResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
+	return func(ctx context.Context, w http.ResponseWriter, v any) error {
+		res, _ := v.(*vote.VoteResultsResult)
+		enc := encoder(ctx, w)
+		body := NewGetVoteResultsResponseBody(res)
+		w.WriteHeader(http.StatusOK)
+		return enc.Encode(body)
+	}
+}
+
+// DecodeGetVoteResultsRequest returns a decoder for requests sent to the vote
+// get_vote_results endpoint.
+func DecodeGetVoteResultsRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*vote.GetVoteResultsPayload, error) {
+	return func(r *http.Request) (*vote.GetVoteResultsPayload, error) {
+		var (
+			voteUID string
+			token   *string
+			err     error
+
+			params = mux.Vars(r)
+		)
+		voteUID = params["vote_uid"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		tokenRaw := r.Header.Get("Authorization")
+		if tokenRaw != "" {
+			token = &tokenRaw
+		}
+		if err != nil {
+			return nil, err
+		}
+		payload := NewGetVoteResultsPayload(voteUID, token)
+		if payload.Token != nil {
+			if strings.Contains(*payload.Token, " ") {
+				// Remove authorization scheme prefix (e.g. "Bearer")
+				cred := strings.SplitN(*payload.Token, " ", 2)[1]
+				payload.Token = &cred
+			}
+		}
+
+		return payload, nil
+	}
+}
+
+// EncodeGetVoteResultsError returns an encoder for errors returned by the
+// get_vote_results vote endpoint.
+func EncodeGetVoteResultsError(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder, formatter func(ctx context.Context, err error) goahttp.Statuser) func(context.Context, http.ResponseWriter, error) error {
+	encodeError := goahttp.ErrorEncoder(encoder, formatter)
+	return func(ctx context.Context, w http.ResponseWriter, v error) error {
+		var en goa.GoaErrorNamer
+		if !errors.As(v, &en) {
+			return encodeError(ctx, w, v)
+		}
+		switch en.GoaErrorName() {
+		case "BadRequest":
+			var res *vote.BadRequestError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetVoteResultsBadRequestResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusBadRequest)
+			return enc.Encode(body)
+		case "Forbidden":
+			var res *vote.ForbiddenError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetVoteResultsForbiddenResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusForbidden)
+			return enc.Encode(body)
+		case "InternalServerError":
+			var res *vote.InternalServerError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetVoteResultsInternalServerErrorResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusInternalServerError)
+			return enc.Encode(body)
+		case "NotFound":
+			var res *vote.NotFoundError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetVoteResultsNotFoundResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusNotFound)
+			return enc.Encode(body)
+		case "ServiceUnavailable":
+			var res *vote.ServiceUnavailableError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetVoteResultsServiceUnavailableResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return enc.Encode(body)
+		case "Unauthorized":
+			var res *vote.UnauthorizedError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewGetVoteResultsUnauthorizedResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusUnauthorized)
+			return enc.Encode(body)
+		default:
+			return encodeError(ctx, w, v)
+		}
+	}
+}
+
 // EncodeCreateVoteResponseResponse returns an encoder for responses returned
 // by the vote create_vote_response endpoint.
 func EncodeCreateVoteResponseResponse(encoder func(context.Context, http.ResponseWriter) goahttp.Encoder) func(context.Context, http.ResponseWriter, any) error {
@@ -1707,6 +1846,170 @@ func marshalVotePollChoiceToPollChoiceResponseBody(v *vote.PollChoice) *PollChoi
 	res := &PollChoiceResponseBody{
 		ChoiceID:   v.ChoiceID,
 		ChoiceText: v.ChoiceText,
+	}
+
+	return res
+}
+
+// marshalVotePollResultItemToPollResultItemResponseBody builds a value of type
+// *PollResultItemResponseBody from a value of type *vote.PollResultItem.
+func marshalVotePollResultItemToPollResultItemResponseBody(v *vote.PollResultItem) *PollResultItemResponseBody {
+	res := &PollResultItemResponseBody{
+		IrvRoundSummary:     v.IrvRoundSummary,
+		MeekStvRoundSummary: v.MeekStvRoundSummary,
+	}
+	if v.Question != nil {
+		res.Question = marshalVotePollQuestionDetailToPollQuestionDetailResponseBody(v.Question)
+	}
+	if v.GenericChoiceVotes != nil {
+		res.GenericChoiceVotes = make([]*GenericChoiceVoteResponseBody, len(v.GenericChoiceVotes))
+		for i, val := range v.GenericChoiceVotes {
+			if val == nil {
+				res.GenericChoiceVotes[i] = nil
+				continue
+			}
+			res.GenericChoiceVotes[i] = marshalVoteGenericChoiceVoteToGenericChoiceVoteResponseBody(val)
+		}
+	}
+	if v.RankedChoiceVotes != nil {
+		res.RankedChoiceVotes = make([]*RankedChoiceVoteResponseBody, len(v.RankedChoiceVotes))
+		for i, val := range v.RankedChoiceVotes {
+			if val == nil {
+				res.RankedChoiceVotes[i] = nil
+				continue
+			}
+			res.RankedChoiceVotes[i] = marshalVoteRankedChoiceVoteToRankedChoiceVoteResponseBody(val)
+		}
+	}
+	if v.RankedChoiceWinnerInfo != nil {
+		res.RankedChoiceWinnerInfo = marshalVoteRankedChoiceWinnerInfoToRankedChoiceWinnerInfoResponseBody(v.RankedChoiceWinnerInfo)
+	}
+
+	return res
+}
+
+// marshalVotePollQuestionDetailToPollQuestionDetailResponseBody builds a value
+// of type *PollQuestionDetailResponseBody from a value of type
+// *vote.PollQuestionDetail.
+func marshalVotePollQuestionDetailToPollQuestionDetailResponseBody(v *vote.PollQuestionDetail) *PollQuestionDetailResponseBody {
+	res := &PollQuestionDetailResponseBody{
+		QuestionID: v.QuestionID,
+		Prompt:     v.Prompt,
+		Type:       v.Type,
+	}
+	if v.Choices != nil {
+		res.Choices = make([]*PollChoiceResponseBody, len(v.Choices))
+		for i, val := range v.Choices {
+			if val == nil {
+				res.Choices[i] = nil
+				continue
+			}
+			res.Choices[i] = marshalVotePollChoiceToPollChoiceResponseBody(val)
+		}
+	} else {
+		res.Choices = []*PollChoiceResponseBody{}
+	}
+
+	return res
+}
+
+// marshalVoteGenericChoiceVoteToGenericChoiceVoteResponseBody builds a value
+// of type *GenericChoiceVoteResponseBody from a value of type
+// *vote.GenericChoiceVote.
+func marshalVoteGenericChoiceVoteToGenericChoiceVoteResponseBody(v *vote.GenericChoiceVote) *GenericChoiceVoteResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &GenericChoiceVoteResponseBody{
+		ChoiceID:   v.ChoiceID,
+		VoteCount:  v.VoteCount,
+		Percentage: v.Percentage,
+	}
+
+	return res
+}
+
+// marshalVoteRankedChoiceVoteToRankedChoiceVoteResponseBody builds a value of
+// type *RankedChoiceVoteResponseBody from a value of type
+// *vote.RankedChoiceVote.
+func marshalVoteRankedChoiceVoteToRankedChoiceVoteResponseBody(v *vote.RankedChoiceVote) *RankedChoiceVoteResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &RankedChoiceVoteResponseBody{
+		ChoiceID:        v.ChoiceID,
+		CondorcetMatrix: v.CondorcetMatrix,
+	}
+	if v.RankCounts != nil {
+		res.RankCounts = make([]*RankCountResponseBody, len(v.RankCounts))
+		for i, val := range v.RankCounts {
+			if val == nil {
+				res.RankCounts[i] = nil
+				continue
+			}
+			res.RankCounts[i] = marshalVoteRankCountToRankCountResponseBody(val)
+		}
+	} else {
+		res.RankCounts = []*RankCountResponseBody{}
+	}
+
+	return res
+}
+
+// marshalVoteRankCountToRankCountResponseBody builds a value of type
+// *RankCountResponseBody from a value of type *vote.RankCount.
+func marshalVoteRankCountToRankCountResponseBody(v *vote.RankCount) *RankCountResponseBody {
+	res := &RankCountResponseBody{
+		Rank:  v.Rank,
+		Count: v.Count,
+	}
+
+	return res
+}
+
+// marshalVoteRankedChoiceWinnerInfoToRankedChoiceWinnerInfoResponseBody builds
+// a value of type *RankedChoiceWinnerInfoResponseBody from a value of type
+// *vote.RankedChoiceWinnerInfo.
+func marshalVoteRankedChoiceWinnerInfoToRankedChoiceWinnerInfoResponseBody(v *vote.RankedChoiceWinnerInfo) *RankedChoiceWinnerInfoResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &RankedChoiceWinnerInfoResponseBody{
+		CondorcetIrvUsedForEliminations: v.CondorcetIrvUsedForEliminations,
+	}
+	if v.PollChoices != nil {
+		res.PollChoices = make([]*PollChoiceResponseBody, len(v.PollChoices))
+		for i, val := range v.PollChoices {
+			if val == nil {
+				res.PollChoices[i] = nil
+				continue
+			}
+			res.PollChoices[i] = marshalVotePollChoiceToPollChoiceResponseBody(val)
+		}
+	} else {
+		res.PollChoices = []*PollChoiceResponseBody{}
+	}
+
+	return res
+}
+
+// marshalVoteCommentResultItemToCommentResultItemResponseBody builds a value
+// of type *CommentResultItemResponseBody from a value of type
+// *vote.CommentResultItem.
+func marshalVoteCommentResultItemToCommentResultItemResponseBody(v *vote.CommentResultItem) *CommentResultItemResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &CommentResultItemResponseBody{
+		Prompt: v.Prompt,
+	}
+	if v.Comments != nil {
+		res.Comments = make([]string, len(v.Comments))
+		for i, val := range v.Comments {
+			res.Comments[i] = val
+		}
+	} else {
+		res.Comments = []string{}
 	}
 
 	return res

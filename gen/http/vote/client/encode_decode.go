@@ -1226,6 +1226,183 @@ func DecodeBulkResendVoteResponse(decoder func(*http.Response) goahttp.Decoder, 
 	}
 }
 
+// BuildGetVoteResultsRequest instantiates a HTTP request object with method
+// and path set to call the "vote" service "get_vote_results" endpoint
+func (c *Client) BuildGetVoteResultsRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		voteUID string
+	)
+	{
+		p, ok := v.(*vote.GetVoteResultsPayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("vote", "get_vote_results", "*vote.GetVoteResultsPayload", v)
+		}
+		voteUID = p.VoteUID
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteResultsVotePath(voteUID)}
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("vote", "get_vote_results", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeGetVoteResultsRequest returns an encoder for requests sent to the vote
+// get_vote_results server.
+func EncodeGetVoteResultsRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*vote.GetVoteResultsPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("vote", "get_vote_results", "*vote.GetVoteResultsPayload", v)
+		}
+		if p.Token != nil {
+			head := *p.Token
+			if !strings.Contains(head, " ") {
+				req.Header.Set("Authorization", "Bearer "+head)
+			} else {
+				req.Header.Set("Authorization", head)
+			}
+		}
+		return nil
+	}
+}
+
+// DecodeGetVoteResultsResponse returns a decoder for responses returned by the
+// vote get_vote_results endpoint. restoreBody controls whether the response
+// body should be restored after having been read.
+// DecodeGetVoteResultsResponse may return the following errors:
+//   - "BadRequest" (type *vote.BadRequestError): http.StatusBadRequest
+//   - "Forbidden" (type *vote.ForbiddenError): http.StatusForbidden
+//   - "InternalServerError" (type *vote.InternalServerError): http.StatusInternalServerError
+//   - "NotFound" (type *vote.NotFoundError): http.StatusNotFound
+//   - "ServiceUnavailable" (type *vote.ServiceUnavailableError): http.StatusServiceUnavailable
+//   - "Unauthorized" (type *vote.UnauthorizedError): http.StatusUnauthorized
+//   - error: internal error
+func DecodeGetVoteResultsResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body GetVoteResultsResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "get_vote_results", err)
+			}
+			err = ValidateGetVoteResultsResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "get_vote_results", err)
+			}
+			res := NewGetVoteResultsVoteResultsResultOK(&body)
+			return res, nil
+		case http.StatusBadRequest:
+			var (
+				body GetVoteResultsBadRequestResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "get_vote_results", err)
+			}
+			err = ValidateGetVoteResultsBadRequestResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "get_vote_results", err)
+			}
+			return nil, NewGetVoteResultsBadRequest(&body)
+		case http.StatusForbidden:
+			var (
+				body GetVoteResultsForbiddenResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "get_vote_results", err)
+			}
+			err = ValidateGetVoteResultsForbiddenResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "get_vote_results", err)
+			}
+			return nil, NewGetVoteResultsForbidden(&body)
+		case http.StatusInternalServerError:
+			var (
+				body GetVoteResultsInternalServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "get_vote_results", err)
+			}
+			err = ValidateGetVoteResultsInternalServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "get_vote_results", err)
+			}
+			return nil, NewGetVoteResultsInternalServerError(&body)
+		case http.StatusNotFound:
+			var (
+				body GetVoteResultsNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "get_vote_results", err)
+			}
+			err = ValidateGetVoteResultsNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "get_vote_results", err)
+			}
+			return nil, NewGetVoteResultsNotFound(&body)
+		case http.StatusServiceUnavailable:
+			var (
+				body GetVoteResultsServiceUnavailableResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "get_vote_results", err)
+			}
+			err = ValidateGetVoteResultsServiceUnavailableResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "get_vote_results", err)
+			}
+			return nil, NewGetVoteResultsServiceUnavailable(&body)
+		case http.StatusUnauthorized:
+			var (
+				body GetVoteResultsUnauthorizedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "get_vote_results", err)
+			}
+			err = ValidateGetVoteResultsUnauthorizedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "get_vote_results", err)
+			}
+			return nil, NewGetVoteResultsUnauthorized(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("vote", "get_vote_results", resp.StatusCode, string(body))
+		}
+	}
+}
+
 // BuildCreateVoteResponseRequest instantiates a HTTP request object with
 // method and path set to call the "vote" service "create_vote_response"
 // endpoint
@@ -2023,6 +2200,152 @@ func unmarshalPollChoiceResponseBodyToVotePollChoice(v *PollChoiceResponseBody) 
 	res := &vote.PollChoice{
 		ChoiceID:   v.ChoiceID,
 		ChoiceText: *v.ChoiceText,
+	}
+
+	return res
+}
+
+// unmarshalPollResultItemResponseBodyToVotePollResultItem builds a value of
+// type *vote.PollResultItem from a value of type *PollResultItemResponseBody.
+func unmarshalPollResultItemResponseBodyToVotePollResultItem(v *PollResultItemResponseBody) *vote.PollResultItem {
+	res := &vote.PollResultItem{
+		IrvRoundSummary:     v.IrvRoundSummary,
+		MeekStvRoundSummary: v.MeekStvRoundSummary,
+	}
+	res.Question = unmarshalPollQuestionDetailResponseBodyToVotePollQuestionDetail(v.Question)
+	if v.GenericChoiceVotes != nil {
+		res.GenericChoiceVotes = make([]*vote.GenericChoiceVote, len(v.GenericChoiceVotes))
+		for i, val := range v.GenericChoiceVotes {
+			if val == nil {
+				res.GenericChoiceVotes[i] = nil
+				continue
+			}
+			res.GenericChoiceVotes[i] = unmarshalGenericChoiceVoteResponseBodyToVoteGenericChoiceVote(val)
+		}
+	}
+	if v.RankedChoiceVotes != nil {
+		res.RankedChoiceVotes = make([]*vote.RankedChoiceVote, len(v.RankedChoiceVotes))
+		for i, val := range v.RankedChoiceVotes {
+			if val == nil {
+				res.RankedChoiceVotes[i] = nil
+				continue
+			}
+			res.RankedChoiceVotes[i] = unmarshalRankedChoiceVoteResponseBodyToVoteRankedChoiceVote(val)
+		}
+	}
+	if v.RankedChoiceWinnerInfo != nil {
+		res.RankedChoiceWinnerInfo = unmarshalRankedChoiceWinnerInfoResponseBodyToVoteRankedChoiceWinnerInfo(v.RankedChoiceWinnerInfo)
+	}
+
+	return res
+}
+
+// unmarshalPollQuestionDetailResponseBodyToVotePollQuestionDetail builds a
+// value of type *vote.PollQuestionDetail from a value of type
+// *PollQuestionDetailResponseBody.
+func unmarshalPollQuestionDetailResponseBodyToVotePollQuestionDetail(v *PollQuestionDetailResponseBody) *vote.PollQuestionDetail {
+	res := &vote.PollQuestionDetail{
+		QuestionID: *v.QuestionID,
+		Prompt:     *v.Prompt,
+		Type:       *v.Type,
+	}
+	res.Choices = make([]*vote.PollChoice, len(v.Choices))
+	for i, val := range v.Choices {
+		if val == nil {
+			res.Choices[i] = nil
+			continue
+		}
+		res.Choices[i] = unmarshalPollChoiceResponseBodyToVotePollChoice(val)
+	}
+
+	return res
+}
+
+// unmarshalGenericChoiceVoteResponseBodyToVoteGenericChoiceVote builds a value
+// of type *vote.GenericChoiceVote from a value of type
+// *GenericChoiceVoteResponseBody.
+func unmarshalGenericChoiceVoteResponseBodyToVoteGenericChoiceVote(v *GenericChoiceVoteResponseBody) *vote.GenericChoiceVote {
+	if v == nil {
+		return nil
+	}
+	res := &vote.GenericChoiceVote{
+		ChoiceID:   *v.ChoiceID,
+		VoteCount:  *v.VoteCount,
+		Percentage: *v.Percentage,
+	}
+
+	return res
+}
+
+// unmarshalRankedChoiceVoteResponseBodyToVoteRankedChoiceVote builds a value
+// of type *vote.RankedChoiceVote from a value of type
+// *RankedChoiceVoteResponseBody.
+func unmarshalRankedChoiceVoteResponseBodyToVoteRankedChoiceVote(v *RankedChoiceVoteResponseBody) *vote.RankedChoiceVote {
+	if v == nil {
+		return nil
+	}
+	res := &vote.RankedChoiceVote{
+		ChoiceID:        *v.ChoiceID,
+		CondorcetMatrix: v.CondorcetMatrix,
+	}
+	res.RankCounts = make([]*vote.RankCount, len(v.RankCounts))
+	for i, val := range v.RankCounts {
+		if val == nil {
+			res.RankCounts[i] = nil
+			continue
+		}
+		res.RankCounts[i] = unmarshalRankCountResponseBodyToVoteRankCount(val)
+	}
+
+	return res
+}
+
+// unmarshalRankCountResponseBodyToVoteRankCount builds a value of type
+// *vote.RankCount from a value of type *RankCountResponseBody.
+func unmarshalRankCountResponseBodyToVoteRankCount(v *RankCountResponseBody) *vote.RankCount {
+	res := &vote.RankCount{
+		Rank:  *v.Rank,
+		Count: *v.Count,
+	}
+
+	return res
+}
+
+// unmarshalRankedChoiceWinnerInfoResponseBodyToVoteRankedChoiceWinnerInfo
+// builds a value of type *vote.RankedChoiceWinnerInfo from a value of type
+// *RankedChoiceWinnerInfoResponseBody.
+func unmarshalRankedChoiceWinnerInfoResponseBodyToVoteRankedChoiceWinnerInfo(v *RankedChoiceWinnerInfoResponseBody) *vote.RankedChoiceWinnerInfo {
+	if v == nil {
+		return nil
+	}
+	res := &vote.RankedChoiceWinnerInfo{
+		CondorcetIrvUsedForEliminations: v.CondorcetIrvUsedForEliminations,
+	}
+	res.PollChoices = make([]*vote.PollChoice, len(v.PollChoices))
+	for i, val := range v.PollChoices {
+		if val == nil {
+			res.PollChoices[i] = nil
+			continue
+		}
+		res.PollChoices[i] = unmarshalPollChoiceResponseBodyToVotePollChoice(val)
+	}
+
+	return res
+}
+
+// unmarshalCommentResultItemResponseBodyToVoteCommentResultItem builds a value
+// of type *vote.CommentResultItem from a value of type
+// *CommentResultItemResponseBody.
+func unmarshalCommentResultItemResponseBodyToVoteCommentResultItem(v *CommentResultItemResponseBody) *vote.CommentResultItem {
+	if v == nil {
+		return nil
+	}
+	res := &vote.CommentResultItem{
+		Prompt: *v.Prompt,
+	}
+	res.Comments = make([]string, len(v.Comments))
+	for i, val := range v.Comments {
+		res.Comments[i] = val
 	}
 
 	return res

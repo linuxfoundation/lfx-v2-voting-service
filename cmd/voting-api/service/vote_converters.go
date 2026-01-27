@@ -158,3 +158,113 @@ func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *votesvc.VoteResult
 
 	return result
 }
+
+// ConvertVoteResultsToResult converts ITX VoteResults to Goa VoteResultsResult
+// This is mostly a pass-through conversion matching ITX structure
+func ConvertVoteResultsToResult(results *itx.VoteResults) *votesvc.VoteResultsResult {
+	result := &votesvc.VoteResultsResult{
+		NumRecipients: results.NumRecipients,
+		NumVotesCast:  results.NumVotesCast,
+		NumAbstained:  results.NumAbstained,
+		PollEndTime:   &results.PollEndTime,
+	}
+
+	// Convert poll results
+	if len(results.PollResults) > 0 {
+		result.PollResults = make([]*votesvc.PollResultItem, len(results.PollResults))
+		for i, pr := range results.PollResults {
+			pollResultItem := &votesvc.PollResultItem{
+				Question: &votesvc.PollQuestionDetail{
+					QuestionID: pr.Question.QuestionID,
+					Prompt:     pr.Question.Prompt,
+					Type:       pr.Question.Type,
+				},
+			}
+
+			// Convert question choices
+			if len(pr.Question.Choices) > 0 {
+				pollResultItem.Question.Choices = make([]*votesvc.PollChoice, len(pr.Question.Choices))
+				for j, c := range pr.Question.Choices {
+					pollResultItem.Question.Choices[j] = &votesvc.PollChoice{
+						ChoiceID:   utils.StringPtr(c.ChoiceID),
+						ChoiceText: c.ChoiceText,
+					}
+				}
+			}
+
+			// Convert generic choice votes
+			if len(pr.GenericChoiceVotes) > 0 {
+				pollResultItem.GenericChoiceVotes = make([]*votesvc.GenericChoiceVote, len(pr.GenericChoiceVotes))
+				for j, gcv := range pr.GenericChoiceVotes {
+					pollResultItem.GenericChoiceVotes[j] = &votesvc.GenericChoiceVote{
+						ChoiceID:   gcv.ChoiceID,
+						VoteCount:  gcv.VoteCount,
+						Percentage: gcv.Percentage,
+					}
+				}
+			}
+
+			// Convert ranked choice votes
+			if len(pr.RankedChoiceVotes) > 0 {
+				pollResultItem.RankedChoiceVotes = make([]*votesvc.RankedChoiceVote, len(pr.RankedChoiceVotes))
+				for j, rcv := range pr.RankedChoiceVotes {
+					rankedVote := &votesvc.RankedChoiceVote{
+						ChoiceID: rcv.ChoiceID,
+					}
+
+					// Convert rank counts
+					if len(rcv.RankCounts) > 0 {
+						rankedVote.RankCounts = make([]*votesvc.RankCount, len(rcv.RankCounts))
+						for k, rc := range rcv.RankCounts {
+							rankedVote.RankCounts[k] = &votesvc.RankCount{
+								Rank:  rc.Rank,
+								Count: rc.Count,
+							}
+						}
+					}
+
+					// Condorcet matrix as Any type - just pass through
+					rankedVote.CondorcetMatrix = rcv.CondorcetMatrix
+
+					pollResultItem.RankedChoiceVotes[j] = rankedVote
+				}
+			}
+
+			// Convert ranked choice winner info
+			if pr.RankedChoiceWinnerInfo != nil {
+				pollResultItem.RankedChoiceWinnerInfo = &votesvc.RankedChoiceWinnerInfo{
+					CondorcetIrvUsedForEliminations: &pr.RankedChoiceWinnerInfo.CondorcetIRVUsedForEliminations,
+				}
+
+				if len(pr.RankedChoiceWinnerInfo.PollChoices) > 0 {
+					pollResultItem.RankedChoiceWinnerInfo.PollChoices = make([]*votesvc.PollChoice, len(pr.RankedChoiceWinnerInfo.PollChoices))
+					for j, c := range pr.RankedChoiceWinnerInfo.PollChoices {
+						pollResultItem.RankedChoiceWinnerInfo.PollChoices[j] = &votesvc.PollChoice{
+							ChoiceID:   utils.StringPtr(c.ChoiceID),
+							ChoiceText: c.ChoiceText,
+						}
+					}
+				}
+			}
+
+			// IRV and Meek STV round summaries as Any type - just pass through
+			pollResultItem.IrvRoundSummary = pr.IRVRoundSummary
+			pollResultItem.MeekStvRoundSummary = pr.MeekSTVRoundSummary
+
+			result.PollResults[i] = pollResultItem
+		}
+	}
+
+	// Convert comment results
+	if len(results.CommentResults) > 0 {
+		result.CommentResults = make([]*votesvc.CommentResultItem, len(results.CommentResults))
+		for i, cr := range results.CommentResults {
+			result.CommentResults[i] = &votesvc.CommentResultItem{
+				Prompt:   cr.Prompt,
+				Comments: cr.Comments,
+			}
+		}
+	}
+
+	return result
+}

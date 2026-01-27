@@ -46,6 +46,10 @@ type Client struct {
 	// bulk_resend_vote endpoint.
 	BulkResendVoteDoer goahttp.Doer
 
+	// GetVoteResults Doer is the HTTP client used to make requests to the
+	// get_vote_results endpoint.
+	GetVoteResultsDoer goahttp.Doer
+
 	// CreateVoteResponse Doer is the HTTP client used to make requests to the
 	// create_vote_response endpoint.
 	CreateVoteResponseDoer goahttp.Doer
@@ -89,6 +93,7 @@ func NewClient(
 		ExtendVoteDoer:         doer,
 		EnableVoteDoer:         doer,
 		BulkResendVoteDoer:     doer,
+		GetVoteResultsDoer:     doer,
 		CreateVoteResponseDoer: doer,
 		GetVoteResponseDoer:    doer,
 		UpdateVoteResponseDoer: doer,
@@ -264,6 +269,30 @@ func (c *Client) BulkResendVote() goa.Endpoint {
 		resp, err := c.BulkResendVoteDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("vote", "bulk_resend_vote", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GetVoteResults returns an endpoint that makes HTTP requests to the vote
+// service get_vote_results server.
+func (c *Client) GetVoteResults() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeGetVoteResultsRequest(c.encoder)
+		decodeResponse = DecodeGetVoteResultsResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetVoteResultsRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetVoteResultsDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("vote", "get_vote_results", err)
 		}
 		return decodeResponse(resp)
 	}

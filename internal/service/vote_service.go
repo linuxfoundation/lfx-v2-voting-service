@@ -316,6 +316,29 @@ func (s *VoteService) BulkResendVote(ctx context.Context, voteID string, recipie
 	return nil
 }
 
+// GetVoteResults retrieves aggregated poll results (proxies to ITX GET /voting/poll/{poll_id}/results)
+func (s *VoteService) GetVoteResults(ctx context.Context, voteID string) (*itx.VoteResults, error) {
+	// Extract principal from context
+	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
+	if !ok {
+		s.logger.ErrorContext(ctx, "Principal not found in context")
+		return nil, domain.NewValidationError("authentication required")
+	}
+
+	s.logger.InfoContext(ctx, "Getting vote results", "principal", principal, "vote_id", voteID)
+
+	// Call ITX proxy
+	results, err := s.proxyClient.GetPollResults(ctx, voteID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to get poll results from ITX", "error", err)
+		return nil, err // Return domain error as-is
+	}
+
+	s.logger.InfoContext(ctx, "Vote results retrieved successfully", "poll_id", voteID)
+
+	return results, nil
+}
+
 // CreateVoteRequest is the internal request type for creating a vote
 type CreateVoteRequest struct {
 	Name                        string

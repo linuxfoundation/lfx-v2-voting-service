@@ -47,6 +47,11 @@ func BulkResendVoteVotePath(voteUID string) string {
 	return fmt.Sprintf("/votes/%v/bulk_resend", voteUID)
 }
 
+// GetVoteResultsVotePath returns the URL path to the vote service get_vote_results HTTP endpoint.
+func GetVoteResultsVotePath(voteUID string) string {
+	return fmt.Sprintf("/votes/%v/results", voteUID)
+}
+
 // CreateVoteResponseVotePath returns the URL path to the vote service create_vote_response HTTP endpoint.
 func CreateVoteResponseVotePath() string {
 	return "/vote_responses"

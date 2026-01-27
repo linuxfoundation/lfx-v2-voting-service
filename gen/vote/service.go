@@ -33,6 +33,8 @@ type Service interface {
 	// Bulk resend vote email to select recipients (proxies to ITX POST
 	// /voting/poll/{poll_id}/bulk_resend)
 	BulkResendVote(context.Context, *BulkResendVotePayload) (err error)
+	// Get vote results (proxies to ITX GET /voting/poll/{poll_id}/results)
+	GetVoteResults(context.Context, *GetVoteResultsPayload) (res *VoteResultsResult, err error)
 	// Submit a vote response (proxies to ITX POST /voting/vote)
 	CreateVoteResponse(context.Context, *CreateVoteResponsePayload) (err error)
 	// Get vote response details (proxies to ITX GET /voting/vote/{vote_id})
@@ -63,7 +65,7 @@ const ServiceName = "vote"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [11]string{"create_vote", "get_vote", "update_vote", "delete_vote", "extend_vote", "enable_vote", "bulk_resend_vote", "create_vote_response", "get_vote_response", "update_vote_response", "resend_vote_response"}
+var MethodNames = [12]string{"create_vote", "get_vote", "update_vote", "delete_vote", "extend_vote", "enable_vote", "bulk_resend_vote", "get_vote_results", "create_vote_response", "get_vote_response", "update_vote_response", "resend_vote_response"}
 
 // Bad request error response
 type BadRequestError struct {
@@ -82,6 +84,14 @@ type BulkResendVotePayload struct {
 	VoteUID string
 	// List of recipient IDs to resend vote email to
 	RecipientIds []string
+}
+
+// Comment results
+type CommentResultItem struct {
+	// Comment prompt
+	Prompt string
+	// List of comments
+	Comments []string
 }
 
 // Conflict error response
@@ -177,6 +187,16 @@ type ForbiddenError struct {
 	Message string
 }
 
+// Vote count for a single choice
+type GenericChoiceVote struct {
+	// Choice identifier
+	ChoiceID string
+	// Number of votes
+	VoteCount int
+	// Percentage of votes
+	Percentage float64
+}
+
 // GetVotePayload is the payload type of the vote service get_vote method.
 type GetVotePayload struct {
 	// JWT token
@@ -192,6 +212,15 @@ type GetVoteResponsePayload struct {
 	Token *string
 	// Vote response identifier
 	VoteResponseID string
+}
+
+// GetVoteResultsPayload is the payload type of the vote service
+// get_vote_results method.
+type GetVoteResultsPayload struct {
+	// JWT token
+	Token *string
+	// Vote UID
+	VoteUID string
 }
 
 // Internal server error response
@@ -236,12 +265,66 @@ type PollQuestion struct {
 	Choices []*PollChoice
 }
 
+// Question details
+type PollQuestionDetail struct {
+	// Question identifier
+	QuestionID string
+	// Question prompt
+	Prompt string
+	// Question type
+	Type string
+	// Answer choices
+	Choices []*PollChoice
+}
+
+// Results for a single poll question
+type PollResultItem struct {
+	// Question details
+	Question *PollQuestionDetail
+	// Vote counts for non-ranked questions
+	GenericChoiceVotes []*GenericChoiceVote
+	// Ranked choice voting results
+	RankedChoiceVotes []*RankedChoiceVote
+	// Winner information for ranked choice
+	RankedChoiceWinnerInfo *RankedChoiceWinnerInfo
+	// IRV round summary
+	IrvRoundSummary any
+	// Meek STV round summary
+	MeekStvRoundSummary any
+}
+
+// Vote count at a specific rank
+type RankCount struct {
+	// Rank position
+	Rank int
+	// Number of votes at this rank
+	Count int
+}
+
 // Ranked choice submission
 type RankedChoiceInput struct {
 	// Choice identifier
 	ChoiceID string
 	// Choice rank (1-based)
 	ChoiceRank int
+}
+
+// Ranked choice voting results for a choice
+type RankedChoiceVote struct {
+	// Choice identifier
+	ChoiceID string
+	// Vote counts per rank
+	RankCounts []*RankCount
+	// Condorcet matrix
+	CondorcetMatrix any
+}
+
+// Winner information for ranked choice voting
+type RankedChoiceWinnerInfo struct {
+	// Winning choices
+	PollChoices []*PollChoice
+	// Whether Condorcet IRV was used
+	CondorcetIrvUsedForEliminations *bool
 }
 
 // Ranked answer choice
@@ -459,6 +542,23 @@ type VoteResult struct {
 	PollQuestions []*PollQuestion
 	// Allow abstain
 	AllowAbstain *bool
+}
+
+// VoteResultsResult is the result type of the vote service get_vote_results
+// method.
+type VoteResultsResult struct {
+	// Poll results data
+	PollResults []*PollResultItem
+	// Comment results
+	CommentResults []*CommentResultItem
+	// Number of recipients
+	NumRecipients int
+	// Number of votes cast
+	NumVotesCast int
+	// Number who abstained
+	NumAbstained int
+	// Poll end time
+	PollEndTime *string
 }
 
 // Error returns an error description.

@@ -24,6 +24,7 @@ type Endpoints struct {
 	ExtendVote         goa.Endpoint
 	EnableVote         goa.Endpoint
 	BulkResendVote     goa.Endpoint
+	GetVoteResults     goa.Endpoint
 	CreateVoteResponse goa.Endpoint
 	GetVoteResponse    goa.Endpoint
 	UpdateVoteResponse goa.Endpoint
@@ -42,6 +43,7 @@ func NewEndpoints(s Service) *Endpoints {
 		ExtendVote:         NewExtendVoteEndpoint(s, a.JWTAuth),
 		EnableVote:         NewEnableVoteEndpoint(s, a.JWTAuth),
 		BulkResendVote:     NewBulkResendVoteEndpoint(s, a.JWTAuth),
+		GetVoteResults:     NewGetVoteResultsEndpoint(s, a.JWTAuth),
 		CreateVoteResponse: NewCreateVoteResponseEndpoint(s, a.JWTAuth),
 		GetVoteResponse:    NewGetVoteResponseEndpoint(s, a.JWTAuth),
 		UpdateVoteResponse: NewUpdateVoteResponseEndpoint(s, a.JWTAuth),
@@ -58,6 +60,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.ExtendVote = m(e.ExtendVote)
 	e.EnableVote = m(e.EnableVote)
 	e.BulkResendVote = m(e.BulkResendVote)
+	e.GetVoteResults = m(e.GetVoteResults)
 	e.CreateVoteResponse = m(e.CreateVoteResponse)
 	e.GetVoteResponse = m(e.GetVoteResponse)
 	e.UpdateVoteResponse = m(e.UpdateVoteResponse)
@@ -222,6 +225,29 @@ func NewBulkResendVoteEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.En
 			return nil, err
 		}
 		return nil, s.BulkResendVote(ctx, p)
+	}
+}
+
+// NewGetVoteResultsEndpoint returns an endpoint function that calls the method
+// "get_vote_results" of service "vote".
+func NewGetVoteResultsEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*GetVoteResultsPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{"read:projects", "manage:projects", "manage:voting"},
+			RequiredScopes: []string{"manage:projects", "manage:voting"},
+		}
+		var token string
+		if p.Token != nil {
+			token = *p.Token
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.GetVoteResults(ctx, p)
 	}
 }
 

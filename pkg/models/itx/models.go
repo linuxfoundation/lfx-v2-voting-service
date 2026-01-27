@@ -177,3 +177,103 @@ type RankedPollChoiceAnswer struct {
 	ChoiceText string `json:"choice_text"`
 	ChoiceRank int    `json:"choice_rank"`
 }
+
+// VoteResults represents the aggregated results of a poll/vote from ITX
+type VoteResults struct {
+	PollResults       []PollResult      `json:"poll_results"`
+	CommentResults    []CommentResult   `json:"comment_results"`
+	NumRecipients     int               `json:"num_recipients"`
+	NumVotesCast      int               `json:"num_votes_cast"`
+	NumAbstained      int               `json:"num_abstained"`
+	PollEndTime       string            `json:"poll_end_time"`
+}
+
+// PollResult represents the results for a single poll question
+type PollResult struct {
+	Question                 PollQuestionDetail        `json:"question"`
+	GenericChoiceVotes       []GenericChoiceVote       `json:"generic_choice_votes"`
+	RankedChoiceVotes        []RankedChoiceVote        `json:"ranked_choice_votes"`
+	RankedChoiceWinnerInfo   *RankedChoiceWinnerInfo   `json:"ranked_choice_winner_info,omitempty"`
+	IRVRoundSummary          []IRVRoundSummary         `json:"irv_round_summary"`
+	MeekSTVRoundSummary      []MeekSTVRoundSummary     `json:"meek_stv_round_summary"`
+}
+
+// PollQuestionDetail represents question details in results
+type PollQuestionDetail struct {
+	QuestionID string                `json:"question_id"`
+	Prompt     string                `json:"prompt"`
+	Type       string                `json:"type"`
+	Choices    []PollChoiceOutput    `json:"choices"`
+}
+
+// GenericChoiceVote represents vote counts for non-ranked questions
+type GenericChoiceVote struct {
+	ChoiceID   string  `json:"choice_id"`
+	VoteCount  int     `json:"vote_count"`
+	Percentage float64 `json:"percentage"`
+}
+
+// RankedChoiceVote represents ranked choice voting results
+type RankedChoiceVote struct {
+	ChoiceID        string             `json:"choice_id"`
+	RankCounts      []RankCount        `json:"rank_counts"`
+	CondorcetMatrix [][]int            `json:"condorcet_matrix"`
+}
+
+// RankCount represents vote count at a specific rank
+type RankCount struct {
+	Rank  int `json:"rank"`
+	Count int `json:"count"`
+}
+
+// RankedChoiceWinnerInfo represents winner information for ranked choice
+type RankedChoiceWinnerInfo struct {
+	PollChoices                     []PollChoiceOutput `json:"poll_choices"`
+	CondorcetIRVUsedForEliminations bool               `json:"condorcet_irv_used_for_eliminations"`
+}
+
+// IRVRoundSummary represents instant runoff voting round summary
+type IRVRoundSummary struct {
+	RoundNumber        int                  `json:"round_number"`
+	Votes              []VoteCount          `json:"votes"`
+	TotalVotes         int                  `json:"total_votes"`
+	ExhaustedVotes     int                  `json:"exhausted_votes"`
+	Threshold          float64              `json:"threshold"`
+	EliminatedChoices  []VoteCount          `json:"eliminated_choices"`
+	ElectedChoices     []ElectedChoice      `json:"elected_choices"`
+	TransferredVotes   []VoteCount          `json:"transferred_votes"`
+	Message            string               `json:"message"`
+}
+
+// MeekSTVRoundSummary represents Meek STV round summary
+type MeekSTVRoundSummary struct {
+	RoundNumber        int             `json:"round_number"`
+	Votes              []VoteCount     `json:"votes"`
+	TotalVotes         float64         `json:"total_votes"`
+	ExhaustedVotes     float64         `json:"exhausted_votes"`
+	Threshold          float64         `json:"threshold"`
+	EliminatedChoices  []VoteCount     `json:"eliminated_choices"`
+	ElectedChoices     []ElectedChoice `json:"elected_choices"`
+	TransferredVotes   []VoteCount     `json:"transferred_votes"`
+	SurplusVotes       []VoteCount     `json:"surplus_votes"`
+	Message            string          `json:"message"`
+}
+
+// VoteCount represents vote count for a choice
+type VoteCount struct {
+	ChoiceID  string  `json:"choice_id"`
+	VoteCount float64 `json:"vote_count"`
+}
+
+// ElectedChoice represents an elected choice with surplus
+type ElectedChoice struct {
+	ChoiceID     string  `json:"choice_id"`
+	VoteCount    float64 `json:"vote_count"`
+	SurplusVotes float64 `json:"surplus_votes"`
+}
+
+// CommentResult represents comment results
+type CommentResult struct {
+	Prompt   string `json:"prompt"`
+	Comments []string `json:"comments"`
+}
