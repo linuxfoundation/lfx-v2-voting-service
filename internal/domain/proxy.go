@@ -9,8 +9,8 @@ import (
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 )
 
-// ITXProxyClient defines the interface for calling ITX voting service
-type ITXProxyClient interface {
+// PollClient defines the interface for poll management operations in ITX
+type PollClient interface {
 	// CreatePoll creates a new poll in ITX (maps to our "create vote")
 	CreatePoll(ctx context.Context, req *itx.CreatePollRequest) (*itx.PollResponse, error)
 
@@ -31,4 +31,25 @@ type ITXProxyClient interface {
 
 	// BulkResendPoll bulk resends poll emails to select recipients in ITX
 	BulkResendPoll(ctx context.Context, pollID string, req *itx.BulkResendRequest) error
+}
+
+// VoteResponseClient defines the interface for vote response operations in ITX
+type VoteResponseClient interface {
+	// CreateVote submits a vote response in ITX
+	CreateVote(ctx context.Context, req *itx.CreateVoteRequest) error
+
+	// GetVote retrieves vote response details from ITX
+	GetVote(ctx context.Context, voteID string) (*itx.VoteResponse, error)
+
+	// UpdateVote updates a vote response in ITX
+	UpdateVote(ctx context.Context, voteID string, req *itx.UpdateVoteRequest) error
+
+	// ResendVote resends the vote email in ITX
+	ResendVote(ctx context.Context, voteID string) error
+}
+
+// ITXProxyClient combines both poll and vote response operations
+type ITXProxyClient interface {
+	PollClient
+	VoteResponseClient
 }

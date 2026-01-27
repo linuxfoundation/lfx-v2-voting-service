@@ -391,3 +391,164 @@ func (c *Client) mapHTTPError(statusCode int, body []byte) error {
 		return domain.NewInternalError(message)
 	}
 }
+
+// CreateVote submits a vote response in ITX
+func (c *Client) CreateVote(ctx context.Context, req *itx.CreateVoteRequest) error {
+	// Marshal request
+	body, err := json.Marshal(req)
+	if err != nil {
+		return domain.NewInternalError("failed to marshal request", err)
+	}
+
+	// Create HTTP request
+	url := fmt.Sprintf("%sv2/voting/vote", c.config.BaseURL)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return domain.NewInternalError("failed to create request", err)
+	}
+
+	// Set headers (Authorization header is automatically set by OAuth2 transport)
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("x-scope", "manage:voting")
+
+	// Execute request
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return domain.NewUnavailableError("ITX service request failed", err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	// Read response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return domain.NewInternalError("failed to read response", err)
+	}
+
+	// Handle non-2xx status codes (ITX returns 201 on success)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return c.mapHTTPError(resp.StatusCode, respBody)
+	}
+
+	return nil
+}
+
+// GetVote retrieves vote response details from ITX
+func (c *Client) GetVote(ctx context.Context, voteID string) (*itx.VoteResponse, error) {
+	// Create HTTP request
+	url := fmt.Sprintf("%sv2/voting/vote/%s", c.config.BaseURL, voteID)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, domain.NewInternalError("failed to create request", err)
+	}
+
+	// Set headers (Authorization header is automatically set by OAuth2 transport)
+	httpReq.Header.Set("Accept", "application/json")
+	httpReq.Header.Set("x-scope", "manage:voting")
+
+	// Execute request
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, domain.NewUnavailableError("ITX service request failed", err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	// Read response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, domain.NewInternalError("failed to read response", err)
+	}
+
+	// Handle non-2xx status codes
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, c.mapHTTPError(resp.StatusCode, respBody)
+	}
+
+	// Parse response
+	var result itx.VoteResponse
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, domain.NewInternalError("failed to parse response", err)
+	}
+
+	return &result, nil
+}
+
+// UpdateVote updates a vote response in ITX
+func (c *Client) UpdateVote(ctx context.Context, voteID string, req *itx.UpdateVoteRequest) error {
+	// Marshal request
+	body, err := json.Marshal(req)
+	if err != nil {
+		return domain.NewInternalError("failed to marshal request", err)
+	}
+
+	// Create HTTP request
+	url := fmt.Sprintf("%sv2/voting/vote/%s", c.config.BaseURL, voteID)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewReader(body))
+	if err != nil {
+		return domain.NewInternalError("failed to create request", err)
+	}
+
+	// Set headers (Authorization header is automatically set by OAuth2 transport)
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("x-scope", "manage:voting")
+
+	// Execute request
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return domain.NewUnavailableError("ITX service request failed", err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	// Read response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return domain.NewInternalError("failed to read response", err)
+	}
+
+	// Handle non-2xx status codes (ITX returns 204 on success)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return c.mapHTTPError(resp.StatusCode, respBody)
+	}
+
+	return nil
+}
+
+// ResendVote resends the vote email in ITX
+func (c *Client) ResendVote(ctx context.Context, voteID string) error {
+	// Create HTTP request
+	url := fmt.Sprintf("%sv2/voting/vote/%s/resend", c.config.BaseURL, voteID)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
+	if err != nil {
+		return domain.NewInternalError("failed to create request", err)
+	}
+
+	// Set headers (Authorization header is automatically set by OAuth2 transport)
+	httpReq.Header.Set("x-scope", "manage:voting")
+
+	// Execute request
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return domain.NewUnavailableError("ITX service request failed", err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	// Read response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return domain.NewInternalError("failed to read response", err)
+	}
+
+	// Handle non-2xx status codes (ITX returns 204 on success)
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return c.mapHTTPError(resp.StatusCode, respBody)
+	}
+
+	return nil
+}

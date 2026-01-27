@@ -6,13 +6,476 @@ info:
 servers:
     - url: http://localhost:8080
 paths:
+    /vote_responses:
+        post:
+            tags:
+                - vote
+            summary: create_vote_response vote
+            description: Submit a vote response (proxies to ITX POST /voting/vote)
+            operationId: vote#create_vote_response
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateVoteResponseRequestBody'
+                        example:
+                            abstain: false
+                            user_vote_content:
+                                - choice_ids:
+                                    - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                                  question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                            vote_response_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                            vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                code: Quidem iure sit.
+                                message: Necessitatibus molestias.
+                "401":
+                    description: 'Unauthorized: Unauthorized'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedError'
+                            example:
+                                code: Ut asperiores.
+                                message: Molestias ipsam.
+                "403":
+                    description: 'Forbidden: Forbidden'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ForbiddenError'
+                            example:
+                                code: Cum est provident vel quia quod quidem.
+                                message: Eum quidem quae.
+                "404":
+                    description: 'NotFound: Not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                code: Iure quis.
+                                message: Magni modi.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                code: Et itaque ut et consequatur voluptatem vel.
+                                message: Perspiciatis sed ratione iusto rerum pariatur itaque.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                code: Qui in voluptas quos.
+                                message: Qui alias totam.
+            security:
+                - jwt_header_Authorization:
+                    - manage:projects
+                    - manage:voting
+    /vote_responses/{vote_response_id}:
+        get:
+            tags:
+                - vote
+            summary: get_vote_response vote
+            description: Get vote response details (proxies to ITX GET /voting/vote/{vote_id})
+            operationId: vote#get_vote_response
+            parameters:
+                - name: vote_response_id
+                  in: path
+                  description: Vote response identifier
+                  required: true
+                  schema:
+                    type: string
+                    description: Vote response identifier
+                    example: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                    format: uuid
+                  example: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+            responses:
+                "200":
+                    description: OK response.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/VoteResponseResult'
+                            example:
+                                abstained: false
+                                allow_abstain: true
+                                poll_answers:
+                                    - prompt: Unde aut libero doloremque vel aliquid autem.
+                                      question_id: 7a485bba-ed3b-4e5d-b238-80762e31382b
+                                      ranked_user_choice:
+                                        - choice_id: f2ec86ce-75c2-4e72-8c34-b031fbcf2166
+                                          choice_rank: 3515892922261230100
+                                          choice_text: Id nam at molestiae.
+                                        - choice_id: f2ec86ce-75c2-4e72-8c34-b031fbcf2166
+                                          choice_rank: 3515892922261230100
+                                          choice_text: Id nam at molestiae.
+                                        - choice_id: f2ec86ce-75c2-4e72-8c34-b031fbcf2166
+                                          choice_rank: 3515892922261230100
+                                          choice_text: Id nam at molestiae.
+                                        - choice_id: f2ec86ce-75c2-4e72-8c34-b031fbcf2166
+                                          choice_rank: 3515892922261230100
+                                          choice_text: Id nam at molestiae.
+                                      type: single_choice
+                                      user_choice:
+                                        - choice_id: c0120c8a-4c08-411d-abb3-0425a55897b6
+                                          choice_text: Omnis rerum nam.
+                                        - choice_id: c0120c8a-4c08-411d-abb3-0425a55897b6
+                                          choice_text: Omnis rerum nam.
+                                        - choice_id: c0120c8a-4c08-411d-abb3-0425a55897b6
+                                          choice_text: Omnis rerum nam.
+                                        - choice_id: c0120c8a-4c08-411d-abb3-0425a55897b6
+                                          choice_text: Omnis rerum nam.
+                                    - prompt: Unde aut libero doloremque vel aliquid autem.
+                                      question_id: 7a485bba-ed3b-4e5d-b238-80762e31382b
+                                      ranked_user_choice:
+                                        - choice_id: f2ec86ce-75c2-4e72-8c34-b031fbcf2166
+                                          choice_rank: 3515892922261230100
+                                          choice_text: Id nam at molestiae.
+                                        - choice_id: f2ec86ce-75c2-4e72-8c34-b031fbcf2166
+                                          choice_rank: 3515892922261230100
+                                          choice_text: Id nam at molestiae.
+                                        - choice_id: f2ec86ce-75c2-4e72-8c34-b031fbcf2166
+                                          choice_rank: 3515892922261230100
+                                          choice_text: Id nam at molestiae.
+                                        - choice_id: f2ec86ce-75c2-4e72-8c34-b031fbcf2166
+                                          choice_rank: 3515892922261230100
+                                          choice_text: Id nam at molestiae.
+                                      type: single_choice
+                                      user_choice:
+                                        - choice_id: c0120c8a-4c08-411d-abb3-0425a55897b6
+                                          choice_text: Omnis rerum nam.
+                                        - choice_id: c0120c8a-4c08-411d-abb3-0425a55897b6
+                                          choice_text: Omnis rerum nam.
+                                        - choice_id: c0120c8a-4c08-411d-abb3-0425a55897b6
+                                          choice_text: Omnis rerum nam.
+                                        - choice_id: c0120c8a-4c08-411d-abb3-0425a55897b6
+                                          choice_text: Omnis rerum nam.
+                                    - prompt: Unde aut libero doloremque vel aliquid autem.
+                                      question_id: 7a485bba-ed3b-4e5d-b238-80762e31382b
+                                      ranked_user_choice:
+                                        - choice_id: f2ec86ce-75c2-4e72-8c34-b031fbcf2166
+                                          choice_rank: 3515892922261230100
+                                          choice_text: Id nam at molestiae.
+                                        - choice_id: f2ec86ce-75c2-4e72-8c34-b031fbcf2166
+                                          choice_rank: 3515892922261230100
+                                          choice_text: Id nam at molestiae.
+                                        - choice_id: f2ec86ce-75c2-4e72-8c34-b031fbcf2166
+                                          choice_rank: 3515892922261230100
+                                          choice_text: Id nam at molestiae.
+                                        - choice_id: f2ec86ce-75c2-4e72-8c34-b031fbcf2166
+                                          choice_rank: 3515892922261230100
+                                          choice_text: Id nam at molestiae.
+                                      type: single_choice
+                                      user_choice:
+                                        - choice_id: c0120c8a-4c08-411d-abb3-0425a55897b6
+                                          choice_text: Omnis rerum nam.
+                                        - choice_id: c0120c8a-4c08-411d-abb3-0425a55897b6
+                                          choice_text: Omnis rerum nam.
+                                        - choice_id: c0120c8a-4c08-411d-abb3-0425a55897b6
+                                          choice_text: Omnis rerum nam.
+                                        - choice_id: c0120c8a-4c08-411d-abb3-0425a55897b6
+                                          choice_text: Omnis rerum nam.
+                                    - prompt: Unde aut libero doloremque vel aliquid autem.
+                                      question_id: 7a485bba-ed3b-4e5d-b238-80762e31382b
+                                      ranked_user_choice:
+                                        - choice_id: f2ec86ce-75c2-4e72-8c34-b031fbcf2166
+                                          choice_rank: 3515892922261230100
+                                          choice_text: Id nam at molestiae.
+                                        - choice_id: f2ec86ce-75c2-4e72-8c34-b031fbcf2166
+                                          choice_rank: 3515892922261230100
+                                          choice_text: Id nam at molestiae.
+                                        - choice_id: f2ec86ce-75c2-4e72-8c34-b031fbcf2166
+                                          choice_rank: 3515892922261230100
+                                          choice_text: Id nam at molestiae.
+                                        - choice_id: f2ec86ce-75c2-4e72-8c34-b031fbcf2166
+                                          choice_rank: 3515892922261230100
+                                          choice_text: Id nam at molestiae.
+                                      type: single_choice
+                                      user_choice:
+                                        - choice_id: c0120c8a-4c08-411d-abb3-0425a55897b6
+                                          choice_text: Omnis rerum nam.
+                                        - choice_id: c0120c8a-4c08-411d-abb3-0425a55897b6
+                                          choice_text: Omnis rerum nam.
+                                        - choice_id: c0120c8a-4c08-411d-abb3-0425a55897b6
+                                          choice_text: Omnis rerum nam.
+                                        - choice_id: c0120c8a-4c08-411d-abb3-0425a55897b6
+                                          choice_text: Omnis rerum nam.
+                                poll_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                                profile_picture: Voluptatibus ea tenetur.
+                                project_id: Animi consequatur perferendis iusto.
+                                ses_bounce_subtype: Dignissimos quo sunt.
+                                ses_bounce_type: Ab et possimus aut.
+                                ses_complaint_date: Voluptatem dignissimos et blanditiis itaque.
+                                ses_complaint_exists: false
+                                ses_complaint_type: Nihil dolore dolorum recusandae ut laudantium est.
+                                ses_delivery_successful: false
+                                ses_email_opened: false
+                                ses_email_opened_last_time: Est porro.
+                                ses_link_clicked: true
+                                ses_link_clicked_last_time: Et omnis.
+                                ses_message_id: Beatae et.
+                                ses_message_last_sent_time: Veniam adipisci dicta.
+                                user_email: Natus soluta velit tempore sed fugit deserunt.
+                                user_id: Illum vel placeat.
+                                user_name: Quia vel qui dicta et sed.
+                                user_org_id: Quos odit commodi sint ullam sequi ipsam.
+                                user_org_name: Tempora sunt unde aut possimus quaerat.
+                                user_role: Facilis qui sit debitis harum ut tempora.
+                                user_voting_status: Et voluptas nihil dolorem.
+                                vote_creation_time: "1984-01-04T00:31:39Z"
+                                vote_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                                vote_status: submitted
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                code: Animi delectus enim repellendus placeat dolorem nostrum.
+                                message: Et saepe totam autem ut.
+                "401":
+                    description: 'Unauthorized: Unauthorized'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedError'
+                            example:
+                                code: Libero repellat.
+                                message: Quaerat quaerat voluptatem eum voluptatem iure et.
+                "403":
+                    description: 'Forbidden: Forbidden'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ForbiddenError'
+                            example:
+                                code: Est molestiae cum in labore similique illo.
+                                message: Temporibus voluptate alias rerum molestiae fugit voluptatem.
+                "404":
+                    description: 'NotFound: Not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                code: Qui enim et molestiae.
+                                message: Magnam quia temporibus qui pariatur.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                code: Iste ut culpa ipsam.
+                                message: Quia autem quae et quis.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                code: Enim soluta ut qui voluptas.
+                                message: Praesentium debitis nam minima consequatur.
+            security:
+                - jwt_header_Authorization:
+                    - manage:projects
+                    - manage:voting
+        put:
+            tags:
+                - vote
+            summary: update_vote_response vote
+            description: Update vote response (proxies to ITX PUT /voting/vote/{vote_id})
+            operationId: vote#update_vote_response
+            parameters:
+                - name: vote_response_id
+                  in: path
+                  description: Vote response identifier
+                  required: true
+                  schema:
+                    type: string
+                    description: Vote response identifier
+                    example: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                    format: uuid
+                  example: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateVoteResponseRequestBody'
+                        example:
+                            abstain: false
+                            user_vote_content:
+                                - choice_ids:
+                                    - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                                  question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                code: Tempora doloremque et voluptate.
+                                message: Odio quas explicabo in doloribus odio.
+                "401":
+                    description: 'Unauthorized: Unauthorized'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedError'
+                            example:
+                                code: Blanditiis quisquam alias laborum.
+                                message: Molestiae aliquid quae.
+                "403":
+                    description: 'Forbidden: Forbidden'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ForbiddenError'
+                            example:
+                                code: Possimus eum.
+                                message: Ea in in sit ut sed.
+                "404":
+                    description: 'NotFound: Not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                code: Ad nulla similique porro laudantium et cum.
+                                message: Amet aliquam.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                code: Ut nemo nam rem.
+                                message: Soluta velit voluptatem totam quo ad.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                code: Sequi voluptas magni sint debitis.
+                                message: Eum quae modi voluptatem.
+            security:
+                - jwt_header_Authorization:
+                    - manage:projects
+                    - manage:voting
+    /vote_responses/{vote_response_id}/resend:
+        post:
+            tags:
+                - vote
+            summary: resend_vote_response vote
+            description: Resend vote email (proxies to ITX POST /voting/vote/{vote_id}/resend)
+            operationId: vote#resend_vote_response
+            parameters:
+                - name: vote_response_id
+                  in: path
+                  description: Vote response identifier
+                  required: true
+                  schema:
+                    type: string
+                    description: Vote response identifier
+                    example: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                    format: uuid
+                  example: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+            responses:
+                "204":
+                    description: No Content response.
+                "400":
+                    description: 'BadRequest: Bad request'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/BadRequestError'
+                            example:
+                                code: Ea sit suscipit exercitationem animi est.
+                                message: Laboriosam earum amet quasi molestiae voluptatem.
+                "401":
+                    description: 'Unauthorized: Unauthorized'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UnauthorizedError'
+                            example:
+                                code: Quam autem fugit itaque.
+                                message: Omnis quia.
+                "403":
+                    description: 'Forbidden: Forbidden'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ForbiddenError'
+                            example:
+                                code: Modi omnis sint sint tempore.
+                                message: Rerum dolores sint eveniet qui sunt.
+                "404":
+                    description: 'NotFound: Not found'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotFoundError'
+                            example:
+                                code: Quia saepe.
+                                message: Consequatur accusantium distinctio quo qui placeat quae.
+                "500":
+                    description: 'InternalServerError: Internal server error'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/InternalServerError'
+                            example:
+                                code: Est dolor nulla qui voluptas non.
+                                message: In praesentium mollitia et eaque nemo molestias.
+                "503":
+                    description: 'ServiceUnavailable: Service unavailable'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ServiceUnavailableError'
+                            example:
+                                code: Excepturi dolor sequi voluptatem.
+                                message: Officiis est sed ut rerum voluptas.
+            security:
+                - jwt_header_Authorization:
+                    - manage:projects
+                    - manage:voting
     /votes:
         post:
             tags:
-                - voting
-            summary: create_vote voting
+                - vote
+            summary: create_vote vote
             description: Create a new vote (proxies to ITX POST /voting/poll)
-            operationId: voting#create_vote
+            operationId: vote#create_vote
             requestBody:
                 required: true
                 content:
@@ -31,36 +494,48 @@ paths:
                             description: Vote for the TSC members for Q1 2026
                             end_time: "2026-02-15T23:59:59Z"
                             name: Q1 2026 Technical Steering Committee Election
-                            num_winners: 2
+                            num_winners: 9
                             poll_comment_prompts:
                                 - prompt: Please provide any additional feedback
                                 - prompt: Please provide any additional feedback
                             poll_questions:
                                 - choices:
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
                                   prompt: Who should be elected to the TSC?
-                                  question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                                  question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
                                   type: single_choice
                                 - choices:
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
                                   prompt: Who should be elected to the TSC?
-                                  question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                                  question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
                                   type: single_choice
-                            poll_type: meek_stv
+                                - choices:
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
+                                      choice_text: John Doe
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
+                                      choice_text: John Doe
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
+                                      choice_text: John Doe
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
+                                      choice_text: John Doe
+                                  prompt: Who should be elected to the TSC?
+                                  question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
+                                  type: single_choice
+                            poll_type: condorcet_irv
                             project_uid: a09P000000DsCBuIRT
                             pseudo_anonymity: true
                             quorum_percentage: 50
@@ -73,46 +548,58 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/VoteResult'
                             example:
-                                allow_abstain: true
-                                committee_name: Voluptatem iusto cum est tempora laboriosam.
-                                committee_type: Sapiente libero eius voluptas dicta alias autem.
-                                committee_uid: Quo ea ut maiores.
+                                allow_abstain: false
+                                committee_name: Dolorum totam omnis ut.
+                                committee_type: Ullam vitae et.
+                                committee_uid: Numquam molestiae id facilis esse enim.
                                 committee_voting_status: false
-                                creation_time: "1978-01-22T13:04:12Z"
-                                description: Odit repellat eveniet.
-                                end_time: "2004-12-22T18:17:25Z"
-                                last_modified_time: "2004-11-30T18:37:58Z"
-                                name: Sequi laudantium assumenda.
-                                num_response_received: 2720608057966305340
+                                creation_time: "1977-06-30T17:43:53Z"
+                                description: Error nulla et dolorem quidem.
+                                end_time: "1989-05-05T18:24:24Z"
+                                last_modified_time: "1993-07-09T05:20:22Z"
+                                name: Non sed.
+                                num_response_received: 228119485885934849
                                 poll_questions:
                                     - choices:
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
                                       prompt: Who should be elected to the TSC?
-                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      question_id: 3d584838-dc51-4978-a06b-1833f823246a
                                       type: single_choice
                                     - choices:
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
                                       prompt: Who should be elected to the TSC?
-                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      question_id: 3d584838-dc51-4978-a06b-1833f823246a
                                       type: single_choice
                                     - choices:
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
                                       prompt: Who should be elected to the TSC?
-                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      question_id: 3d584838-dc51-4978-a06b-1833f823246a
                                       type: single_choice
-                                project_uid: Praesentium sint qui error error sint.
-                                pseudo_anonymity: true
+                                project_uid: Id dolorem ut.
+                                pseudo_anonymity: false
                                 status: disabled
-                                total_voting_request_invitations: 6764439389026845501
+                                total_voting_request_invitations: 2758255798440928784
                                 vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
                 "400":
                     description: 'BadRequest: Bad request'
@@ -121,8 +608,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/BadRequestError'
                             example:
-                                code: Ratione qui qui asperiores soluta laboriosam dolorem.
-                                message: Dignissimos hic.
+                                code: Nobis aliquam quibusdam eaque non maxime.
+                                message: Pariatur natus voluptas rerum commodi et.
                 "401":
                     description: 'Unauthorized: Unauthorized'
                     content:
@@ -130,8 +617,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/UnauthorizedError'
                             example:
-                                code: Porro quibusdam magnam ipsum voluptas.
-                                message: Praesentium adipisci sit.
+                                code: Omnis perferendis minus beatae tempore.
+                                message: At vel quisquam.
                 "403":
                     description: 'Forbidden: Forbidden'
                     content:
@@ -139,8 +626,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ForbiddenError'
                             example:
-                                code: Omnis nihil quae quae numquam.
-                                message: In laborum rerum.
+                                code: Illo porro fugit explicabo dolorem.
+                                message: Quia quos voluptatem velit doloremque minima.
                 "409":
                     description: 'Conflict: Conflict'
                     content:
@@ -148,8 +635,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ConflictError'
                             example:
-                                code: Provident quo.
-                                message: Fuga perferendis eos quas quod ut.
+                                code: Perferendis aut mollitia facilis iusto.
+                                message: Accusamus non debitis consequatur.
                 "500":
                     description: 'InternalServerError: Internal server error'
                     content:
@@ -157,8 +644,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/InternalServerError'
                             example:
-                                code: Adipisci accusamus dolorem maxime nemo sit totam.
-                                message: Aliquam praesentium.
+                                code: Eos ipsum quia quam voluptates.
+                                message: Provident et et commodi vitae id.
                 "503":
                     description: 'ServiceUnavailable: Service unavailable'
                     content:
@@ -166,8 +653,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ServiceUnavailableError'
                             example:
-                                code: Voluptatum iste non.
-                                message: Iusto ut.
+                                code: Earum perferendis quidem ut aperiam.
+                                message: Alias mollitia.
             security:
                 - jwt_header_Authorization:
                     - manage:projects
@@ -175,10 +662,10 @@ paths:
     /votes/{vote_uid}:
         delete:
             tags:
-                - voting
-            summary: delete_vote voting
+                - vote
+            summary: delete_vote vote
             description: Delete vote (proxies to ITX DELETE /voting/poll/{poll_id}). Only allowed when status is 'disabled'
-            operationId: voting#delete_vote
+            operationId: vote#delete_vote
             parameters:
                 - name: vote_uid
                   in: path
@@ -200,8 +687,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/BadRequestError'
                             example:
-                                code: Minima ea nulla praesentium aut enim nisi.
-                                message: Qui ut quia dolor.
+                                code: Est soluta esse quibusdam rem recusandae animi.
+                                message: Molestias temporibus impedit consequatur.
                 "401":
                     description: 'Unauthorized: Unauthorized'
                     content:
@@ -209,8 +696,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/UnauthorizedError'
                             example:
-                                code: Quibusdam deleniti architecto aspernatur voluptates minus.
-                                message: Aut magnam et sed.
+                                code: Rem ex sunt.
+                                message: Sunt tempora perspiciatis doloremque voluptatibus et doloremque.
                 "403":
                     description: 'Forbidden: Forbidden'
                     content:
@@ -218,8 +705,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ForbiddenError'
                             example:
-                                code: Veniam eos consequatur.
-                                message: Reiciendis quod ut occaecati cumque aperiam.
+                                code: Amet eius.
+                                message: Quia dolorem ut.
                 "404":
                     description: 'NotFound: Not found'
                     content:
@@ -227,8 +714,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/NotFoundError'
                             example:
-                                code: Magni ad.
-                                message: Nemo nobis eaque possimus esse omnis.
+                                code: Fuga ipsam aut reprehenderit cupiditate.
+                                message: Maxime quis voluptas harum molestias distinctio.
                 "500":
                     description: 'InternalServerError: Internal server error'
                     content:
@@ -236,8 +723,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/InternalServerError'
                             example:
-                                code: Sed doloribus nemo consequatur.
-                                message: Aspernatur consequuntur et eligendi provident deserunt.
+                                code: Ratione aut officiis error enim itaque.
+                                message: Quia dignissimos expedita.
                 "503":
                     description: 'ServiceUnavailable: Service unavailable'
                     content:
@@ -245,18 +732,18 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ServiceUnavailableError'
                             example:
-                                code: Doloremque aut id non culpa voluptate.
-                                message: Voluptatibus quas rem.
+                                code: Omnis quibusdam rerum.
+                                message: Et aperiam aut est id.
             security:
                 - jwt_header_Authorization:
                     - manage:projects
                     - manage:voting
         get:
             tags:
-                - voting
-            summary: get_vote voting
+                - vote
+            summary: get_vote vote
             description: Get vote details (proxies to ITX GET /voting/poll/{poll_id})
-            operationId: voting#get_vote
+            operationId: vote#get_vote
             parameters:
                 - name: vote_uid
                   in: path
@@ -277,45 +764,45 @@ paths:
                                 $ref: '#/components/schemas/VoteResult'
                             example:
                                 allow_abstain: false
-                                committee_name: Et explicabo repellat fugit architecto non.
-                                committee_type: Dolorem ut ipsa numquam molestiae.
-                                committee_uid: Modi consequatur consectetur ea voluptatibus autem laborum.
+                                committee_name: Nemo et.
+                                committee_type: Sit architecto quas ipsa illum ex.
+                                committee_uid: Autem id reiciendis dolores rerum consequatur optio.
                                 committee_voting_status: true
-                                creation_time: "2008-03-02T14:38:09Z"
-                                description: Id natus ducimus eos quia.
-                                end_time: "1973-04-24T05:26:14Z"
-                                last_modified_time: "2007-05-31T03:30:46Z"
-                                name: Itaque omnis quia ut expedita laboriosam tenetur.
-                                num_response_received: 1372532664303468137
+                                creation_time: "1999-12-22T05:28:35Z"
+                                description: Illum unde quidem et laudantium rerum.
+                                end_time: "2008-10-02T12:24:59Z"
+                                last_modified_time: "2002-11-10T13:16:44Z"
+                                name: Et commodi sed.
+                                num_response_received: 5527926149394532644
                                 poll_questions:
                                     - choices:
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
                                       prompt: Who should be elected to the TSC?
-                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      question_id: 3d584838-dc51-4978-a06b-1833f823246a
                                       type: single_choice
                                     - choices:
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
-                                      prompt: Who should be elected to the TSC?
-                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
-                                      type: single_choice
-                                    - choices:
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
                                       prompt: Who should be elected to the TSC?
-                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      question_id: 3d584838-dc51-4978-a06b-1833f823246a
                                       type: single_choice
-                                project_uid: Id adipisci aut.
+                                project_uid: Perferendis molestiae iusto illo est enim.
                                 pseudo_anonymity: true
                                 status: disabled
-                                total_voting_request_invitations: 3034947320031014187
+                                total_voting_request_invitations: 5323068097415341077
                                 vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
                 "400":
                     description: 'BadRequest: Bad request'
@@ -324,8 +811,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/BadRequestError'
                             example:
-                                code: Omnis ut soluta ullam vitae et iste.
-                                message: Praesentium ab incidunt et et.
+                                code: Molestiae minima ea nulla praesentium aut.
+                                message: Nisi hic qui ut.
                 "401":
                     description: 'Unauthorized: Unauthorized'
                     content:
@@ -333,8 +820,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/UnauthorizedError'
                             example:
-                                code: Vitae aliquid neque excepturi nihil.
-                                message: Sequi ea fugit consectetur pariatur nobis aliquam.
+                                code: Dolor sit quibusdam deleniti architecto.
+                                message: Voluptates minus.
                 "403":
                     description: 'Forbidden: Forbidden'
                     content:
@@ -342,8 +829,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ForbiddenError'
                             example:
-                                code: Eaque non.
-                                message: Recusandae pariatur natus voluptas rerum commodi et.
+                                code: Aut magnam et sed.
+                                message: Veniam eos consequatur.
                 "404":
                     description: 'NotFound: Not found'
                     content:
@@ -351,8 +838,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/NotFoundError'
                             example:
-                                code: Omnis perferendis minus beatae tempore.
-                                message: At vel quisquam.
+                                code: Nemo nobis eaque possimus esse omnis.
+                                message: Sed doloribus nemo consequatur.
                 "500":
                     description: 'InternalServerError: Internal server error'
                     content:
@@ -360,8 +847,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/InternalServerError'
                             example:
-                                code: Quae nihil dolor inventore ullam.
-                                message: Ullam quidem.
+                                code: Aspernatur consequuntur et eligendi provident deserunt.
+                                message: Doloremque aut id non culpa voluptate.
                 "503":
                     description: 'ServiceUnavailable: Service unavailable'
                     content:
@@ -369,18 +856,18 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ServiceUnavailableError'
                             example:
-                                code: Illo porro fugit explicabo dolorem.
-                                message: Quia quos voluptatem velit doloremque minima.
+                                code: Voluptatibus quas rem.
+                                message: Provident voluptatem quis provident nulla quia.
             security:
                 - jwt_header_Authorization:
                     - manage:projects
                     - manage:voting
         put:
             tags:
-                - voting
-            summary: update_vote voting
+                - vote
+            summary: update_vote vote
             description: Update vote (proxies to ITX PUT /voting/poll/{poll_id}). Only allowed when status is 'disabled'
-            operationId: voting#update_vote
+            operationId: vote#update_vote
             parameters:
                 - name: vote_uid
                   in: path
@@ -410,49 +897,61 @@ paths:
                             description: Vote for the TSC members for Q1 2026
                             end_time: "2026-02-15T23:59:59Z"
                             name: Q1 2026 Technical Steering Committee Election
-                            num_winners: 4
+                            num_winners: 6
                             poll_comment_prompts:
                                 - prompt: Please provide any additional feedback
                                 - prompt: Please provide any additional feedback
                                 - prompt: Please provide any additional feedback
                             poll_questions:
                                 - choices:
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
                                   prompt: Who should be elected to the TSC?
-                                  question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                                  question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
                                   type: single_choice
                                 - choices:
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
                                   prompt: Who should be elected to the TSC?
-                                  question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                                  question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
                                   type: single_choice
                                 - choices:
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
-                                    - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                                       choice_text: John Doe
                                   prompt: Who should be elected to the TSC?
-                                  question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                                  question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
                                   type: single_choice
-                            poll_type: condorcet_irv
+                                - choices:
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
+                                      choice_text: John Doe
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
+                                      choice_text: John Doe
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
+                                      choice_text: John Doe
+                                    - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
+                                      choice_text: John Doe
+                                  prompt: Who should be elected to the TSC?
+                                  question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
+                                  type: single_choice
+                            poll_type: generic
                             project_uid: a09P000000DsCBuIRT
                             pseudo_anonymity: true
                             quorum_percentage: 50
@@ -465,46 +964,46 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/VoteResult'
                             example:
-                                allow_abstain: true
-                                committee_name: Vero et et.
-                                committee_type: Et eaque et autem.
-                                committee_uid: Qui reiciendis cumque doloremque.
-                                committee_voting_status: true
-                                creation_time: "2015-01-16T19:13:07Z"
-                                description: Impedit omnis ut perferendis aut mollitia.
-                                end_time: "2002-11-10T13:16:44Z"
-                                last_modified_time: "1999-12-22T05:28:35Z"
-                                name: Ad non.
-                                num_response_received: 6460008874362395156
+                                allow_abstain: false
+                                committee_name: Assumenda rerum voluptatibus quas.
+                                committee_type: Nihil eum odit eum et autem.
+                                committee_uid: Ipsa omnis aliquam mollitia.
+                                committee_voting_status: false
+                                creation_time: "1978-01-01T12:55:34Z"
+                                description: Debitis quos totam tempore recusandae aut ipsum.
+                                end_time: "1993-08-11T13:40:03Z"
+                                last_modified_time: "1995-05-30T04:29:21Z"
+                                name: Ea provident ut et necessitatibus quo.
+                                num_response_received: 6966431614193978866
                                 poll_questions:
                                     - choices:
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
                                       prompt: Who should be elected to the TSC?
-                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      question_id: 3d584838-dc51-4978-a06b-1833f823246a
                                       type: single_choice
                                     - choices:
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
-                                      prompt: Who should be elected to the TSC?
-                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
-                                      type: single_choice
-                                    - choices:
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
                                       prompt: Who should be elected to the TSC?
-                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      question_id: 3d584838-dc51-4978-a06b-1833f823246a
                                       type: single_choice
-                                project_uid: Minima officia voluptatem nihil nulla tempora.
-                                pseudo_anonymity: true
+                                project_uid: Provident ratione quibusdam.
+                                pseudo_anonymity: false
                                 status: disabled
-                                total_voting_request_invitations: 5711281358809261985
+                                total_voting_request_invitations: 2157095644297126286
                                 vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
                 "400":
                     description: 'BadRequest: Bad request'
@@ -513,8 +1012,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/BadRequestError'
                             example:
-                                code: Ut maiores ea qui est necessitatibus.
-                                message: Totam reprehenderit est quaerat nesciunt.
+                                code: Voluptatem tenetur velit eius et autem dolor.
+                                message: Dolorum neque.
                 "401":
                     description: 'Unauthorized: Unauthorized'
                     content:
@@ -522,8 +1021,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/UnauthorizedError'
                             example:
-                                code: Et alias et ea.
-                                message: Atque amet dolore voluptas quis omnis.
+                                code: Rerum dignissimos sunt doloremque dolor.
+                                message: Et unde amet fuga vel maxime.
                 "403":
                     description: 'Forbidden: Forbidden'
                     content:
@@ -531,8 +1030,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ForbiddenError'
                             example:
-                                code: Quia qui accusamus molestias a.
-                                message: Molestiae iusto.
+                                code: Praesentium est velit vel aut et pariatur.
+                                message: Est aut autem vitae.
                 "404":
                     description: 'NotFound: Not found'
                     content:
@@ -540,8 +1039,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/NotFoundError'
                             example:
-                                code: Est enim error.
-                                message: Id reiciendis dolores rerum consequatur.
+                                code: Non quis.
+                                message: Esse tempore doloribus.
                 "500":
                     description: 'InternalServerError: Internal server error'
                     content:
@@ -549,8 +1048,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/InternalServerError'
                             example:
-                                code: Rerum nemo et quod.
-                                message: Architecto quas ipsa.
+                                code: Et facilis fugit.
+                                message: Inventore in dolores impedit impedit et.
                 "503":
                     description: 'ServiceUnavailable: Service unavailable'
                     content:
@@ -558,8 +1057,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ServiceUnavailableError'
                             example:
-                                code: Ex ab molestiae aspernatur.
-                                message: Sint dolores doloremque.
+                                code: Maiores qui ducimus dolor et.
+                                message: Id id quo voluptatem.
             security:
                 - jwt_header_Authorization:
                     - manage:projects
@@ -567,10 +1066,10 @@ paths:
     /votes/{vote_uid}/bulk_resend:
         post:
             tags:
-                - voting
-            summary: bulk_resend_vote voting
+                - vote
+            summary: bulk_resend_vote vote
             description: Bulk resend vote email to select recipients (proxies to ITX POST /voting/poll/{poll_id}/bulk_resend)
-            operationId: voting#bulk_resend_vote
+            operationId: vote#bulk_resend_vote
             parameters:
                 - name: vote_uid
                   in: path
@@ -602,8 +1101,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/BadRequestError'
                             example:
-                                code: Omnis quibusdam rerum.
-                                message: Et aperiam aut est id.
+                                code: Eaque est quaerat neque quis enim rem.
+                                message: Molestiae natus.
                 "401":
                     description: 'Unauthorized: Unauthorized'
                     content:
@@ -611,8 +1110,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/UnauthorizedError'
                             example:
-                                code: Ipsum aspernatur.
-                                message: Sit quia deserunt id non veritatis.
+                                code: Quis corrupti eius dolore est.
+                                message: Fugiat quidem aut aspernatur mollitia quis sed.
                 "403":
                     description: 'Forbidden: Forbidden'
                     content:
@@ -620,8 +1119,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ForbiddenError'
                             example:
-                                code: Placeat sunt.
-                                message: Reiciendis sapiente ad illo.
+                                code: Animi placeat.
+                                message: Dolorem cumque provident.
                 "404":
                     description: 'NotFound: Not found'
                     content:
@@ -629,8 +1128,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/NotFoundError'
                             example:
-                                code: Enim velit expedita explicabo ut ut.
-                                message: Aut deserunt.
+                                code: Quia voluptatem reiciendis sit saepe earum.
+                                message: Repellat quaerat quas debitis aut perspiciatis.
                 "500":
                     description: 'InternalServerError: Internal server error'
                     content:
@@ -638,8 +1137,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/InternalServerError'
                             example:
-                                code: Qui aliquid ad quod.
-                                message: Quidem magni dolores est minima quia sapiente.
+                                code: Tempore dolor dolores quibusdam.
+                                message: Quia suscipit accusantium natus nam accusamus est.
                 "503":
                     description: 'ServiceUnavailable: Service unavailable'
                     content:
@@ -647,8 +1146,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ServiceUnavailableError'
                             example:
-                                code: Dignissimos voluptatem id sit porro consectetur.
-                                message: Voluptatibus ut voluptas.
+                                code: Sed consequatur consectetur non aut.
+                                message: Ut iure eaque.
             security:
                 - jwt_header_Authorization:
                     - manage:projects
@@ -656,10 +1155,10 @@ paths:
     /votes/{vote_uid}/enable:
         put:
             tags:
-                - voting
-            summary: enable_vote voting
+                - vote
+            summary: enable_vote vote
             description: Enable a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)
-            operationId: voting#enable_vote
+            operationId: vote#enable_vote
             parameters:
                 - name: vote_uid
                   in: path
@@ -681,8 +1180,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/BadRequestError'
                             example:
-                                code: Maiores qui ducimus dolor et.
-                                message: Id id quo voluptatem.
+                                code: Aut totam nemo ut.
+                                message: Ipsum libero assumenda accusamus nihil iste dolore.
                 "401":
                     description: 'Unauthorized: Unauthorized'
                     content:
@@ -690,8 +1189,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/UnauthorizedError'
                             example:
-                                code: Est soluta esse quibusdam rem recusandae animi.
-                                message: Molestias temporibus impedit consequatur.
+                                code: Similique molestiae ut deserunt rerum dolorem et.
+                                message: Sed eum rerum eaque ipsam eos.
                 "403":
                     description: 'Forbidden: Forbidden'
                     content:
@@ -699,8 +1198,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ForbiddenError'
                             example:
-                                code: Rem ex sunt.
-                                message: Sunt tempora perspiciatis doloremque voluptatibus et doloremque.
+                                code: Enim aut.
+                                message: Fugit vel fugit aut.
                 "404":
                     description: 'NotFound: Not found'
                     content:
@@ -708,8 +1207,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/NotFoundError'
                             example:
-                                code: Amet eius.
-                                message: Quia dolorem ut.
+                                code: Voluptas et.
+                                message: Laboriosam molestiae.
                 "500":
                     description: 'InternalServerError: Internal server error'
                     content:
@@ -717,8 +1216,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/InternalServerError'
                             example:
-                                code: Fuga ipsam aut reprehenderit cupiditate.
-                                message: Maxime quis voluptas harum molestias distinctio.
+                                code: Explicabo sunt porro fugiat.
+                                message: Laborum a tempora eaque officia.
                 "503":
                     description: 'ServiceUnavailable: Service unavailable'
                     content:
@@ -726,8 +1225,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ServiceUnavailableError'
                             example:
-                                code: Ratione aut officiis error enim itaque.
-                                message: Quia dignissimos expedita.
+                                code: Maiores eum reiciendis beatae.
+                                message: Rem hic ex quibusdam architecto excepturi.
             security:
                 - jwt_header_Authorization:
                     - manage:projects
@@ -735,10 +1234,10 @@ paths:
     /votes/{vote_uid}/extend:
         post:
             tags:
-                - voting
-            summary: extend_vote voting
+                - vote
+            summary: extend_vote vote
             description: Extend a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)
-            operationId: voting#extend_vote
+            operationId: vote#extend_vote
             parameters:
                 - name: vote_uid
                   in: path
@@ -766,54 +1265,70 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/VoteResult'
                             example:
-                                allow_abstain: true
-                                committee_name: Libero provident ratione quibusdam magni ipsa omnis.
-                                committee_type: Mollitia labore.
-                                committee_uid: Non itaque velit.
+                                allow_abstain: false
+                                committee_name: Et veniam inventore.
+                                committee_type: Sit aliquam consequatur doloribus nam quam iure.
+                                committee_uid: Est consectetur praesentium sit magni qui illo.
                                 committee_voting_status: false
-                                creation_time: "1979-04-20T15:08:44Z"
-                                description: Aspernatur et hic rerum non expedita ea.
-                                end_time: "1996-06-26T06:24:14Z"
-                                last_modified_time: "2012-06-11T12:08:01Z"
-                                name: Provident voluptatem quis provident nulla quia.
-                                num_response_received: 35568202025658232
+                                creation_time: "1970-12-30T13:36:43Z"
+                                description: Sit quia deserunt id non veritatis.
+                                end_time: "1999-11-27T13:42:27Z"
+                                last_modified_time: "2002-12-27T04:36:54Z"
+                                name: Ipsum aspernatur.
+                                num_response_received: 3167900703869190880
                                 poll_questions:
                                     - choices:
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
                                       prompt: Who should be elected to the TSC?
-                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      question_id: 3d584838-dc51-4978-a06b-1833f823246a
                                       type: single_choice
                                     - choices:
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
                                       prompt: Who should be elected to the TSC?
-                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      question_id: 3d584838-dc51-4978-a06b-1833f823246a
                                       type: single_choice
                                     - choices:
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
                                       prompt: Who should be elected to the TSC?
-                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      question_id: 3d584838-dc51-4978-a06b-1833f823246a
                                       type: single_choice
                                     - choices:
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
-                                        - choice_id: 82eb444d-60fa-4cef-b7bc-a1a754bce298
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
+                                          choice_text: John Doe
+                                        - choice_id: cade7adc-9767-4460-8c05-93a46e7c2f2f
                                           choice_text: John Doe
                                       prompt: Who should be elected to the TSC?
-                                      question_id: 510c35f0-145b-4eed-818b-486dc2b80f16
+                                      question_id: 3d584838-dc51-4978-a06b-1833f823246a
                                       type: single_choice
-                                project_uid: Et dicta ut eveniet.
-                                pseudo_anonymity: false
+                                project_uid: Vel quisquam quo.
+                                pseudo_anonymity: true
                                 status: disabled
-                                total_voting_request_invitations: 3900342179432466240
+                                total_voting_request_invitations: 4419598911472068103
                                 vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
                 "400":
                     description: 'BadRequest: Bad request'
@@ -822,8 +1337,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/BadRequestError'
                             example:
-                                code: Odit eum et autem aperiam molestias hic.
-                                message: Doloremque libero.
+                                code: Sit quia inventore et qui.
+                                message: Repellat corporis eveniet.
                 "401":
                     description: 'Unauthorized: Unauthorized'
                     content:
@@ -831,8 +1346,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/UnauthorizedError'
                             example:
-                                code: Voluptatem tenetur velit eius et autem dolor.
-                                message: Dolorum neque.
+                                code: Occaecati eaque sapiente fugiat quo.
+                                message: Facere quia.
                 "403":
                     description: 'Forbidden: Forbidden'
                     content:
@@ -840,8 +1355,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ForbiddenError'
                             example:
-                                code: Rerum dignissimos sunt doloremque dolor.
-                                message: Et unde amet fuga vel maxime.
+                                code: Officiis omnis qui omnis saepe eum.
+                                message: Amet aut numquam ex reiciendis.
                 "404":
                     description: 'NotFound: Not found'
                     content:
@@ -849,8 +1364,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/NotFoundError'
                             example:
-                                code: Praesentium est velit vel aut et pariatur.
-                                message: Est aut autem vitae.
+                                code: Natus consectetur suscipit.
+                                message: Ut aut atque eius error.
                 "500":
                     description: 'InternalServerError: Internal server error'
                     content:
@@ -858,8 +1373,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/InternalServerError'
                             example:
-                                code: Non quis.
-                                message: Esse tempore doloribus.
+                                code: Perspiciatis pariatur amet fugiat vel nobis.
+                                message: Sunt deleniti cupiditate deleniti.
                 "503":
                     description: 'ServiceUnavailable: Service unavailable'
                     content:
@@ -867,8 +1382,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ServiceUnavailableError'
                             example:
-                                code: Et facilis fugit.
-                                message: Inventore in dolores impedit impedit et.
+                                code: Eius quo.
+                                message: Explicabo aliquam aut ea dolores itaque sed.
             security:
                 - jwt_header_Authorization:
                     - manage:projects
@@ -881,15 +1396,15 @@ components:
                 code:
                     type: string
                     description: HTTP status code
-                    example: Quis et esse voluptatem quis.
+                    example: Numquam pariatur magni.
                 message:
                     type: string
                     description: Error message
-                    example: Ducimus voluptatibus sequi aut.
+                    example: Laudantium ut iusto sit voluptatum dicta magnam.
             description: Bad request error response
             example:
-                code: Accusantium vitae accusamus quod ut.
-                message: Consequuntur iusto quod cupiditate deleniti.
+                code: Ab reprehenderit voluptatibus rerum.
+                message: Illo omnis voluptates perspiciatis placeat repellat et.
             required:
                 - code
                 - message
@@ -900,7 +1415,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: In quidem eligendi.
+                        example: Saepe aut dolorum minima.
                     description: List of recipient IDs to resend vote email to
                     example:
                         - cba14f40-1636-11ec-9621-0242ac130002
@@ -917,15 +1432,15 @@ components:
                 code:
                     type: string
                     description: HTTP status code
-                    example: Vel sint minima repudiandae blanditiis eum.
+                    example: Quo repellat accusantium consequatur magnam eos.
                 message:
                     type: string
                     description: Error message
-                    example: Id deserunt inventore.
+                    example: Nisi voluptatem sed fugit et qui.
             description: Conflict error response
             example:
-                code: Laboriosam pariatur et.
-                message: Vel beatae possimus voluptatum.
+                code: Laborum voluptatibus odio nihil inventore.
+                message: Esse sed.
             required:
                 - code
                 - message
@@ -936,12 +1451,12 @@ components:
                     type: boolean
                     description: Allow voters to abstain
                     default: false
-                    example: false
+                    example: true
                 committee_filters:
                     type: array
                     items:
                         type: string
-                        example: Emeritus
+                        example: Alternate Voting Rep
                         enum:
                             - Voting Rep
                             - Alternate Voting Rep
@@ -960,7 +1475,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Odio quae placeat necessitatibus doloribus est enim.
+                        example: Molestias voluptates cumque minus amet.
                     description: Multiple committee UIDs
                     example:
                         - a02bdbaf-53b1-4d47-bc04-dd7e459dd308
@@ -984,7 +1499,7 @@ components:
                     type: integer
                     description: Number of winners (meek_stv only)
                     default: 2
-                    example: 9
+                    example: 8
                     format: int64
                     minimum: 2
                     maximum: 10
@@ -1004,46 +1519,46 @@ components:
                     description: Questions for the vote
                     example:
                         - choices:
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
                           prompt: Who should be elected to the TSC?
-                          question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                          question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
                           type: single_choice
                         - choices:
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
                           prompt: Who should be elected to the TSC?
-                          question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                          question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
                           type: single_choice
                         - choices:
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
                           prompt: Who should be elected to the TSC?
-                          question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                          question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
                           type: single_choice
                 poll_type:
                     type: string
                     description: Type of poll
                     default: generic
-                    example: condorcet_irv
+                    example: generic
                     enum:
                         - generic
                         - condorcet_irv
@@ -1091,44 +1606,32 @@ components:
                     - prompt: Please provide any additional feedback
                 poll_questions:
                     - choices:
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                        - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                           choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                        - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                           choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                        - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                           choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                        - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                      question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
                       type: single_choice
                     - choices:
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                        - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                           choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                        - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                           choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                        - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                           choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                          choice_text: John Doe
-                      prompt: Who should be elected to the TSC?
-                      question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
-                      type: single_choice
-                    - choices:
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                          choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                          choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                          choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                        - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                      question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
                       type: single_choice
-                poll_type: condorcet_irv
+                poll_type: generic
                 project_uid: a09P000000DsCBuIRT
-                pseudo_anonymity: true
+                pseudo_anonymity: false
                 quorum_percentage: 50
                 winning_threshold_percentage: 51
             required:
@@ -1138,6 +1641,45 @@ components:
                 - project_uid
                 - committee_uid
                 - poll_questions
+        CreateVoteResponseRequestBody:
+            type: object
+            properties:
+                abstain:
+                    type: boolean
+                    description: Whether to abstain from voting
+                    default: false
+                    example: false
+                user_vote_content:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/VoteAnswerInput'
+                    description: Vote answers
+                    example:
+                        - choice_ids:
+                            - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                          question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                vote_response_id:
+                    type: string
+                    description: Vote response identifier
+                    example: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                    format: uuid
+                vote_uid:
+                    type: string
+                    description: Vote/poll identifier this response belongs to
+                    example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                    format: uuid
+            example:
+                abstain: true
+                user_vote_content:
+                    - choice_ids:
+                        - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                      question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                vote_response_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+            required:
+                - vote_response_id
+                - vote_uid
+                - abstain
         ExtendVoteRequestBody:
             type: object
             properties:
@@ -1156,15 +1698,15 @@ components:
                 code:
                     type: string
                     description: HTTP status code
-                    example: Ratione sint.
+                    example: Ipsa id eum recusandae.
                 message:
                     type: string
                     description: Error message
-                    example: Praesentium minus aut omnis eligendi quis.
+                    example: Minima ipsa quo suscipit asperiores.
             description: Forbidden error response
             example:
-                code: Dolores culpa ab similique repellendus.
-                message: Repudiandae et eaque totam maiores aperiam.
+                code: Quasi rem libero omnis.
+                message: Ut rem cupiditate velit quod neque.
             required:
                 - code
                 - message
@@ -1174,15 +1716,15 @@ components:
                 code:
                     type: string
                     description: HTTP status code
-                    example: Unde quis neque rerum et quia est.
+                    example: Aut est.
                 message:
                     type: string
                     description: Error message
-                    example: Quos maxime est amet.
+                    example: Ut et.
             description: Internal server error response
             example:
-                code: Et accusantium.
-                message: Consequatur libero.
+                code: Quas sequi inventore qui et facilis praesentium.
+                message: Possimus ut hic ullam et veniam distinctio.
             required:
                 - code
                 - message
@@ -1192,15 +1734,15 @@ components:
                 code:
                     type: string
                     description: HTTP status code
-                    example: Voluptatibus omnis est.
+                    example: Eaque velit libero perspiciatis expedita.
                 message:
                     type: string
                     description: Error message
-                    example: Quia aperiam doloremque illo totam molestias.
+                    example: Similique ipsam deserunt alias quis.
             description: Not found error response
             example:
-                code: Ea qui ea ullam distinctio aliquam.
-                message: Expedita incidunt fuga quae voluptas repellat.
+                code: Aspernatur ipsum dolorum animi cum adipisci.
+                message: Cum repellendus.
             required:
                 - code
                 - message
@@ -1210,7 +1752,7 @@ components:
                 choice_id:
                     type: string
                     description: Choice identifier
-                    example: a069ff4c-fae8-4ec2-9f19-1a71a4830a2c
+                    example: b61192e3-84e4-4be5-9d06-5a0a688b90be
                     format: uuid
                 choice_text:
                     type: string
@@ -1218,7 +1760,7 @@ components:
                     example: John Doe
             description: Answer choice
             example:
-                choice_id: 3350a41a-fcdb-4b3b-befc-7544401edcc1
+                choice_id: 38c2ebf3-ecca-468c-9349-60651024d963
                 choice_text: John Doe
             required:
                 - choice_text
@@ -1249,6 +1791,8 @@ components:
                           choice_text: John Doe
                         - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
                           choice_text: John Doe
+                        - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
+                          choice_text: John Doe
                 prompt:
                     type: string
                     description: Question prompt
@@ -1256,7 +1800,7 @@ components:
                 question_id:
                     type: string
                     description: Question identifier
-                    example: df7a4c1c-5f30-46d7-97ee-f3e35aaff7f5
+                    example: 9ce9b90a-bc34-47c3-85d1-b1e1bbeec7a3
                     format: uuid
                 type:
                     type: string
@@ -1277,27 +1821,75 @@ components:
                     - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
                       choice_text: John Doe
                 prompt: Who should be elected to the TSC?
-                question_id: 0d3f1707-bd03-41dc-9bef-94b85de3286c
+                question_id: 8df5a061-7c3b-4d19-a1bc-114ad2d5c6e8
                 type: single_choice
             required:
                 - prompt
                 - type
                 - choices
+        RankedChoiceInput:
+            type: object
+            properties:
+                choice_id:
+                    type: string
+                    description: Choice identifier
+                    example: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                    format: uuid
+                choice_rank:
+                    type: integer
+                    description: Choice rank (1-based)
+                    example: 1
+                    format: int64
+                    minimum: 1
+            description: Ranked choice submission
+            example:
+                choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                choice_rank: 1
+            required:
+                - choice_id
+                - choice_rank
+        RankedVoteChoiceAnswer:
+            type: object
+            properties:
+                choice_id:
+                    type: string
+                    description: Choice identifier
+                    example: fa0a97c8-5dfa-486d-a3dd-7f20ed3f9b15
+                    format: uuid
+                choice_rank:
+                    type: integer
+                    description: Choice rank (1-based)
+                    example: 2779045424787820179
+                    format: int64
+                    minimum: 1
+                choice_text:
+                    type: string
+                    description: Choice text
+                    example: Magni doloribus.
+            description: Ranked answer choice
+            example:
+                choice_id: a266adcf-7374-47f6-893a-f1a758d68b22
+                choice_rank: 2375069820868340202
+                choice_text: Quasi dolores dolores et aut qui.
+            required:
+                - choice_id
+                - choice_text
+                - choice_rank
         ServiceUnavailableError:
             type: object
             properties:
                 code:
                     type: string
                     description: HTTP status code
-                    example: Minima consequatur atque nulla illum et reprehenderit.
+                    example: Deleniti atque optio fuga eum.
                 message:
                     type: string
                     description: Error message
-                    example: Impedit sit doloremque.
+                    example: Aut illum sit voluptatem aut provident.
             description: Service unavailable error response
             example:
-                code: Facere est autem omnis.
-                message: Laudantium ducimus dolore assumenda.
+                code: Voluptatem dolorem debitis asperiores suscipit.
+                message: Minima nam ratione eum.
             required:
                 - code
                 - message
@@ -1307,15 +1899,15 @@ components:
                 code:
                     type: string
                     description: HTTP status code
-                    example: Sed itaque.
+                    example: Nam nostrum consectetur officiis inventore odio minus.
                 message:
                     type: string
                     description: Error message
-                    example: Cumque quaerat aliquam delectus dignissimos deleniti quod.
+                    example: Ipsum commodi incidunt fugiat voluptatem repellat.
             description: Unauthorized error response
             example:
-                code: Alias ut dignissimos porro quaerat adipisci.
-                message: Qui harum quis veniam.
+                code: Id quasi necessitatibus id impedit est.
+                message: Cupiditate placeat possimus aut.
             required:
                 - code
                 - message
@@ -1331,7 +1923,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Observer
+                        example: Voting Rep
                         enum:
                             - Voting Rep
                             - Alternate Voting Rep
@@ -1350,7 +1942,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Quos debitis eum.
+                        example: Quibusdam officiis.
                     description: Multiple committee UIDs
                     example:
                         - a02bdbaf-53b1-4d47-bc04-dd7e459dd308
@@ -1374,7 +1966,7 @@ components:
                     type: integer
                     description: Number of winners (meek_stv only)
                     default: 2
-                    example: 3
+                    example: 6
                     format: int64
                     minimum: 2
                     maximum: 10
@@ -1395,28 +1987,52 @@ components:
                     description: Questions for the vote
                     example:
                         - choices:
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
                           prompt: Who should be elected to the TSC?
-                          question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                          question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
                           type: single_choice
                         - choices:
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
-                            - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                               choice_text: John Doe
                           prompt: Who should be elected to the TSC?
-                          question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                          question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
+                          type: single_choice
+                        - choices:
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
+                              choice_text: John Doe
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
+                              choice_text: John Doe
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
+                              choice_text: John Doe
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
+                              choice_text: John Doe
+                          prompt: Who should be elected to the TSC?
+                          question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
+                          type: single_choice
+                        - choices:
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
+                              choice_text: John Doe
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
+                              choice_text: John Doe
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
+                              choice_text: John Doe
+                            - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
+                              choice_text: John Doe
+                          prompt: Who should be elected to the TSC?
+                          question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
                           type: single_choice
                 poll_type:
                     type: string
@@ -1435,7 +2051,7 @@ components:
                     type: boolean
                     description: Enable pseudo-anonymity
                     default: false
-                    example: false
+                    example: true
                 quorum_percentage:
                     type: integer
                     description: Quorum percentage required
@@ -1462,47 +2078,35 @@ components:
                 description: Vote for the TSC members for Q1 2026
                 end_time: "2026-02-15T23:59:59Z"
                 name: Q1 2026 Technical Steering Committee Election
-                num_winners: 3
+                num_winners: 7
                 poll_comment_prompts:
                     - prompt: Please provide any additional feedback
                     - prompt: Please provide any additional feedback
                     - prompt: Please provide any additional feedback
                 poll_questions:
                     - choices:
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                        - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                           choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                        - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                           choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                        - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                           choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                        - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                      question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
                       type: single_choice
                     - choices:
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                        - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                           choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                        - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                           choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                        - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                           choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                          choice_text: John Doe
-                      prompt: Who should be elected to the TSC?
-                      question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
-                      type: single_choice
-                    - choices:
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                          choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                          choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
-                          choice_text: John Doe
-                        - choice_id: f4bc3849-65e4-4b3a-aad4-35ca6b2faff0
+                        - choice_id: 48f7f202-cc2d-49cd-8a98-e4b3f9e683ce
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 71afec48-fb7f-4c4d-a85a-ceca6100727f
+                      question_id: 328b31c9-cdaa-4af1-a565-2b78a843dc6f
                       type: single_choice
                 poll_type: condorcet_irv
                 project_uid: a09P000000DsCBuIRT
@@ -1514,56 +2118,505 @@ components:
                 - description
                 - end_time
                 - poll_questions
+        UpdateVoteResponseRequestBody:
+            type: object
+            properties:
+                abstain:
+                    type: boolean
+                    description: Whether to abstain from voting
+                    default: false
+                    example: true
+                user_vote_content:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/VoteAnswerInput'
+                    description: Updated vote answers
+                    example:
+                        - choice_ids:
+                            - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                          question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+            example:
+                abstain: false
+                user_vote_content:
+                    - choice_ids:
+                        - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                      question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+            required:
+                - abstain
+        VoteAnswer:
+            type: object
+            properties:
+                prompt:
+                    type: string
+                    description: Question prompt
+                    example: Beatae omnis.
+                question_id:
+                    type: string
+                    description: Question identifier
+                    example: 3db183ea-941e-4c1d-a28d-68ca66dff120
+                    format: uuid
+                ranked_user_choice:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/RankedVoteChoiceAnswer'
+                    description: User's ranked choices
+                    example:
+                        - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                          choice_rank: 406029106336892537
+                          choice_text: Voluptatem et iusto.
+                        - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                          choice_rank: 406029106336892537
+                          choice_text: Voluptatem et iusto.
+                        - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                          choice_rank: 406029106336892537
+                          choice_text: Voluptatem et iusto.
+                type:
+                    type: string
+                    description: Question type
+                    example: single_choice
+                    enum:
+                        - single_choice
+                        - multiple_choice
+                user_choice:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/VoteChoiceAnswer'
+                    description: User's selected choices
+                    example:
+                        - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                          choice_text: Sit voluptas dolorem qui vero qui.
+                        - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                          choice_text: Sit voluptas dolorem qui vero qui.
+                        - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                          choice_text: Sit voluptas dolorem qui vero qui.
+            description: Vote answer for a question
+            example:
+                prompt: Reprehenderit tempore repellat minus nihil qui.
+                question_id: 4a323d6e-f759-4020-9151-11ac149a39d1
+                ranked_user_choice:
+                    - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                      choice_rank: 406029106336892537
+                      choice_text: Voluptatem et iusto.
+                    - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                      choice_rank: 406029106336892537
+                      choice_text: Voluptatem et iusto.
+                    - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                      choice_rank: 406029106336892537
+                      choice_text: Voluptatem et iusto.
+                type: multiple_choice
+                user_choice:
+                    - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                      choice_text: Sit voluptas dolorem qui vero qui.
+                    - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                      choice_text: Sit voluptas dolorem qui vero qui.
+            required:
+                - question_id
+                - prompt
+                - type
+        VoteAnswerInput:
+            type: object
+            properties:
+                choice_ids:
+                    type: array
+                    items:
+                        type: string
+                        example: Incidunt et quos eum.
+                    description: Selected choice IDs
+                    example:
+                        - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                question_id:
+                    type: string
+                    description: Question identifier
+                    example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                    format: uuid
+                ranked_choices:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/RankedChoiceInput'
+                    description: Ranked choices
+                    example:
+                        - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                          choice_rank: 1
+                        - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                          choice_rank: 1
+            description: Answer submission for a question
+            example:
+                choice_ids:
+                    - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                ranked_choices:
+                    - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                      choice_rank: 1
+                    - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                      choice_rank: 1
+                    - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                      choice_rank: 1
+            required:
+                - question_id
+        VoteChoiceAnswer:
+            type: object
+            properties:
+                choice_id:
+                    type: string
+                    description: Choice identifier
+                    example: c7009119-e995-4c89-96e8-8df8376b5c5e
+                    format: uuid
+                choice_text:
+                    type: string
+                    description: Choice text
+                    example: Enim sapiente ut suscipit eos animi aut.
+            description: Selected answer choice
+            example:
+                choice_id: 93c470a4-50d2-487c-a263-1ad53cfe42d6
+                choice_text: Quo eius iure dolor et rerum.
+            required:
+                - choice_id
+                - choice_text
+        VoteResponseResult:
+            type: object
+            properties:
+                abstained:
+                    type: boolean
+                    description: Whether the voter abstained
+                    example: true
+                allow_abstain:
+                    type: boolean
+                    description: Whether abstention is allowed
+                    example: true
+                poll_answers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/VoteAnswer'
+                    description: Vote answers
+                    example:
+                        - prompt: Et fugiat velit qui.
+                          question_id: e6a7bb81-645e-40f1-a805-1b1d224650c7
+                          ranked_user_choice:
+                            - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                              choice_rank: 406029106336892537
+                              choice_text: Voluptatem et iusto.
+                            - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                              choice_rank: 406029106336892537
+                              choice_text: Voluptatem et iusto.
+                            - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                              choice_rank: 406029106336892537
+                              choice_text: Voluptatem et iusto.
+                          type: single_choice
+                          user_choice:
+                            - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                              choice_text: Sit voluptas dolorem qui vero qui.
+                            - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                              choice_text: Sit voluptas dolorem qui vero qui.
+                            - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                              choice_text: Sit voluptas dolorem qui vero qui.
+                        - prompt: Et fugiat velit qui.
+                          question_id: e6a7bb81-645e-40f1-a805-1b1d224650c7
+                          ranked_user_choice:
+                            - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                              choice_rank: 406029106336892537
+                              choice_text: Voluptatem et iusto.
+                            - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                              choice_rank: 406029106336892537
+                              choice_text: Voluptatem et iusto.
+                            - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                              choice_rank: 406029106336892537
+                              choice_text: Voluptatem et iusto.
+                          type: single_choice
+                          user_choice:
+                            - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                              choice_text: Sit voluptas dolorem qui vero qui.
+                            - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                              choice_text: Sit voluptas dolorem qui vero qui.
+                            - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                              choice_text: Sit voluptas dolorem qui vero qui.
+                        - prompt: Et fugiat velit qui.
+                          question_id: e6a7bb81-645e-40f1-a805-1b1d224650c7
+                          ranked_user_choice:
+                            - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                              choice_rank: 406029106336892537
+                              choice_text: Voluptatem et iusto.
+                            - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                              choice_rank: 406029106336892537
+                              choice_text: Voluptatem et iusto.
+                            - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                              choice_rank: 406029106336892537
+                              choice_text: Voluptatem et iusto.
+                          type: single_choice
+                          user_choice:
+                            - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                              choice_text: Sit voluptas dolorem qui vero qui.
+                            - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                              choice_text: Sit voluptas dolorem qui vero qui.
+                            - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                              choice_text: Sit voluptas dolorem qui vero qui.
+                poll_id:
+                    type: string
+                    description: Poll identifier
+                    example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                    format: uuid
+                profile_picture:
+                    type: string
+                    description: Voter profile picture URL
+                    example: Odit ut quia velit.
+                project_id:
+                    type: string
+                    description: Project identifier
+                    example: Architecto voluptatibus aut id quidem.
+                ses_bounce_subtype:
+                    type: string
+                    description: SES bounce subtype
+                    example: Omnis non qui.
+                ses_bounce_type:
+                    type: string
+                    description: SES bounce type
+                    example: Quae quia alias.
+                ses_complaint_date:
+                    type: string
+                    description: SES complaint date
+                    example: Qui id commodi consequatur similique dignissimos.
+                ses_complaint_exists:
+                    type: boolean
+                    description: SES complaint exists
+                    example: false
+                ses_complaint_type:
+                    type: string
+                    description: SES complaint type
+                    example: Praesentium cupiditate sit laborum voluptatibus molestias.
+                ses_delivery_successful:
+                    type: boolean
+                    description: SES delivery successful
+                    example: false
+                ses_email_opened:
+                    type: boolean
+                    description: SES email opened
+                    example: true
+                ses_email_opened_last_time:
+                    type: string
+                    description: SES email opened last time
+                    example: Et facilis a nihil quibusdam enim.
+                ses_link_clicked:
+                    type: boolean
+                    description: SES link clicked
+                    example: true
+                ses_link_clicked_last_time:
+                    type: string
+                    description: SES link clicked last time
+                    example: Id modi reprehenderit a et.
+                ses_message_id:
+                    type: string
+                    description: SES message ID
+                    example: Enim doloribus similique deserunt consequatur sunt.
+                ses_message_last_sent_time:
+                    type: string
+                    description: SES message last sent time
+                    example: Amet quod aut quas aut est molestias.
+                user_email:
+                    type: string
+                    description: User email
+                    example: Molestias hic quae voluptate.
+                user_id:
+                    type: string
+                    description: User identifier
+                    example: Non veritatis possimus sit veritatis aspernatur.
+                user_name:
+                    type: string
+                    description: Voter name
+                    example: Et non praesentium.
+                user_org_id:
+                    type: string
+                    description: User organization ID
+                    example: Incidunt officiis saepe.
+                user_org_name:
+                    type: string
+                    description: User organization name
+                    example: Est et harum.
+                user_role:
+                    type: string
+                    description: User role
+                    example: Aut quam inventore ut nisi soluta facilis.
+                user_voting_status:
+                    type: string
+                    description: User voting status
+                    example: Alias at optio soluta ex officia.
+                vote_creation_time:
+                    type: string
+                    description: Vote creation time
+                    example: "1990-05-21T14:19:17Z"
+                    format: date-time
+                vote_id:
+                    type: string
+                    description: Vote identifier
+                    example: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                    format: uuid
+                vote_status:
+                    type: string
+                    description: Vote status
+                    example: submitted
+            description: Vote response details
+            example:
+                abstained: true
+                allow_abstain: false
+                poll_answers:
+                    - prompt: Et fugiat velit qui.
+                      question_id: e6a7bb81-645e-40f1-a805-1b1d224650c7
+                      ranked_user_choice:
+                        - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                          choice_rank: 406029106336892537
+                          choice_text: Voluptatem et iusto.
+                        - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                          choice_rank: 406029106336892537
+                          choice_text: Voluptatem et iusto.
+                        - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                          choice_rank: 406029106336892537
+                          choice_text: Voluptatem et iusto.
+                      type: single_choice
+                      user_choice:
+                        - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                          choice_text: Sit voluptas dolorem qui vero qui.
+                        - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                          choice_text: Sit voluptas dolorem qui vero qui.
+                        - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                          choice_text: Sit voluptas dolorem qui vero qui.
+                    - prompt: Et fugiat velit qui.
+                      question_id: e6a7bb81-645e-40f1-a805-1b1d224650c7
+                      ranked_user_choice:
+                        - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                          choice_rank: 406029106336892537
+                          choice_text: Voluptatem et iusto.
+                        - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                          choice_rank: 406029106336892537
+                          choice_text: Voluptatem et iusto.
+                        - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                          choice_rank: 406029106336892537
+                          choice_text: Voluptatem et iusto.
+                      type: single_choice
+                      user_choice:
+                        - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                          choice_text: Sit voluptas dolorem qui vero qui.
+                        - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                          choice_text: Sit voluptas dolorem qui vero qui.
+                        - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                          choice_text: Sit voluptas dolorem qui vero qui.
+                    - prompt: Et fugiat velit qui.
+                      question_id: e6a7bb81-645e-40f1-a805-1b1d224650c7
+                      ranked_user_choice:
+                        - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                          choice_rank: 406029106336892537
+                          choice_text: Voluptatem et iusto.
+                        - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                          choice_rank: 406029106336892537
+                          choice_text: Voluptatem et iusto.
+                        - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                          choice_rank: 406029106336892537
+                          choice_text: Voluptatem et iusto.
+                      type: single_choice
+                      user_choice:
+                        - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                          choice_text: Sit voluptas dolorem qui vero qui.
+                        - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                          choice_text: Sit voluptas dolorem qui vero qui.
+                        - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                          choice_text: Sit voluptas dolorem qui vero qui.
+                    - prompt: Et fugiat velit qui.
+                      question_id: e6a7bb81-645e-40f1-a805-1b1d224650c7
+                      ranked_user_choice:
+                        - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                          choice_rank: 406029106336892537
+                          choice_text: Voluptatem et iusto.
+                        - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                          choice_rank: 406029106336892537
+                          choice_text: Voluptatem et iusto.
+                        - choice_id: 1ccfaac5-de59-45ce-8108-26d1cbd5ef0f
+                          choice_rank: 406029106336892537
+                          choice_text: Voluptatem et iusto.
+                      type: single_choice
+                      user_choice:
+                        - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                          choice_text: Sit voluptas dolorem qui vero qui.
+                        - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                          choice_text: Sit voluptas dolorem qui vero qui.
+                        - choice_id: f1b1e320-ebd2-40cf-a800-fa33720271ed
+                          choice_text: Sit voluptas dolorem qui vero qui.
+                poll_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                profile_picture: Dolor ut totam aut.
+                project_id: Quia eveniet est.
+                ses_bounce_subtype: Omnis voluptates at in eligendi aut.
+                ses_bounce_type: Dolores doloremque et quisquam rerum ducimus dolorem.
+                ses_complaint_date: Ullam libero corporis vel nostrum sunt.
+                ses_complaint_exists: true
+                ses_complaint_type: Ut autem corrupti voluptas necessitatibus rerum.
+                ses_delivery_successful: true
+                ses_email_opened: false
+                ses_email_opened_last_time: Voluptatem quos debitis culpa praesentium et et.
+                ses_link_clicked: true
+                ses_link_clicked_last_time: Veniam consequuntur.
+                ses_message_id: Ducimus amet unde rerum ea itaque at.
+                ses_message_last_sent_time: Enim reprehenderit quia.
+                user_email: Dolores sit qui.
+                user_id: Ut temporibus neque minus.
+                user_name: Dolor reiciendis quia explicabo amet eligendi.
+                user_org_id: Voluptatem fuga suscipit quod in.
+                user_org_name: Tempora perspiciatis iusto laboriosam atque.
+                user_role: Earum est est ut et est tenetur.
+                user_voting_status: Quaerat quis harum quidem aperiam quam.
+                vote_creation_time: "1972-09-26T16:55:02Z"
+                vote_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                vote_status: submitted
+            required:
+                - vote_id
+                - poll_id
+                - project_id
+                - vote_status
         VoteResult:
             type: object
             properties:
                 allow_abstain:
                     type: boolean
                     description: Allow abstain
-                    example: false
+                    example: true
                 committee_name:
                     type: string
                     description: Committee name
-                    example: Est blanditiis sapiente reprehenderit et reprehenderit sunt.
+                    example: Qui quia officiis.
                 committee_type:
                     type: string
                     description: Committee type
-                    example: Fuga repellat et sit.
+                    example: Inventore et harum esse eaque aliquam aut.
                 committee_uid:
                     type: string
                     description: Committee UID
-                    example: In qui quo quos et explicabo sequi.
+                    example: Cum harum quis esse et.
                 committee_voting_status:
                     type: boolean
                     description: Committee voting status
-                    example: false
+                    example: true
                 creation_time:
                     type: string
                     description: Creation time
-                    example: "1972-08-15T10:05:21Z"
+                    example: "1977-09-22T14:28:52Z"
                     format: date-time
                 description:
                     type: string
                     description: Vote description
-                    example: Quibusdam doloribus cum perferendis est sunt.
+                    example: Incidunt soluta labore ad nulla.
                 end_time:
                     type: string
                     description: End time
-                    example: "1982-06-23T16:19:33Z"
+                    example: "1992-12-06T20:33:41Z"
                     format: date-time
                 last_modified_time:
                     type: string
                     description: Last modified time
-                    example: "2012-07-02T14:25:45Z"
+                    example: "2003-12-24T16:57:36Z"
                     format: date-time
                 name:
                     type: string
                     description: Vote name
-                    example: Et maiores temporibus sint.
+                    example: Autem non veritatis doloribus eius.
                 num_response_received:
                     type: integer
                     description: Responses received
-                    example: 7738687255052026208
+                    example: 182480953035504807
                     format: int64
                 poll_questions:
                     type: array
@@ -1591,34 +2644,14 @@ components:
                           prompt: Who should be elected to the TSC?
                           question_id: 5de700c1-f574-4766-9ebf-bca757ef9343
                           type: single_choice
-                        - choices:
-                            - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
-                              choice_text: John Doe
-                            - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
-                              choice_text: John Doe
-                            - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
-                              choice_text: John Doe
-                          prompt: Who should be elected to the TSC?
-                          question_id: 5de700c1-f574-4766-9ebf-bca757ef9343
-                          type: single_choice
-                        - choices:
-                            - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
-                              choice_text: John Doe
-                            - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
-                              choice_text: John Doe
-                            - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
-                              choice_text: John Doe
-                          prompt: Who should be elected to the TSC?
-                          question_id: 5de700c1-f574-4766-9ebf-bca757ef9343
-                          type: single_choice
                 project_uid:
                     type: string
                     description: Project UID
-                    example: Aut eligendi ut facilis beatae qui sint.
+                    example: Ab possimus.
                 pseudo_anonymity:
                     type: boolean
                     description: Pseudo-anonymity enabled
-                    example: true
+                    example: false
                 status:
                     type: string
                     description: Vote status
@@ -1630,7 +2663,7 @@ components:
                 total_voting_request_invitations:
                     type: integer
                     description: Total invitations sent
-                    example: 5215792657997784838
+                    example: 7174174545322272651
                     format: int64
                 vote_uid:
                     type: string
@@ -1640,16 +2673,16 @@ components:
             description: Vote details
             example:
                 allow_abstain: false
-                committee_name: Illo vel adipisci enim voluptatem quod.
-                committee_type: Quaerat ut.
-                committee_uid: Natus nisi inventore fuga.
-                committee_voting_status: true
-                creation_time: "1997-11-22T19:09:46Z"
-                description: Sequi numquam.
-                end_time: "1979-12-12T23:03:21Z"
-                last_modified_time: "1976-04-13T02:14:20Z"
-                name: Non sit temporibus enim.
-                num_response_received: 781899443710526433
+                committee_name: Laudantium molestias ea dolorem.
+                committee_type: Fuga omnis nisi tempora.
+                committee_uid: Labore repellat.
+                committee_voting_status: false
+                creation_time: "2004-08-12T10:44:45Z"
+                description: Nisi soluta eum quibusdam.
+                end_time: "1973-04-07T16:39:58Z"
+                last_modified_time: "2006-10-24T22:25:19Z"
+                name: Excepturi sed molestiae molestiae.
+                num_response_received: 3713779269160682584
                 poll_questions:
                     - choices:
                         - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
@@ -1671,20 +2704,10 @@ components:
                       prompt: Who should be elected to the TSC?
                       question_id: 5de700c1-f574-4766-9ebf-bca757ef9343
                       type: single_choice
-                    - choices:
-                        - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
-                          choice_text: John Doe
-                        - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
-                          choice_text: John Doe
-                        - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
-                          choice_text: John Doe
-                      prompt: Who should be elected to the TSC?
-                      question_id: 5de700c1-f574-4766-9ebf-bca757ef9343
-                      type: single_choice
-                project_uid: Excepturi rerum non nulla.
-                pseudo_anonymity: false
+                project_uid: Nemo inventore delectus consequatur quod dolor.
+                pseudo_anonymity: true
                 status: disabled
-                total_voting_request_invitations: 3782244830191806665
+                total_voting_request_invitations: 5995199285198237364
                 vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
             required:
                 - vote_uid
@@ -1699,5 +2722,5 @@ components:
             description: Heimdall JWT authorization
             scheme: bearer
 tags:
-    - name: voting
-      description: Voting service that proxies to ITX voting API
+    - name: vote
+      description: Vote service that proxies to ITX voting API

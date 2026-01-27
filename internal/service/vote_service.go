@@ -13,20 +13,20 @@ import (
 	"goa.design/goa/v3/security"
 )
 
-// VotingService implements the voting service business logic
-type VotingService struct {
+// VoteService implements the vote service business logic
+type VoteService struct {
 	jwtAuth     domain.Authenticator
-	proxyClient domain.ITXProxyClient
+	proxyClient domain.PollClient
 	logger      *slog.Logger
 }
 
-// NewVotingService creates a new voting service
-func NewVotingService(
+// NewVoteService creates a new vote service
+func NewVoteService(
 	jwtAuth domain.Authenticator,
-	proxyClient domain.ITXProxyClient,
+	proxyClient domain.PollClient,
 	logger *slog.Logger,
-) *VotingService {
-	return &VotingService{
+) *VoteService {
+	return &VoteService{
 		jwtAuth:     jwtAuth,
 		proxyClient: proxyClient,
 		logger:      logger,
@@ -34,7 +34,7 @@ func NewVotingService(
 }
 
 // JWTAuth implements the authorization logic for JWT tokens
-func (s *VotingService) JWTAuth(ctx context.Context, token string, scheme *security.JWTScheme) (context.Context, error) {
+func (s *VoteService) JWTAuth(ctx context.Context, token string, scheme *security.JWTScheme) (context.Context, error) {
 	principal, err := s.jwtAuth.ParsePrincipal(ctx, token, s.logger)
 	if err != nil {
 		s.logger.WarnContext(ctx, "JWT validation failed", "error", err)
@@ -49,7 +49,7 @@ func (s *VotingService) JWTAuth(ctx context.Context, token string, scheme *secur
 }
 
 // CreateVote creates a new vote (proxies to ITX POST /voting/poll)
-func (s *VotingService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*itx.PollResponse, error) {
+func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*itx.PollResponse, error) {
 	// Extract principal from context
 	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
 	if !ok {
@@ -119,7 +119,7 @@ func (s *VotingService) CreateVote(ctx context.Context, req *CreateVoteRequest) 
 }
 
 // GetVote retrieves vote details (proxies to ITX GET /voting/poll/{poll_id})
-func (s *VotingService) GetVote(ctx context.Context, voteID string) (*itx.PollResponse, error) {
+func (s *VoteService) GetVote(ctx context.Context, voteID string) (*itx.PollResponse, error) {
 	// Extract principal from context
 	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
 	if !ok {
@@ -142,7 +142,7 @@ func (s *VotingService) GetVote(ctx context.Context, voteID string) (*itx.PollRe
 }
 
 // UpdateVote updates a vote (proxies to ITX PUT /voting/poll/{poll_id})
-func (s *VotingService) UpdateVote(ctx context.Context, voteID string, req *UpdateVoteRequest) (*itx.PollResponse, error) {
+func (s *VoteService) UpdateVote(ctx context.Context, voteID string, req *UpdateVoteRequest) (*itx.PollResponse, error) {
 	// Extract principal from context
 	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
 	if !ok {
@@ -208,7 +208,7 @@ func (s *VotingService) UpdateVote(ctx context.Context, voteID string, req *Upda
 }
 
 // DeleteVote deletes a vote (proxies to ITX DELETE /voting/poll/{poll_id})
-func (s *VotingService) DeleteVote(ctx context.Context, voteID string) error {
+func (s *VoteService) DeleteVote(ctx context.Context, voteID string) error {
 	// Extract principal from context
 	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
 	if !ok {
@@ -231,7 +231,7 @@ func (s *VotingService) DeleteVote(ctx context.Context, voteID string) error {
 }
 
 // ExtendVote extends a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)
-func (s *VotingService) ExtendVote(ctx context.Context, voteID string, endTime string) (*itx.PollResponse, error) {
+func (s *VoteService) ExtendVote(ctx context.Context, voteID string, endTime string) (*itx.PollResponse, error) {
 	// Extract principal from context
 	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
 	if !ok {
@@ -259,7 +259,7 @@ func (s *VotingService) ExtendVote(ctx context.Context, voteID string, endTime s
 }
 
 // EnableVote enables a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)
-func (s *VotingService) EnableVote(ctx context.Context, voteID string) error {
+func (s *VoteService) EnableVote(ctx context.Context, voteID string) error {
 	// Extract principal from context
 	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
 	if !ok {
@@ -282,7 +282,7 @@ func (s *VotingService) EnableVote(ctx context.Context, voteID string) error {
 }
 
 // BulkResendVote bulk resends vote emails to select recipients (proxies to ITX POST /voting/poll/{poll_id}/bulk_resend)
-func (s *VotingService) BulkResendVote(ctx context.Context, voteID string, recipientIDs []string) error {
+func (s *VoteService) BulkResendVote(ctx context.Context, voteID string, recipientIDs []string) error {
 	// Extract principal from context
 	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
 	if !ok {

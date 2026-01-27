@@ -13,8 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	votingsvr "github.com/linuxfoundation/lfx-v2-voting-service/gen/http/voting/server"
-	votingsvc "github.com/linuxfoundation/lfx-v2-voting-service/gen/voting"
+	votesvr "github.com/linuxfoundation/lfx-v2-voting-service/gen/http/vote/server"
+	votesvc "github.com/linuxfoundation/lfx-v2-voting-service/gen/vote"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/auth"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/proxy"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
@@ -72,20 +72,21 @@ func run() int {
 	})
 
 	// Initialize service layer
-	votingService := service.NewVotingService(jwtAuth, proxyClient, logger)
+	voteService := service.NewVoteService(jwtAuth, proxyClient, logger)
+	voteResponseService := service.NewVoteResponseService(jwtAuth, proxyClient, logger)
 
 	// Initialize API layer
-	votingAPI := NewVotingAPI(votingService)
+	votingAPI := NewVotingAPI(voteService, voteResponseService)
 
 	// Create Goa endpoints
-	endpoints := votingsvc.NewEndpoints(votingAPI)
+	votingEndpoints := votesvc.NewEndpoints(votingAPI)
 
 	// Create HTTP muxer
 	mux := goahttp.NewMuxer()
 
 	// Mount HTTP handlers
-	votingServer := votingsvr.New(endpoints, mux, goahttp.RequestDecoder, goahttp.ResponseEncoder, nil, nil)
-	votingsvr.Mount(mux, votingServer)
+	votingServer := votesvr.New(votingEndpoints, mux, goahttp.RequestDecoder, goahttp.ResponseEncoder, nil, nil)
+	votesvr.Mount(mux, votingServer)
 
 	// Add health check endpoints
 	mux.Handle("GET", "/health", func(w http.ResponseWriter, r *http.Request) {

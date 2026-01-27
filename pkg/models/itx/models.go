@@ -97,3 +97,83 @@ type PollChoiceOutput struct {
 	ChoiceID   string `json:"choice_id"`
 	ChoiceText string `json:"choice_text"`
 }
+
+// CreateVoteRequest represents the request to submit a vote in ITX
+type CreateVoteRequest struct {
+	VoteID          string            `json:"vote_id"`
+	UserVoteContent []PollAnswerInput `json:"user_vote_content"`
+	Abstain         bool              `json:"abstain"`
+}
+
+// UpdateVoteRequest represents the request to update a vote in ITX
+type UpdateVoteRequest struct {
+	UserVoteContent []PollAnswerInput `json:"user_vote_content"`
+	Abstain         bool              `json:"abstain"`
+}
+
+// PollAnswerInput represents a vote answer submission
+type PollAnswerInput struct {
+	QuestionID    string              `json:"question_id"`
+	ChoiceIDs     []string            `json:"choice_ids,omitempty"`
+	RankedChoices []RankedChoiceInput `json:"ranked_choices,omitempty"`
+}
+
+// RankedChoiceInput represents a ranked choice answer
+type RankedChoiceInput struct {
+	ChoiceID   string `json:"choice_id"`
+	ChoiceRank int    `json:"choice_rank"`
+}
+
+// VoteResponse represents a vote response from ITX
+type VoteResponse struct {
+	VoteID                 string       `json:"vote_id"`
+	PollID                 string       `json:"poll_id"`
+	ProjectID              string       `json:"project_id"`
+	VoteStatus             string       `json:"vote_status"`
+	Abstained              bool         `json:"abstained"`
+	AllowAbstain           bool         `json:"allow_abstain"`
+	VoteCreationTime       string       `json:"vote_creation_time"`
+	UserName               string       `json:"user_name"`
+	ProfilePicture         string       `json:"profile_picture"`
+	UserID                 string       `json:"user_id"`
+	UserEmail              string       `json:"user_email"`
+	UserRole               string       `json:"user_role"`
+	UserVotingStatus       string       `json:"user_voting_status"`
+	UserOrgName            string       `json:"user_org_name"`
+	UserOrgID              string       `json:"user_org_id"`
+	SESMessageID           string       `json:"ses_message_id"`
+	SESMessageLastSentTime string       `json:"ses_message_last_sent_time"`
+	SESBounceType          string       `json:"ses_bounce_type,omitempty"`
+	SESBounceSubtype       string       `json:"ses_bounce_subtype,omitempty"`
+	SESComplaintExists     bool         `json:"ses_complaint_exists"`
+	SESComplaintType       string       `json:"ses_complaint_type,omitempty"`
+	SESComplaintDate       string       `json:"ses_complaint_date,omitempty"`
+	SESDeliverySuccessful  bool         `json:"ses_delivery_successful"`
+	SESEmailOpened         bool         `json:"ses_email_opened"`
+	SESEmailOpenedLastTime string       `json:"ses_email_opened_last_time,omitempty"`
+	SESLinkClicked         bool         `json:"ses_link_clicked"`
+	SESLinkClickedLastTime string       `json:"ses_link_clicked_last_time,omitempty"`
+	PollAnswers            []PollAnswer `json:"poll_answers"`
+}
+
+// PollAnswer represents a vote answer in the response
+type PollAnswer struct {
+	QuestionID       string                     `json:"question_id"`
+	Prompt           string                     `json:"prompt"`
+	Type             string                     `json:"type"`
+	UserChoice       []PollChoiceAnswer         `json:"user_choice,omitempty"`
+	RankedUserChoice []RankedPollChoiceAnswer   `json:"ranked_user_choice,omitempty"`
+}
+
+// PollChoiceAnswer represents an answer choice
+type PollChoiceAnswer struct {
+	ChoiceID   string `json:"choice_id"`
+	ChoiceText string `json:"choice_text"`
+}
+
+// RankedPollChoiceAnswer represents a ranked answer choice
+type RankedPollChoiceAnswer struct {
+	ChoiceID   string `json:"choice_id"`
+	ChoiceText string `json:"choice_text"`
+	ChoiceRank int    `json:"choice_rank"`
+}

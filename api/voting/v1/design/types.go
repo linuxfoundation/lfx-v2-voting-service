@@ -289,3 +289,127 @@ var ForbiddenError = Type("ForbiddenError", func() {
 	Attribute("message", String, "Error message")
 	Required("code", "message")
 })
+
+// VoteResponseResult represents a vote response (ballot submission)
+var VoteResponseResult = Type("VoteResponseResult", func() {
+	Description("Vote response details")
+
+	Attribute("vote_id", String, "Vote identifier", func() {
+		Format(FormatUUID)
+		Example("b03cdbaf-53b1-4d47-bc04-dd7e459dd309")
+	})
+
+	Attribute("poll_id", String, "Poll identifier", func() {
+		Format(FormatUUID)
+		Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
+	})
+
+	Attribute("project_id", String, "Project identifier")
+	Attribute("vote_status", String, "Vote status", func() {
+		Example("submitted")
+	})
+	Attribute("abstained", Boolean, "Whether the voter abstained")
+	Attribute("allow_abstain", Boolean, "Whether abstention is allowed")
+	Attribute("vote_creation_time", String, "Vote creation time", func() {
+		Format(FormatDateTime)
+	})
+	Attribute("user_name", String, "Voter name")
+	Attribute("profile_picture", String, "Voter profile picture URL")
+	Attribute("user_id", String, "User identifier")
+	Attribute("user_email", String, "User email")
+	Attribute("user_role", String, "User role")
+	Attribute("user_voting_status", String, "User voting status")
+	Attribute("user_org_name", String, "User organization name")
+	Attribute("user_org_id", String, "User organization ID")
+	Attribute("ses_message_id", String, "SES message ID")
+	Attribute("ses_message_last_sent_time", String, "SES message last sent time")
+	Attribute("ses_bounce_type", String, "SES bounce type")
+	Attribute("ses_bounce_subtype", String, "SES bounce subtype")
+	Attribute("ses_complaint_exists", Boolean, "SES complaint exists")
+	Attribute("ses_complaint_type", String, "SES complaint type")
+	Attribute("ses_complaint_date", String, "SES complaint date")
+	Attribute("ses_delivery_successful", Boolean, "SES delivery successful")
+	Attribute("ses_email_opened", Boolean, "SES email opened")
+	Attribute("ses_email_opened_last_time", String, "SES email opened last time")
+	Attribute("ses_link_clicked", Boolean, "SES link clicked")
+	Attribute("ses_link_clicked_last_time", String, "SES link clicked last time")
+	Attribute("poll_answers", ArrayOf(VoteAnswer), "Vote answers")
+
+	Required("vote_id", "poll_id", "project_id", "vote_status")
+})
+
+// VoteAnswer represents an answer to a poll question
+var VoteAnswer = Type("VoteAnswer", func() {
+	Description("Vote answer for a question")
+
+	Attribute("question_id", String, "Question identifier", func() {
+		Format(FormatUUID)
+	})
+	Attribute("prompt", String, "Question prompt")
+	Attribute("type", String, "Question type", func() {
+		Enum("single_choice", "multiple_choice")
+	})
+	Attribute("user_choice", ArrayOf(VoteChoiceAnswer), "User's selected choices")
+	Attribute("ranked_user_choice", ArrayOf(RankedVoteChoiceAnswer), "User's ranked choices")
+
+	Required("question_id", "prompt", "type")
+})
+
+// VoteChoiceAnswer represents a selected answer choice
+var VoteChoiceAnswer = Type("VoteChoiceAnswer", func() {
+	Description("Selected answer choice")
+
+	Attribute("choice_id", String, "Choice identifier", func() {
+		Format(FormatUUID)
+	})
+	Attribute("choice_text", String, "Choice text")
+
+	Required("choice_id", "choice_text")
+})
+
+// RankedVoteChoiceAnswer represents a ranked answer choice
+var RankedVoteChoiceAnswer = Type("RankedVoteChoiceAnswer", func() {
+	Description("Ranked answer choice")
+
+	Attribute("choice_id", String, "Choice identifier", func() {
+		Format(FormatUUID)
+	})
+	Attribute("choice_text", String, "Choice text")
+	Attribute("choice_rank", Int, "Choice rank (1-based)", func() {
+		Minimum(1)
+	})
+
+	Required("choice_id", "choice_text", "choice_rank")
+})
+
+// VoteAnswerInput represents an answer submission
+var VoteAnswerInput = Type("VoteAnswerInput", func() {
+	Description("Answer submission for a question")
+
+	Attribute("question_id", String, "Question identifier", func() {
+		Format(FormatUUID)
+		Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
+	})
+	Attribute("choice_ids", ArrayOf(String), "Selected choice IDs", func() {
+		Example([]string{"b03cdbaf-53b1-4d47-bc04-dd7e459dd309"})
+	})
+	Attribute("ranked_choices", ArrayOf(RankedChoiceInput), "Ranked choices")
+
+	Required("question_id")
+})
+
+// RankedChoiceInput represents a ranked choice submission
+var RankedChoiceInput = Type("RankedChoiceInput", func() {
+	Description("Ranked choice submission")
+
+	Attribute("choice_id", String, "Choice identifier", func() {
+		Format(FormatUUID)
+		Example("b03cdbaf-53b1-4d47-bc04-dd7e459dd309")
+	})
+	Attribute("choice_rank", Int, "Choice rank (1-based)", func() {
+		Minimum(1)
+		Example(1)
+	})
+
+	Required("choice_id", "choice_rank")
+})

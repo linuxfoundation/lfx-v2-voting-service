@@ -27,8 +27,8 @@ var _ = API("lfx-v2-voting-service", func() {
 	})
 })
 
-var _ = Service("voting", func() {
-	Description("Voting service that proxies to ITX voting API")
+var _ = Service("vote", func() {
+	Description("Vote service that proxies to ITX voting API")
 
 	Security(JWTAuth)
 
@@ -262,6 +262,165 @@ var _ = Service("voting", func() {
 
 		HTTP(func() {
 			POST("/votes/{vote_uid}/bulk_resend")
+			Response(StatusNoContent)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
+	// Vote Response Methods (ballot submission)
+
+	Method("create_vote_response", func() {
+		Description("Submit a vote response (proxies to ITX POST /voting/vote)")
+
+		Security(JWTAuth, func() {
+			Scope("manage:projects")
+			Scope("manage:voting")
+		})
+
+		Payload(func() {
+			BearerTokenAttribute()
+
+			Attribute("vote_response_id", String, "Vote response identifier", func() {
+				Format(FormatUUID)
+				Example("b03cdbaf-53b1-4d47-bc04-dd7e459dd309")
+			})
+
+			Attribute("vote_uid", String, "Vote/poll identifier this response belongs to", func() {
+				Format(FormatUUID)
+				Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
+			})
+
+			Attribute("user_vote_content", ArrayOf(VoteAnswerInput), "Vote answers", func() {
+				Example([]interface{}{
+					map[string]interface{}{
+						"question_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+						"choice_ids":  []string{"b03cdbaf-53b1-4d47-bc04-dd7e459dd309"},
+					},
+				})
+			})
+
+			Attribute("abstain", Boolean, "Whether to abstain from voting", func() {
+				Default(false)
+			})
+
+			Required("vote_response_id", "vote_uid", "abstain")
+		})
+
+		HTTP(func() {
+			POST("/vote_responses")
+			Response(StatusNoContent)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
+	Method("get_vote_response", func() {
+		Description("Get vote response details (proxies to ITX GET /voting/vote/{vote_id})")
+
+		Security(JWTAuth, func() {
+			Scope("manage:projects")
+			Scope("manage:voting")
+		})
+
+		Payload(func() {
+			BearerTokenAttribute()
+
+			Attribute("vote_response_id", String, "Vote response identifier", func() {
+				Format(FormatUUID)
+				Example("b03cdbaf-53b1-4d47-bc04-dd7e459dd309")
+			})
+
+			Required("vote_response_id")
+		})
+
+		Result(VoteResponseResult)
+
+		HTTP(func() {
+			GET("/vote_responses/{vote_response_id}")
+			Response(StatusOK)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
+	Method("update_vote_response", func() {
+		Description("Update vote response (proxies to ITX PUT /voting/vote/{vote_id})")
+
+		Security(JWTAuth, func() {
+			Scope("manage:projects")
+			Scope("manage:voting")
+		})
+
+		Payload(func() {
+			BearerTokenAttribute()
+
+			Attribute("vote_response_id", String, "Vote response identifier", func() {
+				Format(FormatUUID)
+				Example("b03cdbaf-53b1-4d47-bc04-dd7e459dd309")
+			})
+
+			Attribute("user_vote_content", ArrayOf(VoteAnswerInput), "Updated vote answers", func() {
+				Example([]interface{}{
+					map[string]interface{}{
+						"question_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+						"choice_ids":  []string{"b03cdbaf-53b1-4d47-bc04-dd7e459dd309"},
+					},
+				})
+			})
+
+			Attribute("abstain", Boolean, "Whether to abstain from voting", func() {
+				Default(false)
+			})
+
+			Required("vote_response_id", "abstain")
+		})
+
+		HTTP(func() {
+			PUT("/vote_responses/{vote_response_id}")
+			Response(StatusNoContent)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
+	Method("resend_vote_response", func() {
+		Description("Resend vote email (proxies to ITX POST /voting/vote/{vote_id}/resend)")
+
+		Security(JWTAuth, func() {
+			Scope("manage:projects")
+			Scope("manage:voting")
+		})
+
+		Payload(func() {
+			BearerTokenAttribute()
+
+			Attribute("vote_response_id", String, "Vote response identifier", func() {
+				Format(FormatUUID)
+				Example("b03cdbaf-53b1-4d47-bc04-dd7e459dd309")
+			})
+
+			Required("vote_response_id")
+		})
+
+		HTTP(func() {
+			POST("/vote_responses/{vote_response_id}/resend")
 			Response(StatusNoContent)
 			Response("BadRequest", StatusBadRequest)
 			Response("Unauthorized", StatusUnauthorized)
