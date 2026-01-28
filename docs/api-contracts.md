@@ -14,6 +14,33 @@ This document outlines the differences between the LFXv2 Voting Service proxy AP
 | `committee_uid` | `committee_id` | Committee identifier |
 | `committee_uids` | `committee_ids` | Multiple committee identifiers |
 
+### ID Schema Translation (v1 ↔ v2)
+
+The proxy service acts as a translation layer between LFX v2 (UUID-based) and v1 (Salesforce ID-based) identifier schemas:
+
+| Identifier Type | LFX v2 (Client) | LFX v1 (ITX) | Mapping Service |
+| --------------- | --------------- | ------------ | --------------- |
+| Project ID | UUID format | Salesforce ID (SFID) | NATS-based bidirectional lookup |
+| Committee ID | UUID format | Salesforce ID (SFID) | NATS-based bidirectional lookup |
+| Poll/Vote ID | UUID format | UUID format | No mapping needed |
+
+**NATS Message Subject**: `lfx.lookup_v1_mapping`
+
+**Mapping Request Formats**:
+
+- Project v2→v1: `project.uid.{v2_uuid}` → `{v1_sfid}`
+- Project v1→v2: `project.sfid.{v1_sfid}` → `{v2_uuid}`
+- Committee v2→v1: `committee.uid.{v2_uuid}` → `{project_sfid}:{committee_sfid}`
+- Committee v1→v2: `committee.sfid.{v1_sfid}` → `{v2_uuid}`
+
+**Bidirectional Mapping**:
+
+- **Requests (Client → ITX)**: v2 UIDs are mapped to v1 SFIDs before sending to ITX
+- **Responses (ITX → Client)**: v1 SFIDs are mapped back to v2 UIDs before returning to client
+- **Error Handling**: If reverse mapping (v1→v2) fails, the field is returned empty and an error is logged
+
+This allows the LFXv2 API to maintain a consistent UUID-based schema while transparently communicating with the legacy v1-based ITX service.
+
 ### Authentication
 
 | Aspect | LFXv2 Proxy | ITX Service |
@@ -31,18 +58,20 @@ This document outlines the differences between the LFXv2 Voting Service proxy AP
 **Endpoint**: `POST /api/v1/votes`
 
 **Headers**:
+
 ```http
 Authorization: Bearer <heimdall-jwt-token>
 Content-Type: application/json
 ```
 
 **Request Body**:
+
 ```json
 {
   "name": "Q1 2026 TSC Election",
   "description": "Technical Steering Committee Election for Q1 2026",
   "end_time": "2026-02-15T23:59:59Z",
-  "project_uid": "a09P000000DsCBuIRT",
+  "project_uid": "c01adbaf-53b1-4d47-bc04-dd7e459dd301",
   "committee_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
   "committee_uids": [
     "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
@@ -73,6 +102,7 @@ Content-Type: application/json
 ```
 
 **Response** (201 Created):
+
 ```json
 {
   "vote_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
@@ -82,7 +112,7 @@ Content-Type: application/json
   "last_modified_time": "2026-01-23T10:00:00Z",
   "end_time": "2026-02-15T23:59:59Z",
   "status": "disabled",
-  "project_uid": "a09P000000DsCBuIRT",
+  "project_uid": "c01adbaf-53b1-4d47-bc04-dd7e459dd301",
   "committee_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
   "committee_name": "Technical Steering Committee",
   "committee_type": "TSC",
@@ -122,6 +152,7 @@ Content-Type: application/json
 **Endpoint**: `POST /v2/voting/poll`
 
 **Headers**:
+
 ```http
 Authorization: Bearer <oauth2-m2m-token>
 Content-Type: application/json
@@ -129,6 +160,7 @@ x-scope: manage:voting
 ```
 
 **Request Body** (Note the field name differences):
+
 ```json
 {
   "name": "Q1 2026 TSC Election",
@@ -161,6 +193,7 @@ x-scope: manage:voting
 ```
 
 **Response** (200 OK):
+
 ```json
 {
   "poll_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
@@ -212,14 +245,17 @@ x-scope: manage:voting
 **Endpoint**: `GET /api/v1/votes/{vote_uid}`
 
 **Headers**:
+
 ```http
 Authorization: Bearer <heimdall-jwt-token>
 ```
 
 **Path Parameters**:
+
 - `vote_uid` (string, UUID): The vote identifier
 
 **Response** (200 OK):
+
 ```json
 {
   "vote_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
@@ -229,7 +265,7 @@ Authorization: Bearer <heimdall-jwt-token>
   "last_modified_time": "2026-01-23T10:00:00Z",
   "end_time": "2026-02-15T23:59:59Z",
   "status": "active",
-  "project_uid": "a09P000000DsCBuIRT",
+  "project_uid": "c01adbaf-53b1-4d47-bc04-dd7e459dd301",
   "committee_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
   "committee_name": "Technical Steering Committee",
   "committee_type": "TSC",
@@ -249,15 +285,18 @@ Authorization: Bearer <heimdall-jwt-token>
 **Endpoint**: `GET /v2/voting/poll/{poll_id}`
 
 **Headers**:
+
 ```http
 Authorization: Bearer <oauth2-m2m-token>
 x-scope: manage:voting
 ```
 
 **Path Parameters**:
+
 - `poll_id` (string, UUID): The poll identifier
 
 **Response** (200 OK):
+
 ```json
 {
   "poll_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
@@ -289,21 +328,24 @@ x-scope: manage:voting
 **Endpoint**: `PUT /api/v1/votes/{vote_uid}`
 
 **Headers**:
+
 ```http
 Authorization: Bearer <heimdall-jwt-token>
 Content-Type: application/json
 ```
 
 **Path Parameters**:
+
 - `vote_uid` (string, UUID): The vote identifier
 
 **Request Body**:
+
 ```json
 {
   "name": "Q1 2026 TSC Election - Updated",
   "description": "Updated description",
   "end_time": "2026-02-20T23:59:59Z",
-  "project_uid": "a09P000000DsCBuIRT",
+  "project_uid": "c01adbaf-53b1-4d47-bc04-dd7e459dd301",
   "committee_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
   "committee_uids": ["a02bdbaf-53b1-4d47-bc04-dd7e459dd308"],
   "committee_filters": ["Voting Rep"],
@@ -330,6 +372,7 @@ Content-Type: application/json
 ```
 
 **Response** (200 OK):
+
 ```json
 {
   "vote_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
@@ -338,7 +381,7 @@ Content-Type: application/json
   "last_modified_time": "2026-01-23T15:30:00Z",
   "end_time": "2026-02-20T23:59:59Z",
   "status": "disabled",
-  "project_uid": "a09P000000DsCBuIRT",
+  "project_uid": "c01adbaf-53b1-4d47-bc04-dd7e459dd301",
   "committee_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
   "poll_questions": [...]
 }
@@ -353,6 +396,7 @@ Content-Type: application/json
 **Endpoint**: `PUT /v2/voting/poll/{poll_id}`
 
 **Headers**:
+
 ```http
 Authorization: Bearer <oauth2-m2m-token>
 Content-Type: application/json
@@ -360,9 +404,11 @@ x-scope: manage:voting
 ```
 
 **Path Parameters**:
+
 - `poll_id` (string, UUID): The poll identifier
 
 **Request Body** (Note field name differences):
+
 ```json
 {
   "name": "Q1 2026 TSC Election - Updated",
@@ -392,6 +438,7 @@ x-scope: manage:voting
 ```
 
 **Response** (200 OK):
+
 ```json
 {
   "poll_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
@@ -415,14 +462,17 @@ x-scope: manage:voting
 **Endpoint**: `DELETE /api/v1/votes/{vote_uid}`
 
 **Headers**:
+
 ```http
 Authorization: Bearer <heimdall-jwt-token>
 ```
 
 **Path Parameters**:
+
 - `vote_uid` (string, UUID): The vote identifier
 
 **Response** (204 No Content):
+
 ```
 (empty body)
 ```
@@ -436,15 +486,18 @@ Authorization: Bearer <heimdall-jwt-token>
 **Endpoint**: `DELETE /v2/voting/poll/{poll_id}`
 
 **Headers**:
+
 ```http
 Authorization: Bearer <oauth2-m2m-token>
 x-scope: manage:voting
 ```
 
 **Path Parameters**:
+
 - `poll_id` (string, UUID): The poll identifier
 
 **Response** (200 OK or 204 No Content):
+
 ```
 (empty body)
 ```
@@ -487,6 +540,7 @@ The proxy returns consistent error responses:
 ```
 
 HTTP Status Codes:
+
 - `400` - Bad Request (validation errors)
 - `401` - Unauthorized (invalid/missing JWT)
 - `403` - Forbidden (insufficient permissions)
@@ -500,6 +554,7 @@ HTTP Status Codes:
 ITX returns various error formats. The proxy normalizes these into the LFXv2 error format.
 
 Example ITX Error:
+
 ```json
 {
   "error": "Poll not found",
@@ -508,6 +563,7 @@ Example ITX Error:
 ```
 
 Maps to LFXv2:
+
 ```json
 {
   "message": "Poll not found",

@@ -17,6 +17,7 @@ import (
 type VoteService struct {
 	jwtAuth     domain.Authenticator
 	proxyClient domain.PollClient
+	idMapper    domain.IDMapper
 	logger      *slog.Logger
 }
 
@@ -24,11 +25,13 @@ type VoteService struct {
 func NewVoteService(
 	jwtAuth domain.Authenticator,
 	proxyClient domain.PollClient,
+	idMapper domain.IDMapper,
 	logger *slog.Logger,
 ) *VoteService {
 	return &VoteService{
 		jwtAuth:     jwtAuth,
 		proxyClient: proxyClient,
+		idMapper:    idMapper,
 		logger:      logger,
 	}
 }
@@ -64,14 +67,50 @@ func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*
 		"committee_uid", req.CommitteeUID,
 	)
 
+	// Map v2 project UID to v1 project SFID
+	projectSFID, err := s.idMapper.MapProjectV2ToV1(ctx, req.ProjectUID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to map project UID to SFID", "error", err, "project_uid", req.ProjectUID)
+		return nil, err
+	}
+	s.logger.InfoContext(ctx, "Mapped project ID", "v2_uid", req.ProjectUID, "v1_sfid", projectSFID)
+
+	// Map v2 committee UID to v1 committee identifier
+	var committeeSFID string
+	if req.CommitteeUID != "" {
+		committeeMapping, err := s.idMapper.MapCommitteeV2ToV1(ctx, req.CommitteeUID)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to map committee UID to SFID", "error", err, "committee_uid", req.CommitteeUID)
+			return nil, err
+		}
+		// committeeMapping format is "project_sfid:committee_sfid", extract committee_sfid
+		committeeSFID = committeeMapping
+		s.logger.InfoContext(ctx, "Mapped committee ID", "v2_uid", req.CommitteeUID, "v1_mapping", committeeSFID)
+	}
+
+	// Map committee UIDs array
+	var committeeIDs []string
+	if len(req.CommitteeUIDs) > 0 {
+		committeeIDs = make([]string, len(req.CommitteeUIDs))
+		for i, uid := range req.CommitteeUIDs {
+			mapping, err := s.idMapper.MapCommitteeV2ToV1(ctx, uid)
+			if err != nil {
+				s.logger.ErrorContext(ctx, "Failed to map committee UID to SFID", "error", err, "committee_uid", uid)
+				return nil, err
+			}
+			committeeIDs[i] = mapping
+		}
+		s.logger.InfoContext(ctx, "Mapped committee IDs array", "count", len(committeeIDs))
+	}
+
 	// Build proxy request - map from UID (LFXv2) to ID (ITX)
 	proxyReq := &itx.CreatePollRequest{
 		Name:                        req.Name,
 		Description:                 req.Description,
 		EndTime:                     req.EndTime,
-		ProjectID:                   req.ProjectUID,   // Map ProjectUID → ProjectID for ITX
-		CommitteeID:                 req.CommitteeUID, // Map CommitteeUID → CommitteeID for ITX
-		CommitteeIDs:                req.CommitteeUIDs, // Map CommitteeUIDs → CommitteeIDs for ITX
+		ProjectID:                   projectSFID,
+		CommitteeID:                 committeeSFID,
+		CommitteeIDs:                committeeIDs,
 		CommitteeFilters:            req.CommitteeFilters,
 		PseudoAnonymity:             req.PseudoAnonymity,
 		PollType:                    req.PollType,
@@ -110,6 +149,11 @@ func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*
 		return nil, err // Return domain error as-is
 	}
 
+	// Map response fields from v1 to v2
+	if err := s.mapPollResponseV1ToV2(ctx, proxyResp); err != nil {
+		return nil, err
+	}
+
 	s.logger.InfoContext(ctx, "Vote created successfully",
 		"poll_id", proxyResp.PollID,
 		"status", proxyResp.Status,
@@ -136,6 +180,11 @@ func (s *VoteService) GetVote(ctx context.Context, voteID string) (*itx.PollResp
 		return nil, err // Return domain error as-is
 	}
 
+	// Map response fields from v1 to v2
+	if err := s.mapPollResponseV1ToV2(ctx, pollResp); err != nil {
+		return nil, err
+	}
+
 	s.logger.InfoContext(ctx, "Vote retrieved successfully", "poll_id", pollResp.PollID)
 
 	return pollResp, nil
@@ -156,14 +205,46 @@ func (s *VoteService) UpdateVote(ctx context.Context, voteID string, req *Update
 		"name", req.Name,
 	)
 
+	// Map v2 project UID to v1 project SFID
+	projectSFID, err := s.idMapper.MapProjectV2ToV1(ctx, req.ProjectUID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to map project UID to SFID", "error", err, "project_uid", req.ProjectUID)
+		return nil, err
+	}
+
+	// Map v2 committee UID to v1 committee identifier
+	var committeeSFID string
+	if req.CommitteeUID != "" {
+		committeeMapping, err := s.idMapper.MapCommitteeV2ToV1(ctx, req.CommitteeUID)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to map committee UID to SFID", "error", err, "committee_uid", req.CommitteeUID)
+			return nil, err
+		}
+		committeeSFID = committeeMapping
+	}
+
+	// Map committee UIDs array
+	var committeeIDs []string
+	if len(req.CommitteeUIDs) > 0 {
+		committeeIDs = make([]string, len(req.CommitteeUIDs))
+		for i, uid := range req.CommitteeUIDs {
+			mapping, err := s.idMapper.MapCommitteeV2ToV1(ctx, uid)
+			if err != nil {
+				s.logger.ErrorContext(ctx, "Failed to map committee UID to SFID", "error", err, "committee_uid", uid)
+				return nil, err
+			}
+			committeeIDs[i] = mapping
+		}
+	}
+
 	// Build proxy request - map from UID (LFXv2) to ID (ITX)
 	proxyReq := &itx.UpdatePollRequest{
 		Name:                        req.Name,
 		Description:                 req.Description,
 		EndTime:                     req.EndTime,
-		ProjectID:                   req.ProjectUID,   // Map ProjectUID → ProjectID for ITX
-		CommitteeID:                 req.CommitteeUID, // Map CommitteeUID → CommitteeID for ITX
-		CommitteeIDs:                req.CommitteeUIDs, // Map CommitteeUIDs → CommitteeIDs for ITX
+		ProjectID:                   projectSFID,
+		CommitteeID:                 committeeSFID,
+		CommitteeIDs:                committeeIDs,
 		CommitteeFilters:            req.CommitteeFilters,
 		PseudoAnonymity:             req.PseudoAnonymity,
 		PollType:                    req.PollType,
@@ -200,6 +281,11 @@ func (s *VoteService) UpdateVote(ctx context.Context, voteID string, req *Update
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update poll in ITX", "error", err)
 		return nil, err // Return domain error as-is
+	}
+
+	// Map response fields from v1 to v2
+	if err := s.mapPollResponseV1ToV2(ctx, pollResp); err != nil {
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Vote updated successfully", "poll_id", pollResp.PollID)
@@ -251,6 +337,11 @@ func (s *VoteService) ExtendVote(ctx context.Context, voteID string, endTime str
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to extend poll in ITX", "error", err)
 		return nil, err // Return domain error as-is
+	}
+
+	// Map response fields from v1 to v2
+	if err := s.mapPollResponseV1ToV2(ctx, pollResp); err != nil {
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Vote extended successfully", "poll_id", pollResp.PollID, "end_time", pollResp.EndTime)
@@ -337,6 +428,35 @@ func (s *VoteService) GetVoteResults(ctx context.Context, voteID string) (*itx.V
 	s.logger.InfoContext(ctx, "Vote results retrieved successfully", "poll_id", voteID)
 
 	return results, nil
+}
+
+// mapPollResponseV1ToV2 maps a PollResponse from ITX (v1 IDs) to v2 UIDs
+func (s *VoteService) mapPollResponseV1ToV2(ctx context.Context, resp *itx.PollResponse) error {
+	// Map v1 project SFID to v2 project UID
+	if resp.ProjectID != "" {
+		projectUID, err := s.idMapper.MapProjectV1ToV2(ctx, resp.ProjectID)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to map project SFID to UID - returning empty project ID", "error", err, "v1_project_id", resp.ProjectID)
+			resp.ProjectID = ""
+		} else {
+			resp.ProjectID = projectUID
+			s.logger.DebugContext(ctx, "Mapped project ID in response", "v1_sfid", resp.ProjectID, "v2_uid", projectUID)
+		}
+	}
+
+	// Map v1 committee SFID to v2 committee UID
+	if resp.CommitteeID != "" {
+		committeeUID, err := s.idMapper.MapCommitteeV1ToV2(ctx, resp.CommitteeID)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to map committee SFID to UID - returning empty committee ID", "error", err, "v1_committee_id", resp.CommitteeID)
+			resp.CommitteeID = ""
+		} else {
+			resp.CommitteeID = committeeUID
+			s.logger.DebugContext(ctx, "Mapped committee ID in response", "v1_sfid", resp.CommitteeID, "v2_uid", committeeUID)
+		}
+	}
+
+	return nil
 }
 
 // CreateVoteRequest is the internal request type for creating a vote

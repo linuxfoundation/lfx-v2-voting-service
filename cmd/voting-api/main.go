@@ -16,6 +16,7 @@ import (
 	votesvr "github.com/linuxfoundation/lfx-v2-voting-service/gen/http/vote/server"
 	votesvc "github.com/linuxfoundation/lfx-v2-voting-service/gen/vote"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/auth"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/idmapper"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/proxy"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/middleware"
@@ -71,9 +72,20 @@ func run() int {
 		Timeout:      cfg.ITXTimeout,
 	})
 
+	// Initialize ID mapper for v1/v2 ID conversions
+	idMapper, err := idmapper.NewNATSMapper(idmapper.Config{
+		URL:     cfg.NATSURL,
+		Timeout: cfg.NATSTimeout,
+	})
+	if err != nil {
+		logger.Error("Failed to initialize ID mapper", "error", err)
+		return 1
+	}
+	defer idMapper.Close()
+
 	// Initialize service layer
-	voteService := service.NewVoteService(jwtAuth, proxyClient, logger)
-	voteResponseService := service.NewVoteResponseService(jwtAuth, proxyClient, logger)
+	voteService := service.NewVoteService(jwtAuth, proxyClient, idMapper, logger)
+	voteResponseService := service.NewVoteResponseService(jwtAuth, proxyClient, idMapper, logger)
 
 	// Initialize API layer
 	votingAPI := NewVotingAPI(voteService, voteResponseService)
@@ -163,6 +175,8 @@ type config struct {
 	ITXClientSecret    string
 	ITXAudience        string
 	ITXTimeout         time.Duration
+	NATSURL            string
+	NATSTimeout        time.Duration
 }
 
 // loadConfig loads configuration from environment variables
@@ -178,6 +192,8 @@ func loadConfig() config {
 		ITXClientSecret:    getEnv("ITX_CLIENT_SECRET", ""),
 		ITXAudience:        getEnv("ITX_AUDIENCE", "https://api-gw.dev.platform.linuxfoundation.org/"),
 		ITXTimeout:         30 * time.Second,
+		NATSURL:            getEnv("NATS_URL", "nats://nats:4222"),
+		NATSTimeout:        5 * time.Second,
 	}
 }
 
