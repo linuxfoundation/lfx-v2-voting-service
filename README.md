@@ -9,6 +9,7 @@ This service provides a proxy layer between LFXv2 clients and the legacy ITX vot
 - **Authentication**: Validates JWT tokens from LFXv2 clients using Heimdall
 - **Service-to-Service Auth**: Uses service account tokens for ITX API calls
 - **Terminology Translation**: Maps LFXv2 "vote" terminology to ITX "poll" terminology
+- **ID Schema Translation**: Bidirectional mapping between LFXv2 UUIDs and LFXv1 Salesforce IDs via NATS
 - **Error Handling**: Provides consistent error responses following LFXv2 patterns
 - **Logging**: Structured logging with request tracking
 
@@ -86,6 +87,7 @@ Configure the service using environment variables:
 | `ITX_CLIENT_ID` | OAuth2 client ID for ITX | **(required)** |
 | `ITX_CLIENT_SECRET` | OAuth2 client secret for ITX | **(required)** |
 | `ITX_AUDIENCE` | OAuth2 audience for ITX | `https://api.dev.itx.linuxfoundation.org/` |
+| `NATS_URL` | NATS server URL for v1/v2 ID mapping | `nats://nats:4222` |
 
 ### Running Locally
 
@@ -208,8 +210,29 @@ npx swagger-ui-watcher gen/http/openapi.yaml
 
 The service provides the following endpoints:
 
-- **Health Checks**: `/health`, `/livez`, `/readyz`
-- **Voting Operations**: `POST`, `GET`, `PUT`, `DELETE` operations on `/api/v1/votes`
+#### Health Checks
+
+- `GET /health` - Service health status
+- `GET /livez` - Kubernetes liveness probe
+- `GET /readyz` - Kubernetes readiness probe
+
+#### Vote Management (Polls)
+
+- `POST /api/v1/votes` - Create a new vote/poll
+- `GET /api/v1/votes/{vote_uid}` - Get vote/poll details
+- `PUT /api/v1/votes/{vote_uid}` - Update a vote/poll (only when status is "disabled")
+- `DELETE /api/v1/votes/{vote_uid}` - Delete a vote/poll (only when status is "disabled")
+- `POST /api/v1/votes/{vote_uid}/extend` - Extend a vote/poll end time
+- `POST /api/v1/votes/{vote_uid}/enable` - Enable a vote/poll for voting
+- `POST /api/v1/votes/{vote_uid}/bulk_resend` - Bulk resend vote emails to recipients
+- `GET /api/v1/votes/{vote_uid}/results` - Get aggregated vote results
+
+#### Vote Responses (Ballot Submissions)
+
+- `POST /api/v1/vote_response/{vote_response_uid}` - Submit a vote response
+- `GET /api/v1/vote_response/{vote_response_uid}` - Get vote response details
+- `PUT /api/v1/vote_response/{vote_response_uid}` - Update a vote response
+- `POST /api/v1/vote_response/{vote_response_uid}/resend` - Resend vote email
 
 For detailed request/response schemas, authentication requirements, and examples, refer to the generated OpenAPI specification or the Goa design files.
 
