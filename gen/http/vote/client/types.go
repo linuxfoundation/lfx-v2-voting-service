@@ -390,6 +390,15 @@ type CreateVoteInternalServerErrorResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
+// CreateVoteNotFoundResponseBody is the type of the "vote" service
+// "create_vote" endpoint HTTP response body for the "NotFound" error.
+type CreateVoteNotFoundResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
 // CreateVoteServiceUnavailableResponseBody is the type of the "vote" service
 // "create_vote" endpoint HTTP response body for the "ServiceUnavailable" error.
 type CreateVoteServiceUnavailableResponseBody struct {
@@ -1487,6 +1496,17 @@ func NewCreateVoteForbidden(body *CreateVoteForbiddenResponseBody) *vote.Forbidd
 // InternalServerError error.
 func NewCreateVoteInternalServerError(body *CreateVoteInternalServerErrorResponseBody) *vote.InternalServerError {
 	v := &vote.InternalServerError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateVoteNotFound builds a vote service create_vote endpoint NotFound
+// error.
+func NewCreateVoteNotFound(body *CreateVoteNotFoundResponseBody) *vote.NotFoundError {
+	v := &vote.NotFoundError{
 		Code:    *body.Code,
 		Message: *body.Message,
 	}
@@ -2722,6 +2742,18 @@ func ValidateCreateVoteForbiddenResponseBody(body *CreateVoteForbiddenResponseBo
 // ValidateCreateVoteInternalServerErrorResponseBody runs the validations
 // defined on create_vote_InternalServerError_response_body
 func ValidateCreateVoteInternalServerErrorResponseBody(body *CreateVoteInternalServerErrorResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCreateVoteNotFoundResponseBody runs the validations defined on
+// create_vote_NotFound_response_body
+func ValidateCreateVoteNotFoundResponseBody(body *CreateVoteNotFoundResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
 	}

@@ -392,6 +392,15 @@ type CreateVoteInternalServerErrorResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// CreateVoteNotFoundResponseBody is the type of the "vote" service
+// "create_vote" endpoint HTTP response body for the "NotFound" error.
+type CreateVoteNotFoundResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // CreateVoteServiceUnavailableResponseBody is the type of the "vote" service
 // "create_vote" endpoint HTTP response body for the "ServiceUnavailable" error.
 type CreateVoteServiceUnavailableResponseBody struct {
@@ -1448,6 +1457,16 @@ func NewCreateVoteForbiddenResponseBody(res *vote.ForbiddenError) *CreateVoteFor
 // from the result of the "create_vote" endpoint of the "vote" service.
 func NewCreateVoteInternalServerErrorResponseBody(res *vote.InternalServerError) *CreateVoteInternalServerErrorResponseBody {
 	body := &CreateVoteInternalServerErrorResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewCreateVoteNotFoundResponseBody builds the HTTP response body from the
+// result of the "create_vote" endpoint of the "vote" service.
+func NewCreateVoteNotFoundResponseBody(res *vote.NotFoundError) *CreateVoteNotFoundResponseBody {
+	body := &CreateVoteNotFoundResponseBody{
 		Code:    res.Code,
 		Message: res.Message,
 	}

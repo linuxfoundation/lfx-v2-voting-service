@@ -150,9 +150,7 @@ func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*
 	}
 
 	// Map response fields from v1 to v2
-	if err := s.mapPollResponseV1ToV2(ctx, proxyResp); err != nil {
-		return nil, err
-	}
+	s.mapPollResponseV1ToV2(ctx, proxyResp)
 
 	s.logger.InfoContext(ctx, "Vote created successfully",
 		"poll_id", proxyResp.PollID,
@@ -181,9 +179,7 @@ func (s *VoteService) GetVote(ctx context.Context, voteID string) (*itx.PollResp
 	}
 
 	// Map response fields from v1 to v2
-	if err := s.mapPollResponseV1ToV2(ctx, pollResp); err != nil {
-		return nil, err
-	}
+	s.mapPollResponseV1ToV2(ctx, pollResp)
 
 	s.logger.InfoContext(ctx, "Vote retrieved successfully", "poll_id", pollResp.PollID)
 
@@ -284,9 +280,7 @@ func (s *VoteService) UpdateVote(ctx context.Context, voteID string, req *Update
 	}
 
 	// Map response fields from v1 to v2
-	if err := s.mapPollResponseV1ToV2(ctx, pollResp); err != nil {
-		return nil, err
-	}
+	s.mapPollResponseV1ToV2(ctx, pollResp)
 
 	s.logger.InfoContext(ctx, "Vote updated successfully", "poll_id", pollResp.PollID)
 
@@ -340,9 +334,7 @@ func (s *VoteService) ExtendVote(ctx context.Context, voteID string, endTime str
 	}
 
 	// Map response fields from v1 to v2
-	if err := s.mapPollResponseV1ToV2(ctx, pollResp); err != nil {
-		return nil, err
-	}
+	s.mapPollResponseV1ToV2(ctx, pollResp)
 
 	s.logger.InfoContext(ctx, "Vote extended successfully", "poll_id", pollResp.PollID, "end_time", pollResp.EndTime)
 
@@ -431,7 +423,7 @@ func (s *VoteService) GetVoteResults(ctx context.Context, voteID string) (*itx.V
 }
 
 // mapPollResponseV1ToV2 maps a PollResponse from ITX (v1 IDs) to v2 UIDs
-func (s *VoteService) mapPollResponseV1ToV2(ctx context.Context, resp *itx.PollResponse) error {
+func (s *VoteService) mapPollResponseV1ToV2(ctx context.Context, resp *itx.PollResponse) {
 	// Map v1 project SFID to v2 project UID
 	if resp.ProjectID != "" {
 		projectUID, err := s.idMapper.MapProjectV1ToV2(ctx, resp.ProjectID)
@@ -455,8 +447,6 @@ func (s *VoteService) mapPollResponseV1ToV2(ctx context.Context, resp *itx.PollR
 			s.logger.DebugContext(ctx, "Mapped committee ID in response", "v1_sfid", resp.CommitteeID, "v2_uid", committeeUID)
 		}
 	}
-
-	return nil
 }
 
 // CreateVoteRequest is the internal request type for creating a vote

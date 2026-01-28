@@ -15,6 +15,7 @@ import (
 
 	votesvr "github.com/linuxfoundation/lfx-v2-voting-service/gen/http/vote/server"
 	votesvc "github.com/linuxfoundation/lfx-v2-voting-service/gen/vote"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/auth"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/idmapper"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/proxy"
@@ -73,15 +74,22 @@ func run() int {
 	})
 
 	// Initialize ID mapper for v1/v2 ID conversions
-	idMapper, err := idmapper.NewNATSMapper(idmapper.Config{
-		URL:     cfg.NATSURL,
-		Timeout: cfg.NATSTimeout,
-	})
-	if err != nil {
-		logger.Error("Failed to initialize ID mapper", "error", err)
-		return 1
+	var idMapper domain.IDMapper
+	if cfg.IDMappingDisabled {
+		logger.Warn("ID mapping is DISABLED - using no-op mapper (IDs will pass through unchanged)")
+		idMapper = idmapper.NewNoOpMapper()
+	} else {
+		natsMapper, err := idmapper.NewNATSMapper(idmapper.Config{
+			URL:     cfg.NATSURL,
+			Timeout: cfg.NATSTimeout,
+		})
+		if err != nil {
+			logger.Error("Failed to initialize ID mapper", "error", err)
+			return 1
+		}
+		defer natsMapper.Close()
+		idMapper = natsMapper
 	}
-	defer idMapper.Close()
 
 	// Initialize service layer
 	voteService := service.NewVoteService(jwtAuth, proxyClient, idMapper, logger)
@@ -177,6 +185,7 @@ type config struct {
 	ITXTimeout         time.Duration
 	NATSURL            string
 	NATSTimeout        time.Duration
+	IDMappingDisabled  bool
 }
 
 // loadConfig loads configuration from environment variables
@@ -194,6 +203,7 @@ func loadConfig() config {
 		ITXTimeout:         30 * time.Second,
 		NATSURL:            getEnv("NATS_URL", "nats://nats:4222"),
 		NATSTimeout:        5 * time.Second,
+		IDMappingDisabled:  getEnv("ID_MAPPING_DISABLED", "") == "true",
 	}
 }
 

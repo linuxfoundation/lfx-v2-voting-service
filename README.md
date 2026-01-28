@@ -88,6 +88,7 @@ Configure the service using environment variables:
 | `ITX_CLIENT_SECRET` | OAuth2 client secret for ITX | **(required)** |
 | `ITX_AUDIENCE` | OAuth2 audience for ITX | `https://api.dev.itx.linuxfoundation.org/` |
 | `NATS_URL` | NATS server URL for v1/v2 ID mapping | `nats://nats:4222` |
+| `ID_MAPPING_DISABLED` | Disable ID mapping (use for local dev without NATS) | `false` (set to `true` to disable) |
 
 ### Running Locally
 
@@ -98,6 +99,9 @@ export ITX_CLIENT_SECRET=<your-oauth2-client-secret>
 
 # For local development without JWT auth
 export JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL=test-user@example.com
+
+# For local development without NATS ID mapping service
+export ID_MAPPING_DISABLED=true
 
 # Run the service
 make run

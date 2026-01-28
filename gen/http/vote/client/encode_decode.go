@@ -67,6 +67,7 @@ func EncodeCreateVoteRequest(encoder func(*http.Request) goahttp.Encoder) func(*
 //   - "Conflict" (type *vote.ConflictError): http.StatusConflict
 //   - "Forbidden" (type *vote.ForbiddenError): http.StatusForbidden
 //   - "InternalServerError" (type *vote.InternalServerError): http.StatusInternalServerError
+//   - "NotFound" (type *vote.NotFoundError): http.StatusNotFound
 //   - "ServiceUnavailable" (type *vote.ServiceUnavailableError): http.StatusServiceUnavailable
 //   - "Unauthorized" (type *vote.UnauthorizedError): http.StatusUnauthorized
 //   - error: internal error
@@ -156,6 +157,20 @@ func DecodeCreateVoteResponse(decoder func(*http.Response) goahttp.Decoder, rest
 				return nil, goahttp.ErrValidationError("vote", "create_vote", err)
 			}
 			return nil, NewCreateVoteInternalServerError(&body)
+		case http.StatusNotFound:
+			var (
+				body CreateVoteNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "create_vote", err)
+			}
+			err = ValidateCreateVoteNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "create_vote", err)
+			}
+			return nil, NewCreateVoteNotFound(&body)
 		case http.StatusServiceUnavailable:
 			var (
 				body CreateVoteServiceUnavailableResponseBody

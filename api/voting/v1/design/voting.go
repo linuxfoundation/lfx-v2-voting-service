@@ -79,6 +79,7 @@ var _ = Service("vote", func() {
 			Response("BadRequest", StatusBadRequest)
 			Response("Unauthorized", StatusUnauthorized)
 			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
 			Response("Conflict", StatusConflict)
 			Response("InternalServerError", StatusInternalServerError)
 			Response("ServiceUnavailable", StatusServiceUnavailable)
