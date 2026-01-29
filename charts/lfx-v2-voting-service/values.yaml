@@ -1,0 +1,116 @@
+# Copyright The Linux Foundation and each contributor to LFX.
+# SPDX-License-Identifier: MIT
+---
+# Image configuration
+image:
+  repository: ghcr.io/linuxfoundation/lfx-v2-voting-service/voting-api
+  tag: ""  # Overrides appVersion from Chart.yaml
+  pullPolicy: IfNotPresent
+
+replicaCount: 3
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Application configuration
+app:
+  audience: lfx-v2-voting-service
+  use_oidc_contextualizer: true
+
+  environment:
+    # Server configuration
+    PORT:
+      value: "8080"
+    LOG_LEVEL:
+      value: info
+    LOG_ADD_SOURCE:
+      value: "true"
+
+    # JWT authentication (Heimdall)
+    JWKS_URL:
+      value: http://lfx-platform-heimdall.lfx.svc.cluster.local:4457/.well-known/jwks
+    AUDIENCE:
+      value: lfx-v2-voting-service
+    JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL:
+      value: ''
+
+    # ITX service configuration
+    ITX_BASE_URL:
+      value: https://api.dev.itx.linuxfoundation.org/
+    ITX_AUTH0_DOMAIN:
+      value: linuxfoundation.auth0.com
+    ITX_CLIENT_ID:
+      valueFrom:
+        secretKeyRef:
+          name: lfx-v2-voting-service-secrets
+          key: itx-client-id
+    ITX_CLIENT_SECRET:
+      valueFrom:
+        secretKeyRef:
+          name: lfx-v2-voting-service-secrets
+          key: itx-client-secret
+    ITX_AUDIENCE:
+      value: https://api.dev.itx.linuxfoundation.org/
+
+    # NATS configuration
+    NATS_URL:
+      value: nats://lfx-platform-nats.lfx.svc.cluster.local:4222
+    ID_MAPPING_DISABLED:
+      value: false
+
+    # OpenTelemetry configuration (optional)
+    # OTEL_SERVICE_NAME:
+    #   value: lfx-v2-voting-service
+    # OTEL_EXPORTER_OTLP_ENDPOINT:
+    #   value: http://otel-collector.observability.svc.cluster.local:4317
+    # OTEL_EXPORTER_OTLP_PROTOCOL:
+    #   value: grpc
+
+# Traefik Gateway API routing
+traefik:
+  gateway:
+    name: lfx-platform-gateway
+    namespace: lfx
+
+# lfx is the configuration for LFX platform
+lfx:
+  # domain is the base domain for routing
+  domain: k8s.orb.local
+  # namespace is the target namespace for deployment
+  namespace: lfx
+
+# service is the configuration for the Kubernetes service
+service:
+  # port is the service port
+  port: 8080
+
+# serviceAccount is the configuration for the Kubernetes service account
+serviceAccount:
+  # create specifies whether a service account should be created
+  create: true
+  # name is the name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: "lfx-v2-voting-service"
+  # annotations to add to the service account
+  annotations: {}
+  # automountServiceAccountToken is a boolean to determine if the service account token should be automatically mounted
+  automountServiceAccountToken: true
+
+# openfga is the configuration for the OpenFGA server
+openfga:
+  # enabled is a boolean to determine if the OpenFGA server should be enabled for authorization
+  # Note: If it is disabled, then the meeting service will allow all requests
+  # (Disabling OpenFGA should only be used for local development).
+  enabled: true
+
+# heimdall is the configuration for the heimdall middleware
+heimdall:
+  enabled: true
+  url: http://lfx-platform-heimdall.lfx.svc.cluster.local:4456
+  add_middleware: false

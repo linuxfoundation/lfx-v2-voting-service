@@ -1,0 +1,44 @@
+# Copyright The Linux Foundation and each contributor to LFX.
+# SPDX-License-Identifier: MIT
+---
+name: Publish Container Branch
+
+"on":
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish Container
+    if: ${{ github.event.pull_request.head.repo.fork == false }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8  # v5
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5  # v5
+        with:
+          go-version-file: go.mod
+      - uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d  # v0.9
+        with:
+          version: v0.18.0
+      - name: Prepare container tag
+        id: container_tag
+        env:
+          HEAD_REF: "${{ github.head_ref }}"
+        run: |
+          container_tag=$(echo "$HEAD_REF" | sed 's/[^_0-9a-zA-Z]/-/g' | cut -c -127)
+          echo tag="$container_tag" >> "$GITHUB_OUTPUT"
+      - name: Build voting-api for PR
+        run: |
+          ko build github.com/linuxfoundation/lfx-v2-voting-service/cmd/voting-api \
+            -B \
+            --platform linux/amd64,linux/arm64 \
+            -t ${{ github.sha }} \
+            -t ${{ steps.container_tag.outputs.tag }} \
+            --sbom spdx
