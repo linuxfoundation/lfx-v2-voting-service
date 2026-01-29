@@ -136,9 +136,9 @@ externalSecretsOperator:
     data:
       - secretKey: ITX_CLIENT_ID
         remoteRef:
-          key: /cloudops/managed-secrets/cloud/itx/lfx-v2-voting-service
+          key: /cloudops/managed-secrets/auth0/LFX_V2_Voting_Service
           property: client_id
       - secretKey: ITX_CLIENT_PRIVATE_KEY
         remoteRef:
-          key: /cloudops/managed-secrets/cloud/itx/lfx-v2-voting-service
+          key: /cloudops/managed-secrets/auth0/LFX_V2_Voting_Service
           property: client_private_key
