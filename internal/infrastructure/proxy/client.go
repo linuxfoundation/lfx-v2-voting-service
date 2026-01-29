@@ -422,7 +422,9 @@ func (c *Client) mapHTTPError(statusCode int, body []byte) error {
 	case http.StatusBadRequest:
 		return domain.NewValidationError(message)
 	case http.StatusUnauthorized, http.StatusForbidden:
-		return domain.NewValidationError(message)
+		// There shouldn't be unauthorized or forbidden errors from ITX since we are using M2M authentication,
+		// so these errors imply an internal server error due to issues with the M2M credentials.
+		return domain.NewInternalError(message)
 	case http.StatusNotFound:
 		return domain.NewNotFoundError(message)
 	case http.StatusConflict:

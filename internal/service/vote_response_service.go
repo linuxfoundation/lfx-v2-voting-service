@@ -120,7 +120,10 @@ func (s *VoteResponseService) GetVoteResponse(ctx context.Context, voteID string
 	}
 
 	// Map response fields from v1 to v2
-	s.mapVoteResponseV1ToV2(ctx, voteResp)
+	if err := s.mapVoteResponseV1ToV2(ctx, voteResp); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to map vote response IDs", "error", err)
+		return nil, err
+	}
 
 	s.logger.InfoContext(ctx, "Vote response retrieved successfully", "vote_id", voteResp.VoteID)
 
@@ -226,16 +229,18 @@ type RankedChoiceRequest struct {
 }
 
 // mapVoteResponseV1ToV2 maps a VoteResponse from ITX (v1 IDs) to v2 UIDs
-func (s *VoteResponseService) mapVoteResponseV1ToV2(ctx context.Context, resp *itx.VoteResponse) {
+func (s *VoteResponseService) mapVoteResponseV1ToV2(ctx context.Context, resp *itx.VoteResponse) error {
 	// Map v1 project SFID to v2 project UID
 	if resp.ProjectID != "" {
+		v1ProjectID := resp.ProjectID
 		projectUID, err := s.idMapper.MapProjectV1ToV2(ctx, resp.ProjectID)
 		if err != nil {
-			s.logger.ErrorContext(ctx, "Failed to map project SFID to UID - returning empty project ID", "error", err, "v1_project_id", resp.ProjectID)
-			resp.ProjectID = ""
-		} else {
-			resp.ProjectID = projectUID
-			s.logger.DebugContext(ctx, "Mapped project ID in vote response", "v1_sfid", resp.ProjectID, "v2_uid", projectUID)
+			s.logger.ErrorContext(ctx, "Failed to map project SFID to UID", "error", err, "v1_project_id", v1ProjectID)
+			return err
 		}
+		resp.ProjectID = projectUID
+		s.logger.DebugContext(ctx, "Mapped project ID in vote response", "v1_sfid", v1ProjectID, "v2_uid", projectUID)
 	}
+
+	return nil
 }

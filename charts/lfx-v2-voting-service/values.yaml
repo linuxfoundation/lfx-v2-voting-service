@@ -58,6 +58,12 @@ app:
     ITX_AUDIENCE:
       value: https://api.dev.itx.linuxfoundation.org/
 
+    # NATS configuration
+    NATS_URL:
+      value: nats://lfx-platform-nats.lfx.svc.cluster.local:4222
+    ID_MAPPING_DISABLED:
+      value: false
+
     # OpenTelemetry configuration (optional)
     # OTEL_SERVICE_NAME:
     #   value: lfx-v2-voting-service
