@@ -85,7 +85,7 @@ Configure the service using environment variables:
 | `ITX_BASE_URL` | ITX API base URL | `https://api.dev.itx.linuxfoundation.org/` |
 | `ITX_AUTH0_DOMAIN` | Auth0 domain for ITX M2M auth | `linuxfoundation-dev.auth0.com` |
 | `ITX_CLIENT_ID` | OAuth2 client ID for ITX | **(required)** |
-| `ITX_CLIENT_SECRET` | OAuth2 client secret for ITX | **(required)** |
+| `ITX_CLIENT_PRIVATE_KEY` | RSA private key in PEM format for JWT assertion | **(required)** |
 | `ITX_AUDIENCE` | OAuth2 audience for ITX | `https://api.dev.itx.linuxfoundation.org/` |
 | `NATS_URL` | NATS server URL for v1/v2 ID mapping | `nats://nats:4222` |
 | `ID_MAPPING_DISABLED` | Disable ID mapping (use for local dev without NATS) | `false` (set to `true` to disable) |
@@ -93,9 +93,11 @@ Configure the service using environment variables:
 ### Running Locally
 
 ```bash
-# Set required OAuth2 credentials for ITX
+# Set required OAuth2 credentials for ITX (using private key JWT assertion)
 export ITX_CLIENT_ID=<your-oauth2-client-id>
-export ITX_CLIENT_SECRET=<your-oauth2-client-secret>
+export ITX_CLIENT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
+...your private key content...
+-----END PRIVATE KEY-----"
 
 # For local development without JWT auth
 export JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL=test-user@example.com
@@ -296,9 +298,9 @@ Health check endpoints are available for monitoring:
 ## Security
 
 - **JWT Authentication**: All endpoints require valid JWT tokens from Heimdall
-- **OAuth2 M2M Authentication**: ITX calls use OAuth2 client credentials flow with automatic token caching and renewal
+- **OAuth2 M2M Authentication**: ITX calls use OAuth2 client credentials flow with JWT assertion (private key) for enhanced security, with automatic token caching and renewal
 - **HTTPS**: Use HTTPS in production (configure via reverse proxy)
-- **Secrets Management**: Store `ITX_CLIENT_ID` and `ITX_CLIENT_SECRET` securely (e.g., Kubernetes secrets)
+- **Secrets Management**: Store `ITX_CLIENT_ID` and `ITX_CLIENT_PRIVATE_KEY` securely (e.g., Kubernetes secrets, AWS Secrets Manager)
 
 ## License
 

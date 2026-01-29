@@ -10,22 +10,25 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"time"
 
+	"github.com/auth0/go-auth0/authentication"
+	"github.com/auth0/go-auth0/authentication/oauth"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
-	"golang.org/x/oauth2/clientcredentials"
+	"golang.org/x/oauth2"
 )
+
+const tokenExpiryLeeway = 60 * time.Second
 
 // Config holds ITX proxy configuration
 type Config struct {
-	BaseURL      string
-	Auth0Domain  string
-	ClientID     string
-	ClientSecret string
-	Audience     string
-	Timeout      time.Duration
+	BaseURL    string
+	Auth0Domain string
+	ClientID   string
+	PrivateKey string // RSA private key in PEM format
+	Audience   string
+	Timeout    time.Duration
 }
 
 // Client implements domain.ITXProxyClient
@@ -34,23 +37,78 @@ type Client struct {
 	config     Config
 }
 
-// NewClient creates a new ITX proxy client with OAuth2 M2M authentication
-func NewClient(config Config) *Client {
-	// Configure OAuth2 client credentials flow
-	oauthConfig := &clientcredentials.Config{
-		ClientID:     config.ClientID,
-		ClientSecret: config.ClientSecret,
-		TokenURL:     fmt.Sprintf("https://%s/oauth/token", config.Auth0Domain),
-		Scopes:       []string{"read:projects", "manage:projects"},
-		EndpointParams: url.Values{
-			"audience": []string{config.Audience},
-		},
+// auth0TokenSource implements oauth2.TokenSource using Auth0 SDK with private key
+type auth0TokenSource struct {
+	ctx        context.Context
+	authConfig *authentication.Authentication
+	audience   string
+}
+
+// Token implements the oauth2.TokenSource interface
+func (a *auth0TokenSource) Token() (*oauth2.Token, error) {
+	ctx := a.ctx
+	if ctx == nil {
+		ctx = context.TODO()
 	}
 
-	// Create HTTP client with OAuth2 token source
-	// The oauth2 package will automatically handle token caching and renewal
+	// Build and issue a request using Auth0 SDK
+	body := oauth.LoginWithClientCredentialsRequest{
+		Audience: a.audience,
+	}
+
+	tokenSet, err := a.authConfig.OAuth.LoginWithClientCredentials(ctx, body, oauth.IDTokenValidationOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get token from Auth0: %w", err)
+	}
+
+	// Convert Auth0 response to oauth2.Token with leeway for expiration
+	token := &oauth2.Token{
+		AccessToken:  tokenSet.AccessToken,
+		TokenType:    tokenSet.TokenType,
+		RefreshToken: tokenSet.RefreshToken,
+		Expiry:       time.Now().Add(time.Duration(tokenSet.ExpiresIn)*time.Second - tokenExpiryLeeway),
+	}
+
+	// Add extra fields
+	token = token.WithExtra(map[string]any{
+		"scope": tokenSet.Scope,
+	})
+
+	return token, nil
+}
+
+// NewClient creates a new ITX proxy client with OAuth2 M2M authentication using private key
+func NewClient(config Config) *Client {
 	ctx := context.Background()
-	httpClient := oauthConfig.Client(ctx)
+
+	if config.PrivateKey == "" {
+		panic("ITX_CLIENT_PRIVATE_KEY is required but not set")
+	}
+
+	// Create Auth0 authentication client with private key assertion (JWT)
+	// The private key should be in PEM format (raw, not base64-encoded)
+	authConfig, err := authentication.New(
+		ctx,
+		config.Auth0Domain,
+		authentication.WithClientID(config.ClientID),
+		authentication.WithClientAssertion(config.PrivateKey, "RS256"),
+	)
+	if err != nil {
+		panic(fmt.Sprintf("failed to create Auth0 client: %v (ensure ITX_CLIENT_PRIVATE_KEY contains a valid RSA private key in PEM format)", err))
+	}
+
+	// Create token source
+	tokenSource := &auth0TokenSource{
+		ctx:        ctx,
+		authConfig: authConfig,
+		audience:   config.Audience,
+	}
+
+	// Wrap with oauth2.ReuseTokenSource for automatic caching and renewal
+	reuseTokenSource := oauth2.ReuseTokenSource(nil, tokenSource)
+
+	// Create HTTP client that automatically handles token management
+	httpClient := oauth2.NewClient(ctx, reuseTokenSource)
 	httpClient.Timeout = config.Timeout
 
 	return &Client{
