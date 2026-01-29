@@ -78,6 +78,11 @@ traefik:
     name: lfx-platform-gateway
     namespace: lfx
 
+# global is the configuration for the global settings
+global:
+  # awsRegion is the AWS region for the External Secrets Operator
+  awsRegion: us-west-2
+
 # lfx is the configuration for LFX platform
 lfx:
   # domain is the base domain for routing
