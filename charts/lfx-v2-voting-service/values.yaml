@@ -48,13 +48,13 @@ app:
     ITX_CLIENT_ID:
       valueFrom:
         secretKeyRef:
-          name: lfx-v2-voting-service-secrets
-          key: itx-client-id
-    ITX_CLIENT_SECRET:
+          name: lfx-v2-voting-service
+          key: ITX_CLIENT_ID
+    ITX_CLIENT_PRIVATE_KEY:
       valueFrom:
         secretKeyRef:
-          name: lfx-v2-voting-service-secrets
-          key: itx-client-secret
+          name: lfx-v2-voting-service
+          key: ITX_CLIENT_PRIVATE_KEY
     ITX_AUDIENCE:
       value: https://api.dev.itx.linuxfoundation.org/
 
@@ -114,3 +114,26 @@ heimdall:
   enabled: true
   url: http://lfx-platform-heimdall.lfx.svc.cluster.local:4456
   add_middleware: false
+
+# External Secrets Operator
+externalSecretsOperator:
+  # Enable/disable External Secrets Operator integration
+  enabled: true
+
+  # ExternalSecret configuration
+  externalSecret:
+    # How often to refresh secrets from AWS
+    refreshInterval: "10m"
+
+    # Secret data mappings
+    # REQUIRED: Secrets must exist in AWS Secrets Manager (global.awsRegion)
+    # NOTE: client_private_key should be stored as raw PEM format (not base64-encoded)
+    data:
+      - secretKey: ITX_CLIENT_ID
+        remoteRef:
+          key: /cloudops/managed-secrets/cloud/itx/lfx-v2-voting-service
+          property: client_id
+      - secretKey: ITX_CLIENT_PRIVATE_KEY
+        remoteRef:
+          key: /cloudops/managed-secrets/cloud/itx/lfx-v2-voting-service
+          property: client_private_key

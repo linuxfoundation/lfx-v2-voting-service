@@ -63,14 +63,14 @@ func run() int {
 		return 1
 	}
 
-	// Initialize ITX proxy client with OAuth2 M2M authentication
+	// Initialize ITX proxy client with OAuth2 M2M authentication using private key
 	proxyClient := proxy.NewClient(proxy.Config{
-		BaseURL:      cfg.ITXBaseURL,
-		Auth0Domain:  cfg.ITXAuth0Domain,
-		ClientID:     cfg.ITXClientID,
-		ClientSecret: cfg.ITXClientSecret,
-		Audience:     cfg.ITXAudience,
-		Timeout:      cfg.ITXTimeout,
+		BaseURL:     cfg.ITXBaseURL,
+		Auth0Domain: cfg.ITXAuth0Domain,
+		ClientID:    cfg.ITXClientID,
+		PrivateKey:  cfg.ITXPrivateKey,
+		Audience:    cfg.ITXAudience,
+		Timeout:     cfg.ITXTimeout,
 	})
 
 	// Initialize ID mapper for v1/v2 ID conversions
@@ -180,7 +180,7 @@ type config struct {
 	ITXBaseURL         string
 	ITXAuth0Domain     string
 	ITXClientID        string
-	ITXClientSecret    string
+	ITXPrivateKey      string
 	ITXAudience        string
 	ITXTimeout         time.Duration
 	NATSURL            string
@@ -195,11 +195,11 @@ func loadConfig() config {
 		JWKSURL:            getEnv("JWKS_URL", "http://heimdall:4457/.well-known/jwks"),
 		Audience:           getEnv("AUDIENCE", "lfx-v2-voting-service"),
 		MockLocalPrincipal: getEnv("JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL", ""),
-		ITXBaseURL:         getEnv("ITX_BASE_URL", "https://api.dev.itx.linuxfoundation.org"),
+		ITXBaseURL:         getEnv("ITX_BASE_URL", "https://api.dev.itx.linuxfoundation.org/"),
 		ITXAuth0Domain:     getEnv("ITX_AUTH0_DOMAIN", "linuxfoundation-dev.auth0.com"),
 		ITXClientID:        getEnv("ITX_CLIENT_ID", ""),
-		ITXClientSecret:    getEnv("ITX_CLIENT_SECRET", ""),
-		ITXAudience:        getEnv("ITX_AUDIENCE", "https://api-gw.dev.platform.linuxfoundation.org/"),
+		ITXPrivateKey:      getEnv("ITX_CLIENT_PRIVATE_KEY", ""),
+		ITXAudience:        getEnv("ITX_AUDIENCE", "https://api.dev.itx.linuxfoundation.org/"),
 		ITXTimeout:         30 * time.Second,
 		NATSURL:            getEnv("NATS_URL", "nats://nats:4222"),
 		NATSTimeout:        5 * time.Second,
