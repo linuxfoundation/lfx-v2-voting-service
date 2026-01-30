@@ -85,8 +85,8 @@ func (m *NATSMapper) MapProjectV1ToV2(ctx context.Context, v1SFID string) (strin
 	return m.lookup(ctx, key)
 }
 
-// MapCommitteeV2ToV1 maps a v2 committee UID to v1 committee identifiers
-// Returns format: {project_sfid}:{committee_sfid}
+// MapCommitteeV2ToV1 maps a v2 committee UID to v1 committee SFID
+// The NATS response format is {project_sfid}:{committee_sfid}, but we only return the committee SFID
 func (m *NATSMapper) MapCommitteeV2ToV1(ctx context.Context, v2UID string) (string, error) {
 	if v2UID == "" {
 		return "", domain.NewValidationError("v2 committee UID is required")
@@ -94,7 +94,29 @@ func (m *NATSMapper) MapCommitteeV2ToV1(ctx context.Context, v2UID string) (stri
 
 	// Request format: committee.uid.{v2_uuid} returns {project_sfid}:{committee_sfid}
 	key := fmt.Sprintf("committee.uid.%s", v2UID)
-	return m.lookup(ctx, key)
+	response, err := m.lookup(ctx, key)
+	if err != nil {
+		return "", err
+	}
+
+	// Parse the response to extract only the committee SFID
+	// Format: "projectSFID:committeeSFID" -> we want "committeeSFID"
+	// If no colon present, assume the response is already just the committee SFID
+	parts := strings.Split(response, ":")
+	if len(parts) == 1 {
+		return response, nil
+	}
+
+	if len(parts) != 2 {
+		return "", domain.NewUnavailableError(fmt.Sprintf("unexpected committee mapping format: %s", response))
+	}
+
+	committeeSFID := parts[1]
+	if committeeSFID == "" {
+		return "", domain.NewUnavailableError("committee SFID is empty in mapping response")
+	}
+
+	return committeeSFID, nil
 }
 
 // MapCommitteeV1ToV2 maps a v1 committee SFID to v2 committee UID
