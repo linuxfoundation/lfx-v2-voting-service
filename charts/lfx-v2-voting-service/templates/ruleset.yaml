@@ -31,7 +31,7 @@ spec:
           config:
             values:
               relation: writer
-              object: "project:{{ "{{- .Request.Body.project_id -}}" }}"
+              object: "project:{{ "{{- .Request.Body.project_uid -}}" }}"
         {{- else }}
         {{/*
           When OpenFGA is disabled, allow all requests
