@@ -6,8 +6,11 @@ module github.com/linuxfoundation/lfx-v2-voting-service
 go 1.25.4
 
 require (
-	github.com/auth0/go-jwt-middleware/v2 v2.2.2
+	github.com/auth0/go-auth0 v1.32.1
+	github.com/auth0/go-jwt-middleware/v2 v2.3.0
 	github.com/google/uuid v1.6.0
+	github.com/linuxfoundation/lfx-v2-indexer-service v0.4.14
+	github.com/nats-io/nats.go v1.48.0
 	github.com/remychantenay/slog-otel v1.3.4
 	goa.design/goa/v3 v3.24.1
 	golang.org/x/oauth2 v0.34.0
@@ -15,7 +18,6 @@ require (
 
 require (
 	github.com/PuerkitoBio/rehttp v1.4.0 // indirect
-	github.com/auth0/go-auth0 v1.32.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
 	github.com/dimfeld/httppath v0.0.0-20170720192232-ee938bf73598 // indirect
@@ -31,7 +33,6 @@ require (
 	github.com/lestrrat-go/jwx/v2 v2.1.6 // indirect
 	github.com/lestrrat-go/option v1.0.1 // indirect
 	github.com/manveru/faker v0.0.0-20171103152722-9fbc68a78c4d // indirect
-	github.com/nats-io/nats.go v1.48.0 // indirect
 	github.com/nats-io/nkeys v0.4.11 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
@@ -40,7 +41,7 @@ require (
 	go.devnw.com/structs v1.0.0 // indirect
 	go.opentelemetry.io/otel v1.36.0 // indirect
 	go.opentelemetry.io/otel/trace v1.36.0 // indirect
-	golang.org/x/crypto v0.37.0 // indirect
+	golang.org/x/crypto v0.40.0 // indirect
 	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.40.0 // indirect
