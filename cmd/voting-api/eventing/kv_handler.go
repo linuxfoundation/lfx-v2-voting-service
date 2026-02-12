@@ -119,7 +119,7 @@ func kvHandler(
 	case jetstream.KeyValuePut:
 		return handleKVPut(ctx, entry, publisher, idMapper, mappingsKV, logger)
 	case jetstream.KeyValueDelete, jetstream.KeyValuePurge:
-		return handleKVDelete(ctx, entry, logger)
+		return handleKVDelete(ctx, entry, publisher, idMapper, mappingsKV, logger)
 	default:
 		logger.With("key", entry.Key(), "operation", entry.Operation()).Debug("ignoring unknown KV operation")
 		return false // ACK unknown operations
@@ -169,12 +169,32 @@ func handleKVPut(
 func handleKVDelete(
 	ctx context.Context,
 	entry jetstream.KeyValueEntry,
+	publisher domain.EventPublisher,
+	idMapper domain.IDMapper,
+	mappingsKV jetstream.KeyValue,
 	logger *slog.Logger,
 ) bool {
 	key := entry.Key()
 	logger.With("key", key, "operation", entry.Operation()).Debug("received delete/purge operation")
 
-	// For now, we don't process deletes - just ACK them
-	// TODO: In the future, we could send delete events to indexer/FGA
-	return false
+	// Extract key prefix (before first period)
+	parts := strings.SplitN(key, ".", 2)
+	if len(parts) < 2 {
+		logger.With("key", key).Warn("skipping delete - invalid key format")
+		return false // Permanent error, ACK and skip
+	}
+
+	prefix := parts[0]
+	uid := parts[1] // The UID is everything after the first period
+
+	// Route to appropriate delete handler based on prefix
+	switch prefix {
+	case "itx-poll":
+		return handleVoteDelete(ctx, uid, publisher, mappingsKV, logger)
+	case "itx-poll-vote":
+		return handleVoteResponseDelete(ctx, uid, publisher, mappingsKV, logger)
+	default:
+		logger.With("key", key, "prefix", prefix).Debug("skipping delete - unsupported type")
+		return false // ACK unsupported types
+	}
 }

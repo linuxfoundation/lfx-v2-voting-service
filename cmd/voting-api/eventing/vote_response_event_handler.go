@@ -84,14 +84,14 @@ func convertMapToVoteResponseData(
 	v1Data map[string]interface{},
 	idMapper domain.IDMapper,
 	logger *slog.Logger,
-) (*VoteResponseData, error) {
+) (*domain.VoteResponseData, error) {
 	// Convert map to JSON bytes, then to VoteDBRaw to handle string/raw fields
 	jsonBytes, err := json.Marshal(v1Data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal v1Data to JSON: %w", err)
 	}
 
-	var voteDB VoteDBRaw
+	var voteDB domain.VoteDBRaw
 	if err := json.Unmarshal(jsonBytes, &voteDB); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON into VoteDBRaw: %w", err)
 	}
@@ -133,7 +133,7 @@ func convertMapToVoteResponseData(
 	}
 
 	// Build v2 vote response data struct
-	voteResponseData := &VoteResponseData{
+	voteResponseData := &domain.VoteResponseData{
 		UID:                     voteDB.VoteID,
 		VoteID:                  voteDB.VoteID,
 		VoteUID:                 voteDB.PollID, // poll_id becomes vote_uid in v2
@@ -182,4 +182,44 @@ func convertMapToVoteResponseData(
 	}
 
 	return voteResponseData, nil
+}
+
+// handleVoteResponseDelete processes a vote response delete from itx-poll-vote records
+// Returns true if the message should be retried (NAK), false if it should be acknowledged (ACK)
+func handleVoteResponseDelete(
+	ctx context.Context,
+	uid string,
+	publisher domain.EventPublisher,
+	mappingsKV jetstream.KeyValue,
+	logger *slog.Logger,
+) bool {
+	funcLogger := logger.With("vote_response_uid", uid, "handler", "vote_response_delete")
+
+	funcLogger.DebugContext(ctx, "processing vote response delete")
+
+	// Create minimal vote response data for delete event
+	voteResponseData := &domain.VoteResponseData{
+		UID:    uid,
+		VoteID: uid,
+	}
+
+	// Publish delete event to indexer and FGA-sync
+	if err := publisher.PublishVoteResponseEvent(ctx, string(indexerConstants.ActionDeleted), voteResponseData); err != nil {
+		funcLogger.With(errKey, err).ErrorContext(ctx, "failed to publish vote response delete event")
+		// Check if this is a transient error that should be retried
+		if isTransientError(err) {
+			return true // NAK for retry
+		}
+		return false // Permanent error, ACK and skip
+	}
+
+	// Remove mapping from v1-mappings KV
+	mappingKey := fmt.Sprintf("vote_response.%s", uid)
+	if err := mappingsKV.Delete(ctx, mappingKey); err != nil {
+		funcLogger.With(errKey, err).WarnContext(ctx, "failed to delete vote response mapping")
+		// Don't retry on mapping deletion failures
+	}
+
+	funcLogger.InfoContext(ctx, "successfully sent vote response delete indexer and access messages")
+	return false // Success, ACK the message
 }

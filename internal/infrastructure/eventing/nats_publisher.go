@@ -11,6 +11,7 @@ import (
 
 	indexerConstants "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/constants"
 	indexerTypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/nats-io/nats.go"
 )
 
@@ -24,6 +25,9 @@ const (
 
 	// UpdateAccessSubject is the subject for FGA access control updates
 	UpdateAccessSubject = "lfx.fga-sync.update_access"
+
+	// DeleteAccessSubject is the subject for FGA access control deletions
+	DeleteAccessSubject = "lfx.fga-sync.delete_access"
 )
 
 // GenericFGAMessage represents a generic FGA message
@@ -48,30 +52,42 @@ func NewNATSPublisher(conn *nats.Conn, logger *slog.Logger) *NATSPublisher {
 }
 
 // PublishVoteEvent publishes a vote (poll) event to indexer and FGA-sync
-func (p *NATSPublisher) PublishVoteEvent(ctx context.Context, action string, vote interface{}) error {
+func (p *NATSPublisher) PublishVoteEvent(ctx context.Context, action string, vote *domain.VoteData) error {
 	// Send to indexer
 	if err := p.sendVoteIndexerMessage(ctx, IndexVoteSubject, indexerConstants.MessageAction(action), vote); err != nil {
 		return fmt.Errorf("failed to send vote indexer message: %w", err)
 	}
 
-	// Send to FGA-sync
-	if err := p.sendVoteAccessMessage(vote); err != nil {
-		return fmt.Errorf("failed to send vote access message: %w", err)
+	// Send to FGA-sync - different message for delete vs create/update
+	if action == string(indexerConstants.ActionDeleted) {
+		if err := p.sendDeleteAccessMessage("vote", vote.VoteUID); err != nil {
+			return fmt.Errorf("failed to send vote delete access message: %w", err)
+		}
+	} else {
+		if err := p.sendVoteAccessMessage(vote); err != nil {
+			return fmt.Errorf("failed to send vote access message: %w", err)
+		}
 	}
 
 	return nil
 }
 
 // PublishVoteResponseEvent publishes a vote response event to indexer and FGA-sync
-func (p *NATSPublisher) PublishVoteResponseEvent(ctx context.Context, action string, voteResponse interface{}) error {
+func (p *NATSPublisher) PublishVoteResponseEvent(ctx context.Context, action string, voteResponse *domain.VoteResponseData) error {
 	// Send to indexer
 	if err := p.sendVoteResponseIndexerMessage(ctx, IndexVoteResponseSubject, indexerConstants.MessageAction(action), voteResponse); err != nil {
 		return fmt.Errorf("failed to send vote response indexer message: %w", err)
 	}
 
-	// Send to FGA-sync
-	if err := p.sendVoteResponseAccessMessage(voteResponse); err != nil {
-		return fmt.Errorf("failed to send vote response access message: %w", err)
+	// Send to FGA-sync - different message for delete vs create/update
+	if action == string(indexerConstants.ActionDeleted) {
+		if err := p.sendDeleteAccessMessage("vote_response", voteResponse.UID); err != nil {
+			return fmt.Errorf("failed to send vote response delete access message: %w", err)
+		}
+	} else {
+		if err := p.sendVoteResponseAccessMessage(voteResponse); err != nil {
+			return fmt.Errorf("failed to send vote response access message: %w", err)
+		}
 	}
 
 	return nil
@@ -83,92 +99,50 @@ func (p *NATSPublisher) Close() error {
 	return nil
 }
 
-// sendVoteIndexerMessage sends the message to the NATS server for the vote indexer
-func (p *NATSPublisher) sendVoteIndexerMessage(ctx context.Context, subject string, action indexerConstants.MessageAction, data interface{}) error {
-	headers := make(map[string]string)
-
-	// Extract authorization from context if available
-	if authorization, ok := ctx.Value("authorization").(string); ok {
-		headers["authorization"] = authorization
-	} else {
-		// Fallback for system-generated events
-		headers["authorization"] = "Bearer v1-sync-helper"
-	}
-
-	// Extract principal from context if available
-	if principal, ok := ctx.Value("principal").(string); ok {
-		headers["x-on-behalf-of"] = principal
-	}
-
-	// Extract vote data fields
-	voteData, ok := data.(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("invalid vote data type")
-	}
-
-	// Construct parent refs and name aliases
-	public := false
+// sendVoteIndexerMessage routes to the appropriate indexer message handler based on action
+func (p *NATSPublisher) sendVoteIndexerMessage(ctx context.Context, subject string, action indexerConstants.MessageAction, data *domain.VoteData) error {
+	// Build IndexingConfig (needed for both create/update and delete)
 	nameAndAliases := []string{}
 	parentRefs := []string{}
 
-	if name, ok := voteData["name"].(string); ok && name != "" {
-		nameAndAliases = append(nameAndAliases, name)
+	if data.Name != "" {
+		nameAndAliases = append(nameAndAliases, data.Name)
 	}
-	if projectUID, ok := voteData["project_uid"].(string); ok && projectUID != "" {
-		parentRefs = append(parentRefs, fmt.Sprintf("project:%s", projectUID))
+	if data.ProjectUID != "" {
+		parentRefs = append(parentRefs, fmt.Sprintf("project:%s", data.ProjectUID))
 	}
-	if committeeUID, ok := voteData["committee_uid"].(string); ok && committeeUID != "" {
-		parentRefs = append(parentRefs, fmt.Sprintf("committee:%s", committeeUID))
-	}
-
-	// Construct the indexer message
-	message := indexerTypes.IndexerMessageEnvelope{
-		Action:  action,
-		Headers: headers,
-		Data:    data,
-		IndexingConfig: &indexerTypes.IndexingConfig{
-			ObjectID:             "{{ uid }}",
-			Public:               &public,
-			AccessCheckObject:    "vote:{{ uid }}",
-			AccessCheckRelation:  "viewer",
-			HistoryCheckObject:   "vote:{{ uid }}",
-			HistoryCheckRelation: "auditor",
-			SortName:             "{{ name }}",
-			NameAndAliases:       nameAndAliases,
-			ParentRefs:           parentRefs,
-			Fulltext:             "{{ name }} {{ description }}",
-		},
+	if data.CommitteeUID != "" {
+		parentRefs = append(parentRefs, fmt.Sprintf("committee:%s", data.CommitteeUID))
 	}
 
-	messageBytes, err := json.Marshal(message)
-	if err != nil {
-		return fmt.Errorf("failed to marshal indexer message for subject %s: %w", subject, err)
+	indexingConfig := &indexerTypes.IndexingConfig{
+		ObjectID:             data.VoteUID,
+		AccessCheckObject:    fmt.Sprintf("vote:%s", data.VoteUID),
+		AccessCheckRelation:  "viewer",
+		HistoryCheckObject:   fmt.Sprintf("vote:%s", data.VoteUID),
+		HistoryCheckRelation: "auditor",
+		SortName:             data.Name,
+		NameAndAliases:       nameAndAliases,
+		ParentRefs:           parentRefs,
+		Fulltext:             fmt.Sprintf("%s %s", data.Name, data.Description),
 	}
 
-	p.logger.With("subject", subject, "action", action).DebugContext(ctx, "constructed indexer message")
-
-	// Publish the message to NATS
-	if err := p.conn.Publish(subject, messageBytes); err != nil {
-		return fmt.Errorf("failed to publish indexer message to subject %s: %w", subject, err)
+	if action == indexerConstants.ActionDeleted {
+		return p.sendIndexerDeleteMessage(ctx, subject, action, data.VoteUID, indexingConfig)
 	}
 
-	return nil
+	return p.sendIndexerCreateUpdateMessage(ctx, subject, action, data, indexingConfig)
 }
 
 // sendVoteAccessMessage sends the message to the NATS server for the vote access control
-func (p *NATSPublisher) sendVoteAccessMessage(vote interface{}) error {
-	voteData, ok := vote.(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("invalid vote data type")
-	}
-
+func (p *NATSPublisher) sendVoteAccessMessage(vote *domain.VoteData) error {
 	references := map[string][]string{}
 
-	if projectUID, ok := voteData["project_uid"].(string); ok && projectUID != "" {
-		references["project"] = []string{projectUID}
+	if vote.ProjectUID != "" {
+		references["project"] = []string{vote.ProjectUID}
 	}
-	if committeeUID, ok := voteData["committee_uid"].(string); ok && committeeUID != "" {
-		references["committee"] = []string{committeeUID}
+	if vote.CommitteeUID != "" {
+		references["committee"] = []string{vote.CommitteeUID}
 	}
 
 	// Skip sending access message if there are no references
@@ -176,13 +150,11 @@ func (p *NATSPublisher) sendVoteAccessMessage(vote interface{}) error {
 		return nil
 	}
 
-	uid, _ := voteData["uid"].(string)
-
 	accessMsg := GenericFGAMessage{
 		ObjectType: "vote",
 		Operation:  "update_access",
 		Data: map[string]interface{}{
-			"uid":        uid,
+			"uid":        vote.VoteUID,
 			"public":     false,
 			"references": references,
 		},
@@ -201,58 +173,145 @@ func (p *NATSPublisher) sendVoteAccessMessage(vote interface{}) error {
 	return nil
 }
 
-// sendVoteResponseIndexerMessage sends the message to the NATS server for the vote response indexer
-func (p *NATSPublisher) sendVoteResponseIndexerMessage(ctx context.Context, subject string, action indexerConstants.MessageAction, data interface{}) error {
-	headers := make(map[string]string)
-
-	// Extract authorization from context if available
-	if authorization, ok := ctx.Value("authorization").(string); ok {
-		headers["authorization"] = authorization
-	} else {
-		// Fallback for system-generated events
-		headers["authorization"] = "Bearer v1-sync-helper"
-	}
-
-	// Extract principal from context if available
-	if principal, ok := ctx.Value("principal").(string); ok {
-		headers["x-on-behalf-of"] = principal
-	}
-
-	// Extract vote response data fields
-	voteResponseData, ok := data.(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("invalid vote response data type")
-	}
-
-	// Construct parent refs and name aliases
-	public := false
+// sendVoteResponseIndexerMessage routes to the appropriate indexer message handler based on action
+func (p *NATSPublisher) sendVoteResponseIndexerMessage(ctx context.Context, subject string, action indexerConstants.MessageAction, data *domain.VoteResponseData) error {
+	// Build IndexingConfig (needed for both create/update and delete)
 	nameAndAliases := []string{}
 	parentRefs := []string{}
 
-	if username, ok := voteResponseData["username"].(string); ok && username != "" {
-		nameAndAliases = append(nameAndAliases, username)
+	if data.Username != "" {
+		nameAndAliases = append(nameAndAliases, data.Username)
 	}
-	if projectUID, ok := voteResponseData["project_uid"].(string); ok && projectUID != "" {
-		parentRefs = append(parentRefs, fmt.Sprintf("project:%s", projectUID))
+	if data.ProjectUID != "" {
+		parentRefs = append(parentRefs, fmt.Sprintf("project:%s", data.ProjectUID))
 	}
-	if voteUID, ok := voteResponseData["vote_uid"].(string); ok && voteUID != "" {
-		parentRefs = append(parentRefs, fmt.Sprintf("vote:%s", voteUID))
+	if data.VoteUID != "" {
+		parentRefs = append(parentRefs, fmt.Sprintf("vote:%s", data.VoteUID))
 	}
 
-	// Construct the indexer message
 	indexingConfig := &indexerTypes.IndexingConfig{
-		ObjectID:             "{{ uid }}",
-		Public:               &public,
-		AccessCheckObject:    "vote:{{ uid }}",
+		ObjectID:             data.UID,
+		AccessCheckObject:    fmt.Sprintf("vote:%s", data.VoteUID),
 		AccessCheckRelation:  "viewer",
-		HistoryCheckObject:   "vote_response:{{ uid }}",
+		HistoryCheckObject:   fmt.Sprintf("vote_response:%s", data.UID),
 		HistoryCheckRelation: "auditor",
-		SortName:             "{{ user_name }}",
+		SortName:             data.Username,
 		NameAndAliases:       nameAndAliases,
 		ParentRefs:           parentRefs,
-		Fulltext:             "{{ user_name }}",
+		Fulltext:             data.Username,
 	}
 
+	if action == indexerConstants.ActionDeleted {
+		return p.sendIndexerDeleteMessage(ctx, subject, action, data.UID, indexingConfig)
+	}
+
+	return p.sendIndexerCreateUpdateMessage(ctx, subject, action, data, indexingConfig)
+}
+
+// sendVoteResponseAccessMessage sends the message to the NATS server for the vote response access control
+func (p *NATSPublisher) sendVoteResponseAccessMessage(data *domain.VoteResponseData) error {
+	relations := map[string][]string{}
+	if data.Username != "" {
+		relations["writer"] = []string{data.Username}
+		relations["viewer"] = []string{data.Username}
+	}
+
+	references := map[string][]string{}
+	if data.ProjectUID != "" {
+		references["project"] = []string{data.ProjectUID}
+	}
+	if data.VoteUID != "" {
+		references["vote"] = []string{data.VoteUID}
+	}
+
+	// Skip sending access message if there are no relations or references
+	if len(relations) == 0 && len(references) == 0 {
+		return nil
+	}
+
+	accessMsg := GenericFGAMessage{
+		ObjectType: "vote_response",
+		Operation:  "update_access",
+		Data: map[string]interface{}{
+			"uid":        data.UID,
+			"public":     false,
+			"relations":  relations,
+			"references": references,
+		},
+	}
+
+	accessMsgBytes, err := json.Marshal(accessMsg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal access message: %w", err)
+	}
+
+	// Publish the message to NATS
+	if err := p.conn.Publish(UpdateAccessSubject, accessMsgBytes); err != nil {
+		return fmt.Errorf("failed to publish access message to subject %s: %w", UpdateAccessSubject, err)
+	}
+
+	return nil
+}
+
+// sendDeleteAccessMessage sends a delete access message to FGA-sync
+// This removes all tuples for a resource (typically used when a resource is deleted)
+func (p *NATSPublisher) sendDeleteAccessMessage(objectType string, uid string) error {
+	// Construct delete access message
+	deleteMsg := GenericFGAMessage{
+		ObjectType: objectType,
+		Operation:  "delete_access",
+		Data: map[string]interface{}{
+			"uid": uid,
+		},
+	}
+
+	deleteMsgBytes, err := json.Marshal(deleteMsg)
+	if err != nil {
+		return fmt.Errorf("failed to marshal delete access message: %w", err)
+	}
+
+	// Publish the message to NATS
+	if err := p.conn.Publish(DeleteAccessSubject, deleteMsgBytes); err != nil {
+		return fmt.Errorf("failed to publish delete access message to subject %s: %w", DeleteAccessSubject, err)
+	}
+
+	return nil
+}
+
+// sendIndexerDeleteMessage sends a generic delete message to the indexer with just the UID
+func (p *NATSPublisher) sendIndexerDeleteMessage(ctx context.Context, subject string, action indexerConstants.MessageAction, uid string, indexingConfig *indexerTypes.IndexingConfig) error {
+	headers := p.buildHeaders(ctx)
+
+	message := indexerTypes.IndexerMessageEnvelope{
+		Action:         action,
+		Headers:        headers,
+		Data:           uid,
+		IndexingConfig: indexingConfig,
+	}
+
+	messageBytes, err := json.Marshal(message)
+	if err != nil {
+		return fmt.Errorf("failed to marshal indexer delete message for subject %s: %w", subject, err)
+	}
+
+	p.logger.With("subject", subject, "action", action, "uid", uid).DebugContext(ctx, "constructed indexer delete message")
+
+	// Publish the message to NATS
+	if err := p.conn.Publish(subject, messageBytes); err != nil {
+		return fmt.Errorf("failed to publish indexer delete message to subject %s: %w", subject, err)
+	}
+
+	return nil
+}
+
+// sendIndexerCreateUpdateMessage sends a generic create/update message to the indexer with full object and IndexingConfig
+func (p *NATSPublisher) sendIndexerCreateUpdateMessage(ctx context.Context, subject string, action indexerConstants.MessageAction, data interface{}, indexingConfig *indexerTypes.IndexingConfig) error {
+	headers := p.buildHeaders(ctx)
+
+	public := false
+	indexingConfig.Public = &public
+
+	// Construct the indexer message
 	message := indexerTypes.IndexerMessageEnvelope{
 		Action:         action,
 		Headers:        headers,
@@ -275,54 +334,22 @@ func (p *NATSPublisher) sendVoteResponseIndexerMessage(ctx context.Context, subj
 	return nil
 }
 
-// sendVoteResponseAccessMessage sends the message to the NATS server for the vote response access control
-func (p *NATSPublisher) sendVoteResponseAccessMessage(data interface{}) error {
-	voteResponseData, ok := data.(map[string]interface{})
-	if !ok {
-		return fmt.Errorf("invalid vote response data type")
+// buildHeaders extracts headers from context for NATS messages
+func (p *NATSPublisher) buildHeaders(ctx context.Context) map[string]string {
+	headers := make(map[string]string)
+
+	// Extract authorization from context if available
+	if authorization, ok := ctx.Value("authorization").(string); ok {
+		headers["authorization"] = authorization
+	} else {
+		// Fallback for system-generated events
+		headers["authorization"] = "Bearer voting-service"
 	}
 
-	relations := map[string][]string{}
-	if username, ok := voteResponseData["username"].(string); ok && username != "" {
-		relations["writer"] = []string{username}
-		relations["viewer"] = []string{username}
+	// Extract principal from context if available
+	if principal, ok := ctx.Value("principal").(string); ok {
+		headers["x-on-behalf-of"] = principal
 	}
 
-	references := map[string][]string{}
-	if projectUID, ok := voteResponseData["project_uid"].(string); ok && projectUID != "" {
-		references["project"] = []string{projectUID}
-	}
-	if voteUID, ok := voteResponseData["vote_uid"].(string); ok && voteUID != "" {
-		references["vote"] = []string{voteUID}
-	}
-
-	// Skip sending access message if there are no relations or references
-	if len(relations) == 0 && len(references) == 0 {
-		return nil
-	}
-
-	uid, _ := voteResponseData["uid"].(string)
-
-	accessMsg := GenericFGAMessage{
-		ObjectType: "vote_response",
-		Operation:  "update_access",
-		Data: map[string]interface{}{
-			"uid":        uid,
-			"public":     false,
-			"relations":  relations,
-			"references": references,
-		},
-	}
-
-	accessMsgBytes, err := json.Marshal(accessMsg)
-	if err != nil {
-		return fmt.Errorf("failed to marshal access message: %w", err)
-	}
-
-	// Publish the message to NATS
-	if err := p.conn.Publish(UpdateAccessSubject, accessMsgBytes); err != nil {
-		return fmt.Errorf("failed to publish access message to subject %s: %w", UpdateAccessSubject, err)
-	}
-
-	return nil
+	return headers
 }

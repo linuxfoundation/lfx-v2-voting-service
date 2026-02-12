@@ -1,7 +1,7 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
-package eventing
+package domain
 
 import "github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 

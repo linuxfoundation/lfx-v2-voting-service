@@ -86,20 +86,20 @@ func convertMapToVoteData(
 	v1Data map[string]interface{},
 	idMapper domain.IDMapper,
 	logger *slog.Logger,
-) (*VoteData, error) {
+) (*domain.VoteData, error) {
 	// Convert map to JSON bytes, then to PollDBRaw to handle string fields
 	jsonBytes, err := json.Marshal(v1Data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal v1Data to JSON: %w", err)
 	}
 
-	var pollDB PollDBRaw
+	var pollDB domain.PollDBRaw
 	if err := json.Unmarshal(jsonBytes, &pollDB); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON into PollDBRaw: %w", err)
 	}
 
 	// Build v2 vote data struct
-	voteData := &VoteData{
+	voteData := &domain.VoteData{
 		VoteUID:               pollDB.PollID,
 		PollID:                pollDB.PollID,
 		Name:                  pollDB.Name,
@@ -174,6 +174,46 @@ func convertMapToVoteData(
 	}
 
 	return voteData, nil
+}
+
+// handleVoteDelete processes a vote (poll) delete from itx-poll records
+// Returns true if the message should be retried (NAK), false if it should be acknowledged (ACK)
+func handleVoteDelete(
+	ctx context.Context,
+	uid string,
+	publisher domain.EventPublisher,
+	mappingsKV jetstream.KeyValue,
+	logger *slog.Logger,
+) bool {
+	funcLogger := logger.With("vote_uid", uid, "handler", "vote_delete")
+
+	funcLogger.DebugContext(ctx, "processing vote delete")
+
+	// Create minimal vote data for delete event
+	voteData := &domain.VoteData{
+		VoteUID: uid,
+		PollID:  uid,
+	}
+
+	// Publish delete event to indexer and FGA-sync
+	if err := publisher.PublishVoteEvent(ctx, string(indexerConstants.ActionDeleted), voteData); err != nil {
+		funcLogger.With(errKey, err).ErrorContext(ctx, "failed to publish vote delete event")
+		// Check if this is a transient error that should be retried
+		if isTransientError(err) {
+			return true // NAK for retry
+		}
+		return false // Permanent error, ACK and skip
+	}
+
+	// Remove mapping from v1-mappings KV
+	mappingKey := fmt.Sprintf("vote.%s", uid)
+	if err := mappingsKV.Delete(ctx, mappingKey); err != nil {
+		funcLogger.With(errKey, err).WarnContext(ctx, "failed to delete vote mapping")
+		// Don't retry on mapping deletion failures
+	}
+
+	funcLogger.InfoContext(ctx, "successfully sent vote delete indexer and access messages")
+	return false // Success, ACK the message
 }
 
 // isTransientError determines if an error is transient and should be retried
