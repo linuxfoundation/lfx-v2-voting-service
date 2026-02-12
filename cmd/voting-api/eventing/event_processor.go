@@ -15,6 +15,10 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 )
 
+const (
+	V1MappingsBucket = "v1-mappings"
+)
+
 // EventProcessor handles NATS KV bucket event processing
 type EventProcessor struct {
 	natsConn   *nats.Conn
@@ -26,8 +30,6 @@ type EventProcessor struct {
 	mappingsKV jetstream.KeyValue
 	logger     *slog.Logger
 	config     eventing.Config
-	ctx        context.Context
-	cancel     context.CancelFunc
 }
 
 // NewEventProcessor creates a new event processor
@@ -64,14 +66,12 @@ func NewEventProcessor(
 	// Initialize publisher
 	publisher := eventing.NewNATSPublisher(conn, logger)
 
-	// Access the v1-mappings KV bucket
-	mappingsKV, err := jsContext.KeyValue(context.Background(), "v1-mappings")
+	// Access the V1 mappings KV bucket
+	mappingsKV, err := jsContext.KeyValue(context.Background(), V1MappingsBucket)
 	if err != nil {
 		conn.Close()
-		return nil, fmt.Errorf("failed to access v1-mappings KV bucket: %w", err)
+		return nil, fmt.Errorf("failed to access %s KV bucket: %w", V1MappingsBucket, err)
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
 
 	return &EventProcessor{
 		natsConn:   conn,
@@ -81,8 +81,6 @@ func NewEventProcessor(
 		mappingsKV: mappingsKV,
 		logger:     logger,
 		config:     cfg,
-		ctx:        ctx,
-		cancel:     cancel,
 	}, nil
 }
 
@@ -109,7 +107,7 @@ func (ep *EventProcessor) Start(ctx context.Context) error {
 
 	// Start consuming messages
 	consumeCtx, err := consumer.Consume(func(msg jetstream.Msg) {
-		kvMessageHandler(ep.ctx, msg, ep.publisher, ep.idMapper, ep.mappingsKV, ep.logger)
+		kvMessageHandler(ctx, msg, ep.publisher, ep.idMapper, ep.mappingsKV, ep.logger)
 	}, jetstream.ConsumeErrHandler(func(_ jetstream.ConsumeContext, err error) {
 		ep.logger.With("error", err).Error("KV consumer error encountered")
 	}))
@@ -121,7 +119,7 @@ func (ep *EventProcessor) Start(ctx context.Context) error {
 	ep.logger.Info("Event processor started successfully")
 
 	// Block until context is cancelled
-	<-ep.ctx.Done()
+	<-ctx.Done()
 
 	ep.logger.Info("Event processor context cancelled")
 	return nil
@@ -131,11 +129,6 @@ func (ep *EventProcessor) Start(ctx context.Context) error {
 func (ep *EventProcessor) Stop() error {
 	ep.logger.Info("Stopping event processor...")
 
-	// Cancel the context to stop the Start method
-	if ep.cancel != nil {
-		ep.cancel()
-	}
-
 	// Stop the consumer
 	if ep.consumeCtx != nil {
 		ep.consumeCtx.Stop()
@@ -144,7 +137,6 @@ func (ep *EventProcessor) Stop() error {
 
 	// Drain and close the NATS connection
 	if ep.natsConn != nil {
-		// Drain waits for all subscriptions to finish processing messages
 		if err := ep.natsConn.Drain(); err != nil {
 			ep.logger.With("error", err).Error("Error draining NATS connection")
 		}

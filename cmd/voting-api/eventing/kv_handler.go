@@ -6,12 +6,17 @@ package eventing
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"strings"
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/nats-io/nats.go/jetstream"
+)
+
+const (
+	V1ObjectsBucket = "v1-objects"
 )
 
 // kvEntry implements a mock jetstream.KeyValueEntry interface for the handler
@@ -34,7 +39,7 @@ func (e *kvEntry) Operation() jetstream.KeyValueOp {
 }
 
 func (e *kvEntry) Bucket() string {
-	return "v1-objects"
+	return V1ObjectsBucket
 }
 
 func (e *kvEntry) Created() time.Time {
@@ -62,10 +67,10 @@ func kvMessageHandler(
 	headers := msg.Headers()
 	subject := msg.Subject()
 
-	// Extract key from the subject ($KV.v1-objects.{key})
+	// Extract key from the subject ($KV.{bucket}.{key})
 	key := ""
-	if len(subject) > len("$KV.v1-objects.") {
-		key = subject[len("$KV.v1-objects."):]
+	if len(subject) > len(fmt.Sprintf("$KV.%s.", V1ObjectsBucket)) {
+		key = subject[len(fmt.Sprintf("$KV.%s.", V1ObjectsBucket)):]
 	}
 
 	// Determine operation from headers

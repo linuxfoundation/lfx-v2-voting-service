@@ -144,7 +144,7 @@ func convertMapToVoteResponseData(
 		UserEmail:               voteDB.UserEmail,
 		UserRole:                voteDB.UserRole,
 		UserName:                voteDB.UserName,
-		Username:                voteDB.UserName, // Use UserName as username for now
+		Username:                voteDB.Username, // Use UserName as username for now
 		ProfilePicture:          voteDB.ProfilePicture,
 		UserVotingStatus:        voteDB.UserVotingStatus,
 		UserOrgID:               voteDB.UserOrgID,
