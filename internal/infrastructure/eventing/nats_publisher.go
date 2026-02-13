@@ -12,6 +12,7 @@ import (
 	indexerConstants "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/constants"
 	indexerTypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"github.com/nats-io/nats.go"
 )
 
@@ -339,7 +340,7 @@ func (p *NATSPublisher) buildHeaders(ctx context.Context) map[string]string {
 	headers := make(map[string]string)
 
 	// Extract authorization from context if available
-	if authorization, ok := ctx.Value("authorization").(string); ok {
+	if authorization, ok := ctx.Value(constants.AuthorizationContextID).(string); ok {
 		headers["authorization"] = authorization
 	} else {
 		// Fallback for system-generated events
@@ -347,7 +348,7 @@ func (p *NATSPublisher) buildHeaders(ctx context.Context) map[string]string {
 	}
 
 	// Extract principal from context if available
-	if principal, ok := ctx.Value("principal").(string); ok {
+	if principal, ok := ctx.Value(constants.PrincipalContextID).(string); ok {
 		headers["x-on-behalf-of"] = principal
 	}
 

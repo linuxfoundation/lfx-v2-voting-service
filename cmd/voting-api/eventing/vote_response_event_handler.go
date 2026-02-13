@@ -175,10 +175,10 @@ func convertMapToVoteResponseData(
 		if err != nil {
 			logger.With(errKey, err, "field", "project_id", "value", voteDB.ProjectID).
 				WarnContext(ctx, "failed to get v2 project UID from v1 project ID")
-			// Don't set project_uid if mapping fails - will be caught by validation
-		} else {
-			voteResponseData.ProjectUID = projectUID
+			// Return error so caller can decide to retry or skip based on error type
+			return nil, fmt.Errorf("failed to map project ID: %w", err)
 		}
+		voteResponseData.ProjectUID = projectUID
 	}
 
 	return voteResponseData, nil

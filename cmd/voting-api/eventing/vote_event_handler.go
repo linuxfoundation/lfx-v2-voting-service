@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"strings"
 
 	indexerConstants "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
-	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/utils"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
@@ -37,6 +37,10 @@ func handleVoteUpdate(
 	voteData, err := convertMapToVoteData(ctx, v1Data, idMapper, funcLogger)
 	if err != nil {
 		funcLogger.With(errKey, err).ErrorContext(ctx, "failed to convert v1Data to vote")
+		// Check if ID mapping error is transient (e.g., NATS temporarily unavailable)
+		if isTransientError(err) {
+			return true // NAK for retry
+		}
 		return false // Permanent error, ACK and skip
 	}
 
@@ -155,10 +159,10 @@ func convertMapToVoteData(
 		if err != nil {
 			logger.With(errKey, err, "field", "project_id", "value", pollDB.ProjectID).
 				WarnContext(ctx, "failed to get v2 project UID from v1 project ID")
-			// Don't set project_uid if mapping fails - will be caught by validation
-		} else {
-			voteData.ProjectUID = projectUID
+			// Return error so caller can decide to retry or skip based on error type
+			return nil, fmt.Errorf("failed to map project ID: %w", err)
 		}
+		voteData.ProjectUID = projectUID
 	}
 
 	// Map v1 committee ID (SFID) to v2 committee UID
@@ -167,7 +171,7 @@ func convertMapToVoteData(
 		if err != nil {
 			logger.With(errKey, err, "field", "committee_id", "value", pollDB.CommitteeID).
 				WarnContext(ctx, "failed to get v2 committee UID from v1 committee ID")
-			// Don't set committee_uid if mapping fails - not critical
+			// Committee mapping is not critical, just log and continue
 		} else {
 			voteData.CommitteeUID = committeeUID
 		}
@@ -224,8 +228,8 @@ func isTransientError(err error) bool {
 
 	errStr := err.Error()
 	// NATS publish errors, timeouts, connection issues
-	if utils.Contains(errStr, "timeout") || utils.Contains(errStr, "connection") ||
-		utils.Contains(errStr, "unavailable") || utils.Contains(errStr, "deadline") {
+	if strings.Contains(errStr, "timeout") || strings.Contains(errStr, "connection") ||
+		strings.Contains(errStr, "unavailable") || strings.Contains(errStr, "deadline") {
 		return true
 	}
 
