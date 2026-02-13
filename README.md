@@ -10,6 +10,7 @@ This service provides a proxy layer between LFXv2 clients and the legacy ITX vot
 - **Service-to-Service Auth**: Uses service account tokens for ITX API calls
 - **Terminology Translation**: Maps LFXv2 "vote" terminology to ITX "poll" terminology
 - **ID Schema Translation**: Bidirectional mapping between LFXv2 UUIDs and LFXv1 Salesforce IDs via NATS
+- **Event Processing**: Real-time sync of v1 voting data to v2 indexer and FGA (see [Event Processing](docs/event-processing.md))
 - **Error Handling**: Provides consistent error responses following LFXv2 patterns
 - **Logging**: Structured logging with request tracking
 
@@ -28,6 +29,7 @@ lfx-v2-voting-service/
 ├── api/voting/v1/design/    # Goa DSL API definitions
 ├── gen/                      # Generated Goa code (auto-generated)
 ├── cmd/voting-api/           # Application entry point
+│   ├── eventing/             # Event processing handlers
 │   ├── service/              # Request/response converters
 │   ├── api.go                # API layer (Goa interface implementation)
 │   └── main.go               # Main application
@@ -36,9 +38,14 @@ lfx-v2-voting-service/
 │   ├── service/              # Business logic layer
 │   ├── infrastructure/       # External integrations
 │   │   ├── auth/             # JWT authentication
+│   │   ├── eventing/         # Event processing infrastructure
+│   │   ├── idmapper/         # ID mapping (NATS)
 │   │   └── proxy/            # ITX HTTP client
 │   ├── middleware/           # HTTP middleware
 │   └── log/                  # Logging configuration
+├── docs/                     # Documentation
+│   ├── api-contracts.md      # API contract documentation
+│   └── event-processing.md   # Event processing guide
 └── pkg/
     ├── constants/            # Shared constants
     └── utils/                # Utility functions
@@ -89,6 +96,15 @@ Configure the service using environment variables:
 | `ITX_AUDIENCE` | OAuth2 audience for ITX | `https://api.dev.itx.linuxfoundation.org/` |
 | `NATS_URL` | NATS server URL for v1/v2 ID mapping | `nats://nats:4222` |
 | `ID_MAPPING_DISABLED` | Disable ID mapping (use for local dev without NATS) | `false` (set to `true` to disable) |
+
+### Event Processing
+
+- `EVENT_PROCESSING_ENABLED` - Enable/disable event processing (default: true)
+- `EVENT_CONSUMER_NAME` - JetStream consumer name (default: voting-service-kv-consumer)
+- `EVENT_STREAM_NAME` - JetStream stream name (default: KV_v1-objects)
+- `EVENT_FILTER_SUBJECT` - NATS subject filter (default: $KV.v1-objects.>)
+
+See [Event Processing Documentation](docs/event-processing.md) for details.
 
 ### Running Locally
 
