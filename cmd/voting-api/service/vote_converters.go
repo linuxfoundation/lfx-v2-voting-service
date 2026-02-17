@@ -117,7 +117,7 @@ func ConvertUpdateVotePayloadToDomain(payload *votesvc.UpdateVotePayload) *servi
 // ConvertPollResponseToVoteResult converts ITX PollResponse to Goa VoteResult
 func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *votesvc.VoteResult {
 	result := &votesvc.VoteResult{
-		VoteUID:                       poll.PollID,      // Map PollID → VoteUID
+		UID:                           poll.PollID,      // Map PollID → UID
 		Name:                          poll.Name,
 		Description:                   poll.Description,
 		CreationTime:                  utils.StringPtr(poll.CreationTime),

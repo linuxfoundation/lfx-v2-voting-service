@@ -167,12 +167,12 @@ func BuildCreateVotePayload(voteCreateVoteBody string, voteCreateVoteToken strin
 
 // BuildGetVotePayload builds the payload for the vote get_vote endpoint from
 // CLI flags.
-func BuildGetVotePayload(voteGetVoteVoteUID string, voteGetVoteToken string) (*vote.GetVotePayload, error) {
+func BuildGetVotePayload(voteGetVoteUID string, voteGetVoteToken string) (*vote.GetVotePayload, error) {
 	var err error
-	var voteUID string
+	var uid string
 	{
-		voteUID = voteGetVoteVoteUID
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = voteGetVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
 		}
@@ -184,7 +184,7 @@ func BuildGetVotePayload(voteGetVoteVoteUID string, voteGetVoteToken string) (*v
 		}
 	}
 	v := &vote.GetVotePayload{}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v, nil
@@ -192,7 +192,7 @@ func BuildGetVotePayload(voteGetVoteVoteUID string, voteGetVoteToken string) (*v
 
 // BuildUpdateVotePayload builds the payload for the vote update_vote endpoint
 // from CLI flags.
-func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteVoteUID string, voteUpdateVoteToken string) (*vote.UpdateVotePayload, error) {
+func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteUID string, voteUpdateVoteToken string) (*vote.UpdateVotePayload, error) {
 	var err error
 	var body UpdateVoteRequestBody
 	{
@@ -258,10 +258,10 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteVoteUID str
 			return nil, err
 		}
 	}
-	var voteUID string
+	var uid string
 	{
-		voteUID = voteUpdateVoteVoteUID
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = voteUpdateVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
 		}
@@ -343,7 +343,7 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteVoteUID str
 			v.AllowAbstain = false
 		}
 	}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v, nil
@@ -351,12 +351,12 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteVoteUID str
 
 // BuildDeleteVotePayload builds the payload for the vote delete_vote endpoint
 // from CLI flags.
-func BuildDeleteVotePayload(voteDeleteVoteVoteUID string, voteDeleteVoteToken string) (*vote.DeleteVotePayload, error) {
+func BuildDeleteVotePayload(voteDeleteVoteUID string, voteDeleteVoteToken string) (*vote.DeleteVotePayload, error) {
 	var err error
-	var voteUID string
+	var uid string
 	{
-		voteUID = voteDeleteVoteVoteUID
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = voteDeleteVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
 		}
@@ -368,7 +368,7 @@ func BuildDeleteVotePayload(voteDeleteVoteVoteUID string, voteDeleteVoteToken st
 		}
 	}
 	v := &vote.DeleteVotePayload{}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v, nil
@@ -376,7 +376,7 @@ func BuildDeleteVotePayload(voteDeleteVoteVoteUID string, voteDeleteVoteToken st
 
 // BuildExtendVotePayload builds the payload for the vote extend_vote endpoint
 // from CLI flags.
-func BuildExtendVotePayload(voteExtendVoteBody string, voteExtendVoteVoteUID string, voteExtendVoteToken string) (*vote.ExtendVotePayload, error) {
+func BuildExtendVotePayload(voteExtendVoteBody string, voteExtendVoteUID string, voteExtendVoteToken string) (*vote.ExtendVotePayload, error) {
 	var err error
 	var body ExtendVoteRequestBody
 	{
@@ -389,10 +389,10 @@ func BuildExtendVotePayload(voteExtendVoteBody string, voteExtendVoteVoteUID str
 			return nil, err
 		}
 	}
-	var voteUID string
+	var uid string
 	{
-		voteUID = voteExtendVoteVoteUID
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = voteExtendVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
 		}
@@ -406,7 +406,7 @@ func BuildExtendVotePayload(voteExtendVoteBody string, voteExtendVoteVoteUID str
 	v := &vote.ExtendVotePayload{
 		EndTime: body.EndTime,
 	}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v, nil
@@ -414,12 +414,12 @@ func BuildExtendVotePayload(voteExtendVoteBody string, voteExtendVoteVoteUID str
 
 // BuildEnableVotePayload builds the payload for the vote enable_vote endpoint
 // from CLI flags.
-func BuildEnableVotePayload(voteEnableVoteVoteUID string, voteEnableVoteToken string) (*vote.EnableVotePayload, error) {
+func BuildEnableVotePayload(voteEnableVoteUID string, voteEnableVoteToken string) (*vote.EnableVotePayload, error) {
 	var err error
-	var voteUID string
+	var uid string
 	{
-		voteUID = voteEnableVoteVoteUID
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = voteEnableVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
 		}
@@ -431,7 +431,7 @@ func BuildEnableVotePayload(voteEnableVoteVoteUID string, voteEnableVoteToken st
 		}
 	}
 	v := &vote.EnableVotePayload{}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v, nil
@@ -439,7 +439,7 @@ func BuildEnableVotePayload(voteEnableVoteVoteUID string, voteEnableVoteToken st
 
 // BuildBulkResendVotePayload builds the payload for the vote bulk_resend_vote
 // endpoint from CLI flags.
-func BuildBulkResendVotePayload(voteBulkResendVoteBody string, voteBulkResendVoteVoteUID string, voteBulkResendVoteToken string) (*vote.BulkResendVotePayload, error) {
+func BuildBulkResendVotePayload(voteBulkResendVoteBody string, voteBulkResendVoteUID string, voteBulkResendVoteToken string) (*vote.BulkResendVotePayload, error) {
 	var err error
 	var body BulkResendVoteRequestBody
 	{
@@ -454,10 +454,10 @@ func BuildBulkResendVotePayload(voteBulkResendVoteBody string, voteBulkResendVot
 			return nil, err
 		}
 	}
-	var voteUID string
+	var uid string
 	{
-		voteUID = voteBulkResendVoteVoteUID
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = voteBulkResendVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
 		}
@@ -477,7 +477,7 @@ func BuildBulkResendVotePayload(voteBulkResendVoteBody string, voteBulkResendVot
 	} else {
 		v.RecipientIds = []string{}
 	}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v, nil
@@ -485,12 +485,12 @@ func BuildBulkResendVotePayload(voteBulkResendVoteBody string, voteBulkResendVot
 
 // BuildGetVoteResultsPayload builds the payload for the vote get_vote_results
 // endpoint from CLI flags.
-func BuildGetVoteResultsPayload(voteGetVoteResultsVoteUID string, voteGetVoteResultsToken string) (*vote.GetVoteResultsPayload, error) {
+func BuildGetVoteResultsPayload(voteGetVoteResultsUID string, voteGetVoteResultsToken string) (*vote.GetVoteResultsPayload, error) {
 	var err error
-	var voteUID string
+	var uid string
 	{
-		voteUID = voteGetVoteResultsVoteUID
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = voteGetVoteResultsUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
 		}
@@ -502,7 +502,7 @@ func BuildGetVoteResultsPayload(voteGetVoteResultsVoteUID string, voteGetVoteRes
 		}
 	}
 	v := &vote.GetVoteResultsPayload{}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v, nil

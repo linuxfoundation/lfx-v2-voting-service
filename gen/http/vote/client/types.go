@@ -123,7 +123,7 @@ type UpdateVoteResponseRequestBody struct {
 // endpoint HTTP response body.
 type CreateVoteResponseBody struct {
 	// Vote identifier
-	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Vote name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Vote description
@@ -162,7 +162,7 @@ type CreateVoteResponseBody struct {
 // HTTP response body.
 type GetVoteResponseBody struct {
 	// Vote identifier
-	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Vote name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Vote description
@@ -201,7 +201,7 @@ type GetVoteResponseBody struct {
 // endpoint HTTP response body.
 type UpdateVoteResponseBody struct {
 	// Vote identifier
-	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Vote name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Vote description
@@ -240,7 +240,7 @@ type UpdateVoteResponseBody struct {
 // endpoint HTTP response body.
 type ExtendVoteResponseBody struct {
 	// Vote identifier
-	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Vote name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Vote description
@@ -1428,7 +1428,7 @@ func NewUpdateVoteResponseRequestBody(p *vote.UpdateVoteResponsePayload) *Update
 // endpoint result from a HTTP "Created" response.
 func NewCreateVoteVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResult {
 	v := &vote.VoteResult{
-		VoteUID:                       *body.VoteUID,
+		UID:                           *body.UID,
 		Name:                          *body.Name,
 		Description:                   *body.Description,
 		CreationTime:                  body.CreationTime,
@@ -1540,7 +1540,7 @@ func NewCreateVoteUnauthorized(body *CreateVoteUnauthorizedResponseBody) *vote.U
 // from a HTTP "OK" response.
 func NewGetVoteVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
 	v := &vote.VoteResult{
-		VoteUID:                       *body.VoteUID,
+		UID:                           *body.UID,
 		Name:                          *body.Name,
 		Description:                   *body.Description,
 		CreationTime:                  body.CreationTime,
@@ -1639,7 +1639,7 @@ func NewGetVoteUnauthorized(body *GetVoteUnauthorizedResponseBody) *vote.Unautho
 // result from a HTTP "OK" response.
 func NewUpdateVoteVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
 	v := &vote.VoteResult{
-		VoteUID:                       *body.VoteUID,
+		UID:                           *body.UID,
 		Name:                          *body.Name,
 		Description:                   *body.Description,
 		CreationTime:                  body.CreationTime,
@@ -1806,7 +1806,7 @@ func NewDeleteVoteUnauthorized(body *DeleteVoteUnauthorizedResponseBody) *vote.U
 // result from a HTTP "OK" response.
 func NewExtendVoteVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
 	v := &vote.VoteResult{
-		VoteUID:                       *body.VoteUID,
+		UID:                           *body.UID,
 		Name:                          *body.Name,
 		Description:                   *body.Description,
 		CreationTime:                  body.CreationTime,
@@ -2445,8 +2445,8 @@ func NewResendVoteResponseUnauthorized(body *ResendVoteResponseUnauthorizedRespo
 // ValidateCreateVoteResponseBody runs the validations defined on
 // create_vote_response_body
 func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
-	if body.VoteUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
+	if body.UID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
 	}
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
@@ -2463,8 +2463,8 @@ func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
-	if body.VoteUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))
+	if body.UID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
 	if body.CreationTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.creation_time", *body.CreationTime, goa.FormatDateTime))
@@ -2493,8 +2493,8 @@ func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
 // ValidateGetVoteResponseBody runs the validations defined on
 // get_vote_response_body
 func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
-	if body.VoteUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
+	if body.UID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
 	}
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
@@ -2511,8 +2511,8 @@ func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
-	if body.VoteUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))
+	if body.UID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
 	if body.CreationTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.creation_time", *body.CreationTime, goa.FormatDateTime))
@@ -2541,8 +2541,8 @@ func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
 // ValidateUpdateVoteResponseBody runs the validations defined on
 // update_vote_response_body
 func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
-	if body.VoteUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
+	if body.UID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
 	}
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
@@ -2559,8 +2559,8 @@ func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
-	if body.VoteUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))
+	if body.UID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
 	if body.CreationTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.creation_time", *body.CreationTime, goa.FormatDateTime))
@@ -2589,8 +2589,8 @@ func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
 // ValidateExtendVoteResponseBody runs the validations defined on
 // extend_vote_response_body
 func ValidateExtendVoteResponseBody(body *ExtendVoteResponseBody) (err error) {
-	if body.VoteUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
+	if body.UID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
 	}
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
@@ -2607,8 +2607,8 @@ func ValidateExtendVoteResponseBody(body *ExtendVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
-	if body.VoteUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))
+	if body.UID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
 	if body.CreationTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.creation_time", *body.CreationTime, goa.FormatDateTime))

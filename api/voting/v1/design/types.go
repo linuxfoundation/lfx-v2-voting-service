@@ -20,7 +20,7 @@ func BearerTokenAttribute() {
 
 // VoteIDAttribute is the DSL attribute for vote ID (UUID).
 func VoteIDAttribute() {
-	Attribute("vote_uid", String, "Vote UID", func() {
+	Attribute("uid", String, "Vote UID", func() {
 		Format(FormatUUID)
 		Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
 	})
@@ -148,7 +148,7 @@ func WinningThresholdPercentageAttribute() {
 var VoteResult = Type("VoteResult", func() {
 	Description("Vote details")
 
-	Attribute("vote_uid", String, "Vote identifier", func() {
+	Attribute("uid", String, "Vote identifier", func() {
 		Format(FormatUUID)
 		Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
 	})
@@ -183,7 +183,7 @@ var VoteResult = Type("VoteResult", func() {
 	Attribute("poll_questions", ArrayOf(PollQuestion), "Vote questions")
 	Attribute("allow_abstain", Boolean, "Allow abstain")
 
-	Required("vote_uid", "name", "description", "status", "project_uid", "committee_uid")
+	Required("uid", "name", "description", "status", "project_uid", "committee_uid")
 })
 
 // PollQuestion represents a question in a vote

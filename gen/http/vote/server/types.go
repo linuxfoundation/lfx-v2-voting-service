@@ -125,7 +125,7 @@ type UpdateVoteResponseRequestBody struct {
 // endpoint HTTP response body.
 type CreateVoteResponseBody struct {
 	// Vote identifier
-	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
+	UID string `form:"uid" json:"uid" xml:"uid"`
 	// Vote name
 	Name string `form:"name" json:"name" xml:"name"`
 	// Vote description
@@ -164,7 +164,7 @@ type CreateVoteResponseBody struct {
 // HTTP response body.
 type GetVoteResponseBody struct {
 	// Vote identifier
-	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
+	UID string `form:"uid" json:"uid" xml:"uid"`
 	// Vote name
 	Name string `form:"name" json:"name" xml:"name"`
 	// Vote description
@@ -203,7 +203,7 @@ type GetVoteResponseBody struct {
 // endpoint HTTP response body.
 type UpdateVoteResponseBody struct {
 	// Vote identifier
-	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
+	UID string `form:"uid" json:"uid" xml:"uid"`
 	// Vote name
 	Name string `form:"name" json:"name" xml:"name"`
 	// Vote description
@@ -242,7 +242,7 @@ type UpdateVoteResponseBody struct {
 // endpoint HTTP response body.
 type ExtendVoteResponseBody struct {
 	// Vote identifier
-	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
+	UID string `form:"uid" json:"uid" xml:"uid"`
 	// Vote name
 	Name string `form:"name" json:"name" xml:"name"`
 	// Vote description
@@ -1212,7 +1212,7 @@ type RankedChoiceInputRequestBody struct {
 // the "create_vote" endpoint of the "vote" service.
 func NewCreateVoteResponseBody(res *vote.VoteResult) *CreateVoteResponseBody {
 	body := &CreateVoteResponseBody{
-		VoteUID:                       res.VoteUID,
+		UID:                           res.UID,
 		Name:                          res.Name,
 		Description:                   res.Description,
 		CreationTime:                  res.CreationTime,
@@ -1246,7 +1246,7 @@ func NewCreateVoteResponseBody(res *vote.VoteResult) *CreateVoteResponseBody {
 // "get_vote" endpoint of the "vote" service.
 func NewGetVoteResponseBody(res *vote.VoteResult) *GetVoteResponseBody {
 	body := &GetVoteResponseBody{
-		VoteUID:                       res.VoteUID,
+		UID:                           res.UID,
 		Name:                          res.Name,
 		Description:                   res.Description,
 		CreationTime:                  res.CreationTime,
@@ -1280,7 +1280,7 @@ func NewGetVoteResponseBody(res *vote.VoteResult) *GetVoteResponseBody {
 // the "update_vote" endpoint of the "vote" service.
 func NewUpdateVoteResponseBody(res *vote.VoteResult) *UpdateVoteResponseBody {
 	body := &UpdateVoteResponseBody{
-		VoteUID:                       res.VoteUID,
+		UID:                           res.UID,
 		Name:                          res.Name,
 		Description:                   res.Description,
 		CreationTime:                  res.CreationTime,
@@ -1314,7 +1314,7 @@ func NewUpdateVoteResponseBody(res *vote.VoteResult) *UpdateVoteResponseBody {
 // the "extend_vote" endpoint of the "vote" service.
 func NewExtendVoteResponseBody(res *vote.VoteResult) *ExtendVoteResponseBody {
 	body := &ExtendVoteResponseBody{
-		VoteUID:                       res.VoteUID,
+		UID:                           res.UID,
 		Name:                          res.Name,
 		Description:                   res.Description,
 		CreationTime:                  res.CreationTime,
@@ -2236,16 +2236,16 @@ func NewCreateVotePayload(body *CreateVoteRequestBody, token *string) *vote.Crea
 }
 
 // NewGetVotePayload builds a vote service get_vote endpoint payload.
-func NewGetVotePayload(voteUID string, token *string) *vote.GetVotePayload {
+func NewGetVotePayload(uid string, token *string) *vote.GetVotePayload {
 	v := &vote.GetVotePayload{}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v
 }
 
 // NewUpdateVotePayload builds a vote service update_vote endpoint payload.
-func NewUpdateVotePayload(body *UpdateVoteRequestBody, voteUID string, token *string) *vote.UpdateVotePayload {
+func NewUpdateVotePayload(body *UpdateVoteRequestBody, uid string, token *string) *vote.UpdateVotePayload {
 	v := &vote.UpdateVotePayload{
 		Name:                       *body.Name,
 		Description:                *body.Description,
@@ -2309,36 +2309,36 @@ func NewUpdateVotePayload(body *UpdateVoteRequestBody, voteUID string, token *st
 	if body.AllowAbstain == nil {
 		v.AllowAbstain = false
 	}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v
 }
 
 // NewDeleteVotePayload builds a vote service delete_vote endpoint payload.
-func NewDeleteVotePayload(voteUID string, token *string) *vote.DeleteVotePayload {
+func NewDeleteVotePayload(uid string, token *string) *vote.DeleteVotePayload {
 	v := &vote.DeleteVotePayload{}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v
 }
 
 // NewExtendVotePayload builds a vote service extend_vote endpoint payload.
-func NewExtendVotePayload(body *ExtendVoteRequestBody, voteUID string, token *string) *vote.ExtendVotePayload {
+func NewExtendVotePayload(body *ExtendVoteRequestBody, uid string, token *string) *vote.ExtendVotePayload {
 	v := &vote.ExtendVotePayload{
 		EndTime: *body.EndTime,
 	}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v
 }
 
 // NewEnableVotePayload builds a vote service enable_vote endpoint payload.
-func NewEnableVotePayload(voteUID string, token *string) *vote.EnableVotePayload {
+func NewEnableVotePayload(uid string, token *string) *vote.EnableVotePayload {
 	v := &vote.EnableVotePayload{}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v
@@ -2346,13 +2346,13 @@ func NewEnableVotePayload(voteUID string, token *string) *vote.EnableVotePayload
 
 // NewBulkResendVotePayload builds a vote service bulk_resend_vote endpoint
 // payload.
-func NewBulkResendVotePayload(body *BulkResendVoteRequestBody, voteUID string, token *string) *vote.BulkResendVotePayload {
+func NewBulkResendVotePayload(body *BulkResendVoteRequestBody, uid string, token *string) *vote.BulkResendVotePayload {
 	v := &vote.BulkResendVotePayload{}
 	v.RecipientIds = make([]string, len(body.RecipientIds))
 	for i, val := range body.RecipientIds {
 		v.RecipientIds[i] = val
 	}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v
@@ -2360,9 +2360,9 @@ func NewBulkResendVotePayload(body *BulkResendVoteRequestBody, voteUID string, t
 
 // NewGetVoteResultsPayload builds a vote service get_vote_results endpoint
 // payload.
-func NewGetVoteResultsPayload(voteUID string, token *string) *vote.GetVoteResultsPayload {
+func NewGetVoteResultsPayload(uid string, token *string) *vote.GetVoteResultsPayload {
 	v := &vote.GetVoteResultsPayload{}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v

@@ -18,38 +18,38 @@ func CreateVoteVotePath() string {
 }
 
 // GetVoteVotePath returns the URL path to the vote service get_vote HTTP endpoint.
-func GetVoteVotePath(voteUID string) string {
-	return fmt.Sprintf("/votes/%v", voteUID)
+func GetVoteVotePath(uid string) string {
+	return fmt.Sprintf("/votes/%v", uid)
 }
 
 // UpdateVoteVotePath returns the URL path to the vote service update_vote HTTP endpoint.
-func UpdateVoteVotePath(voteUID string) string {
-	return fmt.Sprintf("/votes/%v", voteUID)
+func UpdateVoteVotePath(uid string) string {
+	return fmt.Sprintf("/votes/%v", uid)
 }
 
 // DeleteVoteVotePath returns the URL path to the vote service delete_vote HTTP endpoint.
-func DeleteVoteVotePath(voteUID string) string {
-	return fmt.Sprintf("/votes/%v", voteUID)
+func DeleteVoteVotePath(uid string) string {
+	return fmt.Sprintf("/votes/%v", uid)
 }
 
 // ExtendVoteVotePath returns the URL path to the vote service extend_vote HTTP endpoint.
-func ExtendVoteVotePath(voteUID string) string {
-	return fmt.Sprintf("/votes/%v/extend", voteUID)
+func ExtendVoteVotePath(uid string) string {
+	return fmt.Sprintf("/votes/%v/extend", uid)
 }
 
 // EnableVoteVotePath returns the URL path to the vote service enable_vote HTTP endpoint.
-func EnableVoteVotePath(voteUID string) string {
-	return fmt.Sprintf("/votes/%v/enable", voteUID)
+func EnableVoteVotePath(uid string) string {
+	return fmt.Sprintf("/votes/%v/enable", uid)
 }
 
 // BulkResendVoteVotePath returns the URL path to the vote service bulk_resend_vote HTTP endpoint.
-func BulkResendVoteVotePath(voteUID string) string {
-	return fmt.Sprintf("/votes/%v/bulk_resend", voteUID)
+func BulkResendVoteVotePath(uid string) string {
+	return fmt.Sprintf("/votes/%v/bulk_resend", uid)
 }
 
 // GetVoteResultsVotePath returns the URL path to the vote service get_vote_results HTTP endpoint.
-func GetVoteResultsVotePath(voteUID string) string {
-	return fmt.Sprintf("/votes/%v/results", voteUID)
+func GetVoteResultsVotePath(uid string) string {
+	return fmt.Sprintf("/votes/%v/results", uid)
 }
 
 // CreateVoteResponseVotePath returns the URL path to the vote service create_vote_response HTTP endpoint.
