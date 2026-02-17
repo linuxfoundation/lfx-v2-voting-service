@@ -145,8 +145,8 @@ func (m *NATSMapper) lookup(ctx context.Context, key string) (string, error) {
 	response := string(msg.Data)
 
 	// Check for error response (prefixed with "error: ")
-	if strings.HasPrefix(response, "error: ") {
-		errMsg := strings.TrimPrefix(response, "error: ")
+	if after, ok := strings.CutPrefix(response, "error: "); ok {
+		errMsg := after
 		return "", domain.NewUnavailableError(fmt.Sprintf("v1-sync-helper error: %s", errMsg))
 	}
 

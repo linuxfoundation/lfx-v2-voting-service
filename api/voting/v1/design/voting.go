@@ -326,8 +326,8 @@ var _ = Service("vote", func() {
 			})
 
 			Attribute("user_vote_content", ArrayOf(VoteAnswerInput), "Vote answers", func() {
-				Example([]interface{}{
-					map[string]interface{}{
+				Example([]any{
+					map[string]any{
 						"question_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
 						"choice_ids":  []string{"b03cdbaf-53b1-4d47-bc04-dd7e459dd309"},
 					},
@@ -403,8 +403,8 @@ var _ = Service("vote", func() {
 			})
 
 			Attribute("user_vote_content", ArrayOf(VoteAnswerInput), "Updated vote answers", func() {
-				Example([]interface{}{
-					map[string]interface{}{
+				Example([]any{
+					map[string]any{
 						"question_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
 						"choice_ids":  []string{"b03cdbaf-53b1-4d47-bc04-dd7e459dd309"},
 					},
