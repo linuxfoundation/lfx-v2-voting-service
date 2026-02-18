@@ -2223,10 +2223,7 @@ func unmarshalPollChoiceResponseBodyToVotePollChoice(v *PollChoiceResponseBody) 
 // unmarshalPollResultItemResponseBodyToVotePollResultItem builds a value of
 // type *vote.PollResultItem from a value of type *PollResultItemResponseBody.
 func unmarshalPollResultItemResponseBodyToVotePollResultItem(v *PollResultItemResponseBody) *vote.PollResultItem {
-	res := &vote.PollResultItem{
-		IrvRoundSummary:     v.IrvRoundSummary,
-		MeekStvRoundSummary: v.MeekStvRoundSummary,
-	}
+	res := &vote.PollResultItem{}
 	res.Question = unmarshalPollQuestionDetailResponseBodyToVotePollQuestionDetail(v.Question)
 	if v.GenericChoiceVotes != nil {
 		res.GenericChoiceVotes = make([]*vote.GenericChoiceVote, len(v.GenericChoiceVotes))
@@ -2250,6 +2247,26 @@ func unmarshalPollResultItemResponseBodyToVotePollResultItem(v *PollResultItemRe
 	}
 	if v.RankedChoiceWinnerInfo != nil {
 		res.RankedChoiceWinnerInfo = unmarshalRankedChoiceWinnerInfoResponseBodyToVoteRankedChoiceWinnerInfo(v.RankedChoiceWinnerInfo)
+	}
+	if v.IrvRoundSummary != nil {
+		res.IrvRoundSummary = make([]*vote.IRVRoundSummary, len(v.IrvRoundSummary))
+		for i, val := range v.IrvRoundSummary {
+			if val == nil {
+				res.IrvRoundSummary[i] = nil
+				continue
+			}
+			res.IrvRoundSummary[i] = unmarshalIRVRoundSummaryResponseBodyToVoteIRVRoundSummary(val)
+		}
+	}
+	if v.MeekStvRoundSummary != nil {
+		res.MeekStvRoundSummary = make([]*vote.MeekSTVRoundSummary, len(v.MeekStvRoundSummary))
+		for i, val := range v.MeekStvRoundSummary {
+			if val == nil {
+				res.MeekStvRoundSummary[i] = nil
+				continue
+			}
+			res.MeekStvRoundSummary[i] = unmarshalMeekSTVRoundSummaryResponseBodyToVoteMeekSTVRoundSummary(val)
+		}
 	}
 
 	return res
@@ -2300,8 +2317,7 @@ func unmarshalRankedChoiceVoteResponseBodyToVoteRankedChoiceVote(v *RankedChoice
 		return nil
 	}
 	res := &vote.RankedChoiceVote{
-		ChoiceID:        *v.ChoiceID,
-		CondorcetMatrix: v.CondorcetMatrix,
+		ChoiceID: *v.ChoiceID,
 	}
 	res.RankCounts = make([]*vote.RankCount, len(v.RankCounts))
 	for i, val := range v.RankCounts {
@@ -2310,6 +2326,16 @@ func unmarshalRankedChoiceVoteResponseBodyToVoteRankedChoiceVote(v *RankedChoice
 			continue
 		}
 		res.RankCounts[i] = unmarshalRankCountResponseBodyToVoteRankCount(val)
+	}
+	if v.CondorcetMatrix != nil {
+		res.CondorcetMatrix = make([]*vote.CondorcetMatrixEntry, len(v.CondorcetMatrix))
+		for i, val := range v.CondorcetMatrix {
+			if val == nil {
+				res.CondorcetMatrix[i] = nil
+				continue
+			}
+			res.CondorcetMatrix[i] = unmarshalCondorcetMatrixEntryResponseBodyToVoteCondorcetMatrixEntry(val)
+		}
 	}
 
 	return res
@@ -2321,6 +2347,24 @@ func unmarshalRankCountResponseBodyToVoteRankCount(v *RankCountResponseBody) *vo
 	res := &vote.RankCount{
 		Rank:  *v.Rank,
 		Count: *v.Count,
+	}
+
+	return res
+}
+
+// unmarshalCondorcetMatrixEntryResponseBodyToVoteCondorcetMatrixEntry builds a
+// value of type *vote.CondorcetMatrixEntry from a value of type
+// *CondorcetMatrixEntryResponseBody.
+func unmarshalCondorcetMatrixEntryResponseBodyToVoteCondorcetMatrixEntry(v *CondorcetMatrixEntryResponseBody) *vote.CondorcetMatrixEntry {
+	if v == nil {
+		return nil
+	}
+	res := &vote.CondorcetMatrixEntry{
+		ChoiceID:          *v.ChoiceID,
+		OtherChoiceID:     *v.OtherChoiceID,
+		ChoiceIDWins:      *v.ChoiceIDWins,
+		OtherChoiceIDWins: *v.OtherChoiceIDWins,
+		Result:            *v.Result,
 	}
 
 	return res
@@ -2343,6 +2387,149 @@ func unmarshalRankedChoiceWinnerInfoResponseBodyToVoteRankedChoiceWinnerInfo(v *
 			continue
 		}
 		res.PollChoices[i] = unmarshalPollChoiceResponseBodyToVotePollChoice(val)
+	}
+
+	return res
+}
+
+// unmarshalIRVRoundSummaryResponseBodyToVoteIRVRoundSummary builds a value of
+// type *vote.IRVRoundSummary from a value of type *IRVRoundSummaryResponseBody.
+func unmarshalIRVRoundSummaryResponseBodyToVoteIRVRoundSummary(v *IRVRoundSummaryResponseBody) *vote.IRVRoundSummary {
+	if v == nil {
+		return nil
+	}
+	res := &vote.IRVRoundSummary{
+		RoundNumber:        *v.RoundNumber,
+		TotalVotes:         *v.TotalVotes,
+		MinVotes:           v.MinVotes,
+		ExhaustedVotes:     *v.ExhaustedVotes,
+		Threshold:          *v.Threshold,
+		EliminatedChoiceID: v.EliminatedChoiceID,
+		Message:            *v.Message,
+	}
+	res.Votes = make([]*vote.VoteCount, len(v.Votes))
+	for i, val := range v.Votes {
+		if val == nil {
+			res.Votes[i] = nil
+			continue
+		}
+		res.Votes[i] = unmarshalVoteCountResponseBodyToVoteVoteCount(val)
+	}
+	if v.TransferredVotes != nil {
+		res.TransferredVotes = make([]*vote.VoteCount, len(v.TransferredVotes))
+		for i, val := range v.TransferredVotes {
+			if val == nil {
+				res.TransferredVotes[i] = nil
+				continue
+			}
+			res.TransferredVotes[i] = unmarshalVoteCountResponseBodyToVoteVoteCount(val)
+		}
+	}
+
+	return res
+}
+
+// unmarshalVoteCountResponseBodyToVoteVoteCount builds a value of type
+// *vote.VoteCount from a value of type *VoteCountResponseBody.
+func unmarshalVoteCountResponseBodyToVoteVoteCount(v *VoteCountResponseBody) *vote.VoteCount {
+	res := &vote.VoteCount{
+		ChoiceID:   *v.ChoiceID,
+		VoteCount:  *v.VoteCount,
+		Percentage: v.Percentage,
+	}
+
+	return res
+}
+
+// unmarshalMeekSTVRoundSummaryResponseBodyToVoteMeekSTVRoundSummary builds a
+// value of type *vote.MeekSTVRoundSummary from a value of type
+// *MeekSTVRoundSummaryResponseBody.
+func unmarshalMeekSTVRoundSummaryResponseBodyToVoteMeekSTVRoundSummary(v *MeekSTVRoundSummaryResponseBody) *vote.MeekSTVRoundSummary {
+	if v == nil {
+		return nil
+	}
+	res := &vote.MeekSTVRoundSummary{
+		RoundNumber:    *v.RoundNumber,
+		TotalVotes:     *v.TotalVotes,
+		ExhaustedVotes: *v.ExhaustedVotes,
+		Threshold:      *v.Threshold,
+		Message:        *v.Message,
+	}
+	res.Votes = make([]*vote.MeekSTVVoteCount, len(v.Votes))
+	for i, val := range v.Votes {
+		if val == nil {
+			res.Votes[i] = nil
+			continue
+		}
+		res.Votes[i] = unmarshalMeekSTVVoteCountResponseBodyToVoteMeekSTVVoteCount(val)
+	}
+	if v.ElectedChoices != nil {
+		res.ElectedChoices = make([]*vote.MeekSTVElectedChoice, len(v.ElectedChoices))
+		for i, val := range v.ElectedChoices {
+			if val == nil {
+				res.ElectedChoices[i] = nil
+				continue
+			}
+			res.ElectedChoices[i] = unmarshalMeekSTVElectedChoiceResponseBodyToVoteMeekSTVElectedChoice(val)
+		}
+	}
+	if v.EliminatedChoices != nil {
+		res.EliminatedChoices = make([]*vote.MeekSTVVoteCount, len(v.EliminatedChoices))
+		for i, val := range v.EliminatedChoices {
+			if val == nil {
+				res.EliminatedChoices[i] = nil
+				continue
+			}
+			res.EliminatedChoices[i] = unmarshalMeekSTVVoteCountResponseBodyToVoteMeekSTVVoteCount(val)
+		}
+	}
+	if v.TransferredVotes != nil {
+		res.TransferredVotes = make([]*vote.MeekSTVVoteCount, len(v.TransferredVotes))
+		for i, val := range v.TransferredVotes {
+			if val == nil {
+				res.TransferredVotes[i] = nil
+				continue
+			}
+			res.TransferredVotes[i] = unmarshalMeekSTVVoteCountResponseBodyToVoteMeekSTVVoteCount(val)
+		}
+	}
+	if v.SurplusVotes != nil {
+		res.SurplusVotes = make([]*vote.MeekSTVVoteCount, len(v.SurplusVotes))
+		for i, val := range v.SurplusVotes {
+			if val == nil {
+				res.SurplusVotes[i] = nil
+				continue
+			}
+			res.SurplusVotes[i] = unmarshalMeekSTVVoteCountResponseBodyToVoteMeekSTVVoteCount(val)
+		}
+	}
+
+	return res
+}
+
+// unmarshalMeekSTVVoteCountResponseBodyToVoteMeekSTVVoteCount builds a value
+// of type *vote.MeekSTVVoteCount from a value of type
+// *MeekSTVVoteCountResponseBody.
+func unmarshalMeekSTVVoteCountResponseBodyToVoteMeekSTVVoteCount(v *MeekSTVVoteCountResponseBody) *vote.MeekSTVVoteCount {
+	res := &vote.MeekSTVVoteCount{
+		ChoiceID:  *v.ChoiceID,
+		VoteCount: *v.VoteCount,
+	}
+
+	return res
+}
+
+// unmarshalMeekSTVElectedChoiceResponseBodyToVoteMeekSTVElectedChoice builds a
+// value of type *vote.MeekSTVElectedChoice from a value of type
+// *MeekSTVElectedChoiceResponseBody.
+func unmarshalMeekSTVElectedChoiceResponseBodyToVoteMeekSTVElectedChoice(v *MeekSTVElectedChoiceResponseBody) *vote.MeekSTVElectedChoice {
+	if v == nil {
+		return nil
+	}
+	res := &vote.MeekSTVElectedChoice{
+		ChoiceID:     *v.ChoiceID,
+		VoteCount:    *v.VoteCount,
+		SurplusVotes: *v.SurplusVotes,
 	}
 
 	return res
