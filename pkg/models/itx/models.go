@@ -73,14 +73,18 @@ type PollResponse struct {
 	EndTime                       string               `json:"end_time"`
 	Status                        string               `json:"status"`
 	ProjectID                     string               `json:"project_id"`
+	ProjectName                   string               `json:"project_name,omitempty"`
 	CommitteeID                   string               `json:"committee_id"`
 	CommitteeName                 string               `json:"committee_name"`
+	CommitteeFilters              []string             `json:"committee_filters,omitempty"`
 	CommitteeType                 string               `json:"committee_type"`
 	CommitteeVotingStatus         bool                 `json:"committee_voting_status"`
 	PseudoAnonymity               bool                 `json:"pseudo_anonymity"`
 	TotalVotingRequestInvitations int                  `json:"total_voting_request_invitations"`
 	NumResponseReceived           int                  `json:"num_response_received"`
 	PollQuestions                 []PollQuestionOutput `json:"poll_questions"`
+	PollType                      string               `json:"poll_type,omitempty"`
+	NumWinners                    int                  `json:"num_winners,omitempty"`
 	AllowAbstain                  bool                 `json:"allow_abstain"`
 }
 

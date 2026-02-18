@@ -524,10 +524,14 @@ type VoteResult struct {
 	Status string
 	// Project UID
 	ProjectUID string
+	// Project name
+	ProjectName *string
 	// Committee UID
 	CommitteeUID string
 	// Committee name
 	CommitteeName *string
+	// Committee voting status filters
+	CommitteeFilters []string
 	// Committee type
 	CommitteeType *string
 	// Committee voting status
@@ -540,6 +544,10 @@ type VoteResult struct {
 	NumResponseReceived *int
 	// Vote questions
 	PollQuestions []*PollQuestion
+	// Poll type
+	PollType string
+	// Number of winners (meek_stv only)
+	NumWinners *int
 	// Allow abstain
 	AllowAbstain *bool
 }
