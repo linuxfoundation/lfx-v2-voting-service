@@ -1098,9 +1098,9 @@ type PollResultItemResponseBody struct {
 	// Winner information for ranked choice
 	RankedChoiceWinnerInfo *RankedChoiceWinnerInfoResponseBody `form:"ranked_choice_winner_info,omitempty" json:"ranked_choice_winner_info,omitempty" xml:"ranked_choice_winner_info,omitempty"`
 	// IRV round summary
-	IrvRoundSummary any `form:"irv_round_summary,omitempty" json:"irv_round_summary,omitempty" xml:"irv_round_summary,omitempty"`
+	IrvRoundSummary []*IRVRoundSummaryResponseBody `form:"irv_round_summary,omitempty" json:"irv_round_summary,omitempty" xml:"irv_round_summary,omitempty"`
 	// Meek STV round summary
-	MeekStvRoundSummary any `form:"meek_stv_round_summary,omitempty" json:"meek_stv_round_summary,omitempty" xml:"meek_stv_round_summary,omitempty"`
+	MeekStvRoundSummary []*MeekSTVRoundSummaryResponseBody `form:"meek_stv_round_summary,omitempty" json:"meek_stv_round_summary,omitempty" xml:"meek_stv_round_summary,omitempty"`
 }
 
 // PollQuestionDetailResponseBody is used to define fields on response body
@@ -1133,8 +1133,8 @@ type RankedChoiceVoteResponseBody struct {
 	ChoiceID string `form:"choice_id" json:"choice_id" xml:"choice_id"`
 	// Vote counts per rank
 	RankCounts []*RankCountResponseBody `form:"rank_counts" json:"rank_counts" xml:"rank_counts"`
-	// Condorcet matrix
-	CondorcetMatrix any `form:"condorcet_matrix,omitempty" json:"condorcet_matrix,omitempty" xml:"condorcet_matrix,omitempty"`
+	// Condorcet matrix entries
+	CondorcetMatrix []*CondorcetMatrixEntryResponseBody `form:"condorcet_matrix,omitempty" json:"condorcet_matrix,omitempty" xml:"condorcet_matrix,omitempty"`
 }
 
 // RankCountResponseBody is used to define fields on response body types.
@@ -1145,6 +1145,21 @@ type RankCountResponseBody struct {
 	Count int `form:"count" json:"count" xml:"count"`
 }
 
+// CondorcetMatrixEntryResponseBody is used to define fields on response body
+// types.
+type CondorcetMatrixEntryResponseBody struct {
+	// Choice identifier
+	ChoiceID string `form:"choice_id" json:"choice_id" xml:"choice_id"`
+	// Other choice identifier
+	OtherChoiceID string `form:"other_choice_id" json:"other_choice_id" xml:"other_choice_id"`
+	// Number of times choice_id wins against other_choice_id
+	ChoiceIDWins int `form:"choice_id_wins" json:"choice_id_wins" xml:"choice_id_wins"`
+	// Number of times other_choice_id wins against choice_id
+	OtherChoiceIDWins int `form:"other_choice_id_wins" json:"other_choice_id_wins" xml:"other_choice_id_wins"`
+	// Result string (e.g., '23(10)')
+	Result string `form:"result" json:"result" xml:"result"`
+}
+
 // RankedChoiceWinnerInfoResponseBody is used to define fields on response body
 // types.
 type RankedChoiceWinnerInfoResponseBody struct {
@@ -1152,6 +1167,82 @@ type RankedChoiceWinnerInfoResponseBody struct {
 	PollChoices []*PollChoiceResponseBody `form:"poll_choices" json:"poll_choices" xml:"poll_choices"`
 	// Whether Condorcet IRV was used
 	CondorcetIrvUsedForEliminations *bool `form:"condorcet_irv_used_for_eliminations,omitempty" json:"condorcet_irv_used_for_eliminations,omitempty" xml:"condorcet_irv_used_for_eliminations,omitempty"`
+}
+
+// IRVRoundSummaryResponseBody is used to define fields on response body types.
+type IRVRoundSummaryResponseBody struct {
+	// Round number
+	RoundNumber int `form:"round_number" json:"round_number" xml:"round_number"`
+	// Vote counts per choice
+	Votes []*VoteCountResponseBody `form:"votes" json:"votes" xml:"votes"`
+	// Total votes in this round
+	TotalVotes int `form:"total_votes" json:"total_votes" xml:"total_votes"`
+	// Minimum votes
+	MinVotes *int `form:"min_votes,omitempty" json:"min_votes,omitempty" xml:"min_votes,omitempty"`
+	// Number of exhausted votes
+	ExhaustedVotes int `form:"exhausted_votes" json:"exhausted_votes" xml:"exhausted_votes"`
+	// Transferred votes
+	TransferredVotes []*VoteCountResponseBody `form:"transferred_votes,omitempty" json:"transferred_votes,omitempty" xml:"transferred_votes,omitempty"`
+	// Winning threshold
+	Threshold int `form:"threshold" json:"threshold" xml:"threshold"`
+	// ID of eliminated choice
+	EliminatedChoiceID *string `form:"eliminated_choice_id,omitempty" json:"eliminated_choice_id,omitempty" xml:"eliminated_choice_id,omitempty"`
+	// Round message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// VoteCountResponseBody is used to define fields on response body types.
+type VoteCountResponseBody struct {
+	// Choice identifier
+	ChoiceID string `form:"choice_id" json:"choice_id" xml:"choice_id"`
+	// Number of votes
+	VoteCount int `form:"vote_count" json:"vote_count" xml:"vote_count"`
+	// Percentage of votes
+	Percentage *float64 `form:"percentage,omitempty" json:"percentage,omitempty" xml:"percentage,omitempty"`
+}
+
+// MeekSTVRoundSummaryResponseBody is used to define fields on response body
+// types.
+type MeekSTVRoundSummaryResponseBody struct {
+	// Round number
+	RoundNumber int `form:"round_number" json:"round_number" xml:"round_number"`
+	// Vote counts per choice
+	Votes []*MeekSTVVoteCountResponseBody `form:"votes" json:"votes" xml:"votes"`
+	// Total votes in this round
+	TotalVotes int `form:"total_votes" json:"total_votes" xml:"total_votes"`
+	// Number of exhausted votes
+	ExhaustedVotes int `form:"exhausted_votes" json:"exhausted_votes" xml:"exhausted_votes"`
+	// Election threshold
+	Threshold int `form:"threshold" json:"threshold" xml:"threshold"`
+	// Round message
+	Message string `form:"message" json:"message" xml:"message"`
+	// Elected choices in this round
+	ElectedChoices []*MeekSTVElectedChoiceResponseBody `form:"elected_choices,omitempty" json:"elected_choices,omitempty" xml:"elected_choices,omitempty"`
+	// Eliminated choices in this round
+	EliminatedChoices []*MeekSTVVoteCountResponseBody `form:"eliminated_choices,omitempty" json:"eliminated_choices,omitempty" xml:"eliminated_choices,omitempty"`
+	// Transferred votes
+	TransferredVotes []*MeekSTVVoteCountResponseBody `form:"transferred_votes,omitempty" json:"transferred_votes,omitempty" xml:"transferred_votes,omitempty"`
+	// Surplus votes
+	SurplusVotes []*MeekSTVVoteCountResponseBody `form:"surplus_votes,omitempty" json:"surplus_votes,omitempty" xml:"surplus_votes,omitempty"`
+}
+
+// MeekSTVVoteCountResponseBody is used to define fields on response body types.
+type MeekSTVVoteCountResponseBody struct {
+	// Choice identifier
+	ChoiceID string `form:"choice_id" json:"choice_id" xml:"choice_id"`
+	// Number of votes
+	VoteCount int `form:"vote_count" json:"vote_count" xml:"vote_count"`
+}
+
+// MeekSTVElectedChoiceResponseBody is used to define fields on response body
+// types.
+type MeekSTVElectedChoiceResponseBody struct {
+	// Choice identifier
+	ChoiceID string `form:"choice_id" json:"choice_id" xml:"choice_id"`
+	// Number of votes
+	VoteCount int `form:"vote_count" json:"vote_count" xml:"vote_count"`
+	// Surplus votes over threshold
+	SurplusVotes int `form:"surplus_votes" json:"surplus_votes" xml:"surplus_votes"`
 }
 
 // CommentResultItemResponseBody is used to define fields on response body

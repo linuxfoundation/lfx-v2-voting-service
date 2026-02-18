@@ -1122,9 +1122,9 @@ type PollResultItemResponseBody struct {
 	// Winner information for ranked choice
 	RankedChoiceWinnerInfo *RankedChoiceWinnerInfoResponseBody `form:"ranked_choice_winner_info,omitempty" json:"ranked_choice_winner_info,omitempty" xml:"ranked_choice_winner_info,omitempty"`
 	// IRV round summary
-	IrvRoundSummary any `form:"irv_round_summary,omitempty" json:"irv_round_summary,omitempty" xml:"irv_round_summary,omitempty"`
+	IrvRoundSummary []*IRVRoundSummaryResponseBody `form:"irv_round_summary,omitempty" json:"irv_round_summary,omitempty" xml:"irv_round_summary,omitempty"`
 	// Meek STV round summary
-	MeekStvRoundSummary any `form:"meek_stv_round_summary,omitempty" json:"meek_stv_round_summary,omitempty" xml:"meek_stv_round_summary,omitempty"`
+	MeekStvRoundSummary []*MeekSTVRoundSummaryResponseBody `form:"meek_stv_round_summary,omitempty" json:"meek_stv_round_summary,omitempty" xml:"meek_stv_round_summary,omitempty"`
 }
 
 // PollQuestionDetailResponseBody is used to define fields on response body
@@ -1157,8 +1157,8 @@ type RankedChoiceVoteResponseBody struct {
 	ChoiceID *string `form:"choice_id,omitempty" json:"choice_id,omitempty" xml:"choice_id,omitempty"`
 	// Vote counts per rank
 	RankCounts []*RankCountResponseBody `form:"rank_counts,omitempty" json:"rank_counts,omitempty" xml:"rank_counts,omitempty"`
-	// Condorcet matrix
-	CondorcetMatrix any `form:"condorcet_matrix,omitempty" json:"condorcet_matrix,omitempty" xml:"condorcet_matrix,omitempty"`
+	// Condorcet matrix entries
+	CondorcetMatrix []*CondorcetMatrixEntryResponseBody `form:"condorcet_matrix,omitempty" json:"condorcet_matrix,omitempty" xml:"condorcet_matrix,omitempty"`
 }
 
 // RankCountResponseBody is used to define fields on response body types.
@@ -1169,6 +1169,21 @@ type RankCountResponseBody struct {
 	Count *int `form:"count,omitempty" json:"count,omitempty" xml:"count,omitempty"`
 }
 
+// CondorcetMatrixEntryResponseBody is used to define fields on response body
+// types.
+type CondorcetMatrixEntryResponseBody struct {
+	// Choice identifier
+	ChoiceID *string `form:"choice_id,omitempty" json:"choice_id,omitempty" xml:"choice_id,omitempty"`
+	// Other choice identifier
+	OtherChoiceID *string `form:"other_choice_id,omitempty" json:"other_choice_id,omitempty" xml:"other_choice_id,omitempty"`
+	// Number of times choice_id wins against other_choice_id
+	ChoiceIDWins *int `form:"choice_id_wins,omitempty" json:"choice_id_wins,omitempty" xml:"choice_id_wins,omitempty"`
+	// Number of times other_choice_id wins against choice_id
+	OtherChoiceIDWins *int `form:"other_choice_id_wins,omitempty" json:"other_choice_id_wins,omitempty" xml:"other_choice_id_wins,omitempty"`
+	// Result string (e.g., '23(10)')
+	Result *string `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+}
+
 // RankedChoiceWinnerInfoResponseBody is used to define fields on response body
 // types.
 type RankedChoiceWinnerInfoResponseBody struct {
@@ -1176,6 +1191,82 @@ type RankedChoiceWinnerInfoResponseBody struct {
 	PollChoices []*PollChoiceResponseBody `form:"poll_choices,omitempty" json:"poll_choices,omitempty" xml:"poll_choices,omitempty"`
 	// Whether Condorcet IRV was used
 	CondorcetIrvUsedForEliminations *bool `form:"condorcet_irv_used_for_eliminations,omitempty" json:"condorcet_irv_used_for_eliminations,omitempty" xml:"condorcet_irv_used_for_eliminations,omitempty"`
+}
+
+// IRVRoundSummaryResponseBody is used to define fields on response body types.
+type IRVRoundSummaryResponseBody struct {
+	// Round number
+	RoundNumber *int `form:"round_number,omitempty" json:"round_number,omitempty" xml:"round_number,omitempty"`
+	// Vote counts per choice
+	Votes []*VoteCountResponseBody `form:"votes,omitempty" json:"votes,omitempty" xml:"votes,omitempty"`
+	// Total votes in this round
+	TotalVotes *int `form:"total_votes,omitempty" json:"total_votes,omitempty" xml:"total_votes,omitempty"`
+	// Minimum votes
+	MinVotes *int `form:"min_votes,omitempty" json:"min_votes,omitempty" xml:"min_votes,omitempty"`
+	// Number of exhausted votes
+	ExhaustedVotes *int `form:"exhausted_votes,omitempty" json:"exhausted_votes,omitempty" xml:"exhausted_votes,omitempty"`
+	// Transferred votes
+	TransferredVotes []*VoteCountResponseBody `form:"transferred_votes,omitempty" json:"transferred_votes,omitempty" xml:"transferred_votes,omitempty"`
+	// Winning threshold
+	Threshold *int `form:"threshold,omitempty" json:"threshold,omitempty" xml:"threshold,omitempty"`
+	// ID of eliminated choice
+	EliminatedChoiceID *string `form:"eliminated_choice_id,omitempty" json:"eliminated_choice_id,omitempty" xml:"eliminated_choice_id,omitempty"`
+	// Round message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// VoteCountResponseBody is used to define fields on response body types.
+type VoteCountResponseBody struct {
+	// Choice identifier
+	ChoiceID *string `form:"choice_id,omitempty" json:"choice_id,omitempty" xml:"choice_id,omitempty"`
+	// Number of votes
+	VoteCount *int `form:"vote_count,omitempty" json:"vote_count,omitempty" xml:"vote_count,omitempty"`
+	// Percentage of votes
+	Percentage *float64 `form:"percentage,omitempty" json:"percentage,omitempty" xml:"percentage,omitempty"`
+}
+
+// MeekSTVRoundSummaryResponseBody is used to define fields on response body
+// types.
+type MeekSTVRoundSummaryResponseBody struct {
+	// Round number
+	RoundNumber *int `form:"round_number,omitempty" json:"round_number,omitempty" xml:"round_number,omitempty"`
+	// Vote counts per choice
+	Votes []*MeekSTVVoteCountResponseBody `form:"votes,omitempty" json:"votes,omitempty" xml:"votes,omitempty"`
+	// Total votes in this round
+	TotalVotes *int `form:"total_votes,omitempty" json:"total_votes,omitempty" xml:"total_votes,omitempty"`
+	// Number of exhausted votes
+	ExhaustedVotes *int `form:"exhausted_votes,omitempty" json:"exhausted_votes,omitempty" xml:"exhausted_votes,omitempty"`
+	// Election threshold
+	Threshold *int `form:"threshold,omitempty" json:"threshold,omitempty" xml:"threshold,omitempty"`
+	// Round message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Elected choices in this round
+	ElectedChoices []*MeekSTVElectedChoiceResponseBody `form:"elected_choices,omitempty" json:"elected_choices,omitempty" xml:"elected_choices,omitempty"`
+	// Eliminated choices in this round
+	EliminatedChoices []*MeekSTVVoteCountResponseBody `form:"eliminated_choices,omitempty" json:"eliminated_choices,omitempty" xml:"eliminated_choices,omitempty"`
+	// Transferred votes
+	TransferredVotes []*MeekSTVVoteCountResponseBody `form:"transferred_votes,omitempty" json:"transferred_votes,omitempty" xml:"transferred_votes,omitempty"`
+	// Surplus votes
+	SurplusVotes []*MeekSTVVoteCountResponseBody `form:"surplus_votes,omitempty" json:"surplus_votes,omitempty" xml:"surplus_votes,omitempty"`
+}
+
+// MeekSTVVoteCountResponseBody is used to define fields on response body types.
+type MeekSTVVoteCountResponseBody struct {
+	// Choice identifier
+	ChoiceID *string `form:"choice_id,omitempty" json:"choice_id,omitempty" xml:"choice_id,omitempty"`
+	// Number of votes
+	VoteCount *int `form:"vote_count,omitempty" json:"vote_count,omitempty" xml:"vote_count,omitempty"`
+}
+
+// MeekSTVElectedChoiceResponseBody is used to define fields on response body
+// types.
+type MeekSTVElectedChoiceResponseBody struct {
+	// Choice identifier
+	ChoiceID *string `form:"choice_id,omitempty" json:"choice_id,omitempty" xml:"choice_id,omitempty"`
+	// Number of votes
+	VoteCount *int `form:"vote_count,omitempty" json:"vote_count,omitempty" xml:"vote_count,omitempty"`
+	// Surplus votes over threshold
+	SurplusVotes *int `form:"surplus_votes,omitempty" json:"surplus_votes,omitempty" xml:"surplus_votes,omitempty"`
 }
 
 // CommentResultItemResponseBody is used to define fields on response body
@@ -3790,6 +3881,20 @@ func ValidatePollResultItemResponseBody(body *PollResultItemResponseBody) (err e
 			err = goa.MergeErrors(err, err2)
 		}
 	}
+	for _, e := range body.IrvRoundSummary {
+		if e != nil {
+			if err2 := ValidateIRVRoundSummaryResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.MeekStvRoundSummary {
+		if e != nil {
+			if err2 := ValidateMeekSTVRoundSummaryResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
 	return
 }
 
@@ -3858,6 +3963,13 @@ func ValidateRankedChoiceVoteResponseBody(body *RankedChoiceVoteResponseBody) (e
 			}
 		}
 	}
+	for _, e := range body.CondorcetMatrix {
+		if e != nil {
+			if err2 := ValidateCondorcetMatrixEntryResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
 	return
 }
 
@@ -3878,6 +3990,27 @@ func ValidateRankCountResponseBody(body *RankCountResponseBody) (err error) {
 	return
 }
 
+// ValidateCondorcetMatrixEntryResponseBody runs the validations defined on
+// CondorcetMatrixEntryResponseBody
+func ValidateCondorcetMatrixEntryResponseBody(body *CondorcetMatrixEntryResponseBody) (err error) {
+	if body.ChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", "body"))
+	}
+	if body.OtherChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("other_choice_id", "body"))
+	}
+	if body.ChoiceIDWins == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id_wins", "body"))
+	}
+	if body.OtherChoiceIDWins == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("other_choice_id_wins", "body"))
+	}
+	if body.Result == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("result", "body"))
+	}
+	return
+}
+
 // ValidateRankedChoiceWinnerInfoResponseBody runs the validations defined on
 // RankedChoiceWinnerInfoResponseBody
 func ValidateRankedChoiceWinnerInfoResponseBody(body *RankedChoiceWinnerInfoResponseBody) (err error) {
@@ -3890,6 +4023,142 @@ func ValidateRankedChoiceWinnerInfoResponseBody(body *RankedChoiceWinnerInfoResp
 				err = goa.MergeErrors(err, err2)
 			}
 		}
+	}
+	return
+}
+
+// ValidateIRVRoundSummaryResponseBody runs the validations defined on
+// IRVRoundSummaryResponseBody
+func ValidateIRVRoundSummaryResponseBody(body *IRVRoundSummaryResponseBody) (err error) {
+	if body.RoundNumber == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("round_number", "body"))
+	}
+	if body.Votes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("votes", "body"))
+	}
+	if body.TotalVotes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("total_votes", "body"))
+	}
+	if body.ExhaustedVotes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("exhausted_votes", "body"))
+	}
+	if body.Threshold == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("threshold", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	for _, e := range body.Votes {
+		if e != nil {
+			if err2 := ValidateVoteCountResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.TransferredVotes {
+		if e != nil {
+			if err2 := ValidateVoteCountResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateVoteCountResponseBody runs the validations defined on
+// VoteCountResponseBody
+func ValidateVoteCountResponseBody(body *VoteCountResponseBody) (err error) {
+	if body.ChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", "body"))
+	}
+	if body.VoteCount == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_count", "body"))
+	}
+	return
+}
+
+// ValidateMeekSTVRoundSummaryResponseBody runs the validations defined on
+// MeekSTVRoundSummaryResponseBody
+func ValidateMeekSTVRoundSummaryResponseBody(body *MeekSTVRoundSummaryResponseBody) (err error) {
+	if body.RoundNumber == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("round_number", "body"))
+	}
+	if body.Votes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("votes", "body"))
+	}
+	if body.TotalVotes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("total_votes", "body"))
+	}
+	if body.ExhaustedVotes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("exhausted_votes", "body"))
+	}
+	if body.Threshold == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("threshold", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	for _, e := range body.Votes {
+		if e != nil {
+			if err2 := ValidateMeekSTVVoteCountResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.ElectedChoices {
+		if e != nil {
+			if err2 := ValidateMeekSTVElectedChoiceResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.EliminatedChoices {
+		if e != nil {
+			if err2 := ValidateMeekSTVVoteCountResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.TransferredVotes {
+		if e != nil {
+			if err2 := ValidateMeekSTVVoteCountResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.SurplusVotes {
+		if e != nil {
+			if err2 := ValidateMeekSTVVoteCountResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateMeekSTVVoteCountResponseBody runs the validations defined on
+// MeekSTVVoteCountResponseBody
+func ValidateMeekSTVVoteCountResponseBody(body *MeekSTVVoteCountResponseBody) (err error) {
+	if body.ChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", "body"))
+	}
+	if body.VoteCount == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_count", "body"))
+	}
+	return
+}
+
+// ValidateMeekSTVElectedChoiceResponseBody runs the validations defined on
+// MeekSTVElectedChoiceResponseBody
+func ValidateMeekSTVElectedChoiceResponseBody(body *MeekSTVElectedChoiceResponseBody) (err error) {
+	if body.ChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", "body"))
+	}
+	if body.VoteCount == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_count", "body"))
+	}
+	if body.SurplusVotes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("surplus_votes", "body"))
 	}
 	return
 }

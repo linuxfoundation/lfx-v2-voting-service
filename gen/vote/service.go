@@ -94,6 +94,20 @@ type CommentResultItem struct {
 	Comments []string
 }
 
+// Condorcet matrix entry for pairwise comparison
+type CondorcetMatrixEntry struct {
+	// Choice identifier
+	ChoiceID string
+	// Other choice identifier
+	OtherChoiceID string
+	// Number of times choice_id wins against other_choice_id
+	ChoiceIDWins int
+	// Number of times other_choice_id wins against choice_id
+	OtherChoiceIDWins int
+	// Result string (e.g., '23(10)')
+	Result string
+}
+
 // Conflict error response
 type ConflictError struct {
 	// HTTP status code
@@ -223,12 +237,76 @@ type GetVoteResultsPayload struct {
 	UID string
 }
 
+// Instant runoff voting round summary
+type IRVRoundSummary struct {
+	// Round number
+	RoundNumber int
+	// Vote counts per choice
+	Votes []*VoteCount
+	// Total votes in this round
+	TotalVotes int
+	// Minimum votes
+	MinVotes *int
+	// Number of exhausted votes
+	ExhaustedVotes int
+	// Transferred votes
+	TransferredVotes []*VoteCount
+	// Winning threshold
+	Threshold int
+	// ID of eliminated choice
+	EliminatedChoiceID *string
+	// Round message
+	Message string
+}
+
 // Internal server error response
 type InternalServerError struct {
 	// HTTP status code
 	Code string
 	// Error message
 	Message string
+}
+
+// Elected choice in Meek STV
+type MeekSTVElectedChoice struct {
+	// Choice identifier
+	ChoiceID string
+	// Number of votes
+	VoteCount int
+	// Surplus votes over threshold
+	SurplusVotes int
+}
+
+// Meek STV round summary
+type MeekSTVRoundSummary struct {
+	// Round number
+	RoundNumber int
+	// Vote counts per choice
+	Votes []*MeekSTVVoteCount
+	// Total votes in this round
+	TotalVotes int
+	// Number of exhausted votes
+	ExhaustedVotes int
+	// Election threshold
+	Threshold int
+	// Round message
+	Message string
+	// Elected choices in this round
+	ElectedChoices []*MeekSTVElectedChoice
+	// Eliminated choices in this round
+	EliminatedChoices []*MeekSTVVoteCount
+	// Transferred votes
+	TransferredVotes []*MeekSTVVoteCount
+	// Surplus votes
+	SurplusVotes []*MeekSTVVoteCount
+}
+
+// Vote count for Meek STV
+type MeekSTVVoteCount struct {
+	// Choice identifier
+	ChoiceID string
+	// Number of votes
+	VoteCount int
 }
 
 // Not found error response
@@ -288,9 +366,9 @@ type PollResultItem struct {
 	// Winner information for ranked choice
 	RankedChoiceWinnerInfo *RankedChoiceWinnerInfo
 	// IRV round summary
-	IrvRoundSummary any
+	IrvRoundSummary []*IRVRoundSummary
 	// Meek STV round summary
-	MeekStvRoundSummary any
+	MeekStvRoundSummary []*MeekSTVRoundSummary
 }
 
 // Vote count at a specific rank
@@ -315,8 +393,8 @@ type RankedChoiceVote struct {
 	ChoiceID string
 	// Vote counts per rank
 	RankCounts []*RankCount
-	// Condorcet matrix
-	CondorcetMatrix any
+	// Condorcet matrix entries
+	CondorcetMatrix []*CondorcetMatrixEntry
 }
 
 // Winner information for ranked choice voting
@@ -443,6 +521,16 @@ type VoteChoiceAnswer struct {
 	ChoiceID string
 	// Choice text
 	ChoiceText string
+}
+
+// Vote count for a choice
+type VoteCount struct {
+	// Choice identifier
+	ChoiceID string
+	// Number of votes
+	VoteCount int
+	// Percentage of votes
+	Percentage *float64
 }
 
 // VoteResponseResult is the result type of the vote service get_vote_response
