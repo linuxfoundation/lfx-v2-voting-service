@@ -117,7 +117,7 @@ func ConvertUpdateVotePayloadToDomain(payload *votesvc.UpdateVotePayload) *servi
 // ConvertPollResponseToVoteResult converts ITX PollResponse to Goa VoteResult
 func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *votesvc.VoteResult {
 	result := &votesvc.VoteResult{
-		VoteUID:                       poll.PollID,      // Map PollID → VoteUID
+		UID:                           poll.PollID,      // Map PollID → UID
 		Name:                          poll.Name,
 		Description:                   poll.Description,
 		CreationTime:                  utils.StringPtr(poll.CreationTime),
@@ -125,13 +125,17 @@ func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *votesvc.VoteResult
 		EndTime:                       utils.StringPtr(poll.EndTime),
 		Status:                        poll.Status,
 		ProjectUID:                    poll.ProjectID,   // Map ProjectID → ProjectUID
+		ProjectName:                   utils.StringPtr(poll.ProjectName),
 		CommitteeUID:                  poll.CommitteeID, // Map CommitteeID → CommitteeUID
 		CommitteeName:                 utils.StringPtr(poll.CommitteeName),
+		CommitteeFilters:              poll.CommitteeFilters,
 		CommitteeType:                 utils.StringPtr(poll.CommitteeType),
 		CommitteeVotingStatus:         utils.BoolPtr(poll.CommitteeVotingStatus),
 		PseudoAnonymity:               utils.BoolPtr(poll.PseudoAnonymity),
 		TotalVotingRequestInvitations: utils.IntPtr(poll.TotalVotingRequestInvitations),
 		NumResponseReceived:           utils.IntPtr(poll.NumResponseReceived),
+		PollType:                      poll.PollType,
+		NumWinners:                    utils.IntPtr(poll.NumWinners),
 		AllowAbstain:                  utils.BoolPtr(poll.AllowAbstain),
 	}
 

@@ -98,13 +98,13 @@ var _ = Service("vote", func() {
 			BearerTokenAttribute()
 			VoteIDAttribute()
 
-			Required("vote_uid")
+			Required("uid")
 		})
 
 		Result(VoteResult)
 
 		HTTP(func() {
-			GET("/votes/{vote_uid}")
+			GET("/votes/{uid}")
 			Response(StatusOK)
 			Response("BadRequest", StatusBadRequest)
 			Response("Unauthorized", StatusUnauthorized)
@@ -142,13 +142,13 @@ var _ = Service("vote", func() {
 			QuorumPercentageAttribute()
 			WinningThresholdPercentageAttribute()
 
-			Required("vote_uid", "name", "description", "end_time", "poll_questions")
+			Required("uid", "name", "description", "end_time", "poll_questions")
 		})
 
 		Result(VoteResult)
 
 		HTTP(func() {
-			PUT("/votes/{vote_uid}")
+			PUT("/votes/{uid}")
 			Response(StatusOK)
 			Response("BadRequest", StatusBadRequest)
 			Response("Unauthorized", StatusUnauthorized)
@@ -171,11 +171,11 @@ var _ = Service("vote", func() {
 			BearerTokenAttribute()
 			VoteIDAttribute()
 
-			Required("vote_uid")
+			Required("uid")
 		})
 
 		HTTP(func() {
-			DELETE("/votes/{vote_uid}")
+			DELETE("/votes/{uid}")
 			Response(StatusNoContent)
 			Response("BadRequest", StatusBadRequest)
 			Response("Unauthorized", StatusUnauthorized)
@@ -199,13 +199,13 @@ var _ = Service("vote", func() {
 			VoteIDAttribute()
 			EndTimeAttribute()
 
-			Required("vote_uid", "end_time")
+			Required("uid", "end_time")
 		})
 
 		Result(VoteResult)
 
 		HTTP(func() {
-			POST("/votes/{vote_uid}/extend")
+			POST("/votes/{uid}/extend")
 			Response(StatusOK)
 			Response("BadRequest", StatusBadRequest)
 			Response("Unauthorized", StatusUnauthorized)
@@ -228,11 +228,11 @@ var _ = Service("vote", func() {
 			BearerTokenAttribute()
 			VoteIDAttribute()
 
-			Required("vote_uid")
+			Required("uid")
 		})
 
 		HTTP(func() {
-			PUT("/votes/{vote_uid}/enable")
+			PUT("/votes/{uid}/enable")
 			Response(StatusNoContent)
 			Response("BadRequest", StatusBadRequest)
 			Response("Unauthorized", StatusUnauthorized)
@@ -258,11 +258,11 @@ var _ = Service("vote", func() {
 				Example([]string{"cba14f40-1636-11ec-9621-0242ac130002", "cba14f40-1636-11ec-9621-0242ac130003"})
 			})
 
-			Required("vote_uid", "recipient_ids")
+			Required("uid", "recipient_ids")
 		})
 
 		HTTP(func() {
-			POST("/votes/{vote_uid}/bulk_resend")
+			POST("/votes/{uid}/bulk_resend")
 			Response(StatusNoContent)
 			Response("BadRequest", StatusBadRequest)
 			Response("Unauthorized", StatusUnauthorized)
@@ -285,13 +285,13 @@ var _ = Service("vote", func() {
 			BearerTokenAttribute()
 			VoteIDAttribute()
 
-			Required("vote_uid")
+			Required("uid")
 		})
 
 		Result(VoteResultsResult)
 
 		HTTP(func() {
-			GET("/votes/{vote_uid}/results")
+			GET("/votes/{uid}/results")
 			Response(StatusOK)
 			Response("BadRequest", StatusBadRequest)
 			Response("Unauthorized", StatusUnauthorized)

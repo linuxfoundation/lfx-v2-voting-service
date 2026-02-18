@@ -35,7 +35,7 @@ func (s *VotingAPI) CreateVote(ctx context.Context, payload *votesvc.CreateVoteP
 	result := apiservice.ConvertPollResponseToVoteResult(pollResp)
 
 	logger.InfoContext(ctx, "Vote created successfully",
-		"vote_uid", result.VoteUID,
+		"vote_uid", result.UID,
 		"status", result.Status,
 	)
 
@@ -46,10 +46,10 @@ func (s *VotingAPI) CreateVote(ctx context.Context, payload *votesvc.CreateVoteP
 func (s *VotingAPI) GetVote(ctx context.Context, payload *votesvc.GetVotePayload) (*votesvc.VoteResult, error) {
 	logger := slog.With("component", "voting_api", "method", "GetVote")
 
-	logger.InfoContext(ctx, "Get vote request received", "vote_uid", payload.VoteUID)
+	logger.InfoContext(ctx, "Get vote request received", "vote_uid", payload.UID)
 
 	// Call service layer
-	pollResp, err := s.voteService.GetVote(ctx, payload.VoteUID)
+	pollResp, err := s.voteService.GetVote(ctx, payload.UID)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to get vote", "error", err)
 		return nil, handleError(err)
@@ -58,7 +58,7 @@ func (s *VotingAPI) GetVote(ctx context.Context, payload *votesvc.GetVotePayload
 	// Convert domain response to Goa result
 	result := apiservice.ConvertPollResponseToVoteResult(pollResp)
 
-	logger.InfoContext(ctx, "Vote retrieved successfully", "vote_uid", result.VoteUID)
+	logger.InfoContext(ctx, "Vote retrieved successfully", "vote_uid", result.UID)
 
 	return result, nil
 }
@@ -68,7 +68,7 @@ func (s *VotingAPI) UpdateVote(ctx context.Context, payload *votesvc.UpdateVoteP
 	logger := slog.With("component", "voting_api", "method", "UpdateVote")
 
 	logger.InfoContext(ctx, "Update vote request received",
-		"vote_uid", payload.VoteUID,
+		"vote_uid", payload.UID,
 		"name", payload.Name,
 	)
 
@@ -76,7 +76,7 @@ func (s *VotingAPI) UpdateVote(ctx context.Context, payload *votesvc.UpdateVoteP
 	req := apiservice.ConvertUpdateVotePayloadToDomain(payload)
 
 	// Call service layer
-	pollResp, err := s.voteService.UpdateVote(ctx, payload.VoteUID, req)
+	pollResp, err := s.voteService.UpdateVote(ctx, payload.UID, req)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to update vote", "error", err)
 		return nil, handleError(err)
@@ -85,7 +85,7 @@ func (s *VotingAPI) UpdateVote(ctx context.Context, payload *votesvc.UpdateVoteP
 	// Convert domain response to Goa result
 	result := apiservice.ConvertPollResponseToVoteResult(pollResp)
 
-	logger.InfoContext(ctx, "Vote updated successfully", "vote_uid", result.VoteUID)
+	logger.InfoContext(ctx, "Vote updated successfully", "vote_uid", result.UID)
 
 	return result, nil
 }
@@ -94,16 +94,16 @@ func (s *VotingAPI) UpdateVote(ctx context.Context, payload *votesvc.UpdateVoteP
 func (s *VotingAPI) DeleteVote(ctx context.Context, payload *votesvc.DeleteVotePayload) error {
 	logger := slog.With("component", "voting_api", "method", "DeleteVote")
 
-	logger.InfoContext(ctx, "Delete vote request received", "vote_uid", payload.VoteUID)
+	logger.InfoContext(ctx, "Delete vote request received", "vote_uid", payload.UID)
 
 	// Call service layer
-	err := s.voteService.DeleteVote(ctx, payload.VoteUID)
+	err := s.voteService.DeleteVote(ctx, payload.UID)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to delete vote", "error", err)
 		return handleError(err)
 	}
 
-	logger.InfoContext(ctx, "Vote deleted successfully", "vote_uid", payload.VoteUID)
+	logger.InfoContext(ctx, "Vote deleted successfully", "vote_uid", payload.UID)
 
 	return nil
 }
@@ -113,12 +113,12 @@ func (s *VotingAPI) ExtendVote(ctx context.Context, payload *votesvc.ExtendVoteP
 	logger := slog.With("component", "voting_api", "method", "ExtendVote")
 
 	logger.InfoContext(ctx, "Extend vote request received",
-		"vote_uid", payload.VoteUID,
+		"vote_uid", payload.UID,
 		"end_time", payload.EndTime,
 	)
 
 	// Call service layer
-	pollResp, err := s.voteService.ExtendVote(ctx, payload.VoteUID, payload.EndTime)
+	pollResp, err := s.voteService.ExtendVote(ctx, payload.UID, payload.EndTime)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to extend vote", "error", err)
 		return nil, handleError(err)
@@ -128,7 +128,7 @@ func (s *VotingAPI) ExtendVote(ctx context.Context, payload *votesvc.ExtendVoteP
 	result := apiservice.ConvertPollResponseToVoteResult(pollResp)
 
 	logger.InfoContext(ctx, "Vote extended successfully",
-		"vote_uid", result.VoteUID,
+		"vote_uid", result.UID,
 		"end_time", result.EndTime,
 	)
 
@@ -139,16 +139,16 @@ func (s *VotingAPI) ExtendVote(ctx context.Context, payload *votesvc.ExtendVoteP
 func (s *VotingAPI) EnableVote(ctx context.Context, payload *votesvc.EnableVotePayload) error {
 	logger := slog.With("component", "voting_api", "method", "EnableVote")
 
-	logger.InfoContext(ctx, "Enable vote request received", "vote_uid", payload.VoteUID)
+	logger.InfoContext(ctx, "Enable vote request received", "vote_uid", payload.UID)
 
 	// Call service layer
-	err := s.voteService.EnableVote(ctx, payload.VoteUID)
+	err := s.voteService.EnableVote(ctx, payload.UID)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to enable vote", "error", err)
 		return handleError(err)
 	}
 
-	logger.InfoContext(ctx, "Vote enabled successfully", "vote_uid", payload.VoteUID)
+	logger.InfoContext(ctx, "Vote enabled successfully", "vote_uid", payload.UID)
 
 	return nil
 }
@@ -158,19 +158,19 @@ func (s *VotingAPI) BulkResendVote(ctx context.Context, payload *votesvc.BulkRes
 	logger := slog.With("component", "voting_api", "method", "BulkResendVote")
 
 	logger.InfoContext(ctx, "Bulk resend vote request received",
-		"vote_uid", payload.VoteUID,
+		"vote_uid", payload.UID,
 		"recipient_count", len(payload.RecipientIds),
 	)
 
 	// Call service layer
-	err := s.voteService.BulkResendVote(ctx, payload.VoteUID, payload.RecipientIds)
+	err := s.voteService.BulkResendVote(ctx, payload.UID, payload.RecipientIds)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to bulk resend vote emails", "error", err)
 		return handleError(err)
 	}
 
 	logger.InfoContext(ctx, "Vote emails bulk resent successfully",
-		"vote_uid", payload.VoteUID,
+		"vote_uid", payload.UID,
 		"recipient_count", len(payload.RecipientIds),
 	)
 
@@ -181,10 +181,10 @@ func (s *VotingAPI) BulkResendVote(ctx context.Context, payload *votesvc.BulkRes
 func (s *VotingAPI) GetVoteResults(ctx context.Context, payload *votesvc.GetVoteResultsPayload) (*votesvc.VoteResultsResult, error) {
 	logger := slog.With("component", "voting_api", "method", "GetVoteResults")
 
-	logger.InfoContext(ctx, "Get vote results request received", "vote_uid", payload.VoteUID)
+	logger.InfoContext(ctx, "Get vote results request received", "vote_uid", payload.UID)
 
 	// Call service layer
-	results, err := s.voteService.GetVoteResults(ctx, payload.VoteUID)
+	results, err := s.voteService.GetVoteResults(ctx, payload.UID)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to get vote results", "error", err)
 		return nil, handleError(err)
@@ -193,7 +193,7 @@ func (s *VotingAPI) GetVoteResults(ctx context.Context, payload *votesvc.GetVote
 	// Convert domain response to Goa result
 	result := apiservice.ConvertVoteResultsToResult(results)
 
-	logger.InfoContext(ctx, "Vote results retrieved successfully", "vote_uid", payload.VoteUID)
+	logger.InfoContext(ctx, "Vote results retrieved successfully", "vote_uid", payload.UID)
 
 	return result, nil
 }

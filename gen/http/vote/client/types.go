@@ -123,7 +123,7 @@ type UpdateVoteResponseRequestBody struct {
 // endpoint HTTP response body.
 type CreateVoteResponseBody struct {
 	// Vote identifier
-	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Vote name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Vote description
@@ -138,10 +138,14 @@ type CreateVoteResponseBody struct {
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// Project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	// Project name
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
 	// Committee UID
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Committee name
 	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee voting status filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
 	// Committee type
 	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
 	// Committee voting status
@@ -154,6 +158,10 @@ type CreateVoteResponseBody struct {
 	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
 	// Vote questions
 	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Poll type
+	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
+	// Number of winners (meek_stv only)
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 }
@@ -162,7 +170,7 @@ type CreateVoteResponseBody struct {
 // HTTP response body.
 type GetVoteResponseBody struct {
 	// Vote identifier
-	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Vote name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Vote description
@@ -177,10 +185,14 @@ type GetVoteResponseBody struct {
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// Project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	// Project name
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
 	// Committee UID
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Committee name
 	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee voting status filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
 	// Committee type
 	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
 	// Committee voting status
@@ -193,6 +205,10 @@ type GetVoteResponseBody struct {
 	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
 	// Vote questions
 	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Poll type
+	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
+	// Number of winners (meek_stv only)
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 }
@@ -201,7 +217,7 @@ type GetVoteResponseBody struct {
 // endpoint HTTP response body.
 type UpdateVoteResponseBody struct {
 	// Vote identifier
-	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Vote name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Vote description
@@ -216,10 +232,14 @@ type UpdateVoteResponseBody struct {
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// Project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	// Project name
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
 	// Committee UID
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Committee name
 	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee voting status filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
 	// Committee type
 	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
 	// Committee voting status
@@ -232,6 +252,10 @@ type UpdateVoteResponseBody struct {
 	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
 	// Vote questions
 	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Poll type
+	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
+	// Number of winners (meek_stv only)
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 }
@@ -240,7 +264,7 @@ type UpdateVoteResponseBody struct {
 // endpoint HTTP response body.
 type ExtendVoteResponseBody struct {
 	// Vote identifier
-	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Vote name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Vote description
@@ -255,10 +279,14 @@ type ExtendVoteResponseBody struct {
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// Project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	// Project name
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
 	// Committee UID
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Committee name
 	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee voting status filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
 	// Committee type
 	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
 	// Committee voting status
@@ -271,6 +299,10 @@ type ExtendVoteResponseBody struct {
 	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
 	// Vote questions
 	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Poll type
+	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
+	// Number of winners (meek_stv only)
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 }
@@ -1428,7 +1460,7 @@ func NewUpdateVoteResponseRequestBody(p *vote.UpdateVoteResponsePayload) *Update
 // endpoint result from a HTTP "Created" response.
 func NewCreateVoteVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResult {
 	v := &vote.VoteResult{
-		VoteUID:                       *body.VoteUID,
+		UID:                           *body.UID,
 		Name:                          *body.Name,
 		Description:                   *body.Description,
 		CreationTime:                  body.CreationTime,
@@ -1436,6 +1468,7 @@ func NewCreateVoteVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResu
 		EndTime:                       body.EndTime,
 		Status:                        *body.Status,
 		ProjectUID:                    *body.ProjectUID,
+		ProjectName:                   body.ProjectName,
 		CommitteeUID:                  *body.CommitteeUID,
 		CommitteeName:                 body.CommitteeName,
 		CommitteeType:                 body.CommitteeType,
@@ -1443,7 +1476,17 @@ func NewCreateVoteVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResu
 		PseudoAnonymity:               body.PseudoAnonymity,
 		TotalVotingRequestInvitations: body.TotalVotingRequestInvitations,
 		NumResponseReceived:           body.NumResponseReceived,
+		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+	}
+	if body.PollType != nil {
+		v.PollType = *body.PollType
+	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
 	}
 	if body.PollQuestions != nil {
 		v.PollQuestions = make([]*vote.PollQuestion, len(body.PollQuestions))
@@ -1454,6 +1497,9 @@ func NewCreateVoteVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResu
 			}
 			v.PollQuestions[i] = unmarshalPollQuestionResponseBodyToVotePollQuestion(val)
 		}
+	}
+	if body.PollType == nil {
+		v.PollType = "generic"
 	}
 
 	return v
@@ -1540,7 +1586,7 @@ func NewCreateVoteUnauthorized(body *CreateVoteUnauthorizedResponseBody) *vote.U
 // from a HTTP "OK" response.
 func NewGetVoteVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
 	v := &vote.VoteResult{
-		VoteUID:                       *body.VoteUID,
+		UID:                           *body.UID,
 		Name:                          *body.Name,
 		Description:                   *body.Description,
 		CreationTime:                  body.CreationTime,
@@ -1548,6 +1594,7 @@ func NewGetVoteVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
 		EndTime:                       body.EndTime,
 		Status:                        *body.Status,
 		ProjectUID:                    *body.ProjectUID,
+		ProjectName:                   body.ProjectName,
 		CommitteeUID:                  *body.CommitteeUID,
 		CommitteeName:                 body.CommitteeName,
 		CommitteeType:                 body.CommitteeType,
@@ -1555,7 +1602,17 @@ func NewGetVoteVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
 		PseudoAnonymity:               body.PseudoAnonymity,
 		TotalVotingRequestInvitations: body.TotalVotingRequestInvitations,
 		NumResponseReceived:           body.NumResponseReceived,
+		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+	}
+	if body.PollType != nil {
+		v.PollType = *body.PollType
+	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
 	}
 	if body.PollQuestions != nil {
 		v.PollQuestions = make([]*vote.PollQuestion, len(body.PollQuestions))
@@ -1566,6 +1623,9 @@ func NewGetVoteVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
 			}
 			v.PollQuestions[i] = unmarshalPollQuestionResponseBodyToVotePollQuestion(val)
 		}
+	}
+	if body.PollType == nil {
+		v.PollType = "generic"
 	}
 
 	return v
@@ -1639,7 +1699,7 @@ func NewGetVoteUnauthorized(body *GetVoteUnauthorizedResponseBody) *vote.Unautho
 // result from a HTTP "OK" response.
 func NewUpdateVoteVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
 	v := &vote.VoteResult{
-		VoteUID:                       *body.VoteUID,
+		UID:                           *body.UID,
 		Name:                          *body.Name,
 		Description:                   *body.Description,
 		CreationTime:                  body.CreationTime,
@@ -1647,6 +1707,7 @@ func NewUpdateVoteVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
 		EndTime:                       body.EndTime,
 		Status:                        *body.Status,
 		ProjectUID:                    *body.ProjectUID,
+		ProjectName:                   body.ProjectName,
 		CommitteeUID:                  *body.CommitteeUID,
 		CommitteeName:                 body.CommitteeName,
 		CommitteeType:                 body.CommitteeType,
@@ -1654,7 +1715,17 @@ func NewUpdateVoteVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
 		PseudoAnonymity:               body.PseudoAnonymity,
 		TotalVotingRequestInvitations: body.TotalVotingRequestInvitations,
 		NumResponseReceived:           body.NumResponseReceived,
+		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+	}
+	if body.PollType != nil {
+		v.PollType = *body.PollType
+	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
 	}
 	if body.PollQuestions != nil {
 		v.PollQuestions = make([]*vote.PollQuestion, len(body.PollQuestions))
@@ -1665,6 +1736,9 @@ func NewUpdateVoteVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
 			}
 			v.PollQuestions[i] = unmarshalPollQuestionResponseBodyToVotePollQuestion(val)
 		}
+	}
+	if body.PollType == nil {
+		v.PollType = "generic"
 	}
 
 	return v
@@ -1806,7 +1880,7 @@ func NewDeleteVoteUnauthorized(body *DeleteVoteUnauthorizedResponseBody) *vote.U
 // result from a HTTP "OK" response.
 func NewExtendVoteVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
 	v := &vote.VoteResult{
-		VoteUID:                       *body.VoteUID,
+		UID:                           *body.UID,
 		Name:                          *body.Name,
 		Description:                   *body.Description,
 		CreationTime:                  body.CreationTime,
@@ -1814,6 +1888,7 @@ func NewExtendVoteVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
 		EndTime:                       body.EndTime,
 		Status:                        *body.Status,
 		ProjectUID:                    *body.ProjectUID,
+		ProjectName:                   body.ProjectName,
 		CommitteeUID:                  *body.CommitteeUID,
 		CommitteeName:                 body.CommitteeName,
 		CommitteeType:                 body.CommitteeType,
@@ -1821,7 +1896,17 @@ func NewExtendVoteVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
 		PseudoAnonymity:               body.PseudoAnonymity,
 		TotalVotingRequestInvitations: body.TotalVotingRequestInvitations,
 		NumResponseReceived:           body.NumResponseReceived,
+		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+	}
+	if body.PollType != nil {
+		v.PollType = *body.PollType
+	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
 	}
 	if body.PollQuestions != nil {
 		v.PollQuestions = make([]*vote.PollQuestion, len(body.PollQuestions))
@@ -1832,6 +1917,9 @@ func NewExtendVoteVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
 			}
 			v.PollQuestions[i] = unmarshalPollQuestionResponseBodyToVotePollQuestion(val)
 		}
+	}
+	if body.PollType == nil {
+		v.PollType = "generic"
 	}
 
 	return v
@@ -2445,8 +2533,8 @@ func NewResendVoteResponseUnauthorized(body *ResendVoteResponseUnauthorizedRespo
 // ValidateCreateVoteResponseBody runs the validations defined on
 // create_vote_response_body
 func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
-	if body.VoteUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
+	if body.UID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
 	}
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
@@ -2463,8 +2551,8 @@ func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
-	if body.VoteUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))
+	if body.UID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
 	if body.CreationTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.creation_time", *body.CreationTime, goa.FormatDateTime))
@@ -2485,6 +2573,11 @@ func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
 			if err2 := ValidatePollQuestionResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
+		}
+	}
+	if body.PollType != nil {
+		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
 		}
 	}
 	return
@@ -2493,8 +2586,8 @@ func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
 // ValidateGetVoteResponseBody runs the validations defined on
 // get_vote_response_body
 func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
-	if body.VoteUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
+	if body.UID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
 	}
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
@@ -2511,8 +2604,8 @@ func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
-	if body.VoteUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))
+	if body.UID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
 	if body.CreationTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.creation_time", *body.CreationTime, goa.FormatDateTime))
@@ -2533,6 +2626,11 @@ func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
 			if err2 := ValidatePollQuestionResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
+		}
+	}
+	if body.PollType != nil {
+		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
 		}
 	}
 	return
@@ -2541,8 +2639,8 @@ func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
 // ValidateUpdateVoteResponseBody runs the validations defined on
 // update_vote_response_body
 func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
-	if body.VoteUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
+	if body.UID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
 	}
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
@@ -2559,8 +2657,8 @@ func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
-	if body.VoteUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))
+	if body.UID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
 	if body.CreationTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.creation_time", *body.CreationTime, goa.FormatDateTime))
@@ -2581,6 +2679,11 @@ func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
 			if err2 := ValidatePollQuestionResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
+		}
+	}
+	if body.PollType != nil {
+		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
 		}
 	}
 	return
@@ -2589,8 +2692,8 @@ func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
 // ValidateExtendVoteResponseBody runs the validations defined on
 // extend_vote_response_body
 func ValidateExtendVoteResponseBody(body *ExtendVoteResponseBody) (err error) {
-	if body.VoteUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
+	if body.UID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
 	}
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
@@ -2607,8 +2710,8 @@ func ValidateExtendVoteResponseBody(body *ExtendVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
-	if body.VoteUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))
+	if body.UID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
 	if body.CreationTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.creation_time", *body.CreationTime, goa.FormatDateTime))
@@ -2629,6 +2732,11 @@ func ValidateExtendVoteResponseBody(body *ExtendVoteResponseBody) (err error) {
 			if err2 := ValidatePollQuestionResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
+		}
+	}
+	if body.PollType != nil {
+		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
 		}
 	}
 	return

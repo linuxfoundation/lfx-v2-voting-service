@@ -81,7 +81,7 @@ type BulkResendVotePayload struct {
 	// JWT token
 	Token *string
 	// Vote UID
-	VoteUID string
+	UID string
 	// List of recipient IDs to resend vote email to
 	RecipientIds []string
 }
@@ -158,7 +158,7 @@ type DeleteVotePayload struct {
 	// JWT token
 	Token *string
 	// Vote UID
-	VoteUID string
+	UID string
 }
 
 // EnableVotePayload is the payload type of the vote service enable_vote method.
@@ -166,7 +166,7 @@ type EnableVotePayload struct {
 	// JWT token
 	Token *string
 	// Vote UID
-	VoteUID string
+	UID string
 }
 
 // ExtendVotePayload is the payload type of the vote service extend_vote method.
@@ -174,7 +174,7 @@ type ExtendVotePayload struct {
 	// JWT token
 	Token *string
 	// Vote UID
-	VoteUID string
+	UID string
 	// End time in RFC3339 format
 	EndTime string
 }
@@ -202,7 +202,7 @@ type GetVotePayload struct {
 	// JWT token
 	Token *string
 	// Vote UID
-	VoteUID string
+	UID string
 }
 
 // GetVoteResponsePayload is the payload type of the vote service
@@ -220,7 +220,7 @@ type GetVoteResultsPayload struct {
 	// JWT token
 	Token *string
 	// Vote UID
-	VoteUID string
+	UID string
 }
 
 // Internal server error response
@@ -367,7 +367,7 @@ type UpdateVotePayload struct {
 	// JWT token
 	Token *string
 	// Vote UID
-	VoteUID string
+	UID string
 	// Vote name
 	Name string
 	// Vote description
@@ -509,7 +509,7 @@ type VoteResponseResult struct {
 // VoteResult is the result type of the vote service create_vote method.
 type VoteResult struct {
 	// Vote identifier
-	VoteUID string
+	UID string
 	// Vote name
 	Name string
 	// Vote description
@@ -524,10 +524,14 @@ type VoteResult struct {
 	Status string
 	// Project UID
 	ProjectUID string
+	// Project name
+	ProjectName *string
 	// Committee UID
 	CommitteeUID string
 	// Committee name
 	CommitteeName *string
+	// Committee voting status filters
+	CommitteeFilters []string
 	// Committee type
 	CommitteeType *string
 	// Committee voting status
@@ -540,6 +544,10 @@ type VoteResult struct {
 	NumResponseReceived *int
 	// Vote questions
 	PollQuestions []*PollQuestion
+	// Poll type
+	PollType string
+	// Number of winners (meek_stv only)
+	NumWinners *int
 	// Allow abstain
 	AllowAbstain *bool
 }

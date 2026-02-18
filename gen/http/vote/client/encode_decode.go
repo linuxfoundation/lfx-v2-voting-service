@@ -210,16 +210,16 @@ func DecodeCreateVoteResponse(decoder func(*http.Response) goahttp.Decoder, rest
 // set to call the "vote" service "get_vote" endpoint
 func (c *Client) BuildGetVoteRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteUID string
+		uid string
 	)
 	{
 		p, ok := v.(*vote.GetVotePayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "get_vote", "*vote.GetVotePayload", v)
 		}
-		voteUID = p.VoteUID
+		uid = p.UID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteVotePath(voteUID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteVotePath(uid)}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "get_vote", u.String(), err)
@@ -387,16 +387,16 @@ func DecodeGetVoteResponse(decoder func(*http.Response) goahttp.Decoder, restore
 // path set to call the "vote" service "update_vote" endpoint
 func (c *Client) BuildUpdateVoteRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteUID string
+		uid string
 	)
 	{
 		p, ok := v.(*vote.UpdateVotePayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "update_vote", "*vote.UpdateVotePayload", v)
 		}
-		voteUID = p.VoteUID
+		uid = p.UID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateVoteVotePath(voteUID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateVoteVotePath(uid)}
 	req, err := http.NewRequest("PUT", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "update_vote", u.String(), err)
@@ -568,16 +568,16 @@ func DecodeUpdateVoteResponse(decoder func(*http.Response) goahttp.Decoder, rest
 // path set to call the "vote" service "delete_vote" endpoint
 func (c *Client) BuildDeleteVoteRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteUID string
+		uid string
 	)
 	{
 		p, ok := v.(*vote.DeleteVotePayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "delete_vote", "*vote.DeleteVotePayload", v)
 		}
-		voteUID = p.VoteUID
+		uid = p.UID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: DeleteVoteVotePath(voteUID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: DeleteVoteVotePath(uid)}
 	req, err := http.NewRequest("DELETE", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "delete_vote", u.String(), err)
@@ -732,16 +732,16 @@ func DecodeDeleteVoteResponse(decoder func(*http.Response) goahttp.Decoder, rest
 // path set to call the "vote" service "extend_vote" endpoint
 func (c *Client) BuildExtendVoteRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteUID string
+		uid string
 	)
 	{
 		p, ok := v.(*vote.ExtendVotePayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "extend_vote", "*vote.ExtendVotePayload", v)
 		}
-		voteUID = p.VoteUID
+		uid = p.UID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ExtendVoteVotePath(voteUID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ExtendVoteVotePath(uid)}
 	req, err := http.NewRequest("POST", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "extend_vote", u.String(), err)
@@ -913,16 +913,16 @@ func DecodeExtendVoteResponse(decoder func(*http.Response) goahttp.Decoder, rest
 // path set to call the "vote" service "enable_vote" endpoint
 func (c *Client) BuildEnableVoteRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteUID string
+		uid string
 	)
 	{
 		p, ok := v.(*vote.EnableVotePayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "enable_vote", "*vote.EnableVotePayload", v)
 		}
-		voteUID = p.VoteUID
+		uid = p.UID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: EnableVoteVotePath(voteUID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: EnableVoteVotePath(uid)}
 	req, err := http.NewRequest("PUT", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "enable_vote", u.String(), err)
@@ -1077,16 +1077,16 @@ func DecodeEnableVoteResponse(decoder func(*http.Response) goahttp.Decoder, rest
 // and path set to call the "vote" service "bulk_resend_vote" endpoint
 func (c *Client) BuildBulkResendVoteRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteUID string
+		uid string
 	)
 	{
 		p, ok := v.(*vote.BulkResendVotePayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "bulk_resend_vote", "*vote.BulkResendVotePayload", v)
 		}
-		voteUID = p.VoteUID
+		uid = p.UID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: BulkResendVoteVotePath(voteUID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: BulkResendVoteVotePath(uid)}
 	req, err := http.NewRequest("POST", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "bulk_resend_vote", u.String(), err)
@@ -1245,16 +1245,16 @@ func DecodeBulkResendVoteResponse(decoder func(*http.Response) goahttp.Decoder, 
 // and path set to call the "vote" service "get_vote_results" endpoint
 func (c *Client) BuildGetVoteResultsRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteUID string
+		uid string
 	)
 	{
 		p, ok := v.(*vote.GetVoteResultsPayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "get_vote_results", "*vote.GetVoteResultsPayload", v)
 		}
-		voteUID = p.VoteUID
+		uid = p.UID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteResultsVotePath(voteUID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteResultsVotePath(uid)}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "get_vote_results", u.String(), err)

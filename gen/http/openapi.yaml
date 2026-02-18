@@ -357,7 +357,7 @@ paths:
                     schema:
                         $ref: '#/definitions/VoteResult'
                         required:
-                            - vote_uid
+                            - uid
                             - name
                             - description
                             - status
@@ -416,7 +416,7 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
-    /votes/{vote_uid}:
+    /votes/{uid}:
         get:
             tags:
                 - vote
@@ -429,7 +429,7 @@ paths:
                   * `manage:voting`
             operationId: vote#get_vote
             parameters:
-                - name: vote_uid
+                - name: uid
                   in: path
                   description: Vote UID
                   required: true
@@ -446,7 +446,7 @@ paths:
                     schema:
                         $ref: '#/definitions/VoteResult'
                         required:
-                            - vote_uid
+                            - uid
                             - name
                             - description
                             - status
@@ -510,7 +510,7 @@ paths:
                   * `manage:voting`
             operationId: vote#update_vote
             parameters:
-                - name: vote_uid
+                - name: uid
                   in: path
                   description: Vote UID
                   required: true
@@ -537,7 +537,7 @@ paths:
                     schema:
                         $ref: '#/definitions/VoteResult'
                         required:
-                            - vote_uid
+                            - uid
                             - name
                             - description
                             - status
@@ -601,7 +601,7 @@ paths:
                   * `manage:voting`
             operationId: vote#delete_vote
             parameters:
-                - name: vote_uid
+                - name: uid
                   in: path
                   description: Vote UID
                   required: true
@@ -661,7 +661,7 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
-    /votes/{vote_uid}/bulk_resend:
+    /votes/{uid}/bulk_resend:
         post:
             tags:
                 - vote
@@ -674,7 +674,7 @@ paths:
                   * `manage:voting`
             operationId: vote#bulk_resend_vote
             parameters:
-                - name: vote_uid
+                - name: uid
                   in: path
                   description: Vote UID
                   required: true
@@ -741,7 +741,7 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
-    /votes/{vote_uid}/enable:
+    /votes/{uid}/enable:
         put:
             tags:
                 - vote
@@ -754,7 +754,7 @@ paths:
                   * `manage:voting`
             operationId: vote#enable_vote
             parameters:
-                - name: vote_uid
+                - name: uid
                   in: path
                   description: Vote UID
                   required: true
@@ -814,7 +814,7 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
-    /votes/{vote_uid}/extend:
+    /votes/{uid}/extend:
         post:
             tags:
                 - vote
@@ -827,7 +827,7 @@ paths:
                   * `manage:voting`
             operationId: vote#extend_vote
             parameters:
-                - name: vote_uid
+                - name: uid
                   in: path
                   description: Vote UID
                   required: true
@@ -851,7 +851,7 @@ paths:
                     schema:
                         $ref: '#/definitions/VoteResult'
                         required:
-                            - vote_uid
+                            - uid
                             - name
                             - description
                             - status
@@ -903,7 +903,7 @@ paths:
                 - http
             security:
                 - jwt_header_Authorization: []
-    /votes/{vote_uid}/results:
+    /votes/{uid}/results:
         get:
             tags:
                 - vote
@@ -916,7 +916,7 @@ paths:
                   * `manage:voting`
             operationId: vote#get_vote_results
             parameters:
-                - name: vote_uid
+                - name: uid
                   in: path
                   description: Vote UID
                   required: true
@@ -991,15 +991,15 @@ definitions:
             code:
                 type: string
                 description: HTTP status code
-                example: Dolor maxime nostrum ut et.
+                example: Magni assumenda doloremque dignissimos est.
             message:
                 type: string
                 description: Error message
-                example: Saepe eaque magni assumenda doloremque dignissimos.
+                example: Harum voluptatem.
         description: Bad request
         example:
-            code: Perspiciatis harum voluptatem totam sit.
-            message: Aut explicabo dolorum quis voluptas.
+            code: Sit dolores aut explicabo.
+            message: Quis voluptas pariatur rerum dolorem qui.
         required:
             - code
             - message
@@ -1142,7 +1142,7 @@ definitions:
             choice_id:
                 type: string
                 description: Choice identifier
-                example: 4d20a9e4-5b47-4168-9b76-e769b232ba92
+                example: 9632e8db-f107-4068-8ae9-87c3ef9a7ed6
                 format: uuid
             choice_text:
                 type: string
@@ -1150,7 +1150,7 @@ definitions:
                 example: John Doe
         description: Answer choice
         example:
-            choice_id: faec1cad-c64d-4265-a2e9-ad76c3211ab4
+            choice_id: dbef72fe-9afc-47b4-b6d4-2c78e23132e4
             choice_text: John Doe
         required:
             - choice_text
@@ -1177,13 +1177,13 @@ definitions:
                     $ref: '#/definitions/PollChoice'
                 description: Answer choices
                 example:
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
             prompt:
                 type: string
@@ -1192,7 +1192,7 @@ definitions:
             question_id:
                 type: string
                 description: Question identifier
-                example: 4b1beece-3441-4f56-a392-9b644f177c0e
+                example: a96527fb-3ece-41b6-9a3e-01cc395b5634
                 format: uuid
             type:
                 type: string
@@ -1204,14 +1204,16 @@ definitions:
         description: Vote question
         example:
             choices:
-                - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                - choice_id: eed65351-e712-47f2-9149-106260031f83
                   choice_text: John Doe
-                - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                - choice_id: eed65351-e712-47f2-9149-106260031f83
                   choice_text: John Doe
-                - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                - choice_id: eed65351-e712-47f2-9149-106260031f83
+                  choice_text: John Doe
+                - choice_id: eed65351-e712-47f2-9149-106260031f83
                   choice_text: John Doe
             prompt: Who should be elected to the TSC?
-            question_id: 83409da7-698a-454c-9dd3-836c26fb3cfb
+            question_id: e2e08078-ea95-4dc0-9c8f-090cdb0ff375
             type: single_choice
         required:
             - prompt
@@ -1227,11 +1229,11 @@ definitions:
                     $ref: '#/definitions/PollChoice'
                 description: Answer choices
                 example:
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
             prompt:
                 type: string
@@ -1240,7 +1242,7 @@ definitions:
             question_id:
                 type: string
                 description: Question identifier
-                example: e770f9b8-872b-4611-93db-71aac095b1f8
+                example: 4422c9e7-872b-4611-93db-71aac095b1f8
                 format: uuid
             type:
                 type: string
@@ -1249,11 +1251,11 @@ definitions:
         description: Question details
         example:
             choices:
-                - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                - choice_id: eed65351-e712-47f2-9149-106260031f83
                   choice_text: John Doe
-                - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                - choice_id: eed65351-e712-47f2-9149-106260031f83
                   choice_text: John Doe
-                - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                - choice_id: eed65351-e712-47f2-9149-106260031f83
                   choice_text: John Doe
             prompt: Autem fugiat autem aperiam odio officia.
             question_id: 0eaaebf3-ecca-468c-9349-60651024d963
@@ -1273,15 +1275,15 @@ definitions:
                     $ref: '#/definitions/GenericChoiceVote'
                 description: Vote counts for non-ranked questions
                 example:
-                    - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                      percentage: 0.8677690970385786
-                      vote_count: 7230994823186033610
-                    - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                      percentage: 0.8677690970385786
-                      vote_count: 7230994823186033610
-                    - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                      percentage: 0.8677690970385786
-                      vote_count: 7230994823186033610
+                    - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                      percentage: 0.4418804070792078
+                      vote_count: 4638165221269238423
+                    - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                      percentage: 0.4418804070792078
+                      vote_count: 4638165221269238423
+                    - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                      percentage: 0.4418804070792078
+                      vote_count: 4638165221269238423
             irv_round_summary:
                 description: IRV round summary
                 example: Est omnis illum ut.
@@ -1296,126 +1298,94 @@ definitions:
                     $ref: '#/definitions/RankedChoiceVote'
                 description: Ranked choice voting results
                 example:
-                    - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                      condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                    - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                      condorcet_matrix: Eum quae modi voluptatem.
                       rank_counts:
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                    - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                      condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                    - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                      condorcet_matrix: Eum quae modi voluptatem.
                       rank_counts:
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                    - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                      condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                    - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                      condorcet_matrix: Eum quae modi voluptatem.
                       rank_counts:
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
             ranked_choice_winner_info:
                 $ref: '#/definitions/RankedChoiceWinnerInfo'
         description: Results for a single poll question
         example:
             generic_choice_votes:
-                - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                  percentage: 0.8677690970385786
-                  vote_count: 7230994823186033610
-                - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                  percentage: 0.8677690970385786
-                  vote_count: 7230994823186033610
-                - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                  percentage: 0.8677690970385786
-                  vote_count: 7230994823186033610
-                - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                  percentage: 0.8677690970385786
-                  vote_count: 7230994823186033610
+                - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                  percentage: 0.4418804070792078
+                  vote_count: 4638165221269238423
+                - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                  percentage: 0.4418804070792078
+                  vote_count: 4638165221269238423
+                - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                  percentage: 0.4418804070792078
+                  vote_count: 4638165221269238423
+                - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                  percentage: 0.4418804070792078
+                  vote_count: 4638165221269238423
             irv_round_summary: Rerum in ipsum perspiciatis qui aut et.
             meek_stv_round_summary: Ut voluptas voluptas.
             question:
                 choices:
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
-                      choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
-                      choice_text: John Doe
-                prompt: Unde quas nihil dolore dolorum recusandae.
-                question_id: 02a94d6e-4011-4210-863c-f690b61d5503
-                type: Laudantium est velit voluptatem dignissimos et blanditiis.
+                prompt: Omnis vel ut animi delectus enim.
+                question_id: 2bc0120c-8a4c-4b9e-a2ef-292592882e5a
+                type: Placeat dolorem nostrum iure et.
             ranked_choice_votes:
-                - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                  condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                  condorcet_matrix: Eum quae modi voluptatem.
                   rank_counts:
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                  condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                    - count: 6966471874483234004
+                      rank: 794633787656067243
+                    - count: 6966471874483234004
+                      rank: 794633787656067243
+                - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                  condorcet_matrix: Eum quae modi voluptatem.
                   rank_counts:
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                  condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                    - count: 6966471874483234004
+                      rank: 794633787656067243
+                    - count: 6966471874483234004
+                      rank: 794633787656067243
+                - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                  condorcet_matrix: Eum quae modi voluptatem.
                   rank_counts:
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                  condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                    - count: 6966471874483234004
+                      rank: 794633787656067243
+                    - count: 6966471874483234004
+                      rank: 794633787656067243
+                - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                  condorcet_matrix: Eum quae modi voluptatem.
                   rank_counts:
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
+                    - count: 6966471874483234004
+                      rank: 794633787656067243
+                    - count: 6966471874483234004
+                      rank: 794633787656067243
             ranked_choice_winner_info:
-                condorcet_irv_used_for_eliminations: true
+                condorcet_irv_used_for_eliminations: false
                 poll_choices:
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
         required:
             - question
@@ -1481,21 +1451,21 @@ definitions:
                     $ref: '#/definitions/RankCount'
                 description: Vote counts per rank
                 example:
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
-                    - count: 1524766794268073909
-                      rank: 2766322867288144877
+                    - count: 6966471874483234004
+                      rank: 794633787656067243
+                    - count: 6966471874483234004
+                      rank: 794633787656067243
+                    - count: 6966471874483234004
+                      rank: 794633787656067243
         description: Ranked choice voting results for a choice
         example:
             choice_id: a6f2e8ff-1976-4dc9-a593-978328bbe2b7
             condorcet_matrix: Quia deserunt nobis.
             rank_counts:
-                - count: 1524766794268073909
-                  rank: 2766322867288144877
-                - count: 1524766794268073909
-                  rank: 2766322867288144877
+                - count: 6966471874483234004
+                  rank: 794633787656067243
+                - count: 6966471874483234004
+                  rank: 794633787656067243
         required:
             - choice_id
             - rank_counts
@@ -1513,21 +1483,21 @@ definitions:
                     $ref: '#/definitions/PollChoice'
                 description: Winning choices
                 example:
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
         description: Winner information for ranked choice voting
         example:
             condorcet_irv_used_for_eliminations: true
             poll_choices:
-                - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                - choice_id: eed65351-e712-47f2-9149-106260031f83
                   choice_text: John Doe
-                - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                - choice_id: eed65351-e712-47f2-9149-106260031f83
                   choice_text: John Doe
         required:
             - poll_choices
@@ -1585,11 +1555,11 @@ definitions:
             code:
                 type: string
                 description: HTTP status code
-                example: Rerum dolorem qui animi cupiditate nesciunt.
+                example: Cupiditate nesciunt magni saepe.
             message:
                 type: string
                 description: Error message
-                example: Saepe aliquam quia ut alias autem amet.
+                example: Quia ut alias autem amet.
         description: Unauthorized
         example:
             code: Omnis culpa modi aut non.
@@ -1616,12 +1586,12 @@ definitions:
                     $ref: '#/definitions/RankedVoteChoiceAnswer'
                 description: User's ranked choices
                 example:
-                    - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                      choice_rank: 8018629533692038781
-                      choice_text: Dolorem est blanditiis sapiente.
-                    - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                      choice_rank: 8018629533692038781
-                      choice_text: Dolorem est blanditiis sapiente.
+                    - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                      choice_rank: 7738687255052026209
+                      choice_text: Occaecati qui.
+                    - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                      choice_rank: 7738687255052026209
+                      choice_text: Occaecati qui.
             type:
                 type: string
                 description: Question type
@@ -1635,29 +1605,29 @@ definitions:
                     $ref: '#/definitions/VoteChoiceAnswer'
                 description: User's selected choices
                 example:
-                    - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                      choice_text: Provident et et.
-                    - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                      choice_text: Provident et et.
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
         description: Vote answer for a question
         example:
             prompt: Dolorem delectus perspiciatis voluptatem.
             question_id: 7ad46d24-788c-44d6-8a37-6f1329b8a1c0
             ranked_user_choice:
-                - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                  choice_rank: 8018629533692038781
-                  choice_text: Dolorem est blanditiis sapiente.
-                - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                  choice_rank: 8018629533692038781
-                  choice_text: Dolorem est blanditiis sapiente.
+                - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                  choice_rank: 7738687255052026209
+                  choice_text: Occaecati qui.
+                - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                  choice_rank: 7738687255052026209
+                  choice_text: Occaecati qui.
             type: single_choice
             user_choice:
-                - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                  choice_text: Provident et et.
-                - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                  choice_text: Provident et et.
-                - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                  choice_text: Provident et et.
+                - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                  choice_text: Et tempore esse minus itaque.
+                - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                  choice_text: Et tempore esse minus itaque.
+                - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                  choice_text: Et tempore esse minus itaque.
         required:
             - question_id
             - prompt
@@ -1821,52 +1791,36 @@ definitions:
                 description: Questions for the vote
                 example:
                     - choices:
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                        - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                           choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                          choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                          choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                        - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 8423e9d7-592f-44bd-8763-53582f20de12
+                      question_id: 9fa75d10-8740-483c-b6da-ff6a5aca9c9d
                       type: single_choice
                     - choices:
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                        - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                           choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                          choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                          choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                        - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 8423e9d7-592f-44bd-8763-53582f20de12
+                      question_id: 9fa75d10-8740-483c-b6da-ff6a5aca9c9d
                       type: single_choice
                     - choices:
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                        - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                           choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                          choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                          choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                        - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 8423e9d7-592f-44bd-8763-53582f20de12
+                      question_id: 9fa75d10-8740-483c-b6da-ff6a5aca9c9d
                       type: single_choice
                     - choices:
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                        - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                           choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                          choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                          choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                        - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 8423e9d7-592f-44bd-8763-53582f20de12
+                      question_id: 9fa75d10-8740-483c-b6da-ff6a5aca9c9d
                       type: single_choice
             poll_type:
                 type: string
@@ -1920,40 +1874,28 @@ definitions:
                 - prompt: Please provide any additional feedback
             poll_questions:
                 - choices:
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                    - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                       choice_text: John Doe
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                      choice_text: John Doe
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                      choice_text: John Doe
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                    - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 8423e9d7-592f-44bd-8763-53582f20de12
+                  question_id: 9fa75d10-8740-483c-b6da-ff6a5aca9c9d
                   type: single_choice
                 - choices:
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                    - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                       choice_text: John Doe
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                      choice_text: John Doe
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                      choice_text: John Doe
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                    - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 8423e9d7-592f-44bd-8763-53582f20de12
+                  question_id: 9fa75d10-8740-483c-b6da-ff6a5aca9c9d
                   type: single_choice
                 - choices:
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                    - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                       choice_text: John Doe
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                      choice_text: John Doe
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                      choice_text: John Doe
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                    - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 8423e9d7-592f-44bd-8763-53582f20de12
+                  question_id: 9fa75d10-8740-483c-b6da-ff6a5aca9c9d
                   type: single_choice
             poll_type: condorcet_irv
             project_uid: a09P000000DsCBuIRT
@@ -2038,78 +1980,82 @@ definitions:
                     $ref: '#/definitions/VoteAnswer'
                 description: Vote answers
                 example:
-                    - prompt: Molestias accusantium est sed eveniet veritatis consequuntur.
-                      question_id: 994c2781-7ab5-461e-a05e-b9f869bda01c
+                    - prompt: Quidem molestias ex.
+                      question_id: 57924a8a-ace2-4bb8-9c18-11c6bcba0db9
                       ranked_user_choice:
-                        - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                          choice_rank: 8018629533692038781
-                          choice_text: Dolorem est blanditiis sapiente.
-                        - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                          choice_rank: 8018629533692038781
-                          choice_text: Dolorem est blanditiis sapiente.
-                        - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                          choice_rank: 8018629533692038781
-                          choice_text: Dolorem est blanditiis sapiente.
-                      type: multiple_choice
+                        - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                          choice_rank: 7738687255052026209
+                          choice_text: Occaecati qui.
+                        - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                          choice_rank: 7738687255052026209
+                          choice_text: Occaecati qui.
+                      type: single_choice
                       user_choice:
-                        - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                          choice_text: Provident et et.
-                        - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                          choice_text: Provident et et.
-                    - prompt: Molestias accusantium est sed eveniet veritatis consequuntur.
-                      question_id: 994c2781-7ab5-461e-a05e-b9f869bda01c
+                        - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                          choice_text: Et tempore esse minus itaque.
+                        - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                          choice_text: Et tempore esse minus itaque.
+                        - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                          choice_text: Et tempore esse minus itaque.
+                        - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                          choice_text: Et tempore esse minus itaque.
+                    - prompt: Quidem molestias ex.
+                      question_id: 57924a8a-ace2-4bb8-9c18-11c6bcba0db9
                       ranked_user_choice:
-                        - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                          choice_rank: 8018629533692038781
-                          choice_text: Dolorem est blanditiis sapiente.
-                        - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                          choice_rank: 8018629533692038781
-                          choice_text: Dolorem est blanditiis sapiente.
-                        - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                          choice_rank: 8018629533692038781
-                          choice_text: Dolorem est blanditiis sapiente.
-                      type: multiple_choice
+                        - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                          choice_rank: 7738687255052026209
+                          choice_text: Occaecati qui.
+                        - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                          choice_rank: 7738687255052026209
+                          choice_text: Occaecati qui.
+                      type: single_choice
                       user_choice:
-                        - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                          choice_text: Provident et et.
-                        - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                          choice_text: Provident et et.
-                    - prompt: Molestias accusantium est sed eveniet veritatis consequuntur.
-                      question_id: 994c2781-7ab5-461e-a05e-b9f869bda01c
+                        - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                          choice_text: Et tempore esse minus itaque.
+                        - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                          choice_text: Et tempore esse minus itaque.
+                        - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                          choice_text: Et tempore esse minus itaque.
+                        - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                          choice_text: Et tempore esse minus itaque.
+                    - prompt: Quidem molestias ex.
+                      question_id: 57924a8a-ace2-4bb8-9c18-11c6bcba0db9
                       ranked_user_choice:
-                        - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                          choice_rank: 8018629533692038781
-                          choice_text: Dolorem est blanditiis sapiente.
-                        - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                          choice_rank: 8018629533692038781
-                          choice_text: Dolorem est blanditiis sapiente.
-                        - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                          choice_rank: 8018629533692038781
-                          choice_text: Dolorem est blanditiis sapiente.
-                      type: multiple_choice
+                        - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                          choice_rank: 7738687255052026209
+                          choice_text: Occaecati qui.
+                        - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                          choice_rank: 7738687255052026209
+                          choice_text: Occaecati qui.
+                      type: single_choice
                       user_choice:
-                        - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                          choice_text: Provident et et.
-                        - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                          choice_text: Provident et et.
-                    - prompt: Molestias accusantium est sed eveniet veritatis consequuntur.
-                      question_id: 994c2781-7ab5-461e-a05e-b9f869bda01c
+                        - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                          choice_text: Et tempore esse minus itaque.
+                        - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                          choice_text: Et tempore esse minus itaque.
+                        - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                          choice_text: Et tempore esse minus itaque.
+                        - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                          choice_text: Et tempore esse minus itaque.
+                    - prompt: Quidem molestias ex.
+                      question_id: 57924a8a-ace2-4bb8-9c18-11c6bcba0db9
                       ranked_user_choice:
-                        - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                          choice_rank: 8018629533692038781
-                          choice_text: Dolorem est blanditiis sapiente.
-                        - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                          choice_rank: 8018629533692038781
-                          choice_text: Dolorem est blanditiis sapiente.
-                        - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                          choice_rank: 8018629533692038781
-                          choice_text: Dolorem est blanditiis sapiente.
-                      type: multiple_choice
+                        - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                          choice_rank: 7738687255052026209
+                          choice_text: Occaecati qui.
+                        - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                          choice_rank: 7738687255052026209
+                          choice_text: Occaecati qui.
+                      type: single_choice
                       user_choice:
-                        - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                          choice_text: Provident et et.
-                        - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                          choice_text: Provident et et.
+                        - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                          choice_text: Et tempore esse minus itaque.
+                        - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                          choice_text: Et tempore esse minus itaque.
+                        - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                          choice_text: Et tempore esse minus itaque.
+                        - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                          choice_text: Et tempore esse minus itaque.
             profile_picture:
                 type: string
                 description: Voter profile picture URL
@@ -2217,78 +2163,82 @@ definitions:
             abstained: true
             allow_abstain: true
             poll_answers:
-                - prompt: Molestias accusantium est sed eveniet veritatis consequuntur.
-                  question_id: 994c2781-7ab5-461e-a05e-b9f869bda01c
+                - prompt: Quidem molestias ex.
+                  question_id: 57924a8a-ace2-4bb8-9c18-11c6bcba0db9
                   ranked_user_choice:
-                    - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                      choice_rank: 8018629533692038781
-                      choice_text: Dolorem est blanditiis sapiente.
-                    - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                      choice_rank: 8018629533692038781
-                      choice_text: Dolorem est blanditiis sapiente.
-                    - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                      choice_rank: 8018629533692038781
-                      choice_text: Dolorem est blanditiis sapiente.
-                  type: multiple_choice
+                    - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                      choice_rank: 7738687255052026209
+                      choice_text: Occaecati qui.
+                    - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                      choice_rank: 7738687255052026209
+                      choice_text: Occaecati qui.
+                  type: single_choice
                   user_choice:
-                    - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                      choice_text: Provident et et.
-                    - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                      choice_text: Provident et et.
-                - prompt: Molestias accusantium est sed eveniet veritatis consequuntur.
-                  question_id: 994c2781-7ab5-461e-a05e-b9f869bda01c
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
+                - prompt: Quidem molestias ex.
+                  question_id: 57924a8a-ace2-4bb8-9c18-11c6bcba0db9
                   ranked_user_choice:
-                    - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                      choice_rank: 8018629533692038781
-                      choice_text: Dolorem est blanditiis sapiente.
-                    - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                      choice_rank: 8018629533692038781
-                      choice_text: Dolorem est blanditiis sapiente.
-                    - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                      choice_rank: 8018629533692038781
-                      choice_text: Dolorem est blanditiis sapiente.
-                  type: multiple_choice
+                    - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                      choice_rank: 7738687255052026209
+                      choice_text: Occaecati qui.
+                    - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                      choice_rank: 7738687255052026209
+                      choice_text: Occaecati qui.
+                  type: single_choice
                   user_choice:
-                    - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                      choice_text: Provident et et.
-                    - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                      choice_text: Provident et et.
-                - prompt: Molestias accusantium est sed eveniet veritatis consequuntur.
-                  question_id: 994c2781-7ab5-461e-a05e-b9f869bda01c
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
+                - prompt: Quidem molestias ex.
+                  question_id: 57924a8a-ace2-4bb8-9c18-11c6bcba0db9
                   ranked_user_choice:
-                    - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                      choice_rank: 8018629533692038781
-                      choice_text: Dolorem est blanditiis sapiente.
-                    - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                      choice_rank: 8018629533692038781
-                      choice_text: Dolorem est blanditiis sapiente.
-                    - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                      choice_rank: 8018629533692038781
-                      choice_text: Dolorem est blanditiis sapiente.
-                  type: multiple_choice
+                    - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                      choice_rank: 7738687255052026209
+                      choice_text: Occaecati qui.
+                    - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                      choice_rank: 7738687255052026209
+                      choice_text: Occaecati qui.
+                  type: single_choice
                   user_choice:
-                    - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                      choice_text: Provident et et.
-                    - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                      choice_text: Provident et et.
-                - prompt: Molestias accusantium est sed eveniet veritatis consequuntur.
-                  question_id: 994c2781-7ab5-461e-a05e-b9f869bda01c
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
+                - prompt: Quidem molestias ex.
+                  question_id: 57924a8a-ace2-4bb8-9c18-11c6bcba0db9
                   ranked_user_choice:
-                    - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                      choice_rank: 8018629533692038781
-                      choice_text: Dolorem est blanditiis sapiente.
-                    - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                      choice_rank: 8018629533692038781
-                      choice_text: Dolorem est blanditiis sapiente.
-                    - choice_id: 22bbb982-a5a6-44c0-9d67-e6cc96ed0046
-                      choice_rank: 8018629533692038781
-                      choice_text: Dolorem est blanditiis sapiente.
-                  type: multiple_choice
+                    - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                      choice_rank: 7738687255052026209
+                      choice_text: Occaecati qui.
+                    - choice_id: 258eb7b3-d8e2-43f3-aa6d-492920952ebd
+                      choice_rank: 7738687255052026209
+                      choice_text: Occaecati qui.
+                  type: single_choice
                   user_choice:
-                    - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                      choice_text: Provident et et.
-                    - choice_id: d6fcf44a-de4c-41be-8bd8-8dec5dd8e173
-                      choice_text: Provident et et.
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
+                    - choice_id: aa639c12-330f-47bb-b280-2750e2fa7913
+                      choice_text: Et tempore esse minus itaque.
             profile_picture: Repellat minus nihil qui.
             project_uid: Repellat sunt autem.
             ses_bounce_subtype: Voluptatum ut voluptas atque dolore et sapiente.
@@ -2327,49 +2277,63 @@ definitions:
                 type: boolean
                 description: Allow abstain
                 example: true
+            committee_filters:
+                type: array
+                items:
+                    type: string
+                    example: Aut distinctio ipsum vel.
+                description: Committee voting status filters
+                example:
+                    - Voting Rep
+                    - Alternate Voting Rep
             committee_name:
                 type: string
                 description: Committee name
-                example: Non qui molestiae illum debitis fugit.
+                example: Beatae iusto sit ut.
             committee_type:
                 type: string
                 description: Committee type
-                example: Nam vel magnam.
+                example: Perspiciatis voluptatem non qui molestiae.
             committee_uid:
                 type: string
                 description: Committee UID
-                example: Ut aut distinctio ipsum vel sit perspiciatis.
+                example: Vel non enim accusamus omnis.
             committee_voting_status:
                 type: boolean
                 description: Committee voting status
-                example: true
+                example: false
             creation_time:
                 type: string
                 description: Creation time
-                example: "1997-06-17T01:35:29Z"
+                example: "2011-02-25T09:14:12Z"
                 format: date-time
             description:
                 type: string
                 description: Vote description
-                example: Nesciunt ratione sint nihil praesentium minus.
+                example: Quaerat adipisci sequi.
             end_time:
                 type: string
                 description: End time
-                example: "1986-03-18T17:59:57Z"
+                example: "1991-06-16T10:50:57Z"
                 format: date-time
             last_modified_time:
                 type: string
                 description: Last modified time
-                example: "2007-05-21T02:25:52Z"
+                example: "1988-10-23T19:19:03Z"
                 format: date-time
             name:
                 type: string
                 description: Vote name
-                example: Harum quis.
+                example: Ut dignissimos.
             num_response_received:
                 type: integer
                 description: Responses received
-                example: 4134743221106604773
+                example: 6539336185246064521
+                format: int64
+            num_winners:
+                type: integer
+                description: Number of winners (meek_stv only)
+                example: 689674908613791243
                 format: int64
             poll_questions:
                 type: array
@@ -2378,45 +2342,47 @@ definitions:
                 description: Vote questions
                 example:
                     - choices:
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: a484705c-1654-462e-82ce-2330734d6de9
+                      question_id: 6e159dd6-8cdd-4f8a-b04b-5c24c51160d7
                       type: single_choice
                     - choices:
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
-                          choice_text: John Doe
-                      prompt: Who should be elected to the TSC?
-                      question_id: a484705c-1654-462e-82ce-2330734d6de9
-                      type: single_choice
-                    - choices:
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
-                          choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
-                          choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
-                          choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: a484705c-1654-462e-82ce-2330734d6de9
+                      question_id: 6e159dd6-8cdd-4f8a-b04b-5c24c51160d7
                       type: single_choice
+            poll_type:
+                type: string
+                description: Poll type
+                default: generic
+                example: instant_runoff_vote
+                enum:
+                    - generic
+                    - condorcet_irv
+                    - meek_stv
+                    - instant_runoff_vote
+            project_name:
+                type: string
+                description: Project name
+                example: Consequatur odio totam.
             project_uid:
                 type: string
                 description: Project UID
-                example: Accusamus omnis quis beatae iusto sit.
+                example: Rem maiores.
             pseudo_anonymity:
                 type: boolean
                 description: Pseudo-anonymity enabled
@@ -2432,57 +2398,87 @@ definitions:
             total_voting_request_invitations:
                 type: integer
                 description: Total invitations sent
-                example: 9045839201353771820
+                example: 4085930922226747146
                 format: int64
-            vote_uid:
+            uid:
                 type: string
                 description: Vote identifier
                 example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
                 format: uuid
         example:
-            allow_abstain: false
-            committee_name: Facere sunt quis quae nulla aspernatur saepe.
-            committee_type: Porro rerum cupiditate.
-            committee_uid: Sint pariatur perferendis temporibus et.
-            committee_voting_status: false
-            creation_time: "1981-11-28T19:50:09Z"
-            description: Aut distinctio.
-            end_time: "2002-01-03T10:42:08Z"
-            last_modified_time: "1999-01-06T04:08:48Z"
-            name: Ut harum.
-            num_response_received: 4524498907076650138
+            allow_abstain: true
+            committee_filters:
+                - Voting Rep
+                - Alternate Voting Rep
+            committee_name: Quae nulla aspernatur saepe voluptates porro rerum.
+            committee_type: Soluta quos molestiae minus qui dignissimos.
+            committee_uid: Perferendis temporibus et quasi facere sunt.
+            committee_voting_status: true
+            creation_time: "1994-02-11T13:02:16Z"
+            description: Velit aut distinctio enim eum necessitatibus.
+            end_time: "1985-05-01T04:51:48Z"
+            last_modified_time: "1991-12-04T10:08:58Z"
+            name: Eum corrupti eum nesciunt ut.
+            num_response_received: 4566366208615116258
+            num_winners: 8515208717059361762
             poll_questions:
                 - choices:
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: a484705c-1654-462e-82ce-2330734d6de9
+                  question_id: 6e159dd6-8cdd-4f8a-b04b-5c24c51160d7
                   type: single_choice
                 - choices:
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
-                    - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: a484705c-1654-462e-82ce-2330734d6de9
+                  question_id: 6e159dd6-8cdd-4f8a-b04b-5c24c51160d7
                   type: single_choice
-            project_uid: Laborum et doloribus sed eius tenetur.
-            pseudo_anonymity: false
+                - choices:
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
+                      choice_text: John Doe
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
+                      choice_text: John Doe
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
+                      choice_text: John Doe
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
+                      choice_text: John Doe
+                  prompt: Who should be elected to the TSC?
+                  question_id: 6e159dd6-8cdd-4f8a-b04b-5c24c51160d7
+                  type: single_choice
+                - choices:
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
+                      choice_text: John Doe
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
+                      choice_text: John Doe
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
+                      choice_text: John Doe
+                    - choice_id: eed65351-e712-47f2-9149-106260031f83
+                      choice_text: John Doe
+                  prompt: Who should be elected to the TSC?
+                  question_id: 6e159dd6-8cdd-4f8a-b04b-5c24c51160d7
+                  type: single_choice
+            poll_type: condorcet_irv
+            project_name: Occaecati sint.
+            project_uid: Et doloribus sed eius.
+            pseudo_anonymity: true
             status: disabled
-            total_voting_request_invitations: 1344133671337359573
-            vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+            total_voting_request_invitations: 5402484842312549031
+            uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
         required:
-            - vote_uid
+            - uid
             - name
             - description
             - status
@@ -2499,13 +2495,17 @@ definitions:
                 description: Comment results
                 example:
                     - comments:
-                        - Exercitationem animi est et.
-                        - Earum amet.
-                      prompt: Voluptatem expedita ea.
+                        - Deserunt modi.
+                        - Sint sint tempore mollitia.
+                        - Dolores sint eveniet qui sunt ratione.
+                        - Saepe magnam consequatur.
+                      prompt: Voluptatem error quam autem fugit itaque aut.
                     - comments:
-                        - Exercitationem animi est et.
-                        - Earum amet.
-                      prompt: Voluptatem expedita ea.
+                        - Deserunt modi.
+                        - Sint sint tempore mollitia.
+                        - Dolores sint eveniet qui sunt ratione.
+                        - Saepe magnam consequatur.
+                      prompt: Voluptatem error quam autem fugit itaque aut.
             num_abstained:
                 type: integer
                 description: Number who abstained
@@ -2533,358 +2533,299 @@ definitions:
                 description: Poll results data
                 example:
                     - generic_choice_votes:
-                        - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                          percentage: 0.8677690970385786
-                          vote_count: 7230994823186033610
-                        - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                          percentage: 0.8677690970385786
-                          vote_count: 7230994823186033610
-                      irv_round_summary: Voluptatem totam quo ad est.
-                      meek_stv_round_summary: Voluptas magni sint debitis tempora eum quae.
+                        - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                          percentage: 0.4418804070792078
+                          vote_count: 4638165221269238423
+                        - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                          percentage: 0.4418804070792078
+                          vote_count: 4638165221269238423
+                        - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                          percentage: 0.4418804070792078
+                          vote_count: 4638165221269238423
+                      irv_round_summary: Suscipit exercitationem animi est et laboriosam.
+                      meek_stv_round_summary: Amet quasi.
                       question:
                         choices:
-                            - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                            - choice_id: eed65351-e712-47f2-9149-106260031f83
                               choice_text: John Doe
-                            - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                            - choice_id: eed65351-e712-47f2-9149-106260031f83
                               choice_text: John Doe
-                            - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
-                              choice_text: John Doe
-                            - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
-                              choice_text: John Doe
-                        prompt: Unde quas nihil dolore dolorum recusandae.
-                        question_id: 02a94d6e-4011-4210-863c-f690b61d5503
-                        type: Laudantium est velit voluptatem dignissimos et blanditiis.
+                        prompt: Omnis vel ut animi delectus enim.
+                        question_id: 2bc0120c-8a4c-4b9e-a2ef-292592882e5a
+                        type: Placeat dolorem nostrum iure et.
                       ranked_choice_votes:
-                        - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                          condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                        - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                          condorcet_matrix: Eum quae modi voluptatem.
                           rank_counts:
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                        - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                          condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                            - count: 6966471874483234004
+                              rank: 794633787656067243
+                            - count: 6966471874483234004
+                              rank: 794633787656067243
+                        - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                          condorcet_matrix: Eum quae modi voluptatem.
                           rank_counts:
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                        - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                          condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                            - count: 6966471874483234004
+                              rank: 794633787656067243
+                            - count: 6966471874483234004
+                              rank: 794633787656067243
+                        - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                          condorcet_matrix: Eum quae modi voluptatem.
                           rank_counts:
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
+                            - count: 6966471874483234004
+                              rank: 794633787656067243
+                            - count: 6966471874483234004
+                              rank: 794633787656067243
                       ranked_choice_winner_info:
-                        condorcet_irv_used_for_eliminations: true
+                        condorcet_irv_used_for_eliminations: false
                         poll_choices:
-                            - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                            - choice_id: eed65351-e712-47f2-9149-106260031f83
                               choice_text: John Doe
-                            - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                            - choice_id: eed65351-e712-47f2-9149-106260031f83
                               choice_text: John Doe
-                            - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                            - choice_id: eed65351-e712-47f2-9149-106260031f83
                               choice_text: John Doe
-                            - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                            - choice_id: eed65351-e712-47f2-9149-106260031f83
                               choice_text: John Doe
                     - generic_choice_votes:
-                        - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                          percentage: 0.8677690970385786
-                          vote_count: 7230994823186033610
-                        - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                          percentage: 0.8677690970385786
-                          vote_count: 7230994823186033610
-                      irv_round_summary: Voluptatem totam quo ad est.
-                      meek_stv_round_summary: Voluptas magni sint debitis tempora eum quae.
+                        - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                          percentage: 0.4418804070792078
+                          vote_count: 4638165221269238423
+                        - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                          percentage: 0.4418804070792078
+                          vote_count: 4638165221269238423
+                        - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                          percentage: 0.4418804070792078
+                          vote_count: 4638165221269238423
+                      irv_round_summary: Suscipit exercitationem animi est et laboriosam.
+                      meek_stv_round_summary: Amet quasi.
                       question:
                         choices:
-                            - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                            - choice_id: eed65351-e712-47f2-9149-106260031f83
                               choice_text: John Doe
-                            - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                            - choice_id: eed65351-e712-47f2-9149-106260031f83
                               choice_text: John Doe
-                            - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
-                              choice_text: John Doe
-                            - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
-                              choice_text: John Doe
-                        prompt: Unde quas nihil dolore dolorum recusandae.
-                        question_id: 02a94d6e-4011-4210-863c-f690b61d5503
-                        type: Laudantium est velit voluptatem dignissimos et blanditiis.
+                        prompt: Omnis vel ut animi delectus enim.
+                        question_id: 2bc0120c-8a4c-4b9e-a2ef-292592882e5a
+                        type: Placeat dolorem nostrum iure et.
                       ranked_choice_votes:
-                        - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                          condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                        - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                          condorcet_matrix: Eum quae modi voluptatem.
                           rank_counts:
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                        - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                          condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                            - count: 6966471874483234004
+                              rank: 794633787656067243
+                            - count: 6966471874483234004
+                              rank: 794633787656067243
+                        - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                          condorcet_matrix: Eum quae modi voluptatem.
                           rank_counts:
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                        - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                          condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                            - count: 6966471874483234004
+                              rank: 794633787656067243
+                            - count: 6966471874483234004
+                              rank: 794633787656067243
+                        - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                          condorcet_matrix: Eum quae modi voluptatem.
                           rank_counts:
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
-                            - count: 1524766794268073909
-                              rank: 2766322867288144877
+                            - count: 6966471874483234004
+                              rank: 794633787656067243
+                            - count: 6966471874483234004
+                              rank: 794633787656067243
                       ranked_choice_winner_info:
-                        condorcet_irv_used_for_eliminations: true
+                        condorcet_irv_used_for_eliminations: false
                         poll_choices:
-                            - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                            - choice_id: eed65351-e712-47f2-9149-106260031f83
                               choice_text: John Doe
-                            - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                            - choice_id: eed65351-e712-47f2-9149-106260031f83
                               choice_text: John Doe
-                            - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                            - choice_id: eed65351-e712-47f2-9149-106260031f83
                               choice_text: John Doe
-                            - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                            - choice_id: eed65351-e712-47f2-9149-106260031f83
                               choice_text: John Doe
         example:
             comment_results:
                 - comments:
-                    - Exercitationem animi est et.
-                    - Earum amet.
-                  prompt: Voluptatem expedita ea.
+                    - Deserunt modi.
+                    - Sint sint tempore mollitia.
+                    - Dolores sint eveniet qui sunt ratione.
+                    - Saepe magnam consequatur.
+                  prompt: Voluptatem error quam autem fugit itaque aut.
                 - comments:
-                    - Exercitationem animi est et.
-                    - Earum amet.
-                  prompt: Voluptatem expedita ea.
+                    - Deserunt modi.
+                    - Sint sint tempore mollitia.
+                    - Dolores sint eveniet qui sunt ratione.
+                    - Saepe magnam consequatur.
+                  prompt: Voluptatem error quam autem fugit itaque aut.
                 - comments:
-                    - Exercitationem animi est et.
-                    - Earum amet.
-                  prompt: Voluptatem expedita ea.
+                    - Deserunt modi.
+                    - Sint sint tempore mollitia.
+                    - Dolores sint eveniet qui sunt ratione.
+                    - Saepe magnam consequatur.
+                  prompt: Voluptatem error quam autem fugit itaque aut.
             num_abstained: 3826250429528244917
             num_recipients: 1459641206460490090
             num_votes_cast: 7587739513894566512
             poll_end_time: "1975-01-24T05:51:20Z"
             poll_results:
                 - generic_choice_votes:
-                    - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                      percentage: 0.8677690970385786
-                      vote_count: 7230994823186033610
-                    - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                      percentage: 0.8677690970385786
-                      vote_count: 7230994823186033610
-                  irv_round_summary: Voluptatem totam quo ad est.
-                  meek_stv_round_summary: Voluptas magni sint debitis tempora eum quae.
+                    - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                      percentage: 0.4418804070792078
+                      vote_count: 4638165221269238423
+                    - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                      percentage: 0.4418804070792078
+                      vote_count: 4638165221269238423
+                    - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                      percentage: 0.4418804070792078
+                      vote_count: 4638165221269238423
+                  irv_round_summary: Suscipit exercitationem animi est et laboriosam.
+                  meek_stv_round_summary: Amet quasi.
                   question:
                     choices:
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
-                          choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
-                          choice_text: John Doe
-                    prompt: Unde quas nihil dolore dolorum recusandae.
-                    question_id: 02a94d6e-4011-4210-863c-f690b61d5503
-                    type: Laudantium est velit voluptatem dignissimos et blanditiis.
+                    prompt: Omnis vel ut animi delectus enim.
+                    question_id: 2bc0120c-8a4c-4b9e-a2ef-292592882e5a
+                    type: Placeat dolorem nostrum iure et.
                   ranked_choice_votes:
-                    - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                      condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                    - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                      condorcet_matrix: Eum quae modi voluptatem.
                       rank_counts:
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                    - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                      condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                    - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                      condorcet_matrix: Eum quae modi voluptatem.
                       rank_counts:
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                    - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                      condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                    - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                      condorcet_matrix: Eum quae modi voluptatem.
                       rank_counts:
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
                   ranked_choice_winner_info:
-                    condorcet_irv_used_for_eliminations: true
+                    condorcet_irv_used_for_eliminations: false
                     poll_choices:
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
                 - generic_choice_votes:
-                    - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                      percentage: 0.8677690970385786
-                      vote_count: 7230994823186033610
-                    - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                      percentage: 0.8677690970385786
-                      vote_count: 7230994823186033610
-                  irv_round_summary: Voluptatem totam quo ad est.
-                  meek_stv_round_summary: Voluptas magni sint debitis tempora eum quae.
+                    - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                      percentage: 0.4418804070792078
+                      vote_count: 4638165221269238423
+                    - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                      percentage: 0.4418804070792078
+                      vote_count: 4638165221269238423
+                    - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                      percentage: 0.4418804070792078
+                      vote_count: 4638165221269238423
+                  irv_round_summary: Suscipit exercitationem animi est et laboriosam.
+                  meek_stv_round_summary: Amet quasi.
                   question:
                     choices:
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
-                          choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
-                          choice_text: John Doe
-                    prompt: Unde quas nihil dolore dolorum recusandae.
-                    question_id: 02a94d6e-4011-4210-863c-f690b61d5503
-                    type: Laudantium est velit voluptatem dignissimos et blanditiis.
+                    prompt: Omnis vel ut animi delectus enim.
+                    question_id: 2bc0120c-8a4c-4b9e-a2ef-292592882e5a
+                    type: Placeat dolorem nostrum iure et.
                   ranked_choice_votes:
-                    - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                      condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                    - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                      condorcet_matrix: Eum quae modi voluptatem.
                       rank_counts:
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                    - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                      condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                    - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                      condorcet_matrix: Eum quae modi voluptatem.
                       rank_counts:
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                    - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                      condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                    - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                      condorcet_matrix: Eum quae modi voluptatem.
                       rank_counts:
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
                   ranked_choice_winner_info:
-                    condorcet_irv_used_for_eliminations: true
+                    condorcet_irv_used_for_eliminations: false
                     poll_choices:
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
                 - generic_choice_votes:
-                    - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                      percentage: 0.8677690970385786
-                      vote_count: 7230994823186033610
-                    - choice_id: cb2ef1fa-be76-4af3-bb60-e71ae7ad3d56
-                      percentage: 0.8677690970385786
-                      vote_count: 7230994823186033610
-                  irv_round_summary: Voluptatem totam quo ad est.
-                  meek_stv_round_summary: Voluptas magni sint debitis tempora eum quae.
+                    - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                      percentage: 0.4418804070792078
+                      vote_count: 4638165221269238423
+                    - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                      percentage: 0.4418804070792078
+                      vote_count: 4638165221269238423
+                    - choice_id: 1cf529bb-7744-40e3-be13-0822b4ced61b
+                      percentage: 0.4418804070792078
+                      vote_count: 4638165221269238423
+                  irv_round_summary: Suscipit exercitationem animi est et laboriosam.
+                  meek_stv_round_summary: Amet quasi.
                   question:
                     choices:
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
-                          choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
-                          choice_text: John Doe
-                    prompt: Unde quas nihil dolore dolorum recusandae.
-                    question_id: 02a94d6e-4011-4210-863c-f690b61d5503
-                    type: Laudantium est velit voluptatem dignissimos et blanditiis.
+                    prompt: Omnis vel ut animi delectus enim.
+                    question_id: 2bc0120c-8a4c-4b9e-a2ef-292592882e5a
+                    type: Placeat dolorem nostrum iure et.
                   ranked_choice_votes:
-                    - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                      condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                    - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                      condorcet_matrix: Eum quae modi voluptatem.
                       rank_counts:
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                    - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                      condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                    - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                      condorcet_matrix: Eum quae modi voluptatem.
                       rank_counts:
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                    - choice_id: 2b0bca8c-e2c3-4d2a-8ad1-5c88ff78a971
-                      condorcet_matrix: Aliquam repellat ut nemo nam rem.
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                    - choice_id: a7141964-ff53-477d-8d23-c6c38f5abec7
+                      condorcet_matrix: Eum quae modi voluptatem.
                       rank_counts:
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
-                        - count: 1524766794268073909
-                          rank: 2766322867288144877
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
+                        - count: 6966471874483234004
+                          rank: 794633787656067243
                   ranked_choice_winner_info:
-                    condorcet_irv_used_for_eliminations: true
+                    condorcet_irv_used_for_eliminations: false
                     poll_choices:
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
-                        - choice_id: 0ef1b8b4-8e37-46a9-a1b8-ebacae118adc
+                        - choice_id: eed65351-e712-47f2-9149-106260031f83
                           choice_text: John Doe
         required:
             - poll_results
@@ -2967,52 +2908,36 @@ definitions:
                 description: Questions for the vote
                 example:
                     - choices:
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                        - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                           choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                          choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                          choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                        - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 8423e9d7-592f-44bd-8763-53582f20de12
+                      question_id: 9fa75d10-8740-483c-b6da-ff6a5aca9c9d
                       type: single_choice
                     - choices:
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                        - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                           choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                          choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                          choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                        - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 8423e9d7-592f-44bd-8763-53582f20de12
+                      question_id: 9fa75d10-8740-483c-b6da-ff6a5aca9c9d
                       type: single_choice
                     - choices:
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                        - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                           choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                          choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                          choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                        - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 8423e9d7-592f-44bd-8763-53582f20de12
+                      question_id: 9fa75d10-8740-483c-b6da-ff6a5aca9c9d
                       type: single_choice
                     - choices:
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                        - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                           choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                          choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                          choice_text: John Doe
-                        - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                        - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 8423e9d7-592f-44bd-8763-53582f20de12
+                      question_id: 9fa75d10-8740-483c-b6da-ff6a5aca9c9d
                       type: single_choice
             poll_type:
                 type: string
@@ -3067,28 +2992,20 @@ definitions:
                 - prompt: Please provide any additional feedback
             poll_questions:
                 - choices:
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                    - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                       choice_text: John Doe
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                      choice_text: John Doe
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                      choice_text: John Doe
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                    - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 8423e9d7-592f-44bd-8763-53582f20de12
+                  question_id: 9fa75d10-8740-483c-b6da-ff6a5aca9c9d
                   type: single_choice
                 - choices:
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                    - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                       choice_text: John Doe
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                      choice_text: John Doe
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
-                      choice_text: John Doe
-                    - choice_id: 1a89caba-e85c-41b1-8ce0-424acda9a6d1
+                    - choice_id: 05dbee83-ff3f-43c7-ac99-10803635cdf3
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 8423e9d7-592f-44bd-8763-53582f20de12
+                  question_id: 9fa75d10-8740-483c-b6da-ff6a5aca9c9d
                   type: single_choice
             poll_type: generic
             project_uid: a09P000000DsCBuIRT

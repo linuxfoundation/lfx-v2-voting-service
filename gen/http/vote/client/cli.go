@@ -25,7 +25,7 @@ func BuildCreateVotePayload(voteCreateVoteBody string, voteCreateVoteToken strin
 	{
 		err = json.Unmarshal([]byte(voteCreateVoteBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"allow_abstain\": true,\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n      \"committee_uids\": [\n         \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n         \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n      ],\n      \"description\": \"Vote for the TSC members for Q1 2026\",\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"name\": \"Q1 2026 Technical Steering Committee Election\",\n      \"num_winners\": 3,\n      \"poll_comment_prompts\": [\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         }\n      ],\n      \"poll_questions\": [\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"8423e9d7-592f-44bd-8763-53582f20de12\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"8423e9d7-592f-44bd-8763-53582f20de12\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"8423e9d7-592f-44bd-8763-53582f20de12\",\n            \"type\": \"single_choice\"\n         }\n      ],\n      \"poll_type\": \"instant_runoff_vote\",\n      \"project_uid\": \"a09P000000DsCBuIRT\",\n      \"pseudo_anonymity\": false,\n      \"quorum_percentage\": 50,\n      \"winning_threshold_percentage\": 51\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"allow_abstain\": false,\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n      \"committee_uids\": [\n         \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n         \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n      ],\n      \"description\": \"Vote for the TSC members for Q1 2026\",\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"name\": \"Q1 2026 Technical Steering Committee Election\",\n      \"num_winners\": 5,\n      \"poll_comment_prompts\": [\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         }\n      ],\n      \"poll_questions\": [\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"05dbee83-ff3f-43c7-ac99-10803635cdf3\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"05dbee83-ff3f-43c7-ac99-10803635cdf3\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"9fa75d10-8740-483c-b6da-ff6a5aca9c9d\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"05dbee83-ff3f-43c7-ac99-10803635cdf3\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"05dbee83-ff3f-43c7-ac99-10803635cdf3\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"9fa75d10-8740-483c-b6da-ff6a5aca9c9d\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"05dbee83-ff3f-43c7-ac99-10803635cdf3\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"05dbee83-ff3f-43c7-ac99-10803635cdf3\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"9fa75d10-8740-483c-b6da-ff6a5aca9c9d\",\n            \"type\": \"single_choice\"\n         }\n      ],\n      \"poll_type\": \"meek_stv\",\n      \"project_uid\": \"a09P000000DsCBuIRT\",\n      \"pseudo_anonymity\": true,\n      \"quorum_percentage\": 50,\n      \"winning_threshold_percentage\": 51\n   }'")
 		}
 		if body.PollQuestions == nil {
 			err = goa.MergeErrors(err, goa.MissingFieldError("poll_questions", "body"))
@@ -167,12 +167,12 @@ func BuildCreateVotePayload(voteCreateVoteBody string, voteCreateVoteToken strin
 
 // BuildGetVotePayload builds the payload for the vote get_vote endpoint from
 // CLI flags.
-func BuildGetVotePayload(voteGetVoteVoteUID string, voteGetVoteToken string) (*vote.GetVotePayload, error) {
+func BuildGetVotePayload(voteGetVoteUID string, voteGetVoteToken string) (*vote.GetVotePayload, error) {
 	var err error
-	var voteUID string
+	var uid string
 	{
-		voteUID = voteGetVoteVoteUID
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = voteGetVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
 		}
@@ -184,7 +184,7 @@ func BuildGetVotePayload(voteGetVoteVoteUID string, voteGetVoteToken string) (*v
 		}
 	}
 	v := &vote.GetVotePayload{}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v, nil
@@ -192,13 +192,13 @@ func BuildGetVotePayload(voteGetVoteVoteUID string, voteGetVoteToken string) (*v
 
 // BuildUpdateVotePayload builds the payload for the vote update_vote endpoint
 // from CLI flags.
-func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteVoteUID string, voteUpdateVoteToken string) (*vote.UpdateVotePayload, error) {
+func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteUID string, voteUpdateVoteToken string) (*vote.UpdateVotePayload, error) {
 	var err error
 	var body UpdateVoteRequestBody
 	{
 		err = json.Unmarshal([]byte(voteUpdateVoteBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"allow_abstain\": false,\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n      \"committee_uids\": [\n         \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n         \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n      ],\n      \"description\": \"Vote for the TSC members for Q1 2026\",\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"name\": \"Q1 2026 Technical Steering Committee Election\",\n      \"num_winners\": 3,\n      \"poll_comment_prompts\": [\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         }\n      ],\n      \"poll_questions\": [\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"8423e9d7-592f-44bd-8763-53582f20de12\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"1a89caba-e85c-41b1-8ce0-424acda9a6d1\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"8423e9d7-592f-44bd-8763-53582f20de12\",\n            \"type\": \"single_choice\"\n         }\n      ],\n      \"poll_type\": \"generic\",\n      \"project_uid\": \"a09P000000DsCBuIRT\",\n      \"pseudo_anonymity\": false,\n      \"quorum_percentage\": 50,\n      \"winning_threshold_percentage\": 51\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"allow_abstain\": false,\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n      \"committee_uids\": [\n         \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n         \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n      ],\n      \"description\": \"Vote for the TSC members for Q1 2026\",\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"name\": \"Q1 2026 Technical Steering Committee Election\",\n      \"num_winners\": 4,\n      \"poll_comment_prompts\": [\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         }\n      ],\n      \"poll_questions\": [\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"05dbee83-ff3f-43c7-ac99-10803635cdf3\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"05dbee83-ff3f-43c7-ac99-10803635cdf3\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"9fa75d10-8740-483c-b6da-ff6a5aca9c9d\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"05dbee83-ff3f-43c7-ac99-10803635cdf3\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"05dbee83-ff3f-43c7-ac99-10803635cdf3\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"9fa75d10-8740-483c-b6da-ff6a5aca9c9d\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"05dbee83-ff3f-43c7-ac99-10803635cdf3\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"05dbee83-ff3f-43c7-ac99-10803635cdf3\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"9fa75d10-8740-483c-b6da-ff6a5aca9c9d\",\n            \"type\": \"single_choice\"\n         }\n      ],\n      \"poll_type\": \"generic\",\n      \"project_uid\": \"a09P000000DsCBuIRT\",\n      \"pseudo_anonymity\": false,\n      \"quorum_percentage\": 50,\n      \"winning_threshold_percentage\": 51\n   }'")
 		}
 		if body.PollQuestions == nil {
 			err = goa.MergeErrors(err, goa.MissingFieldError("poll_questions", "body"))
@@ -258,10 +258,10 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteVoteUID str
 			return nil, err
 		}
 	}
-	var voteUID string
+	var uid string
 	{
-		voteUID = voteUpdateVoteVoteUID
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = voteUpdateVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
 		}
@@ -343,7 +343,7 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteVoteUID str
 			v.AllowAbstain = false
 		}
 	}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v, nil
@@ -351,12 +351,12 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteVoteUID str
 
 // BuildDeleteVotePayload builds the payload for the vote delete_vote endpoint
 // from CLI flags.
-func BuildDeleteVotePayload(voteDeleteVoteVoteUID string, voteDeleteVoteToken string) (*vote.DeleteVotePayload, error) {
+func BuildDeleteVotePayload(voteDeleteVoteUID string, voteDeleteVoteToken string) (*vote.DeleteVotePayload, error) {
 	var err error
-	var voteUID string
+	var uid string
 	{
-		voteUID = voteDeleteVoteVoteUID
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = voteDeleteVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
 		}
@@ -368,7 +368,7 @@ func BuildDeleteVotePayload(voteDeleteVoteVoteUID string, voteDeleteVoteToken st
 		}
 	}
 	v := &vote.DeleteVotePayload{}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v, nil
@@ -376,7 +376,7 @@ func BuildDeleteVotePayload(voteDeleteVoteVoteUID string, voteDeleteVoteToken st
 
 // BuildExtendVotePayload builds the payload for the vote extend_vote endpoint
 // from CLI flags.
-func BuildExtendVotePayload(voteExtendVoteBody string, voteExtendVoteVoteUID string, voteExtendVoteToken string) (*vote.ExtendVotePayload, error) {
+func BuildExtendVotePayload(voteExtendVoteBody string, voteExtendVoteUID string, voteExtendVoteToken string) (*vote.ExtendVotePayload, error) {
 	var err error
 	var body ExtendVoteRequestBody
 	{
@@ -389,10 +389,10 @@ func BuildExtendVotePayload(voteExtendVoteBody string, voteExtendVoteVoteUID str
 			return nil, err
 		}
 	}
-	var voteUID string
+	var uid string
 	{
-		voteUID = voteExtendVoteVoteUID
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = voteExtendVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
 		}
@@ -406,7 +406,7 @@ func BuildExtendVotePayload(voteExtendVoteBody string, voteExtendVoteVoteUID str
 	v := &vote.ExtendVotePayload{
 		EndTime: body.EndTime,
 	}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v, nil
@@ -414,12 +414,12 @@ func BuildExtendVotePayload(voteExtendVoteBody string, voteExtendVoteVoteUID str
 
 // BuildEnableVotePayload builds the payload for the vote enable_vote endpoint
 // from CLI flags.
-func BuildEnableVotePayload(voteEnableVoteVoteUID string, voteEnableVoteToken string) (*vote.EnableVotePayload, error) {
+func BuildEnableVotePayload(voteEnableVoteUID string, voteEnableVoteToken string) (*vote.EnableVotePayload, error) {
 	var err error
-	var voteUID string
+	var uid string
 	{
-		voteUID = voteEnableVoteVoteUID
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = voteEnableVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
 		}
@@ -431,7 +431,7 @@ func BuildEnableVotePayload(voteEnableVoteVoteUID string, voteEnableVoteToken st
 		}
 	}
 	v := &vote.EnableVotePayload{}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v, nil
@@ -439,7 +439,7 @@ func BuildEnableVotePayload(voteEnableVoteVoteUID string, voteEnableVoteToken st
 
 // BuildBulkResendVotePayload builds the payload for the vote bulk_resend_vote
 // endpoint from CLI flags.
-func BuildBulkResendVotePayload(voteBulkResendVoteBody string, voteBulkResendVoteVoteUID string, voteBulkResendVoteToken string) (*vote.BulkResendVotePayload, error) {
+func BuildBulkResendVotePayload(voteBulkResendVoteBody string, voteBulkResendVoteUID string, voteBulkResendVoteToken string) (*vote.BulkResendVotePayload, error) {
 	var err error
 	var body BulkResendVoteRequestBody
 	{
@@ -454,10 +454,10 @@ func BuildBulkResendVotePayload(voteBulkResendVoteBody string, voteBulkResendVot
 			return nil, err
 		}
 	}
-	var voteUID string
+	var uid string
 	{
-		voteUID = voteBulkResendVoteVoteUID
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = voteBulkResendVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
 		}
@@ -477,7 +477,7 @@ func BuildBulkResendVotePayload(voteBulkResendVoteBody string, voteBulkResendVot
 	} else {
 		v.RecipientIds = []string{}
 	}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v, nil
@@ -485,12 +485,12 @@ func BuildBulkResendVotePayload(voteBulkResendVoteBody string, voteBulkResendVot
 
 // BuildGetVoteResultsPayload builds the payload for the vote get_vote_results
 // endpoint from CLI flags.
-func BuildGetVoteResultsPayload(voteGetVoteResultsVoteUID string, voteGetVoteResultsToken string) (*vote.GetVoteResultsPayload, error) {
+func BuildGetVoteResultsPayload(voteGetVoteResultsUID string, voteGetVoteResultsToken string) (*vote.GetVoteResultsPayload, error) {
 	var err error
-	var voteUID string
+	var uid string
 	{
-		voteUID = voteGetVoteResultsVoteUID
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = voteGetVoteResultsUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
 		}
@@ -502,7 +502,7 @@ func BuildGetVoteResultsPayload(voteGetVoteResultsVoteUID string, voteGetVoteRes
 		}
 	}
 	v := &vote.GetVoteResultsPayload{}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v, nil

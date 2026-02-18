@@ -20,7 +20,7 @@ func BearerTokenAttribute() {
 
 // VoteIDAttribute is the DSL attribute for vote ID (UUID).
 func VoteIDAttribute() {
-	Attribute("vote_uid", String, "Vote UID", func() {
+	Attribute("uid", String, "Vote UID", func() {
 		Format(FormatUUID)
 		Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
 	})
@@ -148,7 +148,7 @@ func WinningThresholdPercentageAttribute() {
 var VoteResult = Type("VoteResult", func() {
 	Description("Vote details")
 
-	Attribute("vote_uid", String, "Vote identifier", func() {
+	Attribute("uid", String, "Vote identifier", func() {
 		Format(FormatUUID)
 		Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
 	})
@@ -173,17 +173,26 @@ var VoteResult = Type("VoteResult", func() {
 	})
 
 	Attribute("project_uid", String, "Project UID")
+	Attribute("project_name", String, "Project name")
 	Attribute("committee_uid", String, "Committee UID")
 	Attribute("committee_name", String, "Committee name")
+	Attribute("committee_filters", ArrayOf(String), "Committee voting status filters", func() {
+		Example([]string{"Voting Rep", "Alternate Voting Rep"})
+	})
 	Attribute("committee_type", String, "Committee type")
 	Attribute("committee_voting_status", Boolean, "Committee voting status")
 	Attribute("pseudo_anonymity", Boolean, "Pseudo-anonymity enabled")
 	Attribute("total_voting_request_invitations", Int, "Total invitations sent")
 	Attribute("num_response_received", Int, "Responses received")
 	Attribute("poll_questions", ArrayOf(PollQuestion), "Vote questions")
+	Attribute("poll_type", String, "Poll type", func() {
+		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
+		Default("generic")
+	})
+	Attribute("num_winners", Int, "Number of winners (meek_stv only)")
 	Attribute("allow_abstain", Boolean, "Allow abstain")
 
-	Required("vote_uid", "name", "description", "status", "project_uid", "committee_uid")
+	Required("uid", "name", "description", "status", "project_uid", "committee_uid")
 })
 
 // PollQuestion represents a question in a vote
