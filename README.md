@@ -163,6 +163,8 @@ make helm-uninstall
 - **Production values**: `charts/lfx-v2-voting-service/values.yaml`
 - **Local values**: `charts/lfx-v2-voting-service/values.local.yaml`
 
+**Chart Versioning**: The chart version in `Chart.yaml` is set to `0.0.1` and should not be manually incremented. During the release process, the chart version is dynamically set to match the Git tag version (e.g., tag `v0.1.6` results in chart version `0.1.6`).
+
 The Helm chart includes:
 
 - Kubernetes Deployment with health checks

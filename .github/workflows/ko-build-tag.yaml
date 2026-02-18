@@ -36,7 +36,7 @@ jobs:
           set -euo pipefail
           APP_VERSION=$(echo ${{ github.ref_name }} | sed 's/v//g')
           CHART_NAME="$(yq '.name' charts/*/Chart.yaml)"
-          CHART_VERSION="$(yq '.version' charts/*/Chart.yaml)"
+          CHART_VERSION="$(echo ${{ github.ref_name }} | sed 's/v//g')"
           {
             echo "app_version=$APP_VERSION"
             echo "chart_name=$CHART_NAME"
