@@ -210,16 +210,16 @@ func DecodeCreateVoteResponse(decoder func(*http.Response) goahttp.Decoder, rest
 // set to call the "vote" service "get_vote" endpoint
 func (c *Client) BuildGetVoteRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteUID string
+		uid string
 	)
 	{
 		p, ok := v.(*vote.GetVotePayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "get_vote", "*vote.GetVotePayload", v)
 		}
-		voteUID = p.VoteUID
+		uid = p.UID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteVotePath(voteUID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteVotePath(uid)}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "get_vote", u.String(), err)
@@ -387,16 +387,16 @@ func DecodeGetVoteResponse(decoder func(*http.Response) goahttp.Decoder, restore
 // path set to call the "vote" service "update_vote" endpoint
 func (c *Client) BuildUpdateVoteRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteUID string
+		uid string
 	)
 	{
 		p, ok := v.(*vote.UpdateVotePayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "update_vote", "*vote.UpdateVotePayload", v)
 		}
-		voteUID = p.VoteUID
+		uid = p.UID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateVoteVotePath(voteUID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateVoteVotePath(uid)}
 	req, err := http.NewRequest("PUT", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "update_vote", u.String(), err)
@@ -568,16 +568,16 @@ func DecodeUpdateVoteResponse(decoder func(*http.Response) goahttp.Decoder, rest
 // path set to call the "vote" service "delete_vote" endpoint
 func (c *Client) BuildDeleteVoteRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteUID string
+		uid string
 	)
 	{
 		p, ok := v.(*vote.DeleteVotePayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "delete_vote", "*vote.DeleteVotePayload", v)
 		}
-		voteUID = p.VoteUID
+		uid = p.UID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: DeleteVoteVotePath(voteUID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: DeleteVoteVotePath(uid)}
 	req, err := http.NewRequest("DELETE", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "delete_vote", u.String(), err)
@@ -732,16 +732,16 @@ func DecodeDeleteVoteResponse(decoder func(*http.Response) goahttp.Decoder, rest
 // path set to call the "vote" service "extend_vote" endpoint
 func (c *Client) BuildExtendVoteRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteUID string
+		uid string
 	)
 	{
 		p, ok := v.(*vote.ExtendVotePayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "extend_vote", "*vote.ExtendVotePayload", v)
 		}
-		voteUID = p.VoteUID
+		uid = p.UID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ExtendVoteVotePath(voteUID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ExtendVoteVotePath(uid)}
 	req, err := http.NewRequest("POST", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "extend_vote", u.String(), err)
@@ -913,16 +913,16 @@ func DecodeExtendVoteResponse(decoder func(*http.Response) goahttp.Decoder, rest
 // path set to call the "vote" service "enable_vote" endpoint
 func (c *Client) BuildEnableVoteRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteUID string
+		uid string
 	)
 	{
 		p, ok := v.(*vote.EnableVotePayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "enable_vote", "*vote.EnableVotePayload", v)
 		}
-		voteUID = p.VoteUID
+		uid = p.UID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: EnableVoteVotePath(voteUID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: EnableVoteVotePath(uid)}
 	req, err := http.NewRequest("PUT", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "enable_vote", u.String(), err)
@@ -1077,16 +1077,16 @@ func DecodeEnableVoteResponse(decoder func(*http.Response) goahttp.Decoder, rest
 // and path set to call the "vote" service "bulk_resend_vote" endpoint
 func (c *Client) BuildBulkResendVoteRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteUID string
+		uid string
 	)
 	{
 		p, ok := v.(*vote.BulkResendVotePayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "bulk_resend_vote", "*vote.BulkResendVotePayload", v)
 		}
-		voteUID = p.VoteUID
+		uid = p.UID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: BulkResendVoteVotePath(voteUID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: BulkResendVoteVotePath(uid)}
 	req, err := http.NewRequest("POST", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "bulk_resend_vote", u.String(), err)
@@ -1245,16 +1245,16 @@ func DecodeBulkResendVoteResponse(decoder func(*http.Response) goahttp.Decoder, 
 // and path set to call the "vote" service "get_vote_results" endpoint
 func (c *Client) BuildGetVoteResultsRequest(ctx context.Context, v any) (*http.Request, error) {
 	var (
-		voteUID string
+		uid string
 	)
 	{
 		p, ok := v.(*vote.GetVoteResultsPayload)
 		if !ok {
 			return nil, goahttp.ErrInvalidType("vote", "get_vote_results", "*vote.GetVoteResultsPayload", v)
 		}
-		voteUID = p.VoteUID
+		uid = p.UID
 	}
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteResultsVotePath(voteUID)}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteResultsVotePath(uid)}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "get_vote_results", u.String(), err)
@@ -2223,10 +2223,7 @@ func unmarshalPollChoiceResponseBodyToVotePollChoice(v *PollChoiceResponseBody) 
 // unmarshalPollResultItemResponseBodyToVotePollResultItem builds a value of
 // type *vote.PollResultItem from a value of type *PollResultItemResponseBody.
 func unmarshalPollResultItemResponseBodyToVotePollResultItem(v *PollResultItemResponseBody) *vote.PollResultItem {
-	res := &vote.PollResultItem{
-		IrvRoundSummary:     v.IrvRoundSummary,
-		MeekStvRoundSummary: v.MeekStvRoundSummary,
-	}
+	res := &vote.PollResultItem{}
 	res.Question = unmarshalPollQuestionDetailResponseBodyToVotePollQuestionDetail(v.Question)
 	if v.GenericChoiceVotes != nil {
 		res.GenericChoiceVotes = make([]*vote.GenericChoiceVote, len(v.GenericChoiceVotes))
@@ -2250,6 +2247,26 @@ func unmarshalPollResultItemResponseBodyToVotePollResultItem(v *PollResultItemRe
 	}
 	if v.RankedChoiceWinnerInfo != nil {
 		res.RankedChoiceWinnerInfo = unmarshalRankedChoiceWinnerInfoResponseBodyToVoteRankedChoiceWinnerInfo(v.RankedChoiceWinnerInfo)
+	}
+	if v.IrvRoundSummary != nil {
+		res.IrvRoundSummary = make([]*vote.IRVRoundSummary, len(v.IrvRoundSummary))
+		for i, val := range v.IrvRoundSummary {
+			if val == nil {
+				res.IrvRoundSummary[i] = nil
+				continue
+			}
+			res.IrvRoundSummary[i] = unmarshalIRVRoundSummaryResponseBodyToVoteIRVRoundSummary(val)
+		}
+	}
+	if v.MeekStvRoundSummary != nil {
+		res.MeekStvRoundSummary = make([]*vote.MeekSTVRoundSummary, len(v.MeekStvRoundSummary))
+		for i, val := range v.MeekStvRoundSummary {
+			if val == nil {
+				res.MeekStvRoundSummary[i] = nil
+				continue
+			}
+			res.MeekStvRoundSummary[i] = unmarshalMeekSTVRoundSummaryResponseBodyToVoteMeekSTVRoundSummary(val)
+		}
 	}
 
 	return res
@@ -2300,8 +2317,7 @@ func unmarshalRankedChoiceVoteResponseBodyToVoteRankedChoiceVote(v *RankedChoice
 		return nil
 	}
 	res := &vote.RankedChoiceVote{
-		ChoiceID:        *v.ChoiceID,
-		CondorcetMatrix: v.CondorcetMatrix,
+		ChoiceID: *v.ChoiceID,
 	}
 	res.RankCounts = make([]*vote.RankCount, len(v.RankCounts))
 	for i, val := range v.RankCounts {
@@ -2310,6 +2326,16 @@ func unmarshalRankedChoiceVoteResponseBodyToVoteRankedChoiceVote(v *RankedChoice
 			continue
 		}
 		res.RankCounts[i] = unmarshalRankCountResponseBodyToVoteRankCount(val)
+	}
+	if v.CondorcetMatrix != nil {
+		res.CondorcetMatrix = make([]*vote.CondorcetMatrixEntry, len(v.CondorcetMatrix))
+		for i, val := range v.CondorcetMatrix {
+			if val == nil {
+				res.CondorcetMatrix[i] = nil
+				continue
+			}
+			res.CondorcetMatrix[i] = unmarshalCondorcetMatrixEntryResponseBodyToVoteCondorcetMatrixEntry(val)
+		}
 	}
 
 	return res
@@ -2321,6 +2347,24 @@ func unmarshalRankCountResponseBodyToVoteRankCount(v *RankCountResponseBody) *vo
 	res := &vote.RankCount{
 		Rank:  *v.Rank,
 		Count: *v.Count,
+	}
+
+	return res
+}
+
+// unmarshalCondorcetMatrixEntryResponseBodyToVoteCondorcetMatrixEntry builds a
+// value of type *vote.CondorcetMatrixEntry from a value of type
+// *CondorcetMatrixEntryResponseBody.
+func unmarshalCondorcetMatrixEntryResponseBodyToVoteCondorcetMatrixEntry(v *CondorcetMatrixEntryResponseBody) *vote.CondorcetMatrixEntry {
+	if v == nil {
+		return nil
+	}
+	res := &vote.CondorcetMatrixEntry{
+		ChoiceID:          *v.ChoiceID,
+		OtherChoiceID:     *v.OtherChoiceID,
+		ChoiceIDWins:      *v.ChoiceIDWins,
+		OtherChoiceIDWins: *v.OtherChoiceIDWins,
+		Result:            *v.Result,
 	}
 
 	return res
@@ -2343,6 +2387,149 @@ func unmarshalRankedChoiceWinnerInfoResponseBodyToVoteRankedChoiceWinnerInfo(v *
 			continue
 		}
 		res.PollChoices[i] = unmarshalPollChoiceResponseBodyToVotePollChoice(val)
+	}
+
+	return res
+}
+
+// unmarshalIRVRoundSummaryResponseBodyToVoteIRVRoundSummary builds a value of
+// type *vote.IRVRoundSummary from a value of type *IRVRoundSummaryResponseBody.
+func unmarshalIRVRoundSummaryResponseBodyToVoteIRVRoundSummary(v *IRVRoundSummaryResponseBody) *vote.IRVRoundSummary {
+	if v == nil {
+		return nil
+	}
+	res := &vote.IRVRoundSummary{
+		RoundNumber:        *v.RoundNumber,
+		TotalVotes:         *v.TotalVotes,
+		MinVotes:           v.MinVotes,
+		ExhaustedVotes:     *v.ExhaustedVotes,
+		Threshold:          *v.Threshold,
+		EliminatedChoiceID: v.EliminatedChoiceID,
+		Message:            *v.Message,
+	}
+	res.Votes = make([]*vote.VoteCount, len(v.Votes))
+	for i, val := range v.Votes {
+		if val == nil {
+			res.Votes[i] = nil
+			continue
+		}
+		res.Votes[i] = unmarshalVoteCountResponseBodyToVoteVoteCount(val)
+	}
+	if v.TransferredVotes != nil {
+		res.TransferredVotes = make([]*vote.VoteCount, len(v.TransferredVotes))
+		for i, val := range v.TransferredVotes {
+			if val == nil {
+				res.TransferredVotes[i] = nil
+				continue
+			}
+			res.TransferredVotes[i] = unmarshalVoteCountResponseBodyToVoteVoteCount(val)
+		}
+	}
+
+	return res
+}
+
+// unmarshalVoteCountResponseBodyToVoteVoteCount builds a value of type
+// *vote.VoteCount from a value of type *VoteCountResponseBody.
+func unmarshalVoteCountResponseBodyToVoteVoteCount(v *VoteCountResponseBody) *vote.VoteCount {
+	res := &vote.VoteCount{
+		ChoiceID:   *v.ChoiceID,
+		VoteCount:  *v.VoteCount,
+		Percentage: v.Percentage,
+	}
+
+	return res
+}
+
+// unmarshalMeekSTVRoundSummaryResponseBodyToVoteMeekSTVRoundSummary builds a
+// value of type *vote.MeekSTVRoundSummary from a value of type
+// *MeekSTVRoundSummaryResponseBody.
+func unmarshalMeekSTVRoundSummaryResponseBodyToVoteMeekSTVRoundSummary(v *MeekSTVRoundSummaryResponseBody) *vote.MeekSTVRoundSummary {
+	if v == nil {
+		return nil
+	}
+	res := &vote.MeekSTVRoundSummary{
+		RoundNumber:    *v.RoundNumber,
+		TotalVotes:     *v.TotalVotes,
+		ExhaustedVotes: *v.ExhaustedVotes,
+		Threshold:      *v.Threshold,
+		Message:        *v.Message,
+	}
+	res.Votes = make([]*vote.MeekSTVVoteCount, len(v.Votes))
+	for i, val := range v.Votes {
+		if val == nil {
+			res.Votes[i] = nil
+			continue
+		}
+		res.Votes[i] = unmarshalMeekSTVVoteCountResponseBodyToVoteMeekSTVVoteCount(val)
+	}
+	if v.ElectedChoices != nil {
+		res.ElectedChoices = make([]*vote.MeekSTVElectedChoice, len(v.ElectedChoices))
+		for i, val := range v.ElectedChoices {
+			if val == nil {
+				res.ElectedChoices[i] = nil
+				continue
+			}
+			res.ElectedChoices[i] = unmarshalMeekSTVElectedChoiceResponseBodyToVoteMeekSTVElectedChoice(val)
+		}
+	}
+	if v.EliminatedChoices != nil {
+		res.EliminatedChoices = make([]*vote.MeekSTVVoteCount, len(v.EliminatedChoices))
+		for i, val := range v.EliminatedChoices {
+			if val == nil {
+				res.EliminatedChoices[i] = nil
+				continue
+			}
+			res.EliminatedChoices[i] = unmarshalMeekSTVVoteCountResponseBodyToVoteMeekSTVVoteCount(val)
+		}
+	}
+	if v.TransferredVotes != nil {
+		res.TransferredVotes = make([]*vote.MeekSTVVoteCount, len(v.TransferredVotes))
+		for i, val := range v.TransferredVotes {
+			if val == nil {
+				res.TransferredVotes[i] = nil
+				continue
+			}
+			res.TransferredVotes[i] = unmarshalMeekSTVVoteCountResponseBodyToVoteMeekSTVVoteCount(val)
+		}
+	}
+	if v.SurplusVotes != nil {
+		res.SurplusVotes = make([]*vote.MeekSTVVoteCount, len(v.SurplusVotes))
+		for i, val := range v.SurplusVotes {
+			if val == nil {
+				res.SurplusVotes[i] = nil
+				continue
+			}
+			res.SurplusVotes[i] = unmarshalMeekSTVVoteCountResponseBodyToVoteMeekSTVVoteCount(val)
+		}
+	}
+
+	return res
+}
+
+// unmarshalMeekSTVVoteCountResponseBodyToVoteMeekSTVVoteCount builds a value
+// of type *vote.MeekSTVVoteCount from a value of type
+// *MeekSTVVoteCountResponseBody.
+func unmarshalMeekSTVVoteCountResponseBodyToVoteMeekSTVVoteCount(v *MeekSTVVoteCountResponseBody) *vote.MeekSTVVoteCount {
+	res := &vote.MeekSTVVoteCount{
+		ChoiceID:  *v.ChoiceID,
+		VoteCount: *v.VoteCount,
+	}
+
+	return res
+}
+
+// unmarshalMeekSTVElectedChoiceResponseBodyToVoteMeekSTVElectedChoice builds a
+// value of type *vote.MeekSTVElectedChoice from a value of type
+// *MeekSTVElectedChoiceResponseBody.
+func unmarshalMeekSTVElectedChoiceResponseBodyToVoteMeekSTVElectedChoice(v *MeekSTVElectedChoiceResponseBody) *vote.MeekSTVElectedChoice {
+	if v == nil {
+		return nil
+	}
+	res := &vote.MeekSTVElectedChoice{
+		ChoiceID:     *v.ChoiceID,
+		VoteCount:    *v.VoteCount,
+		SurplusVotes: *v.SurplusVotes,
 	}
 
 	return res

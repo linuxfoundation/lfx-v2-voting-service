@@ -81,7 +81,7 @@ type BulkResendVotePayload struct {
 	// JWT token
 	Token *string
 	// Vote UID
-	VoteUID string
+	UID string
 	// List of recipient IDs to resend vote email to
 	RecipientIds []string
 }
@@ -92,6 +92,20 @@ type CommentResultItem struct {
 	Prompt string
 	// List of comments
 	Comments []string
+}
+
+// Condorcet matrix entry for pairwise comparison
+type CondorcetMatrixEntry struct {
+	// Choice identifier
+	ChoiceID string
+	// Other choice identifier
+	OtherChoiceID string
+	// Number of times choice_id wins against other_choice_id
+	ChoiceIDWins int
+	// Number of times other_choice_id wins against choice_id
+	OtherChoiceIDWins int
+	// Result string (e.g., '23(10)')
+	Result string
 }
 
 // Conflict error response
@@ -158,7 +172,7 @@ type DeleteVotePayload struct {
 	// JWT token
 	Token *string
 	// Vote UID
-	VoteUID string
+	UID string
 }
 
 // EnableVotePayload is the payload type of the vote service enable_vote method.
@@ -166,7 +180,7 @@ type EnableVotePayload struct {
 	// JWT token
 	Token *string
 	// Vote UID
-	VoteUID string
+	UID string
 }
 
 // ExtendVotePayload is the payload type of the vote service extend_vote method.
@@ -174,7 +188,7 @@ type ExtendVotePayload struct {
 	// JWT token
 	Token *string
 	// Vote UID
-	VoteUID string
+	UID string
 	// End time in RFC3339 format
 	EndTime string
 }
@@ -202,7 +216,7 @@ type GetVotePayload struct {
 	// JWT token
 	Token *string
 	// Vote UID
-	VoteUID string
+	UID string
 }
 
 // GetVoteResponsePayload is the payload type of the vote service
@@ -220,7 +234,29 @@ type GetVoteResultsPayload struct {
 	// JWT token
 	Token *string
 	// Vote UID
-	VoteUID string
+	UID string
+}
+
+// Instant runoff voting round summary
+type IRVRoundSummary struct {
+	// Round number
+	RoundNumber int
+	// Vote counts per choice
+	Votes []*VoteCount
+	// Total votes in this round
+	TotalVotes int
+	// Minimum votes
+	MinVotes *int
+	// Number of exhausted votes
+	ExhaustedVotes int
+	// Transferred votes
+	TransferredVotes []*VoteCount
+	// Winning threshold
+	Threshold int
+	// ID of eliminated choice
+	EliminatedChoiceID *string
+	// Round message
+	Message string
 }
 
 // Internal server error response
@@ -229,6 +265,48 @@ type InternalServerError struct {
 	Code string
 	// Error message
 	Message string
+}
+
+// Elected choice in Meek STV
+type MeekSTVElectedChoice struct {
+	// Choice identifier
+	ChoiceID string
+	// Number of votes
+	VoteCount int
+	// Surplus votes over threshold
+	SurplusVotes int
+}
+
+// Meek STV round summary
+type MeekSTVRoundSummary struct {
+	// Round number
+	RoundNumber int
+	// Vote counts per choice
+	Votes []*MeekSTVVoteCount
+	// Total votes in this round
+	TotalVotes int
+	// Number of exhausted votes
+	ExhaustedVotes int
+	// Election threshold
+	Threshold int
+	// Round message
+	Message string
+	// Elected choices in this round
+	ElectedChoices []*MeekSTVElectedChoice
+	// Eliminated choices in this round
+	EliminatedChoices []*MeekSTVVoteCount
+	// Transferred votes
+	TransferredVotes []*MeekSTVVoteCount
+	// Surplus votes
+	SurplusVotes []*MeekSTVVoteCount
+}
+
+// Vote count for Meek STV
+type MeekSTVVoteCount struct {
+	// Choice identifier
+	ChoiceID string
+	// Number of votes
+	VoteCount int
 }
 
 // Not found error response
@@ -288,9 +366,9 @@ type PollResultItem struct {
 	// Winner information for ranked choice
 	RankedChoiceWinnerInfo *RankedChoiceWinnerInfo
 	// IRV round summary
-	IrvRoundSummary any
+	IrvRoundSummary []*IRVRoundSummary
 	// Meek STV round summary
-	MeekStvRoundSummary any
+	MeekStvRoundSummary []*MeekSTVRoundSummary
 }
 
 // Vote count at a specific rank
@@ -315,8 +393,8 @@ type RankedChoiceVote struct {
 	ChoiceID string
 	// Vote counts per rank
 	RankCounts []*RankCount
-	// Condorcet matrix
-	CondorcetMatrix any
+	// Condorcet matrix entries
+	CondorcetMatrix []*CondorcetMatrixEntry
 }
 
 // Winner information for ranked choice voting
@@ -367,7 +445,7 @@ type UpdateVotePayload struct {
 	// JWT token
 	Token *string
 	// Vote UID
-	VoteUID string
+	UID string
 	// Vote name
 	Name string
 	// Vote description
@@ -445,6 +523,16 @@ type VoteChoiceAnswer struct {
 	ChoiceText string
 }
 
+// Vote count for a choice
+type VoteCount struct {
+	// Choice identifier
+	ChoiceID string
+	// Number of votes
+	VoteCount int
+	// Percentage of votes
+	Percentage *float64
+}
+
 // VoteResponseResult is the result type of the vote service get_vote_response
 // method.
 type VoteResponseResult struct {
@@ -509,7 +597,7 @@ type VoteResponseResult struct {
 // VoteResult is the result type of the vote service create_vote method.
 type VoteResult struct {
 	// Vote identifier
-	VoteUID string
+	UID string
 	// Vote name
 	Name string
 	// Vote description
@@ -524,10 +612,14 @@ type VoteResult struct {
 	Status string
 	// Project UID
 	ProjectUID string
+	// Project name
+	ProjectName *string
 	// Committee UID
 	CommitteeUID string
 	// Committee name
 	CommitteeName *string
+	// Committee voting status filters
+	CommitteeFilters []string
 	// Committee type
 	CommitteeType *string
 	// Committee voting status
@@ -540,6 +632,10 @@ type VoteResult struct {
 	NumResponseReceived *int
 	// Vote questions
 	PollQuestions []*PollQuestion
+	// Poll type
+	PollType string
+	// Number of winners (meek_stv only)
+	NumWinners *int
 	// Allow abstain
 	AllowAbstain *bool
 }

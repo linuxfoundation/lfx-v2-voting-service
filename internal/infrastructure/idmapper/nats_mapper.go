@@ -145,8 +145,7 @@ func (m *NATSMapper) lookup(ctx context.Context, key string) (string, error) {
 	response := string(msg.Data)
 
 	// Check for error response (prefixed with "error: ")
-	if strings.HasPrefix(response, "error: ") {
-		errMsg := strings.TrimPrefix(response, "error: ")
+	if errMsg, found := strings.CutPrefix(response, "error: "); found {
 		return "", domain.NewUnavailableError(fmt.Sprintf("idmapper error: %s", errMsg))
 	}
 

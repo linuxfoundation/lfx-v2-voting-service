@@ -13,19 +13,19 @@ import (
 // ConvertCreateVotePayloadToDomain converts Goa CreateVotePayload to service CreateVoteRequest
 func ConvertCreateVotePayloadToDomain(payload *votesvc.CreateVotePayload) *service.CreateVoteRequest {
 	req := &service.CreateVoteRequest{
-		Name:                        payload.Name,
-		Description:                 payload.Description,
-		EndTime:                     payload.EndTime,
-		ProjectUID:                  payload.ProjectUID,
-		CommitteeUID:                payload.CommitteeUID,
-		CommitteeUIDs:               payload.CommitteeUids,
-		CommitteeFilters:            payload.CommitteeFilters,
-		PseudoAnonymity:             payload.PseudoAnonymity,
-		PollType:                    payload.PollType,
-		NumWinners:                  utils.IntPtr(payload.NumWinners),
-		AllowAbstain:                payload.AllowAbstain,
-		QuorumPercentage:            payload.QuorumPercentage,
-		WinningThresholdPercentage:  payload.WinningThresholdPercentage,
+		Name:                       payload.Name,
+		Description:                payload.Description,
+		EndTime:                    payload.EndTime,
+		ProjectUID:                 payload.ProjectUID,
+		CommitteeUID:               payload.CommitteeUID,
+		CommitteeUIDs:              payload.CommitteeUids,
+		CommitteeFilters:           payload.CommitteeFilters,
+		PseudoAnonymity:            payload.PseudoAnonymity,
+		PollType:                   payload.PollType,
+		NumWinners:                 utils.IntPtr(payload.NumWinners),
+		AllowAbstain:               payload.AllowAbstain,
+		QuorumPercentage:           payload.QuorumPercentage,
+		WinningThresholdPercentage: payload.WinningThresholdPercentage,
 	}
 
 	// Convert poll questions
@@ -62,17 +62,17 @@ func ConvertCreateVotePayloadToDomain(payload *votesvc.CreateVotePayload) *servi
 // ConvertUpdateVotePayloadToDomain converts Goa UpdateVotePayload to service UpdateVoteRequest
 func ConvertUpdateVotePayloadToDomain(payload *votesvc.UpdateVotePayload) *service.UpdateVoteRequest {
 	req := &service.UpdateVoteRequest{
-		Name:                        payload.Name,
-		Description:                 payload.Description,
-		EndTime:                     payload.EndTime,
-		CommitteeUIDs:               payload.CommitteeUids,
-		CommitteeFilters:            payload.CommitteeFilters,
-		PseudoAnonymity:             payload.PseudoAnonymity,
-		PollType:                    payload.PollType,
-		NumWinners:                  utils.IntPtr(payload.NumWinners),
-		AllowAbstain:                payload.AllowAbstain,
-		QuorumPercentage:            payload.QuorumPercentage,
-		WinningThresholdPercentage:  payload.WinningThresholdPercentage,
+		Name:                       payload.Name,
+		Description:                payload.Description,
+		EndTime:                    payload.EndTime,
+		CommitteeUIDs:              payload.CommitteeUids,
+		CommitteeFilters:           payload.CommitteeFilters,
+		PseudoAnonymity:            payload.PseudoAnonymity,
+		PollType:                   payload.PollType,
+		NumWinners:                 utils.IntPtr(payload.NumWinners),
+		AllowAbstain:               payload.AllowAbstain,
+		QuorumPercentage:           payload.QuorumPercentage,
+		WinningThresholdPercentage: payload.WinningThresholdPercentage,
 	}
 
 	// Add optional fields if present
@@ -117,21 +117,25 @@ func ConvertUpdateVotePayloadToDomain(payload *votesvc.UpdateVotePayload) *servi
 // ConvertPollResponseToVoteResult converts ITX PollResponse to Goa VoteResult
 func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *votesvc.VoteResult {
 	result := &votesvc.VoteResult{
-		VoteUID:                       poll.PollID,      // Map PollID → VoteUID
+		UID:                           poll.PollID, // Map PollID → UID
 		Name:                          poll.Name,
 		Description:                   poll.Description,
 		CreationTime:                  utils.StringPtr(poll.CreationTime),
 		LastModifiedTime:              utils.StringPtr(poll.LastModifiedTime),
 		EndTime:                       utils.StringPtr(poll.EndTime),
 		Status:                        poll.Status,
-		ProjectUID:                    poll.ProjectID,   // Map ProjectID → ProjectUID
+		ProjectUID:                    poll.ProjectID, // Map ProjectID → ProjectUID
+		ProjectName:                   utils.StringPtr(poll.ProjectName),
 		CommitteeUID:                  poll.CommitteeID, // Map CommitteeID → CommitteeUID
 		CommitteeName:                 utils.StringPtr(poll.CommitteeName),
+		CommitteeFilters:              poll.CommitteeFilters,
 		CommitteeType:                 utils.StringPtr(poll.CommitteeType),
 		CommitteeVotingStatus:         utils.BoolPtr(poll.CommitteeVotingStatus),
 		PseudoAnonymity:               utils.BoolPtr(poll.PseudoAnonymity),
 		TotalVotingRequestInvitations: utils.IntPtr(poll.TotalVotingRequestInvitations),
 		NumResponseReceived:           utils.IntPtr(poll.NumResponseReceived),
+		PollType:                      poll.PollType,
+		NumWinners:                    utils.IntPtr(poll.NumWinners),
 		AllowAbstain:                  utils.BoolPtr(poll.AllowAbstain),
 	}
 
@@ -223,8 +227,19 @@ func ConvertVoteResultsToResult(results *itx.VoteResults) *votesvc.VoteResultsRe
 						}
 					}
 
-					// Condorcet matrix as Any type - just pass through
-					rankedVote.CondorcetMatrix = rcv.CondorcetMatrix
+					// Convert Condorcet matrix entries
+					if len(rcv.CondorcetMatrix) > 0 {
+						rankedVote.CondorcetMatrix = make([]*votesvc.CondorcetMatrixEntry, len(rcv.CondorcetMatrix))
+						for k, cm := range rcv.CondorcetMatrix {
+							rankedVote.CondorcetMatrix[k] = &votesvc.CondorcetMatrixEntry{
+								ChoiceID:          cm.ChoiceID,
+								OtherChoiceID:     cm.OtherChoiceID,
+								ChoiceIDWins:      cm.ChoiceIDWins,
+								OtherChoiceIDWins: cm.OtherChoiceIDWins,
+								Result:            cm.Result,
+							}
+						}
+					}
 
 					pollResultItem.RankedChoiceVotes[j] = rankedVote
 				}
@@ -247,9 +262,119 @@ func ConvertVoteResultsToResult(results *itx.VoteResults) *votesvc.VoteResultsRe
 				}
 			}
 
-			// IRV and Meek STV round summaries as Any type - just pass through
-			pollResultItem.IrvRoundSummary = pr.IRVRoundSummary
-			pollResultItem.MeekStvRoundSummary = pr.MeekSTVRoundSummary
+			// Convert IRV round summary
+			if len(pr.IRVRoundSummary) > 0 {
+				pollResultItem.IrvRoundSummary = make([]*votesvc.IRVRoundSummary, len(pr.IRVRoundSummary))
+				for j, irv := range pr.IRVRoundSummary {
+					irvRound := &votesvc.IRVRoundSummary{
+						RoundNumber:        irv.RoundNumber,
+						TotalVotes:         irv.TotalVotes,
+						MinVotes:           &irv.MinVotes,
+						ExhaustedVotes:     irv.ExhaustedVotes,
+						Threshold:          irv.Threshold,
+						EliminatedChoiceID: &irv.EliminatedChoiceID,
+						Message:            irv.Message,
+					}
+
+					// Convert votes
+					if len(irv.Votes) > 0 {
+						irvRound.Votes = make([]*votesvc.VoteCount, len(irv.Votes))
+						for k, v := range irv.Votes {
+							irvRound.Votes[k] = &votesvc.VoteCount{
+								ChoiceID:   v.ChoiceID,
+								VoteCount:  v.VoteCount,
+								Percentage: &v.Percentage,
+							}
+						}
+					}
+
+					// Convert transferred votes
+					if len(irv.TransferredVotes) > 0 {
+						irvRound.TransferredVotes = make([]*votesvc.VoteCount, len(irv.TransferredVotes))
+						for k, v := range irv.TransferredVotes {
+							irvRound.TransferredVotes[k] = &votesvc.VoteCount{
+								ChoiceID:   v.ChoiceID,
+								VoteCount:  v.VoteCount,
+								Percentage: &v.Percentage,
+							}
+						}
+					}
+
+					pollResultItem.IrvRoundSummary[j] = irvRound
+				}
+			}
+
+			// Convert Meek STV round summary
+			if len(pr.MeekSTVRoundSummary) > 0 {
+				pollResultItem.MeekStvRoundSummary = make([]*votesvc.MeekSTVRoundSummary, len(pr.MeekSTVRoundSummary))
+				for j, meek := range pr.MeekSTVRoundSummary {
+					meekRound := &votesvc.MeekSTVRoundSummary{
+						RoundNumber:    meek.RoundNumber,
+						TotalVotes:     meek.TotalVotes,
+						ExhaustedVotes: meek.ExhaustedVotes,
+						Threshold:      meek.Threshold,
+						Message:        meek.Message,
+					}
+
+					// Convert votes
+					if len(meek.Votes) > 0 {
+						meekRound.Votes = make([]*votesvc.MeekSTVVoteCount, len(meek.Votes))
+						for k, v := range meek.Votes {
+							meekRound.Votes[k] = &votesvc.MeekSTVVoteCount{
+								ChoiceID:  v.ChoiceID,
+								VoteCount: v.VoteCount,
+							}
+						}
+					}
+
+					// Convert elected choices
+					if len(meek.ElectedChoices) > 0 {
+						meekRound.ElectedChoices = make([]*votesvc.MeekSTVElectedChoice, len(meek.ElectedChoices))
+						for k, v := range meek.ElectedChoices {
+							meekRound.ElectedChoices[k] = &votesvc.MeekSTVElectedChoice{
+								ChoiceID:     v.ChoiceID,
+								VoteCount:    v.VoteCount,
+								SurplusVotes: v.SurplusVotes,
+							}
+						}
+					}
+
+					// Convert eliminated choices
+					if len(meek.EliminatedChoices) > 0 {
+						meekRound.EliminatedChoices = make([]*votesvc.MeekSTVVoteCount, len(meek.EliminatedChoices))
+						for k, v := range meek.EliminatedChoices {
+							meekRound.EliminatedChoices[k] = &votesvc.MeekSTVVoteCount{
+								ChoiceID:  v.ChoiceID,
+								VoteCount: v.VoteCount,
+							}
+						}
+					}
+
+					// Convert transferred votes
+					if len(meek.TransferredVotes) > 0 {
+						meekRound.TransferredVotes = make([]*votesvc.MeekSTVVoteCount, len(meek.TransferredVotes))
+						for k, v := range meek.TransferredVotes {
+							meekRound.TransferredVotes[k] = &votesvc.MeekSTVVoteCount{
+								ChoiceID:  v.ChoiceID,
+								VoteCount: v.VoteCount,
+							}
+						}
+					}
+
+					// Convert surplus votes
+					if len(meek.SurplusVotes) > 0 {
+						meekRound.SurplusVotes = make([]*votesvc.MeekSTVVoteCount, len(meek.SurplusVotes))
+						for k, v := range meek.SurplusVotes {
+							meekRound.SurplusVotes[k] = &votesvc.MeekSTVVoteCount{
+								ChoiceID:  v.ChoiceID,
+								VoteCount: v.VoteCount,
+							}
+						}
+					}
+
+					pollResultItem.MeekStvRoundSummary[j] = meekRound
+				}
+			}
 
 			result.PollResults[i] = pollResultItem
 		}

@@ -125,7 +125,7 @@ type UpdateVoteResponseRequestBody struct {
 // endpoint HTTP response body.
 type CreateVoteResponseBody struct {
 	// Vote identifier
-	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
+	UID string `form:"uid" json:"uid" xml:"uid"`
 	// Vote name
 	Name string `form:"name" json:"name" xml:"name"`
 	// Vote description
@@ -140,10 +140,14 @@ type CreateVoteResponseBody struct {
 	Status string `form:"status" json:"status" xml:"status"`
 	// Project UID
 	ProjectUID string `form:"project_uid" json:"project_uid" xml:"project_uid"`
+	// Project name
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
 	// Committee UID
 	CommitteeUID string `form:"committee_uid" json:"committee_uid" xml:"committee_uid"`
 	// Committee name
 	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee voting status filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
 	// Committee type
 	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
 	// Committee voting status
@@ -156,6 +160,10 @@ type CreateVoteResponseBody struct {
 	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
 	// Vote questions
 	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Poll type
+	PollType string `form:"poll_type" json:"poll_type" xml:"poll_type"`
+	// Number of winners (meek_stv only)
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 }
@@ -164,7 +172,7 @@ type CreateVoteResponseBody struct {
 // HTTP response body.
 type GetVoteResponseBody struct {
 	// Vote identifier
-	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
+	UID string `form:"uid" json:"uid" xml:"uid"`
 	// Vote name
 	Name string `form:"name" json:"name" xml:"name"`
 	// Vote description
@@ -179,10 +187,14 @@ type GetVoteResponseBody struct {
 	Status string `form:"status" json:"status" xml:"status"`
 	// Project UID
 	ProjectUID string `form:"project_uid" json:"project_uid" xml:"project_uid"`
+	// Project name
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
 	// Committee UID
 	CommitteeUID string `form:"committee_uid" json:"committee_uid" xml:"committee_uid"`
 	// Committee name
 	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee voting status filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
 	// Committee type
 	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
 	// Committee voting status
@@ -195,6 +207,10 @@ type GetVoteResponseBody struct {
 	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
 	// Vote questions
 	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Poll type
+	PollType string `form:"poll_type" json:"poll_type" xml:"poll_type"`
+	// Number of winners (meek_stv only)
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 }
@@ -203,7 +219,7 @@ type GetVoteResponseBody struct {
 // endpoint HTTP response body.
 type UpdateVoteResponseBody struct {
 	// Vote identifier
-	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
+	UID string `form:"uid" json:"uid" xml:"uid"`
 	// Vote name
 	Name string `form:"name" json:"name" xml:"name"`
 	// Vote description
@@ -218,10 +234,14 @@ type UpdateVoteResponseBody struct {
 	Status string `form:"status" json:"status" xml:"status"`
 	// Project UID
 	ProjectUID string `form:"project_uid" json:"project_uid" xml:"project_uid"`
+	// Project name
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
 	// Committee UID
 	CommitteeUID string `form:"committee_uid" json:"committee_uid" xml:"committee_uid"`
 	// Committee name
 	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee voting status filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
 	// Committee type
 	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
 	// Committee voting status
@@ -234,6 +254,10 @@ type UpdateVoteResponseBody struct {
 	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
 	// Vote questions
 	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Poll type
+	PollType string `form:"poll_type" json:"poll_type" xml:"poll_type"`
+	// Number of winners (meek_stv only)
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 }
@@ -242,7 +266,7 @@ type UpdateVoteResponseBody struct {
 // endpoint HTTP response body.
 type ExtendVoteResponseBody struct {
 	// Vote identifier
-	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
+	UID string `form:"uid" json:"uid" xml:"uid"`
 	// Vote name
 	Name string `form:"name" json:"name" xml:"name"`
 	// Vote description
@@ -257,10 +281,14 @@ type ExtendVoteResponseBody struct {
 	Status string `form:"status" json:"status" xml:"status"`
 	// Project UID
 	ProjectUID string `form:"project_uid" json:"project_uid" xml:"project_uid"`
+	// Project name
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
 	// Committee UID
 	CommitteeUID string `form:"committee_uid" json:"committee_uid" xml:"committee_uid"`
 	// Committee name
 	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee voting status filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
 	// Committee type
 	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
 	// Committee voting status
@@ -273,6 +301,10 @@ type ExtendVoteResponseBody struct {
 	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
 	// Vote questions
 	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Poll type
+	PollType string `form:"poll_type" json:"poll_type" xml:"poll_type"`
+	// Number of winners (meek_stv only)
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 }
@@ -1066,9 +1098,9 @@ type PollResultItemResponseBody struct {
 	// Winner information for ranked choice
 	RankedChoiceWinnerInfo *RankedChoiceWinnerInfoResponseBody `form:"ranked_choice_winner_info,omitempty" json:"ranked_choice_winner_info,omitempty" xml:"ranked_choice_winner_info,omitempty"`
 	// IRV round summary
-	IrvRoundSummary any `form:"irv_round_summary,omitempty" json:"irv_round_summary,omitempty" xml:"irv_round_summary,omitempty"`
+	IrvRoundSummary []*IRVRoundSummaryResponseBody `form:"irv_round_summary,omitempty" json:"irv_round_summary,omitempty" xml:"irv_round_summary,omitempty"`
 	// Meek STV round summary
-	MeekStvRoundSummary any `form:"meek_stv_round_summary,omitempty" json:"meek_stv_round_summary,omitempty" xml:"meek_stv_round_summary,omitempty"`
+	MeekStvRoundSummary []*MeekSTVRoundSummaryResponseBody `form:"meek_stv_round_summary,omitempty" json:"meek_stv_round_summary,omitempty" xml:"meek_stv_round_summary,omitempty"`
 }
 
 // PollQuestionDetailResponseBody is used to define fields on response body
@@ -1101,8 +1133,8 @@ type RankedChoiceVoteResponseBody struct {
 	ChoiceID string `form:"choice_id" json:"choice_id" xml:"choice_id"`
 	// Vote counts per rank
 	RankCounts []*RankCountResponseBody `form:"rank_counts" json:"rank_counts" xml:"rank_counts"`
-	// Condorcet matrix
-	CondorcetMatrix any `form:"condorcet_matrix,omitempty" json:"condorcet_matrix,omitempty" xml:"condorcet_matrix,omitempty"`
+	// Condorcet matrix entries
+	CondorcetMatrix []*CondorcetMatrixEntryResponseBody `form:"condorcet_matrix,omitempty" json:"condorcet_matrix,omitempty" xml:"condorcet_matrix,omitempty"`
 }
 
 // RankCountResponseBody is used to define fields on response body types.
@@ -1113,6 +1145,21 @@ type RankCountResponseBody struct {
 	Count int `form:"count" json:"count" xml:"count"`
 }
 
+// CondorcetMatrixEntryResponseBody is used to define fields on response body
+// types.
+type CondorcetMatrixEntryResponseBody struct {
+	// Choice identifier
+	ChoiceID string `form:"choice_id" json:"choice_id" xml:"choice_id"`
+	// Other choice identifier
+	OtherChoiceID string `form:"other_choice_id" json:"other_choice_id" xml:"other_choice_id"`
+	// Number of times choice_id wins against other_choice_id
+	ChoiceIDWins int `form:"choice_id_wins" json:"choice_id_wins" xml:"choice_id_wins"`
+	// Number of times other_choice_id wins against choice_id
+	OtherChoiceIDWins int `form:"other_choice_id_wins" json:"other_choice_id_wins" xml:"other_choice_id_wins"`
+	// Result string (e.g., '23(10)')
+	Result string `form:"result" json:"result" xml:"result"`
+}
+
 // RankedChoiceWinnerInfoResponseBody is used to define fields on response body
 // types.
 type RankedChoiceWinnerInfoResponseBody struct {
@@ -1120,6 +1167,82 @@ type RankedChoiceWinnerInfoResponseBody struct {
 	PollChoices []*PollChoiceResponseBody `form:"poll_choices" json:"poll_choices" xml:"poll_choices"`
 	// Whether Condorcet IRV was used
 	CondorcetIrvUsedForEliminations *bool `form:"condorcet_irv_used_for_eliminations,omitempty" json:"condorcet_irv_used_for_eliminations,omitempty" xml:"condorcet_irv_used_for_eliminations,omitempty"`
+}
+
+// IRVRoundSummaryResponseBody is used to define fields on response body types.
+type IRVRoundSummaryResponseBody struct {
+	// Round number
+	RoundNumber int `form:"round_number" json:"round_number" xml:"round_number"`
+	// Vote counts per choice
+	Votes []*VoteCountResponseBody `form:"votes" json:"votes" xml:"votes"`
+	// Total votes in this round
+	TotalVotes int `form:"total_votes" json:"total_votes" xml:"total_votes"`
+	// Minimum votes
+	MinVotes *int `form:"min_votes,omitempty" json:"min_votes,omitempty" xml:"min_votes,omitempty"`
+	// Number of exhausted votes
+	ExhaustedVotes int `form:"exhausted_votes" json:"exhausted_votes" xml:"exhausted_votes"`
+	// Transferred votes
+	TransferredVotes []*VoteCountResponseBody `form:"transferred_votes,omitempty" json:"transferred_votes,omitempty" xml:"transferred_votes,omitempty"`
+	// Winning threshold
+	Threshold int `form:"threshold" json:"threshold" xml:"threshold"`
+	// ID of eliminated choice
+	EliminatedChoiceID *string `form:"eliminated_choice_id,omitempty" json:"eliminated_choice_id,omitempty" xml:"eliminated_choice_id,omitempty"`
+	// Round message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// VoteCountResponseBody is used to define fields on response body types.
+type VoteCountResponseBody struct {
+	// Choice identifier
+	ChoiceID string `form:"choice_id" json:"choice_id" xml:"choice_id"`
+	// Number of votes
+	VoteCount int `form:"vote_count" json:"vote_count" xml:"vote_count"`
+	// Percentage of votes
+	Percentage *float64 `form:"percentage,omitempty" json:"percentage,omitempty" xml:"percentage,omitempty"`
+}
+
+// MeekSTVRoundSummaryResponseBody is used to define fields on response body
+// types.
+type MeekSTVRoundSummaryResponseBody struct {
+	// Round number
+	RoundNumber int `form:"round_number" json:"round_number" xml:"round_number"`
+	// Vote counts per choice
+	Votes []*MeekSTVVoteCountResponseBody `form:"votes" json:"votes" xml:"votes"`
+	// Total votes in this round
+	TotalVotes int `form:"total_votes" json:"total_votes" xml:"total_votes"`
+	// Number of exhausted votes
+	ExhaustedVotes int `form:"exhausted_votes" json:"exhausted_votes" xml:"exhausted_votes"`
+	// Election threshold
+	Threshold int `form:"threshold" json:"threshold" xml:"threshold"`
+	// Round message
+	Message string `form:"message" json:"message" xml:"message"`
+	// Elected choices in this round
+	ElectedChoices []*MeekSTVElectedChoiceResponseBody `form:"elected_choices,omitempty" json:"elected_choices,omitempty" xml:"elected_choices,omitempty"`
+	// Eliminated choices in this round
+	EliminatedChoices []*MeekSTVVoteCountResponseBody `form:"eliminated_choices,omitempty" json:"eliminated_choices,omitempty" xml:"eliminated_choices,omitempty"`
+	// Transferred votes
+	TransferredVotes []*MeekSTVVoteCountResponseBody `form:"transferred_votes,omitempty" json:"transferred_votes,omitempty" xml:"transferred_votes,omitempty"`
+	// Surplus votes
+	SurplusVotes []*MeekSTVVoteCountResponseBody `form:"surplus_votes,omitempty" json:"surplus_votes,omitempty" xml:"surplus_votes,omitempty"`
+}
+
+// MeekSTVVoteCountResponseBody is used to define fields on response body types.
+type MeekSTVVoteCountResponseBody struct {
+	// Choice identifier
+	ChoiceID string `form:"choice_id" json:"choice_id" xml:"choice_id"`
+	// Number of votes
+	VoteCount int `form:"vote_count" json:"vote_count" xml:"vote_count"`
+}
+
+// MeekSTVElectedChoiceResponseBody is used to define fields on response body
+// types.
+type MeekSTVElectedChoiceResponseBody struct {
+	// Choice identifier
+	ChoiceID string `form:"choice_id" json:"choice_id" xml:"choice_id"`
+	// Number of votes
+	VoteCount int `form:"vote_count" json:"vote_count" xml:"vote_count"`
+	// Surplus votes over threshold
+	SurplusVotes int `form:"surplus_votes" json:"surplus_votes" xml:"surplus_votes"`
 }
 
 // CommentResultItemResponseBody is used to define fields on response body
@@ -1212,7 +1335,7 @@ type RankedChoiceInputRequestBody struct {
 // the "create_vote" endpoint of the "vote" service.
 func NewCreateVoteResponseBody(res *vote.VoteResult) *CreateVoteResponseBody {
 	body := &CreateVoteResponseBody{
-		VoteUID:                       res.VoteUID,
+		UID:                           res.UID,
 		Name:                          res.Name,
 		Description:                   res.Description,
 		CreationTime:                  res.CreationTime,
@@ -1220,6 +1343,7 @@ func NewCreateVoteResponseBody(res *vote.VoteResult) *CreateVoteResponseBody {
 		EndTime:                       res.EndTime,
 		Status:                        res.Status,
 		ProjectUID:                    res.ProjectUID,
+		ProjectName:                   res.ProjectName,
 		CommitteeUID:                  res.CommitteeUID,
 		CommitteeName:                 res.CommitteeName,
 		CommitteeType:                 res.CommitteeType,
@@ -1227,7 +1351,15 @@ func NewCreateVoteResponseBody(res *vote.VoteResult) *CreateVoteResponseBody {
 		PseudoAnonymity:               res.PseudoAnonymity,
 		TotalVotingRequestInvitations: res.TotalVotingRequestInvitations,
 		NumResponseReceived:           res.NumResponseReceived,
+		PollType:                      res.PollType,
+		NumWinners:                    res.NumWinners,
 		AllowAbstain:                  res.AllowAbstain,
+	}
+	if res.CommitteeFilters != nil {
+		body.CommitteeFilters = make([]string, len(res.CommitteeFilters))
+		for i, val := range res.CommitteeFilters {
+			body.CommitteeFilters[i] = val
+		}
 	}
 	if res.PollQuestions != nil {
 		body.PollQuestions = make([]*PollQuestionResponseBody, len(res.PollQuestions))
@@ -1237,6 +1369,12 @@ func NewCreateVoteResponseBody(res *vote.VoteResult) *CreateVoteResponseBody {
 				continue
 			}
 			body.PollQuestions[i] = marshalVotePollQuestionToPollQuestionResponseBody(val)
+		}
+	}
+	{
+		var zero string
+		if body.PollType == zero {
+			body.PollType = "generic"
 		}
 	}
 	return body
@@ -1246,7 +1384,7 @@ func NewCreateVoteResponseBody(res *vote.VoteResult) *CreateVoteResponseBody {
 // "get_vote" endpoint of the "vote" service.
 func NewGetVoteResponseBody(res *vote.VoteResult) *GetVoteResponseBody {
 	body := &GetVoteResponseBody{
-		VoteUID:                       res.VoteUID,
+		UID:                           res.UID,
 		Name:                          res.Name,
 		Description:                   res.Description,
 		CreationTime:                  res.CreationTime,
@@ -1254,6 +1392,7 @@ func NewGetVoteResponseBody(res *vote.VoteResult) *GetVoteResponseBody {
 		EndTime:                       res.EndTime,
 		Status:                        res.Status,
 		ProjectUID:                    res.ProjectUID,
+		ProjectName:                   res.ProjectName,
 		CommitteeUID:                  res.CommitteeUID,
 		CommitteeName:                 res.CommitteeName,
 		CommitteeType:                 res.CommitteeType,
@@ -1261,7 +1400,15 @@ func NewGetVoteResponseBody(res *vote.VoteResult) *GetVoteResponseBody {
 		PseudoAnonymity:               res.PseudoAnonymity,
 		TotalVotingRequestInvitations: res.TotalVotingRequestInvitations,
 		NumResponseReceived:           res.NumResponseReceived,
+		PollType:                      res.PollType,
+		NumWinners:                    res.NumWinners,
 		AllowAbstain:                  res.AllowAbstain,
+	}
+	if res.CommitteeFilters != nil {
+		body.CommitteeFilters = make([]string, len(res.CommitteeFilters))
+		for i, val := range res.CommitteeFilters {
+			body.CommitteeFilters[i] = val
+		}
 	}
 	if res.PollQuestions != nil {
 		body.PollQuestions = make([]*PollQuestionResponseBody, len(res.PollQuestions))
@@ -1271,6 +1418,12 @@ func NewGetVoteResponseBody(res *vote.VoteResult) *GetVoteResponseBody {
 				continue
 			}
 			body.PollQuestions[i] = marshalVotePollQuestionToPollQuestionResponseBody(val)
+		}
+	}
+	{
+		var zero string
+		if body.PollType == zero {
+			body.PollType = "generic"
 		}
 	}
 	return body
@@ -1280,7 +1433,7 @@ func NewGetVoteResponseBody(res *vote.VoteResult) *GetVoteResponseBody {
 // the "update_vote" endpoint of the "vote" service.
 func NewUpdateVoteResponseBody(res *vote.VoteResult) *UpdateVoteResponseBody {
 	body := &UpdateVoteResponseBody{
-		VoteUID:                       res.VoteUID,
+		UID:                           res.UID,
 		Name:                          res.Name,
 		Description:                   res.Description,
 		CreationTime:                  res.CreationTime,
@@ -1288,6 +1441,7 @@ func NewUpdateVoteResponseBody(res *vote.VoteResult) *UpdateVoteResponseBody {
 		EndTime:                       res.EndTime,
 		Status:                        res.Status,
 		ProjectUID:                    res.ProjectUID,
+		ProjectName:                   res.ProjectName,
 		CommitteeUID:                  res.CommitteeUID,
 		CommitteeName:                 res.CommitteeName,
 		CommitteeType:                 res.CommitteeType,
@@ -1295,7 +1449,15 @@ func NewUpdateVoteResponseBody(res *vote.VoteResult) *UpdateVoteResponseBody {
 		PseudoAnonymity:               res.PseudoAnonymity,
 		TotalVotingRequestInvitations: res.TotalVotingRequestInvitations,
 		NumResponseReceived:           res.NumResponseReceived,
+		PollType:                      res.PollType,
+		NumWinners:                    res.NumWinners,
 		AllowAbstain:                  res.AllowAbstain,
+	}
+	if res.CommitteeFilters != nil {
+		body.CommitteeFilters = make([]string, len(res.CommitteeFilters))
+		for i, val := range res.CommitteeFilters {
+			body.CommitteeFilters[i] = val
+		}
 	}
 	if res.PollQuestions != nil {
 		body.PollQuestions = make([]*PollQuestionResponseBody, len(res.PollQuestions))
@@ -1307,6 +1469,12 @@ func NewUpdateVoteResponseBody(res *vote.VoteResult) *UpdateVoteResponseBody {
 			body.PollQuestions[i] = marshalVotePollQuestionToPollQuestionResponseBody(val)
 		}
 	}
+	{
+		var zero string
+		if body.PollType == zero {
+			body.PollType = "generic"
+		}
+	}
 	return body
 }
 
@@ -1314,7 +1482,7 @@ func NewUpdateVoteResponseBody(res *vote.VoteResult) *UpdateVoteResponseBody {
 // the "extend_vote" endpoint of the "vote" service.
 func NewExtendVoteResponseBody(res *vote.VoteResult) *ExtendVoteResponseBody {
 	body := &ExtendVoteResponseBody{
-		VoteUID:                       res.VoteUID,
+		UID:                           res.UID,
 		Name:                          res.Name,
 		Description:                   res.Description,
 		CreationTime:                  res.CreationTime,
@@ -1322,6 +1490,7 @@ func NewExtendVoteResponseBody(res *vote.VoteResult) *ExtendVoteResponseBody {
 		EndTime:                       res.EndTime,
 		Status:                        res.Status,
 		ProjectUID:                    res.ProjectUID,
+		ProjectName:                   res.ProjectName,
 		CommitteeUID:                  res.CommitteeUID,
 		CommitteeName:                 res.CommitteeName,
 		CommitteeType:                 res.CommitteeType,
@@ -1329,7 +1498,15 @@ func NewExtendVoteResponseBody(res *vote.VoteResult) *ExtendVoteResponseBody {
 		PseudoAnonymity:               res.PseudoAnonymity,
 		TotalVotingRequestInvitations: res.TotalVotingRequestInvitations,
 		NumResponseReceived:           res.NumResponseReceived,
+		PollType:                      res.PollType,
+		NumWinners:                    res.NumWinners,
 		AllowAbstain:                  res.AllowAbstain,
+	}
+	if res.CommitteeFilters != nil {
+		body.CommitteeFilters = make([]string, len(res.CommitteeFilters))
+		for i, val := range res.CommitteeFilters {
+			body.CommitteeFilters[i] = val
+		}
 	}
 	if res.PollQuestions != nil {
 		body.PollQuestions = make([]*PollQuestionResponseBody, len(res.PollQuestions))
@@ -1339,6 +1516,12 @@ func NewExtendVoteResponseBody(res *vote.VoteResult) *ExtendVoteResponseBody {
 				continue
 			}
 			body.PollQuestions[i] = marshalVotePollQuestionToPollQuestionResponseBody(val)
+		}
+	}
+	{
+		var zero string
+		if body.PollType == zero {
+			body.PollType = "generic"
 		}
 	}
 	return body
@@ -2236,16 +2419,16 @@ func NewCreateVotePayload(body *CreateVoteRequestBody, token *string) *vote.Crea
 }
 
 // NewGetVotePayload builds a vote service get_vote endpoint payload.
-func NewGetVotePayload(voteUID string, token *string) *vote.GetVotePayload {
+func NewGetVotePayload(uid string, token *string) *vote.GetVotePayload {
 	v := &vote.GetVotePayload{}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v
 }
 
 // NewUpdateVotePayload builds a vote service update_vote endpoint payload.
-func NewUpdateVotePayload(body *UpdateVoteRequestBody, voteUID string, token *string) *vote.UpdateVotePayload {
+func NewUpdateVotePayload(body *UpdateVoteRequestBody, uid string, token *string) *vote.UpdateVotePayload {
 	v := &vote.UpdateVotePayload{
 		Name:                       *body.Name,
 		Description:                *body.Description,
@@ -2309,36 +2492,36 @@ func NewUpdateVotePayload(body *UpdateVoteRequestBody, voteUID string, token *st
 	if body.AllowAbstain == nil {
 		v.AllowAbstain = false
 	}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v
 }
 
 // NewDeleteVotePayload builds a vote service delete_vote endpoint payload.
-func NewDeleteVotePayload(voteUID string, token *string) *vote.DeleteVotePayload {
+func NewDeleteVotePayload(uid string, token *string) *vote.DeleteVotePayload {
 	v := &vote.DeleteVotePayload{}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v
 }
 
 // NewExtendVotePayload builds a vote service extend_vote endpoint payload.
-func NewExtendVotePayload(body *ExtendVoteRequestBody, voteUID string, token *string) *vote.ExtendVotePayload {
+func NewExtendVotePayload(body *ExtendVoteRequestBody, uid string, token *string) *vote.ExtendVotePayload {
 	v := &vote.ExtendVotePayload{
 		EndTime: *body.EndTime,
 	}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v
 }
 
 // NewEnableVotePayload builds a vote service enable_vote endpoint payload.
-func NewEnableVotePayload(voteUID string, token *string) *vote.EnableVotePayload {
+func NewEnableVotePayload(uid string, token *string) *vote.EnableVotePayload {
 	v := &vote.EnableVotePayload{}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v
@@ -2346,13 +2529,13 @@ func NewEnableVotePayload(voteUID string, token *string) *vote.EnableVotePayload
 
 // NewBulkResendVotePayload builds a vote service bulk_resend_vote endpoint
 // payload.
-func NewBulkResendVotePayload(body *BulkResendVoteRequestBody, voteUID string, token *string) *vote.BulkResendVotePayload {
+func NewBulkResendVotePayload(body *BulkResendVoteRequestBody, uid string, token *string) *vote.BulkResendVotePayload {
 	v := &vote.BulkResendVotePayload{}
 	v.RecipientIds = make([]string, len(body.RecipientIds))
 	for i, val := range body.RecipientIds {
 		v.RecipientIds[i] = val
 	}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v
@@ -2360,9 +2543,9 @@ func NewBulkResendVotePayload(body *BulkResendVoteRequestBody, voteUID string, t
 
 // NewGetVoteResultsPayload builds a vote service get_vote_results endpoint
 // payload.
-func NewGetVoteResultsPayload(voteUID string, token *string) *vote.GetVoteResultsPayload {
+func NewGetVoteResultsPayload(uid string, token *string) *vote.GetVoteResultsPayload {
 	v := &vote.GetVoteResultsPayload{}
-	v.VoteUID = voteUID
+	v.UID = uid
 	v.Token = token
 
 	return v

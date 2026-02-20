@@ -200,14 +200,14 @@ func EncodeGetVoteResponse(encoder func(context.Context, http.ResponseWriter) go
 func DecodeGetVoteRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*vote.GetVotePayload, error) {
 	return func(r *http.Request) (*vote.GetVotePayload, error) {
 		var (
-			voteUID string
-			token   *string
-			err     error
+			uid   string
+			token *string
+			err   error
 
 			params = mux.Vars(r)
 		)
-		voteUID = params["vote_uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = params["uid"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		tokenRaw := r.Header.Get("Authorization")
 		if tokenRaw != "" {
 			token = &tokenRaw
@@ -215,7 +215,7 @@ func DecodeGetVoteRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp
 		if err != nil {
 			return nil, err
 		}
-		payload := NewGetVotePayload(voteUID, token)
+		payload := NewGetVotePayload(uid, token)
 		if payload.Token != nil {
 			if strings.Contains(*payload.Token, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -359,13 +359,13 @@ func DecodeUpdateVoteRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 		}
 
 		var (
-			voteUID string
-			token   *string
+			uid   string
+			token *string
 
 			params = mux.Vars(r)
 		)
-		voteUID = params["vote_uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = params["uid"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		tokenRaw := r.Header.Get("Authorization")
 		if tokenRaw != "" {
 			token = &tokenRaw
@@ -373,7 +373,7 @@ func DecodeUpdateVoteRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 		if err != nil {
 			return nil, err
 		}
-		payload := NewUpdateVotePayload(&body, voteUID, token)
+		payload := NewUpdateVotePayload(&body, uid, token)
 		if payload.Token != nil {
 			if strings.Contains(*payload.Token, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -494,14 +494,14 @@ func EncodeDeleteVoteResponse(encoder func(context.Context, http.ResponseWriter)
 func DecodeDeleteVoteRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*vote.DeleteVotePayload, error) {
 	return func(r *http.Request) (*vote.DeleteVotePayload, error) {
 		var (
-			voteUID string
-			token   *string
-			err     error
+			uid   string
+			token *string
+			err   error
 
 			params = mux.Vars(r)
 		)
-		voteUID = params["vote_uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = params["uid"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		tokenRaw := r.Header.Get("Authorization")
 		if tokenRaw != "" {
 			token = &tokenRaw
@@ -509,7 +509,7 @@ func DecodeDeleteVoteRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 		if err != nil {
 			return nil, err
 		}
-		payload := NewDeleteVotePayload(voteUID, token)
+		payload := NewDeleteVotePayload(uid, token)
 		if payload.Token != nil {
 			if strings.Contains(*payload.Token, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -653,13 +653,13 @@ func DecodeExtendVoteRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 		}
 
 		var (
-			voteUID string
-			token   *string
+			uid   string
+			token *string
 
 			params = mux.Vars(r)
 		)
-		voteUID = params["vote_uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = params["uid"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		tokenRaw := r.Header.Get("Authorization")
 		if tokenRaw != "" {
 			token = &tokenRaw
@@ -667,7 +667,7 @@ func DecodeExtendVoteRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 		if err != nil {
 			return nil, err
 		}
-		payload := NewExtendVotePayload(&body, voteUID, token)
+		payload := NewExtendVotePayload(&body, uid, token)
 		if payload.Token != nil {
 			if strings.Contains(*payload.Token, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -788,14 +788,14 @@ func EncodeEnableVoteResponse(encoder func(context.Context, http.ResponseWriter)
 func DecodeEnableVoteRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*vote.EnableVotePayload, error) {
 	return func(r *http.Request) (*vote.EnableVotePayload, error) {
 		var (
-			voteUID string
-			token   *string
-			err     error
+			uid   string
+			token *string
+			err   error
 
 			params = mux.Vars(r)
 		)
-		voteUID = params["vote_uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = params["uid"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		tokenRaw := r.Header.Get("Authorization")
 		if tokenRaw != "" {
 			token = &tokenRaw
@@ -803,7 +803,7 @@ func DecodeEnableVoteRequest(mux goahttp.Muxer, decoder func(*http.Request) goah
 		if err != nil {
 			return nil, err
 		}
-		payload := NewEnableVotePayload(voteUID, token)
+		payload := NewEnableVotePayload(uid, token)
 		if payload.Token != nil {
 			if strings.Contains(*payload.Token, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -944,13 +944,13 @@ func DecodeBulkResendVoteRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 		}
 
 		var (
-			voteUID string
-			token   *string
+			uid   string
+			token *string
 
 			params = mux.Vars(r)
 		)
-		voteUID = params["vote_uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = params["uid"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		tokenRaw := r.Header.Get("Authorization")
 		if tokenRaw != "" {
 			token = &tokenRaw
@@ -958,7 +958,7 @@ func DecodeBulkResendVoteRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 		if err != nil {
 			return nil, err
 		}
-		payload := NewBulkResendVotePayload(&body, voteUID, token)
+		payload := NewBulkResendVotePayload(&body, uid, token)
 		if payload.Token != nil {
 			if strings.Contains(*payload.Token, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -1082,14 +1082,14 @@ func EncodeGetVoteResultsResponse(encoder func(context.Context, http.ResponseWri
 func DecodeGetVoteResultsRequest(mux goahttp.Muxer, decoder func(*http.Request) goahttp.Decoder) func(*http.Request) (*vote.GetVoteResultsPayload, error) {
 	return func(r *http.Request) (*vote.GetVoteResultsPayload, error) {
 		var (
-			voteUID string
-			token   *string
-			err     error
+			uid   string
+			token *string
+			err   error
 
 			params = mux.Vars(r)
 		)
-		voteUID = params["vote_uid"]
-		err = goa.MergeErrors(err, goa.ValidateFormat("vote_uid", voteUID, goa.FormatUUID))
+		uid = params["uid"]
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		tokenRaw := r.Header.Get("Authorization")
 		if tokenRaw != "" {
 			token = &tokenRaw
@@ -1097,7 +1097,7 @@ func DecodeGetVoteResultsRequest(mux goahttp.Muxer, decoder func(*http.Request) 
 		if err != nil {
 			return nil, err
 		}
-		payload := NewGetVoteResultsPayload(voteUID, token)
+		payload := NewGetVoteResultsPayload(uid, token)
 		if payload.Token != nil {
 			if strings.Contains(*payload.Token, " ") {
 				// Remove authorization scheme prefix (e.g. "Bearer")
@@ -1867,10 +1867,7 @@ func marshalVotePollChoiceToPollChoiceResponseBody(v *vote.PollChoice) *PollChoi
 // marshalVotePollResultItemToPollResultItemResponseBody builds a value of type
 // *PollResultItemResponseBody from a value of type *vote.PollResultItem.
 func marshalVotePollResultItemToPollResultItemResponseBody(v *vote.PollResultItem) *PollResultItemResponseBody {
-	res := &PollResultItemResponseBody{
-		IrvRoundSummary:     v.IrvRoundSummary,
-		MeekStvRoundSummary: v.MeekStvRoundSummary,
-	}
+	res := &PollResultItemResponseBody{}
 	if v.Question != nil {
 		res.Question = marshalVotePollQuestionDetailToPollQuestionDetailResponseBody(v.Question)
 	}
@@ -1896,6 +1893,26 @@ func marshalVotePollResultItemToPollResultItemResponseBody(v *vote.PollResultIte
 	}
 	if v.RankedChoiceWinnerInfo != nil {
 		res.RankedChoiceWinnerInfo = marshalVoteRankedChoiceWinnerInfoToRankedChoiceWinnerInfoResponseBody(v.RankedChoiceWinnerInfo)
+	}
+	if v.IrvRoundSummary != nil {
+		res.IrvRoundSummary = make([]*IRVRoundSummaryResponseBody, len(v.IrvRoundSummary))
+		for i, val := range v.IrvRoundSummary {
+			if val == nil {
+				res.IrvRoundSummary[i] = nil
+				continue
+			}
+			res.IrvRoundSummary[i] = marshalVoteIRVRoundSummaryToIRVRoundSummaryResponseBody(val)
+		}
+	}
+	if v.MeekStvRoundSummary != nil {
+		res.MeekStvRoundSummary = make([]*MeekSTVRoundSummaryResponseBody, len(v.MeekStvRoundSummary))
+		for i, val := range v.MeekStvRoundSummary {
+			if val == nil {
+				res.MeekStvRoundSummary[i] = nil
+				continue
+			}
+			res.MeekStvRoundSummary[i] = marshalVoteMeekSTVRoundSummaryToMeekSTVRoundSummaryResponseBody(val)
+		}
 	}
 
 	return res
@@ -1950,8 +1967,7 @@ func marshalVoteRankedChoiceVoteToRankedChoiceVoteResponseBody(v *vote.RankedCho
 		return nil
 	}
 	res := &RankedChoiceVoteResponseBody{
-		ChoiceID:        v.ChoiceID,
-		CondorcetMatrix: v.CondorcetMatrix,
+		ChoiceID: v.ChoiceID,
 	}
 	if v.RankCounts != nil {
 		res.RankCounts = make([]*RankCountResponseBody, len(v.RankCounts))
@@ -1965,6 +1981,16 @@ func marshalVoteRankedChoiceVoteToRankedChoiceVoteResponseBody(v *vote.RankedCho
 	} else {
 		res.RankCounts = []*RankCountResponseBody{}
 	}
+	if v.CondorcetMatrix != nil {
+		res.CondorcetMatrix = make([]*CondorcetMatrixEntryResponseBody, len(v.CondorcetMatrix))
+		for i, val := range v.CondorcetMatrix {
+			if val == nil {
+				res.CondorcetMatrix[i] = nil
+				continue
+			}
+			res.CondorcetMatrix[i] = marshalVoteCondorcetMatrixEntryToCondorcetMatrixEntryResponseBody(val)
+		}
+	}
 
 	return res
 }
@@ -1975,6 +2001,24 @@ func marshalVoteRankCountToRankCountResponseBody(v *vote.RankCount) *RankCountRe
 	res := &RankCountResponseBody{
 		Rank:  v.Rank,
 		Count: v.Count,
+	}
+
+	return res
+}
+
+// marshalVoteCondorcetMatrixEntryToCondorcetMatrixEntryResponseBody builds a
+// value of type *CondorcetMatrixEntryResponseBody from a value of type
+// *vote.CondorcetMatrixEntry.
+func marshalVoteCondorcetMatrixEntryToCondorcetMatrixEntryResponseBody(v *vote.CondorcetMatrixEntry) *CondorcetMatrixEntryResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &CondorcetMatrixEntryResponseBody{
+		ChoiceID:          v.ChoiceID,
+		OtherChoiceID:     v.OtherChoiceID,
+		ChoiceIDWins:      v.ChoiceIDWins,
+		OtherChoiceIDWins: v.OtherChoiceIDWins,
+		Result:            v.Result,
 	}
 
 	return res
@@ -2001,6 +2045,157 @@ func marshalVoteRankedChoiceWinnerInfoToRankedChoiceWinnerInfoResponseBody(v *vo
 		}
 	} else {
 		res.PollChoices = []*PollChoiceResponseBody{}
+	}
+
+	return res
+}
+
+// marshalVoteIRVRoundSummaryToIRVRoundSummaryResponseBody builds a value of
+// type *IRVRoundSummaryResponseBody from a value of type *vote.IRVRoundSummary.
+func marshalVoteIRVRoundSummaryToIRVRoundSummaryResponseBody(v *vote.IRVRoundSummary) *IRVRoundSummaryResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &IRVRoundSummaryResponseBody{
+		RoundNumber:        v.RoundNumber,
+		TotalVotes:         v.TotalVotes,
+		MinVotes:           v.MinVotes,
+		ExhaustedVotes:     v.ExhaustedVotes,
+		Threshold:          v.Threshold,
+		EliminatedChoiceID: v.EliminatedChoiceID,
+		Message:            v.Message,
+	}
+	if v.Votes != nil {
+		res.Votes = make([]*VoteCountResponseBody, len(v.Votes))
+		for i, val := range v.Votes {
+			if val == nil {
+				res.Votes[i] = nil
+				continue
+			}
+			res.Votes[i] = marshalVoteVoteCountToVoteCountResponseBody(val)
+		}
+	} else {
+		res.Votes = []*VoteCountResponseBody{}
+	}
+	if v.TransferredVotes != nil {
+		res.TransferredVotes = make([]*VoteCountResponseBody, len(v.TransferredVotes))
+		for i, val := range v.TransferredVotes {
+			if val == nil {
+				res.TransferredVotes[i] = nil
+				continue
+			}
+			res.TransferredVotes[i] = marshalVoteVoteCountToVoteCountResponseBody(val)
+		}
+	}
+
+	return res
+}
+
+// marshalVoteVoteCountToVoteCountResponseBody builds a value of type
+// *VoteCountResponseBody from a value of type *vote.VoteCount.
+func marshalVoteVoteCountToVoteCountResponseBody(v *vote.VoteCount) *VoteCountResponseBody {
+	res := &VoteCountResponseBody{
+		ChoiceID:   v.ChoiceID,
+		VoteCount:  v.VoteCount,
+		Percentage: v.Percentage,
+	}
+
+	return res
+}
+
+// marshalVoteMeekSTVRoundSummaryToMeekSTVRoundSummaryResponseBody builds a
+// value of type *MeekSTVRoundSummaryResponseBody from a value of type
+// *vote.MeekSTVRoundSummary.
+func marshalVoteMeekSTVRoundSummaryToMeekSTVRoundSummaryResponseBody(v *vote.MeekSTVRoundSummary) *MeekSTVRoundSummaryResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &MeekSTVRoundSummaryResponseBody{
+		RoundNumber:    v.RoundNumber,
+		TotalVotes:     v.TotalVotes,
+		ExhaustedVotes: v.ExhaustedVotes,
+		Threshold:      v.Threshold,
+		Message:        v.Message,
+	}
+	if v.Votes != nil {
+		res.Votes = make([]*MeekSTVVoteCountResponseBody, len(v.Votes))
+		for i, val := range v.Votes {
+			if val == nil {
+				res.Votes[i] = nil
+				continue
+			}
+			res.Votes[i] = marshalVoteMeekSTVVoteCountToMeekSTVVoteCountResponseBody(val)
+		}
+	} else {
+		res.Votes = []*MeekSTVVoteCountResponseBody{}
+	}
+	if v.ElectedChoices != nil {
+		res.ElectedChoices = make([]*MeekSTVElectedChoiceResponseBody, len(v.ElectedChoices))
+		for i, val := range v.ElectedChoices {
+			if val == nil {
+				res.ElectedChoices[i] = nil
+				continue
+			}
+			res.ElectedChoices[i] = marshalVoteMeekSTVElectedChoiceToMeekSTVElectedChoiceResponseBody(val)
+		}
+	}
+	if v.EliminatedChoices != nil {
+		res.EliminatedChoices = make([]*MeekSTVVoteCountResponseBody, len(v.EliminatedChoices))
+		for i, val := range v.EliminatedChoices {
+			if val == nil {
+				res.EliminatedChoices[i] = nil
+				continue
+			}
+			res.EliminatedChoices[i] = marshalVoteMeekSTVVoteCountToMeekSTVVoteCountResponseBody(val)
+		}
+	}
+	if v.TransferredVotes != nil {
+		res.TransferredVotes = make([]*MeekSTVVoteCountResponseBody, len(v.TransferredVotes))
+		for i, val := range v.TransferredVotes {
+			if val == nil {
+				res.TransferredVotes[i] = nil
+				continue
+			}
+			res.TransferredVotes[i] = marshalVoteMeekSTVVoteCountToMeekSTVVoteCountResponseBody(val)
+		}
+	}
+	if v.SurplusVotes != nil {
+		res.SurplusVotes = make([]*MeekSTVVoteCountResponseBody, len(v.SurplusVotes))
+		for i, val := range v.SurplusVotes {
+			if val == nil {
+				res.SurplusVotes[i] = nil
+				continue
+			}
+			res.SurplusVotes[i] = marshalVoteMeekSTVVoteCountToMeekSTVVoteCountResponseBody(val)
+		}
+	}
+
+	return res
+}
+
+// marshalVoteMeekSTVVoteCountToMeekSTVVoteCountResponseBody builds a value of
+// type *MeekSTVVoteCountResponseBody from a value of type
+// *vote.MeekSTVVoteCount.
+func marshalVoteMeekSTVVoteCountToMeekSTVVoteCountResponseBody(v *vote.MeekSTVVoteCount) *MeekSTVVoteCountResponseBody {
+	res := &MeekSTVVoteCountResponseBody{
+		ChoiceID:  v.ChoiceID,
+		VoteCount: v.VoteCount,
+	}
+
+	return res
+}
+
+// marshalVoteMeekSTVElectedChoiceToMeekSTVElectedChoiceResponseBody builds a
+// value of type *MeekSTVElectedChoiceResponseBody from a value of type
+// *vote.MeekSTVElectedChoice.
+func marshalVoteMeekSTVElectedChoiceToMeekSTVElectedChoiceResponseBody(v *vote.MeekSTVElectedChoice) *MeekSTVElectedChoiceResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &MeekSTVElectedChoiceResponseBody{
+		ChoiceID:     v.ChoiceID,
+		VoteCount:    v.VoteCount,
+		SurplusVotes: v.SurplusVotes,
 	}
 
 	return res

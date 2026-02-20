@@ -43,27 +43,27 @@ func TestConvertMapToVoteData(t *testing.T) {
 
 	t.Run("successful conversion with all fields", func(t *testing.T) {
 		v1Data := map[string]interface{}{
-			"poll_id":                           "poll-123",
-			"name":                              "Test Vote",
-			"description":                       "Test Description",
-			"creation_time":                     "2024-01-01T00:00:00Z",
-			"last_modified_time":                "2024-01-02T00:00:00Z",
-			"end_time":                          "2024-12-31T23:59:59Z",
-			"status":                            "active",
-			"project_id":                        "project-sfid",
-			"project_name":                      "Test Project",
-			"committee_id":                      "committee-sfid",
-			"committee_name":                    "Test Committee",
-			"committee_type":                    "technical",
-			"committee_voting_status":           true,
-			"committee_filters":                 []interface{}{"filter1", "filter2"},
-			"total_voting_request_invitations":  "10",
-			"num_response_received":             "5",
-			"poll_type":                         "single_choice",
-			"pseudo_anonymity":                  false,
-			"num_winners":                       "1",
-			"allow_abstain":                     true,
-			"poll_questions":                    []interface{}{},
+			"poll_id":                          "poll-123",
+			"name":                             "Test Vote",
+			"description":                      "Test Description",
+			"creation_time":                    "2024-01-01T00:00:00Z",
+			"last_modified_time":               "2024-01-02T00:00:00Z",
+			"end_time":                         "2024-12-31T23:59:59Z",
+			"status":                           "active",
+			"project_id":                       "project-sfid",
+			"project_name":                     "Test Project",
+			"committee_id":                     "committee-sfid",
+			"committee_name":                   "Test Committee",
+			"committee_type":                   "technical",
+			"committee_voting_status":          true,
+			"committee_filters":                []interface{}{"filter1", "filter2"},
+			"total_voting_request_invitations": "10",
+			"num_response_received":            "5",
+			"poll_type":                        "single_choice",
+			"pseudo_anonymity":                 false,
+			"num_winners":                      "1",
+			"allow_abstain":                    true,
+			"poll_questions":                   []interface{}{},
 		}
 
 		idMapper := idmapper.NewNoOpMapper()
@@ -153,10 +153,10 @@ func TestHandleVoteUpdate(t *testing.T) {
 		defer cleanup()
 
 		v1Data := map[string]interface{}{
-			"poll_id":       "poll-123",
-			"name":          "Test Vote",
-			"status":        "active",
-			"project_id":    "project-sfid",
+			"poll_id":        "poll-123",
+			"name":           "Test Vote",
+			"status":         "active",
+			"project_id":     "project-sfid",
 			"poll_questions": []interface{}{},
 		}
 

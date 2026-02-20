@@ -123,7 +123,7 @@ type UpdateVoteResponseRequestBody struct {
 // endpoint HTTP response body.
 type CreateVoteResponseBody struct {
 	// Vote identifier
-	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Vote name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Vote description
@@ -138,10 +138,14 @@ type CreateVoteResponseBody struct {
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// Project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	// Project name
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
 	// Committee UID
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Committee name
 	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee voting status filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
 	// Committee type
 	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
 	// Committee voting status
@@ -154,6 +158,10 @@ type CreateVoteResponseBody struct {
 	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
 	// Vote questions
 	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Poll type
+	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
+	// Number of winners (meek_stv only)
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 }
@@ -162,7 +170,7 @@ type CreateVoteResponseBody struct {
 // HTTP response body.
 type GetVoteResponseBody struct {
 	// Vote identifier
-	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Vote name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Vote description
@@ -177,10 +185,14 @@ type GetVoteResponseBody struct {
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// Project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	// Project name
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
 	// Committee UID
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Committee name
 	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee voting status filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
 	// Committee type
 	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
 	// Committee voting status
@@ -193,6 +205,10 @@ type GetVoteResponseBody struct {
 	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
 	// Vote questions
 	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Poll type
+	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
+	// Number of winners (meek_stv only)
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 }
@@ -201,7 +217,7 @@ type GetVoteResponseBody struct {
 // endpoint HTTP response body.
 type UpdateVoteResponseBody struct {
 	// Vote identifier
-	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Vote name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Vote description
@@ -216,10 +232,14 @@ type UpdateVoteResponseBody struct {
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// Project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	// Project name
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
 	// Committee UID
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Committee name
 	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee voting status filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
 	// Committee type
 	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
 	// Committee voting status
@@ -232,6 +252,10 @@ type UpdateVoteResponseBody struct {
 	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
 	// Vote questions
 	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Poll type
+	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
+	// Number of winners (meek_stv only)
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 }
@@ -240,7 +264,7 @@ type UpdateVoteResponseBody struct {
 // endpoint HTTP response body.
 type ExtendVoteResponseBody struct {
 	// Vote identifier
-	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
 	// Vote name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Vote description
@@ -255,10 +279,14 @@ type ExtendVoteResponseBody struct {
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// Project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	// Project name
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
 	// Committee UID
 	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
 	// Committee name
 	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee voting status filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
 	// Committee type
 	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
 	// Committee voting status
@@ -271,6 +299,10 @@ type ExtendVoteResponseBody struct {
 	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
 	// Vote questions
 	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Poll type
+	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
+	// Number of winners (meek_stv only)
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 }
@@ -1090,9 +1122,9 @@ type PollResultItemResponseBody struct {
 	// Winner information for ranked choice
 	RankedChoiceWinnerInfo *RankedChoiceWinnerInfoResponseBody `form:"ranked_choice_winner_info,omitempty" json:"ranked_choice_winner_info,omitempty" xml:"ranked_choice_winner_info,omitempty"`
 	// IRV round summary
-	IrvRoundSummary any `form:"irv_round_summary,omitempty" json:"irv_round_summary,omitempty" xml:"irv_round_summary,omitempty"`
+	IrvRoundSummary []*IRVRoundSummaryResponseBody `form:"irv_round_summary,omitempty" json:"irv_round_summary,omitempty" xml:"irv_round_summary,omitempty"`
 	// Meek STV round summary
-	MeekStvRoundSummary any `form:"meek_stv_round_summary,omitempty" json:"meek_stv_round_summary,omitempty" xml:"meek_stv_round_summary,omitempty"`
+	MeekStvRoundSummary []*MeekSTVRoundSummaryResponseBody `form:"meek_stv_round_summary,omitempty" json:"meek_stv_round_summary,omitempty" xml:"meek_stv_round_summary,omitempty"`
 }
 
 // PollQuestionDetailResponseBody is used to define fields on response body
@@ -1125,8 +1157,8 @@ type RankedChoiceVoteResponseBody struct {
 	ChoiceID *string `form:"choice_id,omitempty" json:"choice_id,omitempty" xml:"choice_id,omitempty"`
 	// Vote counts per rank
 	RankCounts []*RankCountResponseBody `form:"rank_counts,omitempty" json:"rank_counts,omitempty" xml:"rank_counts,omitempty"`
-	// Condorcet matrix
-	CondorcetMatrix any `form:"condorcet_matrix,omitempty" json:"condorcet_matrix,omitempty" xml:"condorcet_matrix,omitempty"`
+	// Condorcet matrix entries
+	CondorcetMatrix []*CondorcetMatrixEntryResponseBody `form:"condorcet_matrix,omitempty" json:"condorcet_matrix,omitempty" xml:"condorcet_matrix,omitempty"`
 }
 
 // RankCountResponseBody is used to define fields on response body types.
@@ -1137,6 +1169,21 @@ type RankCountResponseBody struct {
 	Count *int `form:"count,omitempty" json:"count,omitempty" xml:"count,omitempty"`
 }
 
+// CondorcetMatrixEntryResponseBody is used to define fields on response body
+// types.
+type CondorcetMatrixEntryResponseBody struct {
+	// Choice identifier
+	ChoiceID *string `form:"choice_id,omitempty" json:"choice_id,omitempty" xml:"choice_id,omitempty"`
+	// Other choice identifier
+	OtherChoiceID *string `form:"other_choice_id,omitempty" json:"other_choice_id,omitempty" xml:"other_choice_id,omitempty"`
+	// Number of times choice_id wins against other_choice_id
+	ChoiceIDWins *int `form:"choice_id_wins,omitempty" json:"choice_id_wins,omitempty" xml:"choice_id_wins,omitempty"`
+	// Number of times other_choice_id wins against choice_id
+	OtherChoiceIDWins *int `form:"other_choice_id_wins,omitempty" json:"other_choice_id_wins,omitempty" xml:"other_choice_id_wins,omitempty"`
+	// Result string (e.g., '23(10)')
+	Result *string `form:"result,omitempty" json:"result,omitempty" xml:"result,omitempty"`
+}
+
 // RankedChoiceWinnerInfoResponseBody is used to define fields on response body
 // types.
 type RankedChoiceWinnerInfoResponseBody struct {
@@ -1144,6 +1191,82 @@ type RankedChoiceWinnerInfoResponseBody struct {
 	PollChoices []*PollChoiceResponseBody `form:"poll_choices,omitempty" json:"poll_choices,omitempty" xml:"poll_choices,omitempty"`
 	// Whether Condorcet IRV was used
 	CondorcetIrvUsedForEliminations *bool `form:"condorcet_irv_used_for_eliminations,omitempty" json:"condorcet_irv_used_for_eliminations,omitempty" xml:"condorcet_irv_used_for_eliminations,omitempty"`
+}
+
+// IRVRoundSummaryResponseBody is used to define fields on response body types.
+type IRVRoundSummaryResponseBody struct {
+	// Round number
+	RoundNumber *int `form:"round_number,omitempty" json:"round_number,omitempty" xml:"round_number,omitempty"`
+	// Vote counts per choice
+	Votes []*VoteCountResponseBody `form:"votes,omitempty" json:"votes,omitempty" xml:"votes,omitempty"`
+	// Total votes in this round
+	TotalVotes *int `form:"total_votes,omitempty" json:"total_votes,omitempty" xml:"total_votes,omitempty"`
+	// Minimum votes
+	MinVotes *int `form:"min_votes,omitempty" json:"min_votes,omitempty" xml:"min_votes,omitempty"`
+	// Number of exhausted votes
+	ExhaustedVotes *int `form:"exhausted_votes,omitempty" json:"exhausted_votes,omitempty" xml:"exhausted_votes,omitempty"`
+	// Transferred votes
+	TransferredVotes []*VoteCountResponseBody `form:"transferred_votes,omitempty" json:"transferred_votes,omitempty" xml:"transferred_votes,omitempty"`
+	// Winning threshold
+	Threshold *int `form:"threshold,omitempty" json:"threshold,omitempty" xml:"threshold,omitempty"`
+	// ID of eliminated choice
+	EliminatedChoiceID *string `form:"eliminated_choice_id,omitempty" json:"eliminated_choice_id,omitempty" xml:"eliminated_choice_id,omitempty"`
+	// Round message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// VoteCountResponseBody is used to define fields on response body types.
+type VoteCountResponseBody struct {
+	// Choice identifier
+	ChoiceID *string `form:"choice_id,omitempty" json:"choice_id,omitempty" xml:"choice_id,omitempty"`
+	// Number of votes
+	VoteCount *int `form:"vote_count,omitempty" json:"vote_count,omitempty" xml:"vote_count,omitempty"`
+	// Percentage of votes
+	Percentage *float64 `form:"percentage,omitempty" json:"percentage,omitempty" xml:"percentage,omitempty"`
+}
+
+// MeekSTVRoundSummaryResponseBody is used to define fields on response body
+// types.
+type MeekSTVRoundSummaryResponseBody struct {
+	// Round number
+	RoundNumber *int `form:"round_number,omitempty" json:"round_number,omitempty" xml:"round_number,omitempty"`
+	// Vote counts per choice
+	Votes []*MeekSTVVoteCountResponseBody `form:"votes,omitempty" json:"votes,omitempty" xml:"votes,omitempty"`
+	// Total votes in this round
+	TotalVotes *int `form:"total_votes,omitempty" json:"total_votes,omitempty" xml:"total_votes,omitempty"`
+	// Number of exhausted votes
+	ExhaustedVotes *int `form:"exhausted_votes,omitempty" json:"exhausted_votes,omitempty" xml:"exhausted_votes,omitempty"`
+	// Election threshold
+	Threshold *int `form:"threshold,omitempty" json:"threshold,omitempty" xml:"threshold,omitempty"`
+	// Round message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+	// Elected choices in this round
+	ElectedChoices []*MeekSTVElectedChoiceResponseBody `form:"elected_choices,omitempty" json:"elected_choices,omitempty" xml:"elected_choices,omitempty"`
+	// Eliminated choices in this round
+	EliminatedChoices []*MeekSTVVoteCountResponseBody `form:"eliminated_choices,omitempty" json:"eliminated_choices,omitempty" xml:"eliminated_choices,omitempty"`
+	// Transferred votes
+	TransferredVotes []*MeekSTVVoteCountResponseBody `form:"transferred_votes,omitempty" json:"transferred_votes,omitempty" xml:"transferred_votes,omitempty"`
+	// Surplus votes
+	SurplusVotes []*MeekSTVVoteCountResponseBody `form:"surplus_votes,omitempty" json:"surplus_votes,omitempty" xml:"surplus_votes,omitempty"`
+}
+
+// MeekSTVVoteCountResponseBody is used to define fields on response body types.
+type MeekSTVVoteCountResponseBody struct {
+	// Choice identifier
+	ChoiceID *string `form:"choice_id,omitempty" json:"choice_id,omitempty" xml:"choice_id,omitempty"`
+	// Number of votes
+	VoteCount *int `form:"vote_count,omitempty" json:"vote_count,omitempty" xml:"vote_count,omitempty"`
+}
+
+// MeekSTVElectedChoiceResponseBody is used to define fields on response body
+// types.
+type MeekSTVElectedChoiceResponseBody struct {
+	// Choice identifier
+	ChoiceID *string `form:"choice_id,omitempty" json:"choice_id,omitempty" xml:"choice_id,omitempty"`
+	// Number of votes
+	VoteCount *int `form:"vote_count,omitempty" json:"vote_count,omitempty" xml:"vote_count,omitempty"`
+	// Surplus votes over threshold
+	SurplusVotes *int `form:"surplus_votes,omitempty" json:"surplus_votes,omitempty" xml:"surplus_votes,omitempty"`
 }
 
 // CommentResultItemResponseBody is used to define fields on response body
@@ -1428,7 +1551,7 @@ func NewUpdateVoteResponseRequestBody(p *vote.UpdateVoteResponsePayload) *Update
 // endpoint result from a HTTP "Created" response.
 func NewCreateVoteVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResult {
 	v := &vote.VoteResult{
-		VoteUID:                       *body.VoteUID,
+		UID:                           *body.UID,
 		Name:                          *body.Name,
 		Description:                   *body.Description,
 		CreationTime:                  body.CreationTime,
@@ -1436,6 +1559,7 @@ func NewCreateVoteVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResu
 		EndTime:                       body.EndTime,
 		Status:                        *body.Status,
 		ProjectUID:                    *body.ProjectUID,
+		ProjectName:                   body.ProjectName,
 		CommitteeUID:                  *body.CommitteeUID,
 		CommitteeName:                 body.CommitteeName,
 		CommitteeType:                 body.CommitteeType,
@@ -1443,7 +1567,17 @@ func NewCreateVoteVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResu
 		PseudoAnonymity:               body.PseudoAnonymity,
 		TotalVotingRequestInvitations: body.TotalVotingRequestInvitations,
 		NumResponseReceived:           body.NumResponseReceived,
+		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+	}
+	if body.PollType != nil {
+		v.PollType = *body.PollType
+	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
 	}
 	if body.PollQuestions != nil {
 		v.PollQuestions = make([]*vote.PollQuestion, len(body.PollQuestions))
@@ -1454,6 +1588,9 @@ func NewCreateVoteVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResu
 			}
 			v.PollQuestions[i] = unmarshalPollQuestionResponseBodyToVotePollQuestion(val)
 		}
+	}
+	if body.PollType == nil {
+		v.PollType = "generic"
 	}
 
 	return v
@@ -1540,7 +1677,7 @@ func NewCreateVoteUnauthorized(body *CreateVoteUnauthorizedResponseBody) *vote.U
 // from a HTTP "OK" response.
 func NewGetVoteVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
 	v := &vote.VoteResult{
-		VoteUID:                       *body.VoteUID,
+		UID:                           *body.UID,
 		Name:                          *body.Name,
 		Description:                   *body.Description,
 		CreationTime:                  body.CreationTime,
@@ -1548,6 +1685,7 @@ func NewGetVoteVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
 		EndTime:                       body.EndTime,
 		Status:                        *body.Status,
 		ProjectUID:                    *body.ProjectUID,
+		ProjectName:                   body.ProjectName,
 		CommitteeUID:                  *body.CommitteeUID,
 		CommitteeName:                 body.CommitteeName,
 		CommitteeType:                 body.CommitteeType,
@@ -1555,7 +1693,17 @@ func NewGetVoteVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
 		PseudoAnonymity:               body.PseudoAnonymity,
 		TotalVotingRequestInvitations: body.TotalVotingRequestInvitations,
 		NumResponseReceived:           body.NumResponseReceived,
+		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+	}
+	if body.PollType != nil {
+		v.PollType = *body.PollType
+	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
 	}
 	if body.PollQuestions != nil {
 		v.PollQuestions = make([]*vote.PollQuestion, len(body.PollQuestions))
@@ -1566,6 +1714,9 @@ func NewGetVoteVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
 			}
 			v.PollQuestions[i] = unmarshalPollQuestionResponseBodyToVotePollQuestion(val)
 		}
+	}
+	if body.PollType == nil {
+		v.PollType = "generic"
 	}
 
 	return v
@@ -1639,7 +1790,7 @@ func NewGetVoteUnauthorized(body *GetVoteUnauthorizedResponseBody) *vote.Unautho
 // result from a HTTP "OK" response.
 func NewUpdateVoteVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
 	v := &vote.VoteResult{
-		VoteUID:                       *body.VoteUID,
+		UID:                           *body.UID,
 		Name:                          *body.Name,
 		Description:                   *body.Description,
 		CreationTime:                  body.CreationTime,
@@ -1647,6 +1798,7 @@ func NewUpdateVoteVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
 		EndTime:                       body.EndTime,
 		Status:                        *body.Status,
 		ProjectUID:                    *body.ProjectUID,
+		ProjectName:                   body.ProjectName,
 		CommitteeUID:                  *body.CommitteeUID,
 		CommitteeName:                 body.CommitteeName,
 		CommitteeType:                 body.CommitteeType,
@@ -1654,7 +1806,17 @@ func NewUpdateVoteVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
 		PseudoAnonymity:               body.PseudoAnonymity,
 		TotalVotingRequestInvitations: body.TotalVotingRequestInvitations,
 		NumResponseReceived:           body.NumResponseReceived,
+		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+	}
+	if body.PollType != nil {
+		v.PollType = *body.PollType
+	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
 	}
 	if body.PollQuestions != nil {
 		v.PollQuestions = make([]*vote.PollQuestion, len(body.PollQuestions))
@@ -1665,6 +1827,9 @@ func NewUpdateVoteVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
 			}
 			v.PollQuestions[i] = unmarshalPollQuestionResponseBodyToVotePollQuestion(val)
 		}
+	}
+	if body.PollType == nil {
+		v.PollType = "generic"
 	}
 
 	return v
@@ -1806,7 +1971,7 @@ func NewDeleteVoteUnauthorized(body *DeleteVoteUnauthorizedResponseBody) *vote.U
 // result from a HTTP "OK" response.
 func NewExtendVoteVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
 	v := &vote.VoteResult{
-		VoteUID:                       *body.VoteUID,
+		UID:                           *body.UID,
 		Name:                          *body.Name,
 		Description:                   *body.Description,
 		CreationTime:                  body.CreationTime,
@@ -1814,6 +1979,7 @@ func NewExtendVoteVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
 		EndTime:                       body.EndTime,
 		Status:                        *body.Status,
 		ProjectUID:                    *body.ProjectUID,
+		ProjectName:                   body.ProjectName,
 		CommitteeUID:                  *body.CommitteeUID,
 		CommitteeName:                 body.CommitteeName,
 		CommitteeType:                 body.CommitteeType,
@@ -1821,7 +1987,17 @@ func NewExtendVoteVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
 		PseudoAnonymity:               body.PseudoAnonymity,
 		TotalVotingRequestInvitations: body.TotalVotingRequestInvitations,
 		NumResponseReceived:           body.NumResponseReceived,
+		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+	}
+	if body.PollType != nil {
+		v.PollType = *body.PollType
+	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
 	}
 	if body.PollQuestions != nil {
 		v.PollQuestions = make([]*vote.PollQuestion, len(body.PollQuestions))
@@ -1832,6 +2008,9 @@ func NewExtendVoteVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
 			}
 			v.PollQuestions[i] = unmarshalPollQuestionResponseBodyToVotePollQuestion(val)
 		}
+	}
+	if body.PollType == nil {
+		v.PollType = "generic"
 	}
 
 	return v
@@ -2445,8 +2624,8 @@ func NewResendVoteResponseUnauthorized(body *ResendVoteResponseUnauthorizedRespo
 // ValidateCreateVoteResponseBody runs the validations defined on
 // create_vote_response_body
 func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
-	if body.VoteUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
+	if body.UID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
 	}
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
@@ -2463,8 +2642,8 @@ func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
-	if body.VoteUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))
+	if body.UID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
 	if body.CreationTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.creation_time", *body.CreationTime, goa.FormatDateTime))
@@ -2485,6 +2664,11 @@ func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
 			if err2 := ValidatePollQuestionResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
+		}
+	}
+	if body.PollType != nil {
+		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
 		}
 	}
 	return
@@ -2493,8 +2677,8 @@ func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
 // ValidateGetVoteResponseBody runs the validations defined on
 // get_vote_response_body
 func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
-	if body.VoteUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
+	if body.UID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
 	}
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
@@ -2511,8 +2695,8 @@ func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
-	if body.VoteUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))
+	if body.UID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
 	if body.CreationTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.creation_time", *body.CreationTime, goa.FormatDateTime))
@@ -2533,6 +2717,11 @@ func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
 			if err2 := ValidatePollQuestionResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
+		}
+	}
+	if body.PollType != nil {
+		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
 		}
 	}
 	return
@@ -2541,8 +2730,8 @@ func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
 // ValidateUpdateVoteResponseBody runs the validations defined on
 // update_vote_response_body
 func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
-	if body.VoteUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
+	if body.UID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
 	}
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
@@ -2559,8 +2748,8 @@ func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
-	if body.VoteUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))
+	if body.UID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
 	if body.CreationTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.creation_time", *body.CreationTime, goa.FormatDateTime))
@@ -2581,6 +2770,11 @@ func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
 			if err2 := ValidatePollQuestionResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
+		}
+	}
+	if body.PollType != nil {
+		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
 		}
 	}
 	return
@@ -2589,8 +2783,8 @@ func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
 // ValidateExtendVoteResponseBody runs the validations defined on
 // extend_vote_response_body
 func ValidateExtendVoteResponseBody(body *ExtendVoteResponseBody) (err error) {
-	if body.VoteUID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
+	if body.UID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
 	}
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
@@ -2607,8 +2801,8 @@ func ValidateExtendVoteResponseBody(body *ExtendVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
-	if body.VoteUID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))
+	if body.UID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
 	if body.CreationTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.creation_time", *body.CreationTime, goa.FormatDateTime))
@@ -2629,6 +2823,11 @@ func ValidateExtendVoteResponseBody(body *ExtendVoteResponseBody) (err error) {
 			if err2 := ValidatePollQuestionResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
+		}
+	}
+	if body.PollType != nil {
+		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
 		}
 	}
 	return
@@ -3682,6 +3881,20 @@ func ValidatePollResultItemResponseBody(body *PollResultItemResponseBody) (err e
 			err = goa.MergeErrors(err, err2)
 		}
 	}
+	for _, e := range body.IrvRoundSummary {
+		if e != nil {
+			if err2 := ValidateIRVRoundSummaryResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.MeekStvRoundSummary {
+		if e != nil {
+			if err2 := ValidateMeekSTVRoundSummaryResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
 	return
 }
 
@@ -3750,6 +3963,13 @@ func ValidateRankedChoiceVoteResponseBody(body *RankedChoiceVoteResponseBody) (e
 			}
 		}
 	}
+	for _, e := range body.CondorcetMatrix {
+		if e != nil {
+			if err2 := ValidateCondorcetMatrixEntryResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
 	return
 }
 
@@ -3770,6 +3990,27 @@ func ValidateRankCountResponseBody(body *RankCountResponseBody) (err error) {
 	return
 }
 
+// ValidateCondorcetMatrixEntryResponseBody runs the validations defined on
+// CondorcetMatrixEntryResponseBody
+func ValidateCondorcetMatrixEntryResponseBody(body *CondorcetMatrixEntryResponseBody) (err error) {
+	if body.ChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", "body"))
+	}
+	if body.OtherChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("other_choice_id", "body"))
+	}
+	if body.ChoiceIDWins == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id_wins", "body"))
+	}
+	if body.OtherChoiceIDWins == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("other_choice_id_wins", "body"))
+	}
+	if body.Result == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("result", "body"))
+	}
+	return
+}
+
 // ValidateRankedChoiceWinnerInfoResponseBody runs the validations defined on
 // RankedChoiceWinnerInfoResponseBody
 func ValidateRankedChoiceWinnerInfoResponseBody(body *RankedChoiceWinnerInfoResponseBody) (err error) {
@@ -3782,6 +4023,142 @@ func ValidateRankedChoiceWinnerInfoResponseBody(body *RankedChoiceWinnerInfoResp
 				err = goa.MergeErrors(err, err2)
 			}
 		}
+	}
+	return
+}
+
+// ValidateIRVRoundSummaryResponseBody runs the validations defined on
+// IRVRoundSummaryResponseBody
+func ValidateIRVRoundSummaryResponseBody(body *IRVRoundSummaryResponseBody) (err error) {
+	if body.RoundNumber == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("round_number", "body"))
+	}
+	if body.Votes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("votes", "body"))
+	}
+	if body.TotalVotes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("total_votes", "body"))
+	}
+	if body.ExhaustedVotes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("exhausted_votes", "body"))
+	}
+	if body.Threshold == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("threshold", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	for _, e := range body.Votes {
+		if e != nil {
+			if err2 := ValidateVoteCountResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.TransferredVotes {
+		if e != nil {
+			if err2 := ValidateVoteCountResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateVoteCountResponseBody runs the validations defined on
+// VoteCountResponseBody
+func ValidateVoteCountResponseBody(body *VoteCountResponseBody) (err error) {
+	if body.ChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", "body"))
+	}
+	if body.VoteCount == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_count", "body"))
+	}
+	return
+}
+
+// ValidateMeekSTVRoundSummaryResponseBody runs the validations defined on
+// MeekSTVRoundSummaryResponseBody
+func ValidateMeekSTVRoundSummaryResponseBody(body *MeekSTVRoundSummaryResponseBody) (err error) {
+	if body.RoundNumber == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("round_number", "body"))
+	}
+	if body.Votes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("votes", "body"))
+	}
+	if body.TotalVotes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("total_votes", "body"))
+	}
+	if body.ExhaustedVotes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("exhausted_votes", "body"))
+	}
+	if body.Threshold == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("threshold", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	for _, e := range body.Votes {
+		if e != nil {
+			if err2 := ValidateMeekSTVVoteCountResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.ElectedChoices {
+		if e != nil {
+			if err2 := ValidateMeekSTVElectedChoiceResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.EliminatedChoices {
+		if e != nil {
+			if err2 := ValidateMeekSTVVoteCountResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.TransferredVotes {
+		if e != nil {
+			if err2 := ValidateMeekSTVVoteCountResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.SurplusVotes {
+		if e != nil {
+			if err2 := ValidateMeekSTVVoteCountResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateMeekSTVVoteCountResponseBody runs the validations defined on
+// MeekSTVVoteCountResponseBody
+func ValidateMeekSTVVoteCountResponseBody(body *MeekSTVVoteCountResponseBody) (err error) {
+	if body.ChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", "body"))
+	}
+	if body.VoteCount == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_count", "body"))
+	}
+	return
+}
+
+// ValidateMeekSTVElectedChoiceResponseBody runs the validations defined on
+// MeekSTVElectedChoiceResponseBody
+func ValidateMeekSTVElectedChoiceResponseBody(body *MeekSTVElectedChoiceResponseBody) (err error) {
+	if body.ChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", "body"))
+	}
+	if body.VoteCount == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_count", "body"))
+	}
+	if body.SurplusVotes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("surplus_votes", "body"))
 	}
 	return
 }
