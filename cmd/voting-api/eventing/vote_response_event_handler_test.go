@@ -155,6 +155,12 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		mappingsKV, cleanup := setupTestKV(t)
 		defer cleanup()
 
+		ctx := context.Background()
+
+		// Store parent vote in mappings KV to simulate it already being processed
+		_, err := mappingsKV.Put(ctx, "vote.poll-456", []byte("1"))
+		require.NoError(t, err)
+
 		v1Data := map[string]interface{}{
 			"vote_id":      "vote-123",
 			"poll_id":      "poll-456",
@@ -166,7 +172,6 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 
 		mockPublisher := &mockEventPublisher{}
 		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
 
 		logger := slog.Default()
 		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, logger)
@@ -195,20 +200,48 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		assert.Len(t, mockPublisher.publishedVoteResponses, 0)
 	})
 
-	t.Run("returns false when project UID is missing", func(t *testing.T) {
+	t.Run("returns true when parent vote not found in mappings", func(t *testing.T) {
 		mappingsKV, cleanup := setupTestKV(t)
 		defer cleanup()
 
+		ctx := context.Background()
+
+		// Don't store parent vote in mappings - simulate it not being processed yet
+
 		v1Data := map[string]interface{}{
-			"vote_id":      "vote-123",
-			"poll_id":      "poll-456",
+			"vote_id":      "vote-999",
+			"poll_id":      "poll-999", // Use different poll_id to avoid test conflicts
+			"project_id":   "project-sfid",
+			"user_id":      "user-123",
+			"vote_status":  "submitted",
 			"poll_answers": []interface{}{},
-			// Missing project_id
 		}
 
 		mockPublisher := &mockEventPublisher{}
 		idMapper := idmapper.NewNoOpMapper()
+
+		logger := slog.Default()
+		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-999", v1Data, mockPublisher, idMapper, mappingsKV, logger)
+
+		assert.True(t, shouldRetry) // Retry - parent vote not yet processed
+		assert.Len(t, mockPublisher.publishedVoteResponses, 0)
+	})
+
+	t.Run("returns false when poll_id is missing", func(t *testing.T) {
+		mappingsKV, cleanup := setupTestKV(t)
+		defer cleanup()
+
 		ctx := context.Background()
+
+		v1Data := map[string]interface{}{
+			"vote_id":      "vote-123",
+			// Missing poll_id - can't check for parent vote
+			"project_id":   "project-sfid",
+			"poll_answers": []interface{}{},
+		}
+
+		mockPublisher := &mockEventPublisher{}
+		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
 		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, logger)
@@ -221,6 +254,12 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		mappingsKV, cleanup := setupTestKV(t)
 		defer cleanup()
 
+		ctx := context.Background()
+
+		// Store parent vote in mappings
+		_, err := mappingsKV.Put(ctx, "vote.poll-456", []byte("1"))
+		require.NoError(t, err)
+
 		v1Data := map[string]interface{}{
 			"vote_id":      "vote-123",
 			"poll_id":      "poll-456",
@@ -232,7 +271,6 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 			publishVoteResponseErr: errors.New("connection timeout"),
 		}
 		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
 
 		logger := slog.Default()
 		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, logger)

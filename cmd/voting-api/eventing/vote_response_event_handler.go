@@ -44,10 +44,16 @@ func handleVoteResponseUpdate(
 	}
 	funcLogger = funcLogger.With("vote_response_id", voteResponseData.UID)
 
-	// Check if parent project exists in mappings
-	if voteResponseData.ProjectUID == "" {
-		funcLogger.With("project_id", voteResponseData.ProjectID).InfoContext(ctx, "skipping vote response sync - parent project not found in mappings")
-		return false // Permanent issue, ACK and skip
+	// Check if parent vote exists in mappings before proceeding
+	if voteResponseData.PollID == "" {
+		funcLogger.ErrorContext(ctx, "vote response missing required parent vote ID")
+		return false // Permanent error, ACK and skip
+	}
+	funcLogger = funcLogger.With("poll_id", voteResponseData.PollID)
+	voteMappingKey := fmt.Sprintf("vote.%s", voteResponseData.PollID)
+	if _, err := mappingsKV.Get(ctx, voteMappingKey); err != nil {
+		funcLogger.With(errKey, err).InfoContext(ctx, "parent vote not found in mappings, will retry vote response sync")
+		return true // NAK for retry - parent vote hasn't been processed yet
 	}
 
 	// Determine action (created vs updated) by checking if mapping exists

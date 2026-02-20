@@ -96,11 +96,32 @@ func kvMessageHandler(
 
 	// Handle message acknowledgment based on retry decision
 	if shouldRetry {
-		// NAK the message to trigger retry
-		if err := msg.Nak(); err != nil {
+		// Get message metadata to determine retry attempt number
+		metadata, err := msg.Metadata()
+		if err != nil {
+			logger.With("error", err, "key", key).Warn("failed to get message metadata, using default delay")
+			metadata = &jetstream.MsgMetadata{NumDelivered: 1}
+		}
+
+		// Calculate exponential backoff delay based on delivery attempt
+		// Attempts: 1st retry = 2s, 2nd retry = 10s, 3rd+ retry = 20s
+		var delay time.Duration
+		switch metadata.NumDelivered {
+		case 1:
+			delay = 2 * time.Second
+		case 2:
+			delay = 10 * time.Second
+		default:
+			// This case won't be hit if there is a consumer max delivery of 3 or less
+			delay = 20 * time.Second
+		}
+
+		// NAK the message with exponential backoff delay
+		// This allows time for parent objects (e.g., votes) to be stored before retrying child objects (e.g., vote responses)
+		if err := msg.NakWithDelay(delay); err != nil {
 			logger.With("error", err, "key", key).Error("failed to NAK KV JetStream message for retry")
 		} else {
-			logger.With("key", key).Debug("NAKed KV message for retry")
+			logger.With("key", key, "attempt", metadata.NumDelivered, "delay_seconds", delay.Seconds()).Debug("NAKed KV message for retry with exponential backoff")
 		}
 	} else {
 		// Acknowledge the message

@@ -70,6 +70,12 @@ func TestKvHandler(t *testing.T) {
 		mappingsKV, cleanup := setupTestKV(t)
 		defer cleanup()
 
+		ctx := context.Background()
+
+		// Store parent vote in mappings
+		_, err := mappingsKV.Put(ctx, "vote.poll-456", []byte("1"))
+		require.NoError(t, err)
+
 		entry := &kvEntry{
 			key:       "itx-poll-vote.vote-123",
 			value:     []byte(`{"vote_id":"vote-123","poll_id":"poll-456","project_id":"proj-1","poll_answers":[]}`),
@@ -78,7 +84,6 @@ func TestKvHandler(t *testing.T) {
 
 		mockPublisher := &mockEventPublisher{}
 		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
 
 		logger := slog.Default()
 		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, logger)
@@ -201,6 +206,12 @@ func TestHandleKVPut(t *testing.T) {
 		mappingsKV, cleanup := setupTestKV(t)
 		defer cleanup()
 
+		ctx := context.Background()
+
+		// Store parent vote in mappings
+		_, err := mappingsKV.Put(ctx, "vote.poll-456", []byte("1"))
+		require.NoError(t, err)
+
 		entry := &kvEntry{
 			key:       "itx-poll-vote.vote-123",
 			value:     []byte(`{"vote_id":"vote-123","poll_id":"poll-456","project_id":"proj-1","poll_answers":[]}`),
@@ -209,7 +220,6 @@ func TestHandleKVPut(t *testing.T) {
 
 		mockPublisher := &mockEventPublisher{}
 		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
 
 		logger := slog.Default()
 		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, logger)
