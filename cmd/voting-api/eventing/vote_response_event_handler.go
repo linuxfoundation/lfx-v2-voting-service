@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
-	"strconv"
 
 	indexerConstants "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
@@ -112,17 +111,7 @@ func convertMapToVoteResponseData(
 			rankedChoice := itx.RankedPollChoiceAnswer{
 				ChoiceID:   rc.ChoiceID,
 				ChoiceText: rc.ChoiceText,
-			}
-
-			// Convert string choice_rank to int
-			if rc.ChoiceRank != "" {
-				if val, err := strconv.Atoi(rc.ChoiceRank); err == nil {
-					rankedChoice.ChoiceRank = val
-				} else {
-					logger.With(errKey, err, "field", "choice_rank", "value", rc.ChoiceRank).
-						WarnContext(ctx, "failed to convert choice_rank string to int")
-					rankedChoice.ChoiceRank = 0
-				}
+				ChoiceRank: rc.ChoiceRank,
 			}
 
 			rankedChoices = append(rankedChoices, rankedChoice)

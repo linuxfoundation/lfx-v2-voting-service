@@ -3,7 +3,13 @@
 
 package domain
 
-import "github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
+import (
+	"encoding/json"
+	"fmt"
+	"strconv"
+
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
+)
 
 // PollDBRaw represents raw poll data from v1 DynamoDB/NATS KV bucket
 // This is only used for unmarshaling - numeric fields come as strings from DynamoDB
@@ -22,13 +28,126 @@ type PollDBRaw struct {
 	CommitteeType                 string                   `json:"committee_type"`
 	CommitteeVotingStatus         bool                     `json:"committee_voting_status"`
 	CommitteeFilters              []string                 `json:"committee_filters"`
-	TotalVotingRequestInvitations string                   `json:"total_voting_request_invitations"` // String in DynamoDB
-	PollQuestions                 []itx.PollQuestionOutput `json:"poll_questions"`                   // Reuse existing model
-	NumResponseReceived           string                   `json:"num_response_received"`            // String in DynamoDB
+	TotalVotingRequestInvitations int                      `json:"total_voting_request_invitations"`
+	PollQuestions                 []itx.PollQuestionOutput `json:"poll_questions"` // Reuse existing model
+	NumResponseReceived           int                      `json:"num_response_received"`
 	PollType                      string                   `json:"poll_type"`
 	PseudoAnonymity               bool                     `json:"pseudo_anonymity"`
-	NumWinners                    string                   `json:"num_winners"` // String in DynamoDB
+	NumWinners                    int                      `json:"num_winners"`
 	AllowAbstain                  bool                     `json:"allow_abstain"`
+}
+
+// UnmarshalJSON implements custom unmarshaling to handle both string and int inputs for numeric fields.
+func (p *PollDBRaw) UnmarshalJSON(data []byte) error {
+	tmp := struct {
+		PollID                        string                   `json:"poll_id"`
+		Name                          string                   `json:"name"`
+		Description                   string                   `json:"description"`
+		CreationTime                  string                   `json:"creation_time"`
+		LastModifiedTime              string                   `json:"last_modified_time"`
+		EndTime                       string                   `json:"end_time"`
+		Status                        string                   `json:"status"`
+		ProjectID                     string                   `json:"project_id"`
+		ProjectName                   string                   `json:"project_name"`
+		CommitteeID                   string                   `json:"committee_id"`
+		CommitteeName                 string                   `json:"committee_name"`
+		CommitteeType                 string                   `json:"committee_type"`
+		CommitteeVotingStatus         bool                     `json:"committee_voting_status"`
+		CommitteeFilters              []string                 `json:"committee_filters"`
+		TotalVotingRequestInvitations interface{}              `json:"total_voting_request_invitations"`
+		PollQuestions                 []itx.PollQuestionOutput `json:"poll_questions"`
+		NumResponseReceived           interface{}              `json:"num_response_received"`
+		PollType                      string                   `json:"poll_type"`
+		PseudoAnonymity               bool                     `json:"pseudo_anonymity"`
+		NumWinners                    interface{}              `json:"num_winners"`
+		AllowAbstain                  bool                     `json:"allow_abstain"`
+	}{}
+
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	// Handle TotalVotingRequestInvitations (string from Meltano, int/float64 from other sources)
+	switch v := tmp.TotalVotingRequestInvitations.(type) {
+	case string:
+		if v != "" {
+			val, err := strconv.Atoi(v)
+			if err != nil {
+				return err
+			}
+			p.TotalVotingRequestInvitations = val
+		}
+	case float64:
+		p.TotalVotingRequestInvitations = int(v)
+	case int:
+		p.TotalVotingRequestInvitations = v
+	default:
+		if v != nil {
+			return fmt.Errorf("invalid type for total_voting_request_invitations: %T", v)
+		}
+	}
+
+	// Handle NumResponseReceived (string from Meltano, int/float64 from other sources)
+	switch v := tmp.NumResponseReceived.(type) {
+	case string:
+		if v != "" {
+			val, err := strconv.Atoi(v)
+			if err != nil {
+				return err
+			}
+			p.NumResponseReceived = val
+		}
+	case float64:
+		p.NumResponseReceived = int(v)
+	case int:
+		p.NumResponseReceived = v
+	default:
+		if v != nil {
+			return fmt.Errorf("invalid type for num_response_received: %T", v)
+		}
+	}
+
+	// Handle NumWinners (string from Meltano, int/float64 from other sources)
+	switch v := tmp.NumWinners.(type) {
+	case string:
+		if v != "" {
+			val, err := strconv.Atoi(v)
+			if err != nil {
+				return err
+			}
+			p.NumWinners = val
+		}
+	case float64:
+		p.NumWinners = int(v)
+	case int:
+		p.NumWinners = v
+	default:
+		if v != nil {
+			return fmt.Errorf("invalid type for num_winners: %T", v)
+		}
+	}
+
+	// Assign all other fields
+	p.PollID = tmp.PollID
+	p.Name = tmp.Name
+	p.Description = tmp.Description
+	p.CreationTime = tmp.CreationTime
+	p.LastModifiedTime = tmp.LastModifiedTime
+	p.EndTime = tmp.EndTime
+	p.Status = tmp.Status
+	p.ProjectID = tmp.ProjectID
+	p.ProjectName = tmp.ProjectName
+	p.CommitteeID = tmp.CommitteeID
+	p.CommitteeName = tmp.CommitteeName
+	p.CommitteeType = tmp.CommitteeType
+	p.CommitteeVotingStatus = tmp.CommitteeVotingStatus
+	p.CommitteeFilters = tmp.CommitteeFilters
+	p.PollQuestions = tmp.PollQuestions
+	p.PollType = tmp.PollType
+	p.PseudoAnonymity = tmp.PseudoAnonymity
+	p.AllowAbstain = tmp.AllowAbstain
+
+	return nil
 }
 
 // VoteDBRaw represents raw vote response data from v1 DynamoDB/NATS KV bucket
@@ -80,7 +199,46 @@ type PollAnswerRaw struct {
 type RankedChoiceAnswerRaw struct {
 	ChoiceID   string `json:"choice_id"`
 	ChoiceText string `json:"choice_text"`
-	ChoiceRank string `json:"choice_rank"` // String in DynamoDB, needs conversion to int
+	ChoiceRank int    `json:"choice_rank"`
+}
+
+// UnmarshalJSON implements custom unmarshaling to handle both string and int inputs for ChoiceRank.
+func (r *RankedChoiceAnswerRaw) UnmarshalJSON(data []byte) error {
+	tmp := struct {
+		ChoiceID   string      `json:"choice_id"`
+		ChoiceText string      `json:"choice_text"`
+		ChoiceRank interface{} `json:"choice_rank"`
+	}{}
+
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	// Handle ChoiceRank (string from Meltano, int/float64 from other sources)
+	switch v := tmp.ChoiceRank.(type) {
+	case string:
+		if v != "" {
+			val, err := strconv.Atoi(v)
+			if err != nil {
+				return err
+			}
+			r.ChoiceRank = val
+		}
+	case float64:
+		r.ChoiceRank = int(v)
+	case int:
+		r.ChoiceRank = v
+	default:
+		if v != nil {
+			return fmt.Errorf("invalid type for choice_rank: %T", v)
+		}
+	}
+
+	// Assign other fields
+	r.ChoiceID = tmp.ChoiceID
+	r.ChoiceText = tmp.ChoiceText
+
+	return nil
 }
 
 //

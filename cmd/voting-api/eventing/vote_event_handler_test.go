@@ -111,7 +111,7 @@ func TestConvertMapToVoteData(t *testing.T) {
 		assert.Equal(t, 0, result.NumResponseReceived)
 	})
 
-	t.Run("handles invalid numeric string", func(t *testing.T) {
+	t.Run("returns error for invalid numeric string", func(t *testing.T) {
 		v1Data := map[string]interface{}{
 			"poll_id":                          "poll-789",
 			"name":                             "Test Vote",
@@ -124,11 +124,9 @@ func TestConvertMapToVoteData(t *testing.T) {
 
 		logger := slog.Default()
 		result, err := convertMapToVoteData(ctx, v1Data, idMapper, logger)
-		require.NoError(t, err)
-		assert.NotNil(t, result)
-
-		// Should default to 0 for invalid numeric strings
-		assert.Equal(t, 0, result.TotalVotingRequestInvitations)
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), "invalid syntax")
 	})
 
 	t.Run("returns error for invalid JSON", func(t *testing.T) {

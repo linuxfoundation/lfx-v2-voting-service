@@ -101,7 +101,7 @@ func TestConvertMapToVoteResponseData(t *testing.T) {
 		assert.Equal(t, 2, result.PollAnswers[0].RankedUserChoice[1].ChoiceRank)
 	})
 
-	t.Run("handles invalid choice_rank string", func(t *testing.T) {
+	t.Run("returns error for invalid choice_rank string", func(t *testing.T) {
 		v1Data := map[string]interface{}{
 			"vote_id":    "vote-123",
 			"poll_id":    "poll-456",
@@ -127,12 +127,9 @@ func TestConvertMapToVoteResponseData(t *testing.T) {
 
 		logger := slog.Default()
 		result, err := convertMapToVoteResponseData(ctx, v1Data, idMapper, logger)
-		require.NoError(t, err)
-		assert.NotNil(t, result)
-
-		require.Len(t, result.PollAnswers, 1)
-		require.Len(t, result.PollAnswers[0].RankedUserChoice, 1)
-		assert.Equal(t, 0, result.PollAnswers[0].RankedUserChoice[0].ChoiceRank) // Defaults to 0
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), "invalid syntax")
 	})
 
 	t.Run("returns error for invalid JSON", func(t *testing.T) {
