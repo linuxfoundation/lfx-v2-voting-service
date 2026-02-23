@@ -62,13 +62,13 @@ func New(
 	return &Server{
 		Mounts: []*MountPoint{
 			{"CreateVote", "POST", "/votes"},
-			{"GetVote", "GET", "/votes/{vote_uid}"},
-			{"UpdateVote", "PUT", "/votes/{vote_uid}"},
-			{"DeleteVote", "DELETE", "/votes/{vote_uid}"},
-			{"ExtendVote", "POST", "/votes/{vote_uid}/extend"},
-			{"EnableVote", "PUT", "/votes/{vote_uid}/enable"},
-			{"BulkResendVote", "POST", "/votes/{vote_uid}/bulk_resend"},
-			{"GetVoteResults", "GET", "/votes/{vote_uid}/results"},
+			{"GetVote", "GET", "/votes/{uid}"},
+			{"UpdateVote", "PUT", "/votes/{uid}"},
+			{"DeleteVote", "DELETE", "/votes/{uid}"},
+			{"ExtendVote", "POST", "/votes/{uid}/extend"},
+			{"EnableVote", "PUT", "/votes/{uid}/enable"},
+			{"BulkResendVote", "POST", "/votes/{uid}/bulk_resend"},
+			{"GetVoteResults", "GET", "/votes/{uid}/results"},
 			{"CreateVoteResponse", "POST", "/vote_responses"},
 			{"GetVoteResponse", "GET", "/vote_responses/{vote_response_uid}"},
 			{"UpdateVoteResponse", "PUT", "/vote_responses/{vote_response_uid}"},
@@ -194,7 +194,7 @@ func MountGetVoteHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("GET", "/votes/{vote_uid}", f)
+	mux.Handle("GET", "/votes/{uid}", f)
 }
 
 // NewGetVoteHandler creates a HTTP handler which loads the HTTP request and
@@ -247,7 +247,7 @@ func MountUpdateVoteHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("PUT", "/votes/{vote_uid}", f)
+	mux.Handle("PUT", "/votes/{uid}", f)
 }
 
 // NewUpdateVoteHandler creates a HTTP handler which loads the HTTP request and
@@ -300,7 +300,7 @@ func MountDeleteVoteHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("DELETE", "/votes/{vote_uid}", f)
+	mux.Handle("DELETE", "/votes/{uid}", f)
 }
 
 // NewDeleteVoteHandler creates a HTTP handler which loads the HTTP request and
@@ -353,7 +353,7 @@ func MountExtendVoteHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("POST", "/votes/{vote_uid}/extend", f)
+	mux.Handle("POST", "/votes/{uid}/extend", f)
 }
 
 // NewExtendVoteHandler creates a HTTP handler which loads the HTTP request and
@@ -406,7 +406,7 @@ func MountEnableVoteHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("PUT", "/votes/{vote_uid}/enable", f)
+	mux.Handle("PUT", "/votes/{uid}/enable", f)
 }
 
 // NewEnableVoteHandler creates a HTTP handler which loads the HTTP request and
@@ -459,7 +459,7 @@ func MountBulkResendVoteHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("POST", "/votes/{vote_uid}/bulk_resend", f)
+	mux.Handle("POST", "/votes/{uid}/bulk_resend", f)
 }
 
 // NewBulkResendVoteHandler creates a HTTP handler which loads the HTTP request
@@ -512,7 +512,7 @@ func MountGetVoteResultsHandler(mux goahttp.Muxer, h http.Handler) {
 			h.ServeHTTP(w, r)
 		}
 	}
-	mux.Handle("GET", "/votes/{vote_uid}/results", f)
+	mux.Handle("GET", "/votes/{uid}/results", f)
 }
 
 // NewGetVoteResultsHandler creates a HTTP handler which loads the HTTP request

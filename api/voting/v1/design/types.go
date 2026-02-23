@@ -20,7 +20,7 @@ func BearerTokenAttribute() {
 
 // VoteIDAttribute is the DSL attribute for vote ID (UUID).
 func VoteIDAttribute() {
-	Attribute("vote_uid", String, "Vote UID", func() {
+	Attribute("uid", String, "Vote UID", func() {
 		Format(FormatUUID)
 		Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
 	})
@@ -148,7 +148,7 @@ func WinningThresholdPercentageAttribute() {
 var VoteResult = Type("VoteResult", func() {
 	Description("Vote details")
 
-	Attribute("vote_uid", String, "Vote identifier", func() {
+	Attribute("uid", String, "Vote identifier", func() {
 		Format(FormatUUID)
 		Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
 	})
@@ -173,17 +173,26 @@ var VoteResult = Type("VoteResult", func() {
 	})
 
 	Attribute("project_uid", String, "Project UID")
+	Attribute("project_name", String, "Project name")
 	Attribute("committee_uid", String, "Committee UID")
 	Attribute("committee_name", String, "Committee name")
+	Attribute("committee_filters", ArrayOf(String), "Committee voting status filters", func() {
+		Example([]string{"Voting Rep", "Alternate Voting Rep"})
+	})
 	Attribute("committee_type", String, "Committee type")
 	Attribute("committee_voting_status", Boolean, "Committee voting status")
 	Attribute("pseudo_anonymity", Boolean, "Pseudo-anonymity enabled")
 	Attribute("total_voting_request_invitations", Int, "Total invitations sent")
 	Attribute("num_response_received", Int, "Responses received")
 	Attribute("poll_questions", ArrayOf(PollQuestion), "Vote questions")
+	Attribute("poll_type", String, "Poll type", func() {
+		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
+		Default("generic")
+	})
+	Attribute("num_winners", Int, "Number of winners (meek_stv only)")
 	Attribute("allow_abstain", Boolean, "Allow abstain")
 
-	Required("vote_uid", "name", "description", "status", "project_uid", "committee_uid")
+	Required("uid", "name", "description", "status", "project_uid", "committee_uid")
 })
 
 // PollQuestion represents a question in a vote
@@ -438,8 +447,8 @@ var PollResultItem = Type("PollResultItem", func() {
 	Attribute("generic_choice_votes", ArrayOf(GenericChoiceVote), "Vote counts for non-ranked questions")
 	Attribute("ranked_choice_votes", ArrayOf(RankedChoiceVote), "Ranked choice voting results")
 	Attribute("ranked_choice_winner_info", RankedChoiceWinnerInfo, "Winner information for ranked choice")
-	Attribute("irv_round_summary", Any, "IRV round summary")
-	Attribute("meek_stv_round_summary", Any, "Meek STV round summary")
+	Attribute("irv_round_summary", ArrayOf(IRVRoundSummary), "IRV round summary")
+	Attribute("meek_stv_round_summary", ArrayOf(MeekSTVRoundSummary), "Meek STV round summary")
 
 	Required("question")
 })
@@ -479,9 +488,22 @@ var RankedChoiceVote = Type("RankedChoiceVote", func() {
 		Format(FormatUUID)
 	})
 	Attribute("rank_counts", ArrayOf(RankCount), "Vote counts per rank")
-	Attribute("condorcet_matrix", Any, "Condorcet matrix")
+	Attribute("condorcet_matrix", ArrayOf(CondorcetMatrixEntry), "Condorcet matrix entries")
 
 	Required("choice_id", "rank_counts")
+})
+
+// CondorcetMatrixEntry represents a pairwise comparison in the Condorcet matrix
+var CondorcetMatrixEntry = Type("CondorcetMatrixEntry", func() {
+	Description("Condorcet matrix entry for pairwise comparison")
+
+	Attribute("choice_id", String, "Choice identifier")
+	Attribute("other_choice_id", String, "Other choice identifier")
+	Attribute("choice_id_wins", Int, "Number of times choice_id wins against other_choice_id")
+	Attribute("other_choice_id_wins", Int, "Number of times other_choice_id wins against choice_id")
+	Attribute("result", String, "Result string (e.g., '23(10)')")
+
+	Required("choice_id", "other_choice_id", "choice_id_wins", "other_choice_id_wins", "result")
 })
 
 // RankCount represents vote count at a specific rank
@@ -504,6 +526,73 @@ var RankedChoiceWinnerInfo = Type("RankedChoiceWinnerInfo", func() {
 	Attribute("condorcet_irv_used_for_eliminations", Boolean, "Whether Condorcet IRV was used")
 
 	Required("poll_choices")
+})
+
+// IRVRoundSummary represents instant runoff voting round summary
+var IRVRoundSummary = Type("IRVRoundSummary", func() {
+	Description("Instant runoff voting round summary")
+
+	Attribute("round_number", Int, "Round number")
+	Attribute("votes", ArrayOf(VoteCount), "Vote counts per choice")
+	Attribute("total_votes", Int, "Total votes in this round")
+	Attribute("min_votes", Int, "Minimum votes")
+	Attribute("exhausted_votes", Int, "Number of exhausted votes")
+	Attribute("transferred_votes", ArrayOf(VoteCount), "Transferred votes")
+	Attribute("threshold", Int, "Winning threshold")
+	Attribute("eliminated_choice_id", String, "ID of eliminated choice")
+	Attribute("message", String, "Round message")
+
+	Required("round_number", "votes", "total_votes", "exhausted_votes", "threshold", "message")
+})
+
+// VoteCount represents vote count for a choice
+var VoteCount = Type("VoteCount", func() {
+	Description("Vote count for a choice")
+
+	Attribute("choice_id", String, "Choice identifier")
+	Attribute("vote_count", Int, "Number of votes")
+	Attribute("percentage", Float64, "Percentage of votes")
+
+	Required("choice_id", "vote_count")
+})
+
+// MeekSTVRoundSummary represents Meek STV round summary
+var MeekSTVRoundSummary = Type("MeekSTVRoundSummary", func() {
+	Description("Meek STV round summary")
+
+	Attribute("round_number", Int, "Round number")
+	Attribute("votes", ArrayOf(MeekSTVVoteCount), "Vote counts per choice")
+	Attribute("total_votes", Int, "Total votes in this round")
+	Attribute("exhausted_votes", Int, "Number of exhausted votes")
+	Attribute("threshold", Int, "Election threshold")
+	Attribute("message", String, "Round message")
+	Attribute("elected_choices", ArrayOf(MeekSTVElectedChoice), "Elected choices in this round")
+	Attribute("eliminated_choices", ArrayOf(MeekSTVVoteCount), "Eliminated choices in this round")
+	Attribute("transferred_votes", ArrayOf(MeekSTVVoteCount), "Transferred votes")
+	Attribute("surplus_votes", ArrayOf(MeekSTVVoteCount), "Surplus votes")
+
+	Required("round_number", "votes", "total_votes", "exhausted_votes", "threshold", "message")
+})
+
+// MeekSTVVoteCount represents vote count in Meek STV
+var MeekSTVVoteCount = Type("MeekSTVVoteCount", func() {
+	Description("Vote count for Meek STV")
+
+	Attribute("choice_id", String, "Choice identifier")
+	Attribute("vote_count", Int, "Number of votes")
+
+	Required("choice_id", "vote_count")
+})
+
+// MeekSTVElectedChoice represents an elected choice in Meek STV
+var MeekSTVElectedChoice = Type("MeekSTVElectedChoice", func() {
+	Description("Elected choice in Meek STV")
+
+	Attribute("choice_id", String, "Choice identifier")
+	Attribute("vote_count", Int, "Number of votes")
+	Attribute("surplus_votes", Int, "Surplus votes over threshold")
+
+	Required("choice_id", "vote_count", "surplus_votes")
 })
 
 // CommentResultItem represents comment results

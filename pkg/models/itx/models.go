@@ -73,14 +73,18 @@ type PollResponse struct {
 	EndTime                       string               `json:"end_time"`
 	Status                        string               `json:"status"`
 	ProjectID                     string               `json:"project_id"`
+	ProjectName                   string               `json:"project_name,omitempty"`
 	CommitteeID                   string               `json:"committee_id"`
 	CommitteeName                 string               `json:"committee_name"`
+	CommitteeFilters              []string             `json:"committee_filters,omitempty"`
 	CommitteeType                 string               `json:"committee_type"`
 	CommitteeVotingStatus         bool                 `json:"committee_voting_status"`
 	PseudoAnonymity               bool                 `json:"pseudo_anonymity"`
 	TotalVotingRequestInvitations int                  `json:"total_voting_request_invitations"`
 	NumResponseReceived           int                  `json:"num_response_received"`
 	PollQuestions                 []PollQuestionOutput `json:"poll_questions"`
+	PollType                      string               `json:"poll_type,omitempty"`
+	NumWinners                    int                  `json:"num_winners,omitempty"`
 	AllowAbstain                  bool                 `json:"allow_abstain"`
 }
 
@@ -215,9 +219,18 @@ type GenericChoiceVote struct {
 
 // RankedChoiceVote represents ranked choice voting results
 type RankedChoiceVote struct {
-	ChoiceID        string             `json:"choice_id"`
-	RankCounts      []RankCount        `json:"rank_counts"`
-	CondorcetMatrix [][]int            `json:"condorcet_matrix"`
+	ChoiceID        string                 `json:"choice_id"`
+	RankCounts      []RankCount            `json:"rank_counts"`
+	CondorcetMatrix []CondorcetMatrixEntry `json:"condorcet_matrix"`
+}
+
+// CondorcetMatrixEntry represents a pairwise comparison in the Condorcet matrix
+type CondorcetMatrixEntry struct {
+	ChoiceID           string `json:"choice_id"`
+	OtherChoiceID      string `json:"other_choice_id"`
+	ChoiceIDWins       int    `json:"choice_id_wins"`
+	OtherChoiceIDWins  int    `json:"other_choice_id_wins"`
+	Result             string `json:"result"`
 }
 
 // RankCount represents vote count at a specific rank
@@ -234,42 +247,49 @@ type RankedChoiceWinnerInfo struct {
 
 // IRVRoundSummary represents instant runoff voting round summary
 type IRVRoundSummary struct {
-	RoundNumber        int                  `json:"round_number"`
-	Votes              []VoteCount          `json:"votes"`
-	TotalVotes         int                  `json:"total_votes"`
-	ExhaustedVotes     int                  `json:"exhausted_votes"`
-	Threshold          float64              `json:"threshold"`
-	EliminatedChoices  []VoteCount          `json:"eliminated_choices"`
-	ElectedChoices     []ElectedChoice      `json:"elected_choices"`
-	TransferredVotes   []VoteCount          `json:"transferred_votes"`
-	Message            string               `json:"message"`
+	RoundNumber        int         `json:"round_number"`
+	Votes              []VoteCount `json:"votes"`
+	TotalVotes         int         `json:"total_votes"`
+	MinVotes           int         `json:"min_votes"`
+	ExhaustedVotes     int         `json:"exhausted_votes"`
+	TransferredVotes   []VoteCount `json:"transferred_votes"`
+	Threshold          int         `json:"threshold"`
+	EliminatedChoiceID string      `json:"eliminated_choice_id"`
+	Message            string      `json:"message"`
 }
 
 // MeekSTVRoundSummary represents Meek STV round summary
 type MeekSTVRoundSummary struct {
-	RoundNumber        int             `json:"round_number"`
-	Votes              []VoteCount     `json:"votes"`
-	TotalVotes         float64         `json:"total_votes"`
-	ExhaustedVotes     float64         `json:"exhausted_votes"`
-	Threshold          float64         `json:"threshold"`
-	EliminatedChoices  []VoteCount     `json:"eliminated_choices"`
-	ElectedChoices     []ElectedChoice `json:"elected_choices"`
-	TransferredVotes   []VoteCount     `json:"transferred_votes"`
-	SurplusVotes       []VoteCount     `json:"surplus_votes"`
-	Message            string          `json:"message"`
+	RoundNumber        int                     `json:"round_number"`
+	Votes              []MeekSTVVoteCount      `json:"votes"`
+	TotalVotes         int                     `json:"total_votes"`
+	ExhaustedVotes     int                     `json:"exhausted_votes"`
+	Threshold          int                     `json:"threshold"`
+	Message            string                  `json:"message"`
+	ElectedChoices     []MeekSTVElectedChoice  `json:"elected_choices"`
+	EliminatedChoices  []MeekSTVVoteCount      `json:"eliminated_choices"`
+	TransferredVotes   []MeekSTVVoteCount      `json:"transferred_votes"`
+	SurplusVotes       []MeekSTVVoteCount      `json:"surplus_votes"`
 }
 
 // VoteCount represents vote count for a choice
 type VoteCount struct {
-	ChoiceID  string  `json:"choice_id"`
-	VoteCount float64 `json:"vote_count"`
+	ChoiceID   string  `json:"choice_id"`
+	VoteCount  int     `json:"vote_count"`
+	Percentage float64 `json:"percentage"`
 }
 
-// ElectedChoice represents an elected choice with surplus
-type ElectedChoice struct {
-	ChoiceID     string  `json:"choice_id"`
-	VoteCount    float64 `json:"vote_count"`
-	SurplusVotes float64 `json:"surplus_votes"`
+// MeekSTVVoteCount represents vote count in Meek STV
+type MeekSTVVoteCount struct {
+	ChoiceID  string `json:"choice_id"`
+	VoteCount int    `json:"vote_count"`
+}
+
+// MeekSTVElectedChoice represents an elected choice in Meek STV
+type MeekSTVElectedChoice struct {
+	ChoiceID     string `json:"choice_id"`
+	VoteCount    int    `json:"vote_count"`
+	SurplusVotes int    `json:"surplus_votes"`
 }
 
 // CommentResult represents comment results
