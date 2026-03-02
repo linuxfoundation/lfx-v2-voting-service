@@ -5,5 +5,7 @@ apiVersion: v2
 name: lfx-v2-voting-service
 description: LFX Platform V2 Voting Service chart
 type: application
-version: 0.1.7
+# This version should not be incremented, as it is dynamically replaced with the release version during the chart build
+# job.
+version: 0.0.1
 appVersion: "latest"
