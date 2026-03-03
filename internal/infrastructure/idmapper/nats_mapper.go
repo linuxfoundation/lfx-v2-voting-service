@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	// NATS subject for v1-sync-helper lookup
+	// NATS subject for idmapper lookup
 	lookupSubject = "lfx.lookup_v1_mapping"
 
 	// Default request timeout
@@ -136,7 +136,7 @@ func (m *NATSMapper) lookup(ctx context.Context, key string) (string, error) {
 	msg, err := m.conn.RequestWithContext(ctx, lookupSubject, []byte(key))
 	if err != nil {
 		if err == context.DeadlineExceeded || err == nats.ErrTimeout {
-			return "", domain.NewUnavailableError("v1-sync-helper lookup timed out", err)
+			return "", domain.NewUnavailableError("idmapper lookup timed out", err)
 		}
 		return "", domain.NewUnavailableError("failed to lookup ID mapping", err)
 	}
@@ -145,9 +145,8 @@ func (m *NATSMapper) lookup(ctx context.Context, key string) (string, error) {
 	response := string(msg.Data)
 
 	// Check for error response (prefixed with "error: ")
-	if after, ok := strings.CutPrefix(response, "error: "); ok {
-		errMsg := after
-		return "", domain.NewUnavailableError(fmt.Sprintf("v1-sync-helper error: %s", errMsg))
+	if errMsg, found := strings.CutPrefix(response, "error: "); found {
+		return "", domain.NewUnavailableError(fmt.Sprintf("idmapper error: %s", errMsg))
 	}
 
 	// Empty response means not found - return as validation error since client provided invalid ID

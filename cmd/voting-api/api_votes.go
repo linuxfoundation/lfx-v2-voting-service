@@ -7,8 +7,8 @@ import (
 	"context"
 	"log/slog"
 
-	votesvc "github.com/linuxfoundation/lfx-v2-voting-service/gen/vote"
 	apiservice "github.com/linuxfoundation/lfx-v2-voting-service/cmd/voting-api/service"
+	votesvc "github.com/linuxfoundation/lfx-v2-voting-service/gen/vote"
 )
 
 // CreateVote creates a new vote (proxies to ITX POST /voting/poll)

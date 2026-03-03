@@ -9,7 +9,7 @@ import "errors"
 type ErrorType int
 
 const (
-	ErrorTypeValidation ErrorType = iota // 400 Bad Request
+	ErrorTypeValidation  ErrorType = iota // 400 Bad Request
 	ErrorTypeNotFound                     // 404 Not Found
 	ErrorTypeConflict                     // 409 Conflict
 	ErrorTypeInternal                     // 500 Internal Server Error

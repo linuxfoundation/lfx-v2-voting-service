@@ -13,19 +13,19 @@ import (
 // ConvertCreateVotePayloadToDomain converts Goa CreateVotePayload to service CreateVoteRequest
 func ConvertCreateVotePayloadToDomain(payload *votesvc.CreateVotePayload) *service.CreateVoteRequest {
 	req := &service.CreateVoteRequest{
-		Name:                        payload.Name,
-		Description:                 payload.Description,
-		EndTime:                     payload.EndTime,
-		ProjectUID:                  payload.ProjectUID,
-		CommitteeUID:                payload.CommitteeUID,
-		CommitteeUIDs:               payload.CommitteeUids,
-		CommitteeFilters:            payload.CommitteeFilters,
-		PseudoAnonymity:             payload.PseudoAnonymity,
-		PollType:                    payload.PollType,
-		NumWinners:                  utils.IntPtr(payload.NumWinners),
-		AllowAbstain:                payload.AllowAbstain,
-		QuorumPercentage:            payload.QuorumPercentage,
-		WinningThresholdPercentage:  payload.WinningThresholdPercentage,
+		Name:                       payload.Name,
+		Description:                payload.Description,
+		EndTime:                    payload.EndTime,
+		ProjectUID:                 payload.ProjectUID,
+		CommitteeUID:               payload.CommitteeUID,
+		CommitteeUIDs:              payload.CommitteeUids,
+		CommitteeFilters:           payload.CommitteeFilters,
+		PseudoAnonymity:            payload.PseudoAnonymity,
+		PollType:                   payload.PollType,
+		NumWinners:                 utils.IntPtr(payload.NumWinners),
+		AllowAbstain:               payload.AllowAbstain,
+		QuorumPercentage:           payload.QuorumPercentage,
+		WinningThresholdPercentage: payload.WinningThresholdPercentage,
 	}
 
 	// Convert poll questions
@@ -62,17 +62,17 @@ func ConvertCreateVotePayloadToDomain(payload *votesvc.CreateVotePayload) *servi
 // ConvertUpdateVotePayloadToDomain converts Goa UpdateVotePayload to service UpdateVoteRequest
 func ConvertUpdateVotePayloadToDomain(payload *votesvc.UpdateVotePayload) *service.UpdateVoteRequest {
 	req := &service.UpdateVoteRequest{
-		Name:                        payload.Name,
-		Description:                 payload.Description,
-		EndTime:                     payload.EndTime,
-		CommitteeUIDs:               payload.CommitteeUids,
-		CommitteeFilters:            payload.CommitteeFilters,
-		PseudoAnonymity:             payload.PseudoAnonymity,
-		PollType:                    payload.PollType,
-		NumWinners:                  utils.IntPtr(payload.NumWinners),
-		AllowAbstain:                payload.AllowAbstain,
-		QuorumPercentage:            payload.QuorumPercentage,
-		WinningThresholdPercentage:  payload.WinningThresholdPercentage,
+		Name:                       payload.Name,
+		Description:                payload.Description,
+		EndTime:                    payload.EndTime,
+		CommitteeUIDs:              payload.CommitteeUids,
+		CommitteeFilters:           payload.CommitteeFilters,
+		PseudoAnonymity:            payload.PseudoAnonymity,
+		PollType:                   payload.PollType,
+		NumWinners:                 utils.IntPtr(payload.NumWinners),
+		AllowAbstain:               payload.AllowAbstain,
+		QuorumPercentage:           payload.QuorumPercentage,
+		WinningThresholdPercentage: payload.WinningThresholdPercentage,
 	}
 
 	// Add optional fields if present
@@ -117,14 +117,14 @@ func ConvertUpdateVotePayloadToDomain(payload *votesvc.UpdateVotePayload) *servi
 // ConvertPollResponseToVoteResult converts ITX PollResponse to Goa VoteResult
 func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *votesvc.VoteResult {
 	result := &votesvc.VoteResult{
-		UID:                           poll.PollID,      // Map PollID → UID
+		UID:                           poll.PollID, // Map PollID → UID
 		Name:                          poll.Name,
 		Description:                   poll.Description,
 		CreationTime:                  utils.StringPtr(poll.CreationTime),
 		LastModifiedTime:              utils.StringPtr(poll.LastModifiedTime),
 		EndTime:                       utils.StringPtr(poll.EndTime),
 		Status:                        poll.Status,
-		ProjectUID:                    poll.ProjectID,   // Map ProjectID → ProjectUID
+		ProjectUID:                    poll.ProjectID, // Map ProjectID → ProjectUID
 		ProjectName:                   utils.StringPtr(poll.ProjectName),
 		CommitteeUID:                  poll.CommitteeID, // Map CommitteeID → CommitteeUID
 		CommitteeName:                 utils.StringPtr(poll.CommitteeName),

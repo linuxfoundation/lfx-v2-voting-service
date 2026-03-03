@@ -23,12 +23,12 @@ const tokenExpiryLeeway = 60 * time.Second
 
 // Config holds ITX proxy configuration
 type Config struct {
-	BaseURL    string
+	BaseURL     string
 	Auth0Domain string
-	ClientID   string
-	PrivateKey string // RSA private key in PEM format
-	Audience   string
-	Timeout    time.Duration
+	ClientID    string
+	PrivateKey  string // RSA private key in PEM format
+	Audience    string
+	Timeout     time.Duration
 }
 
 // Client implements domain.ITXProxyClient

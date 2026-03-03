@@ -13,10 +13,12 @@ import (
 	"syscall"
 	"time"
 
+	apieventing "github.com/linuxfoundation/lfx-v2-voting-service/cmd/voting-api/eventing"
 	votesvr "github.com/linuxfoundation/lfx-v2-voting-service/gen/http/vote/server"
 	votesvc "github.com/linuxfoundation/lfx-v2-voting-service/gen/vote"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/auth"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/eventing"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/idmapper"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/proxy"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
@@ -91,6 +93,49 @@ func run() int {
 		idMapper = natsMapper
 	}
 
+	// Create shutdown channel for coordinating graceful shutdown
+	shutdown := make(chan struct{}, 1)
+
+	// Initialize event processor (if enabled)
+	var eventProcessor *apieventing.EventProcessor
+	var eventProcessorCtx context.Context
+	var eventProcessorCancel context.CancelFunc
+	if cfg.EventProcessingEnabled {
+		logger.Info("Event processing is ENABLED - initializing event processor")
+		ep, err := apieventing.NewEventProcessor(eventing.Config{
+			NATSURL:       cfg.NATSURL,
+			ConsumerName:  cfg.EventConsumerName,
+			StreamName:    cfg.EventStreamName,
+			FilterSubject: cfg.EventFilterSubject,
+			MaxDeliver:    3,
+			AckWait:       30 * time.Second,
+			MaxAckPending: 1000,
+		}, idMapper, logger)
+		if err != nil {
+			logger.Error("Failed to initialize event processor", "error", err)
+			return 1
+		}
+		eventProcessor = ep
+
+		// Create context for event processor lifecycle
+		eventProcessorCtx, eventProcessorCancel = context.WithCancel(context.Background())
+
+		// Start event processor in goroutine
+		go func() {
+			if err := eventProcessor.Start(eventProcessorCtx); err != nil {
+				logger.Error("Event processor error", "error", err)
+				// Signal shutdown instead of calling os.Exit
+				select {
+				case shutdown <- struct{}{}:
+				default:
+				}
+			}
+		}()
+		logger.Info("Event processor started in background")
+	} else {
+		logger.Info("Event processing is DISABLED - skipping event processor initialization")
+	}
+
 	// Initialize service layer
 	voteService := service.NewVoteService(jwtAuth, proxyClient, idMapper, logger)
 	voteResponseService := service.NewVoteResponseService(jwtAuth, proxyClient, idMapper, logger)
@@ -147,18 +192,41 @@ func run() int {
 		logger.Info("HTTP server listening", "addr", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			logger.Error("HTTP server error", "error", err)
-			os.Exit(1)
+			// Signal shutdown instead of calling os.Exit
+			select {
+			case shutdown <- struct{}{}:
+			default:
+			}
 		}
 	}()
 
-	// Wait for interrupt signal
+	// Wait for interrupt signal or shutdown event
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+
+	select {
+	case <-quit:
+		logger.Info("Received interrupt signal")
+	case <-shutdown:
+		logger.Info("Received shutdown signal from background goroutine")
+	}
 
 	logger.Info("Shutting down server...")
 
-	// Graceful shutdown with timeout
+	// Stop event processor first (if enabled)
+	if eventProcessor != nil {
+		logger.Info("Stopping event processor...")
+		// Cancel the event processor context to stop the Start method
+		if eventProcessorCancel != nil {
+			eventProcessorCancel()
+		}
+		// Then stop the consumer and cleanup resources
+		if err := eventProcessor.Stop(); err != nil {
+			logger.Error("Error stopping event processor", "error", err)
+		}
+	}
+
+	// Graceful shutdown of HTTP server with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -173,37 +241,45 @@ func run() int {
 
 // config holds the application configuration
 type config struct {
-	Port               string
-	JWKSURL            string
-	Audience           string
-	MockLocalPrincipal string
-	ITXBaseURL         string
-	ITXAuth0Domain     string
-	ITXClientID        string
-	ITXPrivateKey      string
-	ITXAudience        string
-	ITXTimeout         time.Duration
-	NATSURL            string
-	NATSTimeout        time.Duration
-	IDMappingDisabled  bool
+	Port                   string
+	JWKSURL                string
+	Audience               string
+	MockLocalPrincipal     string
+	ITXBaseURL             string
+	ITXAuth0Domain         string
+	ITXClientID            string
+	ITXPrivateKey          string
+	ITXAudience            string
+	ITXTimeout             time.Duration
+	NATSURL                string
+	NATSTimeout            time.Duration
+	IDMappingDisabled      bool
+	EventProcessingEnabled bool
+	EventConsumerName      string
+	EventStreamName        string
+	EventFilterSubject     string
 }
 
 // loadConfig loads configuration from environment variables
 func loadConfig() config {
 	return config{
-		Port:               getEnv("PORT", "8080"),
-		JWKSURL:            getEnv("JWKS_URL", "http://heimdall:4457/.well-known/jwks"),
-		Audience:           getEnv("AUDIENCE", "lfx-v2-voting-service"),
-		MockLocalPrincipal: getEnv("JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL", ""),
-		ITXBaseURL:         getEnv("ITX_BASE_URL", "https://api.dev.itx.linuxfoundation.org/"),
-		ITXAuth0Domain:     getEnv("ITX_AUTH0_DOMAIN", "linuxfoundation-dev.auth0.com"),
-		ITXClientID:        getEnv("ITX_CLIENT_ID", ""),
-		ITXPrivateKey:      getEnv("ITX_CLIENT_PRIVATE_KEY", ""),
-		ITXAudience:        getEnv("ITX_AUDIENCE", "https://api.dev.itx.linuxfoundation.org/"),
-		ITXTimeout:         30 * time.Second,
-		NATSURL:            getEnv("NATS_URL", "nats://nats:4222"),
-		NATSTimeout:        5 * time.Second,
-		IDMappingDisabled:  getEnv("ID_MAPPING_DISABLED", "") == "true",
+		Port:                   getEnv("PORT", "8080"),
+		JWKSURL:                getEnv("JWKS_URL", "http://heimdall:4457/.well-known/jwks"),
+		Audience:               getEnv("AUDIENCE", "lfx-v2-voting-service"),
+		MockLocalPrincipal:     getEnv("JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL", ""),
+		ITXBaseURL:             getEnv("ITX_BASE_URL", "https://api.dev.itx.linuxfoundation.org/"),
+		ITXAuth0Domain:         getEnv("ITX_AUTH0_DOMAIN", "linuxfoundation-dev.auth0.com"),
+		ITXClientID:            getEnv("ITX_CLIENT_ID", ""),
+		ITXPrivateKey:          getEnv("ITX_CLIENT_PRIVATE_KEY", ""),
+		ITXAudience:            getEnv("ITX_AUDIENCE", "https://api.dev.itx.linuxfoundation.org/"),
+		ITXTimeout:             30 * time.Second,
+		NATSURL:                getEnv("NATS_URL", "nats://nats:4222"),
+		NATSTimeout:            5 * time.Second,
+		IDMappingDisabled:      getEnv("ID_MAPPING_DISABLED", "") == "true",
+		EventProcessingEnabled: getEnv("EVENT_PROCESSING_ENABLED", "true") == "true",
+		EventConsumerName:      getEnv("EVENT_CONSUMER_NAME", "voting-service-kv-consumer"),
+		EventStreamName:        getEnv("EVENT_STREAM_NAME", "KV_v1-objects"),
+		EventFilterSubject:     getEnv("EVENT_FILTER_SUBJECT", "$KV.v1-objects.>"),
 	}
 }
 
