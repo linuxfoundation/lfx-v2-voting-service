@@ -47,6 +47,8 @@ The voting service implements NATS KV bucket event processing to automatically s
    - `itx-poll.*` - Vote (poll) data (`$KV.v1-objects.itx-poll.>`)
    - `itx-poll-vote.*` - Vote response data (`$KV.v1-objects.itx-poll-vote.>`)
 
+   > **Note on encoding**: KV entries from v1 may be encoded as either JSON or msgpack. The handler attempts JSON deserialization first; if that fails, it falls back to msgpack. Both formats are supported transparently.
+
 2. **Transform**: Converts v1 format to v2 format:
    - String fields → proper types (strings to ints)
    - v1 SFIDs → v2 UUIDs (committees, projects)

@@ -5,6 +5,7 @@ package eventing
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"testing"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 func setupTestKV(t *testing.T) (jetstream.KeyValue, func()) {
@@ -228,7 +230,76 @@ func TestHandleKVPut(t *testing.T) {
 		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
 	})
 
-	t.Run("returns false for invalid JSON", func(t *testing.T) {
+	t.Run("decodes msgpack-encoded itx-poll entry and routes to vote handler", func(t *testing.T) {
+		mappingsKV, cleanup := setupTestKV(t)
+		defer cleanup()
+
+		payload := map[string]any{
+			"poll_id":        "poll-123",
+			"name":           "Test",
+			"project_id":     "proj-1",
+			"poll_questions": []any{},
+		}
+		encoded, err := msgpack.Marshal(payload)
+		require.NoError(t, err)
+
+		// Verify msgpack bytes are not valid JSON (ensuring fallback path is exercised)
+		var jsonCheck map[string]any
+		assert.Error(t, json.Unmarshal(encoded, &jsonCheck), "msgpack bytes should not be valid JSON")
+
+		entry := &kvEntry{
+			key:       "itx-poll.poll-123",
+			value:     encoded,
+			operation: jetstream.KeyValuePut,
+		}
+
+		mockPublisher := &mockEventPublisher{}
+		idMapper := idmapper.NewNoOpMapper()
+		ctx := context.Background()
+
+		logger := slog.Default()
+		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, logger)
+
+		assert.False(t, shouldRetry)
+		assert.Len(t, mockPublisher.publishedVotes, 1)
+	})
+
+	t.Run("decodes msgpack-encoded itx-poll-vote entry and routes to vote response handler", func(t *testing.T) {
+		mappingsKV, cleanup := setupTestKV(t)
+		defer cleanup()
+
+		ctx := context.Background()
+
+		// Store parent vote in mappings
+		_, err := mappingsKV.Put(ctx, "vote.poll-456", []byte("1"))
+		require.NoError(t, err)
+
+		payload := map[string]any{
+			"vote_id":      "vote-123",
+			"poll_id":      "poll-456",
+			"project_id":   "proj-1",
+			"poll_answers": []any{},
+		}
+		encoded, err := msgpack.Marshal(payload)
+		require.NoError(t, err)
+
+		entry := &kvEntry{
+			key:       "itx-poll-vote.vote-123",
+			value:     encoded,
+			operation: jetstream.KeyValuePut,
+		}
+
+		mockPublisher := &mockEventPublisher{}
+		idMapper := idmapper.NewNoOpMapper()
+
+		logger := slog.Default()
+		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, logger)
+
+		assert.False(t, shouldRetry)
+		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
+	})
+
+	t.Run("returns false when both JSON and msgpack decoding fail", func(t *testing.T) {
 		mappingsKV, cleanup := setupTestKV(t)
 		defer cleanup()
 
