@@ -13,6 +13,7 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 const (
@@ -162,22 +163,25 @@ func handleKVPut(
 	logger *slog.Logger,
 ) bool {
 	key := entry.Key()
-	value := entry.Value()
 
-	// Unmarshal the data
-	var v1Data map[string]interface{}
-	if err := json.Unmarshal(value, &v1Data); err != nil {
-		logger.With("error", err, "key", key).Error("failed to unmarshal KV data")
-		return false // Permanent error, ACK and skip
+	// Parse the data (try JSON first, then msgpack)
+	var v1Data map[string]any
+	if err := json.Unmarshal(entry.Value(), &v1Data); err != nil {
+		// JSON failed, try msgpack
+		if msgErr := msgpack.Unmarshal(entry.Value(), &v1Data); msgErr != nil {
+			logger.With(errKey, err, "msgpack_error", msgErr, "key", key).ErrorContext(ctx, "failed to unmarshal KV entry data as JSON or msgpack")
+			return false
+		}
+		logger.With("key", key).DebugContext(ctx, "successfully unmarshalled msgpack data")
+	} else {
+		logger.With("key", key).DebugContext(ctx, "successfully unmarshalled JSON data")
 	}
 
-	// Extract key prefix (before first period)
-	parts := strings.SplitN(key, ".", 2)
-	if len(parts) == 0 {
-		logger.With("key", key).Warn("invalid key format")
-		return false // ACK invalid keys
+	// Extract the prefix (everything before the first period) for faster lookup.
+	prefix := key
+	if dotIndex := strings.Index(key, "."); dotIndex != -1 {
+		prefix = key[:dotIndex]
 	}
-	prefix := parts[0]
 
 	// Route to specific handlers based on prefix
 	switch prefix {
