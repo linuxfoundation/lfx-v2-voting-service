@@ -192,6 +192,13 @@ func handleVoteResponseDelete(
 
 	funcLogger.DebugContext(ctx, "processing vote response delete")
 
+	// Skip if already tombstoned — prevents duplicate delete events on redelivery
+	mappingKey := fmt.Sprintf("vote_response.%s", uid)
+	if entry, err := mappingsKV.Get(ctx, mappingKey); err == nil && isTombstonedMapping(entry.Value()) {
+		funcLogger.DebugContext(ctx, "vote response delete already processed, skipping")
+		return false
+	}
+
 	// Create minimal vote response data for delete event
 	voteResponseData := &domain.VoteResponseData{
 		UID:    uid,
@@ -208,11 +215,10 @@ func handleVoteResponseDelete(
 		return false // Permanent error, ACK and skip
 	}
 
-	// Remove mapping from v1-mappings KV
-	mappingKey := fmt.Sprintf("vote_response.%s", uid)
-	if err := mappingsKV.Delete(ctx, mappingKey); err != nil {
-		funcLogger.With(errKey, err).WarnContext(ctx, "failed to delete vote response mapping")
-		// Don't retry on mapping deletion failures
+	// Tombstone mapping instead of hard-deleting, so redelivery is safely skipped
+	if _, err := mappingsKV.Put(ctx, mappingKey, []byte(tombstoneMarker)); err != nil {
+		funcLogger.With(errKey, err).WarnContext(ctx, "failed to tombstone vote response mapping")
+		// Don't retry on mapping failures
 	}
 
 	funcLogger.InfoContext(ctx, "successfully sent vote response delete indexer and access messages")

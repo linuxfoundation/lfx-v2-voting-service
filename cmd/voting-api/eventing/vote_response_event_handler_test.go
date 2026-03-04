@@ -300,9 +300,28 @@ func TestHandleVoteResponseDelete(t *testing.T) {
 		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
 		assert.Equal(t, "vote-123", mockPublisher.publishedVoteResponses[0].UID)
 
-		// Verify mapping was deleted
-		_, err = mappingsKV.Get(context.Background(), "vote_response.vote-123")
-		assert.Error(t, err) // Should not exist
+		// Verify mapping is tombstoned (not hard-deleted)
+		entry, err := mappingsKV.Get(context.Background(), "vote_response.vote-123")
+		require.NoError(t, err)
+		assert.True(t, isTombstonedMapping(entry.Value()))
+	})
+
+	t.Run("skips publish when vote response mapping is already tombstoned", func(t *testing.T) {
+		mappingsKV, cleanup := setupTestKV(t)
+		defer cleanup()
+
+		// Pre-tombstone the mapping to simulate a redelivered delete
+		_, err := mappingsKV.Put(context.Background(), "vote_response.vote-123", []byte(tombstoneMarker))
+		require.NoError(t, err)
+
+		mockPublisher := &mockEventPublisher{}
+		ctx := context.Background()
+
+		logger := slog.Default()
+		shouldRetry := handleVoteResponseDelete(ctx, "vote-123", mockPublisher, mappingsKV, logger)
+
+		assert.False(t, shouldRetry)
+		assert.Len(t, mockPublisher.publishedVoteResponses, 0) // No duplicate event published
 	})
 
 	t.Run("returns true for transient publish error", func(t *testing.T) {

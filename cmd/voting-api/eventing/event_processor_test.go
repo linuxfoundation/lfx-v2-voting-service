@@ -22,9 +22,11 @@ import (
 // startTestNATSServer starts an embedded NATS server with JetStream for testing
 func startTestNATSServer(t *testing.T) (*server.Server, string) {
 	opts := &server.Options{
-		Host:      "127.0.0.1",
-		Port:      -1, // Random port
-		JetStream: true,
+		Host:            "127.0.0.1",
+		Port:            -1, // Random port
+		JetStream:       true,
+		JetStreamDomain: "",
+		StoreDir:        t.TempDir(), // Isolated store per test to prevent state bleed
 	}
 
 	ns, err := server.NewServer(opts)
@@ -108,7 +110,7 @@ func TestNewEventProcessor(t *testing.T) {
 		assert.Contains(t, err.Error(), "failed to connect to NATS")
 	})
 
-	t.Run("creates mappings KV bucket if it doesn't exist", func(t *testing.T) {
+	t.Run("fails when mappings KV bucket does not exist", func(t *testing.T) {
 		ns, natsURL := startTestNATSServer(t)
 		defer ns.Shutdown()
 
@@ -127,12 +129,12 @@ func TestNewEventProcessor(t *testing.T) {
 
 		idMapper := idmapper.NewNoOpMapper()
 
-		// Should succeed even if the bucket doesn't exist (auto-creates)
+		// The bucket must exist before the processor starts — it does not auto-create
 		logger := slog.Default()
 		ep, err := NewEventProcessor(cfg, idMapper, logger)
-		assert.NoError(t, err)
-		assert.NotNil(t, ep)
-		assert.NotNil(t, ep.mappingsKV)
+		assert.Error(t, err)
+		assert.Nil(t, ep)
+		assert.Contains(t, err.Error(), "failed to access v1-mappings KV bucket")
 	})
 }
 
