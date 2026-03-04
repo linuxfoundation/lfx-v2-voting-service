@@ -61,10 +61,13 @@ func TestNewEventProcessor(t *testing.T) {
 		require.NoError(t, err)
 
 		cfg := eventing.Config{
-			NATSURL:       natsURL,
-			ConsumerName:  "test-consumer",
-			StreamName:    "KV_v1-objects",
-			FilterSubject: "$KV.v1-objects.>",
+			NATSURL:      natsURL,
+			ConsumerName: "test-consumer",
+			StreamName:   "KV_v1-objects",
+			FilterSubjects: []string{
+				"$KV.v1-objects.itx-poll.>",
+				"$KV.v1-objects.itx-poll-vote.>",
+			},
 			MaxDeliver:    3,
 			AckWait:       30 * time.Second,
 			MaxAckPending: 1000,
@@ -84,10 +87,13 @@ func TestNewEventProcessor(t *testing.T) {
 
 	t.Run("fails with invalid NATS URL", func(t *testing.T) {
 		cfg := eventing.Config{
-			NATSURL:       "nats://invalid:4222",
-			ConsumerName:  "test-consumer",
-			StreamName:    "KV_v1-objects",
-			FilterSubject: "$KV.v1-objects.>",
+			NATSURL:      "nats://invalid:4222",
+			ConsumerName: "test-consumer",
+			StreamName:   "KV_v1-objects",
+			FilterSubjects: []string{
+				"$KV.v1-objects.itx-poll.>",
+				"$KV.v1-objects.itx-poll-vote.>",
+			},
 			MaxDeliver:    3,
 			AckWait:       30 * time.Second,
 			MaxAckPending: 1000,
@@ -107,10 +113,13 @@ func TestNewEventProcessor(t *testing.T) {
 		defer ns.Shutdown()
 
 		cfg := eventing.Config{
-			NATSURL:       natsURL,
-			ConsumerName:  "test-consumer",
-			StreamName:    "KV_v1-objects",
-			FilterSubject: "$KV.v1-objects.>",
+			NATSURL:      natsURL,
+			ConsumerName: "test-consumer",
+			StreamName:   "KV_v1-objects",
+			FilterSubjects: []string{
+				"$KV.v1-objects.itx-poll.>",
+				"$KV.v1-objects.itx-poll-vote.>",
+			},
 			MaxDeliver:    3,
 			AckWait:       30 * time.Second,
 			MaxAckPending: 1000,
@@ -153,10 +162,13 @@ func TestEventProcessor_Start(t *testing.T) {
 		require.NoError(t, err)
 
 		cfg := eventing.Config{
-			NATSURL:       natsURL,
-			ConsumerName:  "test-consumer-start",
-			StreamName:    "KV_v1-objects",
-			FilterSubject: "$KV.v1-objects.>",
+			NATSURL:      natsURL,
+			ConsumerName: "test-consumer-start",
+			StreamName:   "KV_v1-objects",
+			FilterSubjects: []string{
+				"$KV.v1-objects.itx-poll.>",
+				"$KV.v1-objects.itx-poll-vote.>",
+			},
 			MaxDeliver:    3,
 			AckWait:       30 * time.Second,
 			MaxAckPending: 1000,
@@ -215,10 +227,13 @@ func TestEventProcessor_Start(t *testing.T) {
 
 		// Use invalid stream name to cause consumer creation to fail
 		cfg := eventing.Config{
-			NATSURL:       natsURL,
-			ConsumerName:  "test-consumer-fail",
-			StreamName:    "NonExistentStream",
-			FilterSubject: "$KV.v1-objects.>",
+			NATSURL:      natsURL,
+			ConsumerName: "test-consumer-fail",
+			StreamName:   "NonExistentStream",
+			FilterSubjects: []string{
+				"$KV.v1-objects.itx-poll.>",
+				"$KV.v1-objects.itx-poll-vote.>",
+			},
 			MaxDeliver:    3,
 			AckWait:       30 * time.Second,
 			MaxAckPending: 1000,
@@ -263,10 +278,13 @@ func TestEventProcessor_Stop(t *testing.T) {
 		require.NoError(t, err)
 
 		cfg := eventing.Config{
-			NATSURL:       natsURL,
-			ConsumerName:  "test-consumer-stop",
-			StreamName:    "KV_v1-objects",
-			FilterSubject: "$KV.v1-objects.>",
+			NATSURL:      natsURL,
+			ConsumerName: "test-consumer-stop",
+			StreamName:   "KV_v1-objects",
+			FilterSubjects: []string{
+				"$KV.v1-objects.itx-poll.>",
+				"$KV.v1-objects.itx-poll-vote.>",
+			},
 			MaxDeliver:    3,
 			AckWait:       30 * time.Second,
 			MaxAckPending: 1000,
@@ -312,10 +330,13 @@ func TestEventProcessor_Stop(t *testing.T) {
 		require.NoError(t, err)
 
 		cfg := eventing.Config{
-			NATSURL:       natsURL,
-			ConsumerName:  "test-consumer-idempotent",
-			StreamName:    "KV_v1-objects",
-			FilterSubject: "$KV.v1-objects.>",
+			NATSURL:      natsURL,
+			ConsumerName: "test-consumer-idempotent",
+			StreamName:   "KV_v1-objects",
+			FilterSubjects: []string{
+				"$KV.v1-objects.itx-poll.>",
+				"$KV.v1-objects.itx-poll-vote.>",
+			},
 			MaxDeliver:    3,
 			AckWait:       30 * time.Second,
 			MaxAckPending: 1000,

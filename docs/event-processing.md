@@ -43,9 +43,9 @@ The voting service implements NATS KV bucket event processing to automatically s
 
 ### Event Flow
 
-1. **Watch**: Event processor watches the `v1-objects` KV bucket for keys matching:
-   - `itx-poll.*` - Vote (poll) data
-   - `itx-poll-vote.*` - Vote response data
+1. **Watch**: Event processor watches the `v1-objects` KV bucket, filtered server-side to only receive keys matching:
+   - `itx-poll.*` - Vote (poll) data (`$KV.v1-objects.itx-poll.>`)
+   - `itx-poll-vote.*` - Vote response data (`$KV.v1-objects.itx-poll-vote.>`)
 
 2. **Transform**: Converts v1 format to v2 format:
    - String fields → proper types (strings to ints)
@@ -76,7 +76,6 @@ The voting service implements NATS KV bucket event processing to automatically s
 | `EVENT_PROCESSING_ENABLED` | `true` | Enable/disable event processing |
 | `EVENT_CONSUMER_NAME` | `voting-service-kv-consumer` | JetStream consumer name |
 | `EVENT_STREAM_NAME` | `KV_v1-objects` | JetStream stream name |
-| `EVENT_FILTER_SUBJECT` | `$KV.v1-objects.>` | NATS subject filter pattern |
 | `NATS_URL` | `nats://nats:4222` | NATS server URL |
 
 ### Consumer Configuration
