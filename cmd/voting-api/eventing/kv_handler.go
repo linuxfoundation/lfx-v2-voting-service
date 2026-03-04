@@ -163,12 +163,13 @@ func handleKVPut(
 	logger *slog.Logger,
 ) bool {
 	key := entry.Key()
+	value := entry.Value()
 
 	// Parse the data (try JSON first, then msgpack)
 	var v1Data map[string]any
-	if err := json.Unmarshal(entry.Value(), &v1Data); err != nil {
+	if err := json.Unmarshal(value, &v1Data); err != nil {
 		// JSON failed, try msgpack
-		if msgErr := msgpack.Unmarshal(entry.Value(), &v1Data); msgErr != nil {
+		if msgErr := msgpack.Unmarshal(value, &v1Data); msgErr != nil {
 			logger.With(errKey, err, "msgpack_error", msgErr, "key", key).ErrorContext(ctx, "failed to unmarshal KV entry data as JSON or msgpack")
 			return false
 		}
