@@ -7,11 +7,11 @@ import "time"
 
 // Config holds the configuration for the event processor
 type Config struct {
-	NATSURL       string
-	ConsumerName  string
-	StreamName    string
-	FilterSubject string
-	MaxDeliver    int
-	AckWait       time.Duration
-	MaxAckPending int
+	NATSURL        string
+	ConsumerName   string
+	StreamName     string
+	FilterSubjects []string
+	MaxDeliver     int
+	AckWait        time.Duration
+	MaxAckPending  int
 }

@@ -90,15 +90,15 @@ func (ep *EventProcessor) Start(ctx context.Context) error {
 
 	// Create or update consumer
 	consumer, err := ep.jsInstance.CreateOrUpdateConsumer(ctx, ep.config.StreamName, jetstream.ConsumerConfig{
-		Name:          ep.config.ConsumerName,
-		Durable:       ep.config.ConsumerName,
-		DeliverPolicy: jetstream.DeliverLastPerSubjectPolicy,
-		AckPolicy:     jetstream.AckExplicitPolicy,
-		FilterSubject: ep.config.FilterSubject,
-		MaxDeliver:    ep.config.MaxDeliver,
-		AckWait:       ep.config.AckWait,
-		MaxAckPending: ep.config.MaxAckPending,
-		Description:   "Durable/shared KV bucket watcher for voting service",
+		Name:           ep.config.ConsumerName,
+		Durable:        ep.config.ConsumerName,
+		DeliverPolicy:  jetstream.DeliverLastPerSubjectPolicy,
+		AckPolicy:      jetstream.AckExplicitPolicy,
+		FilterSubjects: ep.config.FilterSubjects,
+		MaxDeliver:     ep.config.MaxDeliver,
+		AckWait:        ep.config.AckWait,
+		MaxAckPending:  ep.config.MaxAckPending,
+		Description:    "Durable/shared KV bucket watcher for voting service",
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create or update consumer: %w", err)
