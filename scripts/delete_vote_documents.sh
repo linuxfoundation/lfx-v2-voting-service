@@ -21,7 +21,7 @@ echo "This will delete ALL OpenSearch documents with type:"
 echo "  - vote"
 echo "  - vote_response"
 echo ""
-read -p "Are you sure you want to proceed? (yes/no): " CONFIRM
+read -r -p "Are you sure you want to proceed? (yes/no): " CONFIRM
 
 if [ "$CONFIRM" != "yes" ]; then
     echo "Aborted."
@@ -66,7 +66,7 @@ if [ "$TOTAL_COUNT" -eq 0 ]; then
 fi
 
 echo ""
-read -p "Proceed with deletion? (yes/no): " CONFIRM_DELETE
+read -r -p "Proceed with deletion? (yes/no): " CONFIRM_DELETE
 
 if [ "$CONFIRM_DELETE" != "yes" ]; then
     echo "Aborted."

@@ -33,7 +33,7 @@ jobs:
       - name: MegaLinter
         id: ml
         # Use the Go flavor.
-        uses: oxsecurity/megalinter/flavors/go@5a91fb06c83d0e69fbd23756d47438aa723b4a5a  # 8.7.0
+        uses: oxsecurity/megalinter/flavors/go@8fbdead70d1409964ab3d5afa885e18ee85388bb  # 9.4.0
         env:
           # All available variables are described in documentation
           # https://megalinter.io/configuration/

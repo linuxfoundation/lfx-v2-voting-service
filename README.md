@@ -111,9 +111,7 @@ See [Event Processing Documentation](docs/event-processing.md) for details.
 ```bash
 # Set required OAuth2 credentials for ITX (using private key JWT assertion)
 export ITX_CLIENT_ID=<your-oauth2-client-id>
-export ITX_CLIENT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----
-...your private key content...
------END PRIVATE KEY-----"
+export ITX_CLIENT_PRIVATE_KEY="$(cat /path/to/your/private-key.pem)"
 
 # For local development without JWT auth
 export JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL=test-user@example.com
@@ -126,7 +124,7 @@ make run
 make debug # or run with debug log level
 ```
 
-The service will start on <http://localhost:8080>
+The service will start on `http://localhost:8080`
 
 ### Running with Docker
 
@@ -324,7 +322,7 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+Please open an issue or pull request on GitHub for details on our code of conduct and the process for submitting pull requests.
 
 ## Support
 

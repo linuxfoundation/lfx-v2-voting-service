@@ -39,6 +39,6 @@ EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD ["/cmd/voting-api", "-health-check"] || exit 1
+    CMD ["/cmd/voting-api", "-health-check"]
 
 ENTRYPOINT ["/cmd/voting-api"]
