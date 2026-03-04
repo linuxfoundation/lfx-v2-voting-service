@@ -234,7 +234,7 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		ctx := context.Background()
 
 		v1Data := map[string]interface{}{
-			"vote_id":      "vote-123",
+			"vote_id": "vote-123",
 			// Missing poll_id - can't check for parent vote
 			"project_id":   "project-sfid",
 			"poll_answers": []interface{}{},
