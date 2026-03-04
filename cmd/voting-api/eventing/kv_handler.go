@@ -155,7 +155,7 @@ func kvHandler(
 	case jetstream.KeyValuePut:
 		return handleKVPut(ctx, entry, publisher, idMapper, mappingsKV, logger)
 	case jetstream.KeyValueDelete, jetstream.KeyValuePurge:
-		return handleKVDelete(ctx, entry, publisher, idMapper, mappingsKV, logger)
+		return handleKVDelete(ctx, entry, publisher, mappingsKV, logger)
 	default:
 		logger.With("key", entry.Key(), "operation", entry.Operation()).Debug("ignoring unknown KV operation")
 		return false // ACK unknown operations
@@ -190,7 +190,7 @@ func handleKVPut(
 	// Check if this is a soft delete (record has _sdc_deleted_at field).
 	if deletedAt, exists := v1Data["_sdc_deleted_at"]; exists && deletedAt != nil && deletedAt != "" {
 		logger.With("key", key, "_sdc_deleted_at", deletedAt).InfoContext(ctx, "processing soft delete from KV bucket")
-		return handleKVSoftDelete(ctx, entry, publisher, idMapper, mappingsKV, logger)
+		return handleKVSoftDelete(ctx, entry, publisher, mappingsKV, logger)
 	}
 
 	// Extract the prefix (everything before the first period) for faster lookup.
@@ -217,13 +217,12 @@ func handleKVDelete(
 	ctx context.Context,
 	entry jetstream.KeyValueEntry,
 	publisher domain.EventPublisher,
-	idMapper domain.IDMapper,
 	mappingsKV jetstream.KeyValue,
 	logger *slog.Logger,
 ) bool {
 	key := entry.Key()
 	logger.With("key", key, "operation", entry.Operation()).InfoContext(ctx, "processing hard delete from KV bucket")
-	return handleResourceDelete(ctx, entry, publisher, idMapper, mappingsKV, logger)
+	return handleResourceDelete(ctx, entry, publisher, mappingsKV, logger)
 }
 
 // handleKVSoftDelete processes a soft delete (record with _sdc_deleted_at field).
@@ -231,21 +230,17 @@ func handleKVDelete(
 func handleKVSoftDelete(ctx context.Context,
 	entry jetstream.KeyValueEntry,
 	publisher domain.EventPublisher,
-	idMapper domain.IDMapper,
 	mappingsKV jetstream.KeyValue,
 	logger *slog.Logger,
 ) bool {
-	return handleResourceDelete(ctx, entry, publisher, idMapper, mappingsKV, logger)
+	return handleResourceDelete(ctx, entry, publisher, mappingsKV, logger)
 }
 
-// handleResourceDelete handles deletion of resources by key prefix with specified principal.
-// v1Data carries the record's field values when available (e.g. soft deletes, DynamoDB old_image);
-// nil is acceptable and handlers must fall back gracefully.
+// handleResourceDelete handles deletion of resources by key prefix.
 // Returns true if the operation should be retried, false otherwise.
 func handleResourceDelete(ctx context.Context,
 	entry jetstream.KeyValueEntry,
 	publisher domain.EventPublisher,
-	idMapper domain.IDMapper,
 	mappingsKV jetstream.KeyValue,
 	logger *slog.Logger) bool {
 	// Extract the prefix (everything before the first period) for faster lookup.
