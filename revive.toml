@@ -10,16 +10,6 @@ ignoreGeneratedHeader = true
 [rule.package-comments]
 Disabled = true
 
-# [rule.exported] is disabled because we do not require doc comments on every exported symbol.
-[rule.exported]
-Disabled = true
-
-# [rule.unused-parameter] is disabled because many parameters satisfy interfaces or
-# callback signatures (e.g. JWTAuth scheme, NATS error handlers, HTTP middleware) and
-# cannot be renamed without breaking the interface contract.
-[rule.unused-parameter]
-Disabled = true
-
 # [rule.dot-imports] is disabled because the goa design files use dot imports by convention.
 [rule.dot-imports]
 Disabled = true
