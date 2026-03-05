@@ -339,6 +339,95 @@ func TestHandleKVPut(t *testing.T) {
 
 		assert.False(t, shouldRetry) // ACK unsupported types
 	})
+
+	t.Run("soft delete: non-empty _sdc_deleted_at on itx-poll triggers vote delete", func(t *testing.T) {
+		mappingsKV, cleanup := setupTestKV(t)
+		defer cleanup()
+
+		entry := &kvEntry{
+			key:       "itx-poll.poll-123",
+			value:     []byte(`{"poll_id":"poll-123","name":"Test","project_id":"proj-1","_sdc_deleted_at":"2024-01-01T00:00:00Z"}`),
+			operation: jetstream.KeyValuePut,
+		}
+
+		mockPublisher := &mockEventPublisher{}
+		idMapper := idmapper.NewNoOpMapper()
+		ctx := context.Background()
+
+		logger := slog.Default()
+		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, logger)
+
+		assert.False(t, shouldRetry)
+		// Should publish a delete event, not an upsert
+		assert.Len(t, mockPublisher.publishedVotes, 1)
+		assert.Len(t, mockPublisher.publishedVoteResponses, 0)
+	})
+
+	t.Run("soft delete: non-empty _sdc_deleted_at on itx-poll-vote triggers vote response delete", func(t *testing.T) {
+		mappingsKV, cleanup := setupTestKV(t)
+		defer cleanup()
+
+		entry := &kvEntry{
+			key:       "itx-poll-vote.vote-123",
+			value:     []byte(`{"vote_id":"vote-123","poll_id":"poll-456","project_id":"proj-1","_sdc_deleted_at":"2024-01-01T00:00:00Z"}`),
+			operation: jetstream.KeyValuePut,
+		}
+
+		mockPublisher := &mockEventPublisher{}
+		idMapper := idmapper.NewNoOpMapper()
+		ctx := context.Background()
+
+		logger := slog.Default()
+		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, logger)
+
+		assert.False(t, shouldRetry)
+		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
+		assert.Len(t, mockPublisher.publishedVotes, 0)
+	})
+
+	t.Run("soft delete: null _sdc_deleted_at does not trigger delete path", func(t *testing.T) {
+		mappingsKV, cleanup := setupTestKV(t)
+		defer cleanup()
+
+		entry := &kvEntry{
+			key:       "itx-poll.poll-123",
+			value:     []byte(`{"poll_id":"poll-123","name":"Test","project_id":"proj-1","poll_questions":[],"_sdc_deleted_at":null}`),
+			operation: jetstream.KeyValuePut,
+		}
+
+		mockPublisher := &mockEventPublisher{}
+		idMapper := idmapper.NewNoOpMapper()
+		ctx := context.Background()
+
+		logger := slog.Default()
+		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, logger)
+
+		assert.False(t, shouldRetry)
+		// Should be treated as a normal upsert, not a delete
+		assert.Len(t, mockPublisher.publishedVotes, 1)
+	})
+
+	t.Run("soft delete: empty string _sdc_deleted_at does not trigger delete path", func(t *testing.T) {
+		mappingsKV, cleanup := setupTestKV(t)
+		defer cleanup()
+
+		entry := &kvEntry{
+			key:       "itx-poll.poll-123",
+			value:     []byte(`{"poll_id":"poll-123","name":"Test","project_id":"proj-1","poll_questions":[],"_sdc_deleted_at":""}`),
+			operation: jetstream.KeyValuePut,
+		}
+
+		mockPublisher := &mockEventPublisher{}
+		idMapper := idmapper.NewNoOpMapper()
+		ctx := context.Background()
+
+		logger := slog.Default()
+		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, logger)
+
+		assert.False(t, shouldRetry)
+		// Should be treated as a normal upsert, not a delete
+		assert.Len(t, mockPublisher.publishedVotes, 1)
+	})
 }
 
 func TestHandleKVDelete(t *testing.T) {
@@ -355,11 +444,10 @@ func TestHandleKVDelete(t *testing.T) {
 		}
 
 		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleKVDelete(ctx, entry, mockPublisher, idMapper, mappingsKV, logger)
+		shouldRetry := handleKVDelete(ctx, entry, mockPublisher, mappingsKV, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVotes, 1)
@@ -376,11 +464,10 @@ func TestHandleKVDelete(t *testing.T) {
 		}
 
 		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleKVDelete(ctx, entry, mockPublisher, idMapper, mappingsKV, logger)
+		shouldRetry := handleKVDelete(ctx, entry, mockPublisher, mappingsKV, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
@@ -397,11 +484,10 @@ func TestHandleKVDelete(t *testing.T) {
 		}
 
 		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleKVDelete(ctx, entry, mockPublisher, idMapper, mappingsKV, logger)
+		shouldRetry := handleKVDelete(ctx, entry, mockPublisher, mappingsKV, logger)
 
 		assert.False(t, shouldRetry) // Permanent error, ACK
 	})
@@ -417,11 +503,10 @@ func TestHandleKVDelete(t *testing.T) {
 		}
 
 		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleKVDelete(ctx, entry, mockPublisher, idMapper, mappingsKV, logger)
+		shouldRetry := handleKVDelete(ctx, entry, mockPublisher, mappingsKV, logger)
 
 		assert.False(t, shouldRetry) // ACK unsupported types
 	})

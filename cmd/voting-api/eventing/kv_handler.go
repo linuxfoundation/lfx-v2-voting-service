@@ -18,7 +18,16 @@ import (
 
 const (
 	V1ObjectsBucket = "v1-objects"
+
+	// tombstoneMarker is written to a mapping key after successful deletion,
+	// preventing duplicate delete events if the same KV delete is redelivered.
+	tombstoneMarker = "!del"
 )
+
+// isTombstonedMapping reports whether a mapping value is a tombstone marker.
+func isTombstonedMapping(value []byte) bool {
+	return string(value) == tombstoneMarker
+}
 
 // kvEntry implements a mock jetstream.KeyValueEntry interface for the handler
 type kvEntry struct {
@@ -146,7 +155,7 @@ func kvHandler(
 	case jetstream.KeyValuePut:
 		return handleKVPut(ctx, entry, publisher, idMapper, mappingsKV, logger)
 	case jetstream.KeyValueDelete, jetstream.KeyValuePurge:
-		return handleKVDelete(ctx, entry, publisher, idMapper, mappingsKV, logger)
+		return handleKVDelete(ctx, entry, publisher, mappingsKV, logger)
 	default:
 		logger.With("key", entry.Key(), "operation", entry.Operation()).Debug("ignoring unknown KV operation")
 		return false // ACK unknown operations
@@ -178,6 +187,12 @@ func handleKVPut(
 		logger.With("key", key).DebugContext(ctx, "successfully unmarshalled JSON data")
 	}
 
+	// Check if this is a soft delete (record has _sdc_deleted_at field).
+	if deletedAt, exists := v1Data["_sdc_deleted_at"]; exists && deletedAt != nil && deletedAt != "" {
+		logger.With("key", key, "_sdc_deleted_at", deletedAt).InfoContext(ctx, "processing soft delete from KV bucket")
+		return handleKVSoftDelete(ctx, entry, publisher, mappingsKV, logger)
+	}
+
 	// Extract the prefix (everything before the first period) for faster lookup.
 	prefix := key
 	if dotIndex := strings.Index(key, "."); dotIndex != -1 {
@@ -202,22 +217,49 @@ func handleKVDelete(
 	ctx context.Context,
 	entry jetstream.KeyValueEntry,
 	publisher domain.EventPublisher,
-	idMapper domain.IDMapper,
 	mappingsKV jetstream.KeyValue,
 	logger *slog.Logger,
 ) bool {
 	key := entry.Key()
-	logger.With("key", key, "operation", entry.Operation()).Debug("received delete/purge operation")
+	logger.With("key", key, "operation", entry.Operation()).InfoContext(ctx, "processing hard delete from KV bucket")
+	return handleResourceDelete(ctx, entry, publisher, mappingsKV, logger)
+}
 
-	// Extract key prefix (before first period)
-	parts := strings.SplitN(key, ".", 2)
-	if len(parts) < 2 {
-		logger.With("key", key).Warn("skipping delete - invalid key format")
-		return false // Permanent error, ACK and skip
+// handleKVSoftDelete processes a soft delete (record with _sdc_deleted_at field).
+// Returns true if the operation should be retried, false otherwise.
+func handleKVSoftDelete(ctx context.Context,
+	entry jetstream.KeyValueEntry,
+	publisher domain.EventPublisher,
+	mappingsKV jetstream.KeyValue,
+	logger *slog.Logger,
+) bool {
+	return handleResourceDelete(ctx, entry, publisher, mappingsKV, logger)
+}
+
+// handleResourceDelete handles deletion of resources by key prefix.
+// Returns true if the operation should be retried, false otherwise.
+func handleResourceDelete(ctx context.Context,
+	entry jetstream.KeyValueEntry,
+	publisher domain.EventPublisher,
+	mappingsKV jetstream.KeyValue,
+	logger *slog.Logger) bool {
+	// Extract the prefix (everything before the first period) for faster lookup.
+	key := entry.Key()
+	prefix := key
+	if dotIndex := strings.Index(key, "."); dotIndex != -1 {
+		prefix = key[:dotIndex]
 	}
 
-	prefix := parts[0]
-	uid := parts[1] // The UID is everything after the first period
+	// Extract UID from key (everything after the first period).
+	uid := ""
+	if dotIndex := strings.Index(key, "."); dotIndex != -1 && dotIndex < len(key)-1 {
+		uid = key[dotIndex+1:]
+	}
+
+	if uid == "" {
+		logger.With("key", key).WarnContext(ctx, "cannot extract UID from key for deletion")
+		return false
+	}
 
 	// Route to appropriate delete handler based on prefix
 	switch prefix {

@@ -93,17 +93,20 @@ The voting service implements NATS KV bucket event processing to automatically s
 ### Vote (Poll) Data
 
 **v1 Format (DynamoDB/KV)**:
+
 - All numeric fields stored as strings (e.g., `"total_voting_request_invitations": "42"`)
 - v1 SFIDs for committees and projects
 - Key: `itx-poll.{poll_id}`
 
 **v2 Format (Transformed)**:
+
 - Proper types (integers, booleans)
 - v2 UUIDs for committees and projects
 - Mapped via IDMapper service
 - `poll_id` → `vote_uid` (terminology translation)
 
 **Example Transformation**:
+
 ```json
 // v1 Input
 {
@@ -134,11 +137,13 @@ The voting service implements NATS KV bucket event processing to automatically s
 ### Vote Response Data
 
 **v1 Format**:
+
 - Key: `itx-poll-vote.{vote_id}`
 - String-based ranked choice ranks
 - v1 references (`poll_id`, `project_id`)
 
 **v2 Format**:
+
 - `vote_id` → `uid` (primary key)
 - `poll_id` → `vote_uid` (parent reference)
 - Integer ranked choice ranks
@@ -146,6 +151,7 @@ The voting service implements NATS KV bucket event processing to automatically s
 - User-specific permissions (writer/viewer)
 
 **Example Ranked Choice Transformation**:
+
 ```json
 // v1 Input
 {
@@ -197,7 +203,9 @@ The voting service implements NATS KV bucket event processing to automatically s
 ## Error Handling
 
 ### Transient Errors (Retry)
+
 These errors trigger NAK (negative acknowledgment) for automatic retry:
+
 - NATS connection timeouts
 - IDMapper service unavailable
 - Network failures
@@ -206,7 +214,9 @@ These errors trigger NAK (negative acknowledgment) for automatic retry:
 **Action**: Message redelivered up to `MaxDeliver` times (3 attempts)
 
 ### Permanent Errors (Skip)
+
 These errors trigger ACK to skip and move on:
+
 - Invalid JSON structure
 - Missing required fields (e.g., empty `poll_id` or `vote_id`)
 - No parent references (vote/response orphaned)
@@ -216,7 +226,9 @@ These errors trigger ACK to skip and move on:
 **Action**: Log warning and continue processing other messages
 
 ### ID Mapping Failures
+
 When v1→v2 ID mapping fails:
+
 - Log warning with v1 SFID
 - Skip setting v2 UID for that reference
 - Continue processing with remaining valid data
@@ -242,6 +254,7 @@ EVENT_PROCESSING_ENABLED=false ./voting-api
 ### Monitoring
 
 **Log Messages**:
+
 ```
 INFO  Event processing is ENABLED - initializing event processor
 INFO  Event processor started in background
@@ -252,6 +265,7 @@ INFO  successfully sent vote response indexer and access messages vote_response_
 ```
 
 **Consumer Status**:
+
 ```bash
 # Check consumer status
 nats consumer info KV_v1-objects voting-service-kv-consumer
@@ -273,23 +287,27 @@ nats consumer report KV_v1-objects voting-service-kv-consumer
 ### Troubleshooting
 
 **No events processing**:
+
 - Check `EVENT_PROCESSING_ENABLED=true`
 - Verify NATS connection: `NATS_URL`
 - Check consumer exists: `nats consumer ls KV_v1-objects`
 - Verify `v1-mappings` KV bucket exists
 
 **Events failing repeatedly**:
+
 - Check logs for permanent errors
 - Verify IDMapper service is running
 - Confirm indexer and FGA-sync services are available
 - Check NATS JetStream is healthy
 
 **Duplicate processing**:
-- Check `v1-mappings` KV bucket for tracking entries
+
+- Check `v1-mappings` KV bucket for tracking entries (live = `1`, deleted = `!del`)
 - Verify consumer name is unique per instance
 - Ensure `DeliverLastPerSubjectPolicy` is configured
 
 **ID mapping failures**:
+
 - Ensure IDMapper service has v1↔v2 mappings populated
 - Check project/committee references exist in v1 system
 - Verify NATS request-reply timeout settings
@@ -299,39 +317,56 @@ nats consumer report KV_v1-objects voting-service-kv-consumer
 The service uses the `v1-mappings` KV bucket to track processed events:
 
 **Key Pattern**:
-- Votes: `vote.{poll_id}`
-- Vote Responses: `vote_response.{vote_id}`
 
-**Value**: Revision number (incremented on updates)
+- Votes: `vote.<poll_id>`
+- Vote Responses: `vote_response.<vote_id>`
+
+**Value**:
+
+- `1` — resource has been synced at least once (live mapping)
+- `!del` — resource was deleted (tombstone marker)
 
 **Logic**:
-- If mapping exists → **UPDATE** operation
-- If mapping missing → **CREATE** operation
-- After processing → Store/update mapping entry
 
-This ensures:
-- First event creates the resource
-- Subsequent events update the resource
-- No duplicate resources in downstream services
+- If mapping missing or tombstoned → **CREATE** operation
+- If mapping exists (live) → **UPDATE** operation
+- After successful sync → store/update mapping with value `1`
+- After successful delete → overwrite mapping with `!del` (tombstone)
+
+**Tombstone deduplication**:
+
+When a delete event is processed, the mapping key is set to `!del` rather than being removed. On any redelivery of the same delete message, the tombstone is detected and the event is safely skipped without re-publishing a delete to downstream services.
+
+**Soft delete support**:
+
+KV PUT operations that include a non-empty `_sdc_deleted_at` field are treated as soft deletes and follow the same delete path as hard KV DEL/PURGE operations.
+
+**Orphan prevention**:
+
+When processing a vote response, the handler checks that the parent vote mapping exists and is not tombstoned. If the parent mapping is missing or tombstoned (i.e., the vote was deleted), the response event is NAKed for retry rather than being synced to downstream services.
 
 ## Performance Considerations
 
 **Concurrency**:
+
 - Single consumer per service instance
 - Messages processed sequentially per consumer
 - Multiple service instances = parallel processing (shared consumer group)
 
 **Throughput**:
+
 - `MaxAckPending=1000` allows up to 1000 in-flight messages
 - Adjust based on processing speed and resource availability
 - Average processing time: <100ms per message
 
 **Backpressure**:
+
 - Consumer automatically pauses when `MaxAckPending` reached
 - Resumes when pending count drops below threshold
 - NATS handles queuing automatically
 
 **Resource Usage**:
+
 - Event processor runs in background goroutine (low overhead)
 - NATS connection shared with IDMapper
 - Memory footprint minimal (streaming model)
@@ -340,18 +375,21 @@ This ensures:
 ## Related Services
 
 ### IDMapper Service
+
 - Maps v1 SFIDs ↔ v2 UUIDs
 - Required for event processing
 - Queries via NATS request-reply pattern
 - Caches mappings for performance
 
 ### Indexer Service
+
 - Receives transformed vote/response data
 - Indexes in OpenSearch for search functionality
 - Handles `ActionCreated`, `ActionUpdated`, `ActionDeleted`
 - Subjects: `lfx.index.vote`, `lfx.index.vote_response`
 
 ### FGA-Sync Service
+
 - Receives access control updates
 - Manages OpenFGA authorization tuples
 - Links resources to parent entities (committees, projects)
@@ -362,16 +400,19 @@ This ensures:
 ### Testing Event Processing
 
 1. **Disable in local development**:
+
    ```bash
    export EVENT_PROCESSING_ENABLED=false
    ```
 
 2. **Watch consumer activity**:
+
    ```bash
    nats consumer next KV_v1-objects voting-service-kv-consumer --count 10
    ```
 
 3. **Trigger test event**:
+
    ```bash
    # Put test vote in v1-objects KV
    nats kv put v1-objects itx-poll.test-123 '{
@@ -394,6 +435,7 @@ This ensures:
    ```
 
 4. **Check processing logs**:
+
    ```bash
    # Look for processing messages
    grep "processing vote update" logs/voting-api.log
@@ -401,6 +443,7 @@ This ensures:
    ```
 
 5. **Verify mappings stored**:
+
    ```bash
    nats kv get v1-mappings vote.test-123
    nats kv get v1-mappings vote_response.vote-response-123
@@ -423,6 +466,7 @@ go tool cover -html=coverage.out
 ```
 
 **Test Coverage**:
+
 - Event processor lifecycle (Start/Stop)
 - KV message handling and routing
 - Vote event handlers (create/update/delete)

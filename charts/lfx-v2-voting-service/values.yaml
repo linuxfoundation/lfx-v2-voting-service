@@ -64,6 +64,7 @@ app:
     ID_MAPPING_DISABLED:
       value: false
 
+# yamllint disable rule:comments-indentation
     # OpenTelemetry configuration (optional)
     # OTEL_SERVICE_NAME:
     #   value: lfx-v2-voting-service
@@ -71,6 +72,7 @@ app:
     #   value: http://otel-collector.observability.svc.cluster.local:4317
     # OTEL_EXPORTER_OTLP_PROTOCOL:
     #   value: grpc
+# yamllint enable rule:comments-indentation
 
 # Traefik Gateway API routing
 traefik:
