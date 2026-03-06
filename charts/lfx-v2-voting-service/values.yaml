@@ -9,6 +9,11 @@ image:
 
 replicaCount: 3
 
+podDisruptionBudget:
+  enabled: false
+  # minAvailable: 1
+  # maxUnavailable: 1
+
 # Resource limits and requests
 resources:
   limits:
