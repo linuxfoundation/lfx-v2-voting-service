@@ -9,12 +9,26 @@ image:
 
 replicaCount: 3
 
+<<<<<<< ours
 # podDisruptionBudget configures a PodDisruptionBudget for the deployment.
 # Only one of minAvailable or maxUnavailable may be set (not both).
 podDisruptionBudget:
   enabled: false
   # minAvailable: 1
   # maxUnavailable: 1
+=======
+# podAnnotations are additional annotations applied to the pod template.
+# Example:
+#   prometheus.io/scrape: "true"
+#   prometheus.io/port: "8080"
+podAnnotations: {}
+
+# podLabels are additional labels applied to the pod template.
+# Example:
+#   team: platform
+#   environment: production
+podLabels: {}
+>>>>>>> theirs
 
 # Resource limits and requests
 resources:
