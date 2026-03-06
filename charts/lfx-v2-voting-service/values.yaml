@@ -9,6 +9,10 @@ image:
 
 replicaCount: 3
 
+podAnnotations: {}
+
+podLabels: {}
+
 # Resource limits and requests
 resources:
   limits:
