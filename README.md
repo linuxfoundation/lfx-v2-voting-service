@@ -135,7 +135,7 @@ docker build -t lfx-v2-voting-service .
 # Run the container
 docker run -p 8080:8080 \
   -e ITX_CLIENT_ID=<your-client-id> \
-  -e ITX_CLIENT_SECRET=<your-client-secret> \
+  -e ITX_CLIENT_PRIVATE_KEY="$(cat /path/to/your/private-key.pem)" \
   lfx-v2-voting-service
 ```
 
