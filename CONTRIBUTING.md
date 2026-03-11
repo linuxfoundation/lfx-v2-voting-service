@@ -57,6 +57,20 @@ The [.env.example](.env.example) file has all variables pre-configured for local
 
 Run `make help` to see all available targets.
 
+## Local Infrastructure (NATS + Heimdall)
+
+The service depends on NATS and Heimdall. Install the [lfx-platform Helm chart](https://github.com/linuxfoundation/lfx-v2-helm/tree/main/charts/lfx-platform) to run both locally:
+
+```bash
+kubectl create namespace lfx
+helm install -n lfx lfx-platform \
+  oci://ghcr.io/linuxfoundation/lfx-v2-helm/chart/lfx-platform
+```
+
+This provides NATS, Heimdall, Traefik, OpenFGA, and other platform services. The default `NATS_URL` in [.env.example](.env.example) connects to this chart's NATS instance automatically.
+
+If you want to skip the cluster entirely, the defaults in [.env.example](.env.example) already disable NATS and Heimdall — just fill in the ITX credentials and run.
+
 ## Getting Dev Credentials
 
 The service requires ITX OAuth2 credentials (`ITX_CLIENT_ID` and `ITX_CLIENT_PRIVATE_KEY`). Find them in:

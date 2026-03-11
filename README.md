@@ -57,8 +57,8 @@ lfx-v2-voting-service/
 
 - Go 1.24 or later
 - Goa CLI: `go install goa.design/goa/v3/cmd/goa@latest`
-- Access to Heimdall JWKS endpoint
-- ITX service account token
+- ITX service account credentials (see [Getting Dev Credentials](CONTRIBUTING.md#getting-dev-credentials))
+- **[lfx-platform Helm chart](https://github.com/linuxfoundation/lfx-v2-helm/tree/main/charts/lfx-platform)** — provides NATS and Heimdall for local development (optional: can be bypassed with env flags)
 
 ### Installation
 
@@ -106,9 +106,23 @@ Configure the service using environment variables:
 
 See [Event Processing Documentation](docs/event-processing.md) for details.
 
+### Local Infrastructure (NATS + Heimdall)
+
+The service depends on NATS (for ID mapping and event processing) and Heimdall (for JWT validation). The easiest way to run both locally is with the [lfx-platform Helm chart](https://github.com/linuxfoundation/lfx-v2-helm/tree/main/charts/lfx-platform):
+
+```bash
+kubectl create namespace lfx
+helm install -n lfx lfx-platform \
+  oci://ghcr.io/linuxfoundation/lfx-v2-helm/chart/lfx-platform
+```
+
+This deploys NATS, Heimdall, Traefik, OpenFGA, and other platform services into your local Kubernetes cluster. Once running, the default `NATS_URL` in [.env.example](.env.example) (`nats://lfx-platform-nats.lfx.svc.cluster.local:4222`) will connect automatically.
+
+If you prefer to skip NATS and Heimdall entirely, the defaults in [.env.example](.env.example) already set `ID_MAPPING_DISABLED=true`, `EVENT_PROCESSING_ENABLED=false`, and `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL` so no cluster is required.
+
 ### Running Locally
 
-Copy the example environment file and fill in your ITX credentials (see [Getting Started](#getting-started) for how to obtain them):
+Copy the example environment file and fill in your ITX credentials (see [Getting Dev Credentials](CONTRIBUTING.md#getting-dev-credentials)):
 
 ```bash
 cp .env.example .env

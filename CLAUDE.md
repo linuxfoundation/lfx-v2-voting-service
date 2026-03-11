@@ -35,6 +35,8 @@ source .env && make run
 
 See [.env.example](.env.example) for all variables with descriptions. JWT auth, NATS, and event processing are disabled by default in the example file.
 
+For full local infrastructure (NATS + Heimdall), install the [lfx-platform Helm chart](https://github.com/linuxfoundation/lfx-v2-helm/tree/main/charts/lfx-platform) — see [README.md#local-infrastructure](README.md#local-infrastructure-nats--heimdall).
+
 The service starts on `http://localhost:8080`. Health check: `GET /health`.
 
 To bypass ITX calls entirely during testing, mock the `VotingService` interface in `internal/domain/`.
