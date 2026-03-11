@@ -46,24 +46,25 @@ make apigen
 # Build the service
 make build
 
-# Run with local dev flags (no JWT auth, no NATS required)
-export JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL=test-user@example.com
-export ID_MAPPING_DISABLED=true
-export EVENT_PROCESSING_ENABLED=false
-export ITX_CLIENT_ID=<your-client-id>
-export ITX_CLIENT_PRIVATE_KEY="$(cat /path/to/private.key)"
-make run
+# Set up your local environment (fill in ITX credentials — see below)
+cp .env.example .env
+
+# Run the service
+source .env && make run
 ```
+
+The [.env.example](.env.example) file has all variables pre-configured for local development with sensible defaults — JWT auth, NATS, and event processing are all disabled out of the box. The only values you need to fill in are `ITX_CLIENT_ID` and `ITX_CLIENT_PRIVATE_KEY`.
 
 Run `make help` to see all available targets.
 
 ## Getting Dev Credentials
 
-The service requires ITX OAuth2 credentials (`ITX_CLIENT_ID` and `ITX_CLIENT_PRIVATE_KEY`) to start. These are not self-service — you need to request them from the LFX team.
+The service requires ITX OAuth2 credentials (`ITX_CLIENT_ID` and `ITX_CLIENT_PRIVATE_KEY`). Find them in:
 
-- Ask a team member in the `#lfx-v2` Slack channel or open an internal request
+> **1Password** → Linux Foundation org → **LFX V2** vault → **LFX V2 Voting Service Env Vars** (secure note)
+
 - The private key is an RSA key in PEM format
-- Store the key locally at `tmp/private.key` (gitignored) and reference it with `$(cat tmp/private.key)`
+- Store the key locally at `tmp/local.private.key` (gitignored) and reference it with `$(cat tmp/local.private.key)`
 
 For local development, you can bypass NATS and JWT auth entirely using the flags shown in the Quick Start above. The only credential you truly need to make proxy calls to the ITX dev environment is `ITX_CLIENT_ID` and `ITX_CLIENT_PRIVATE_KEY`.
 

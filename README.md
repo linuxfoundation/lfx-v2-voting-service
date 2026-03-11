@@ -108,21 +108,21 @@ See [Event Processing Documentation](docs/event-processing.md) for details.
 
 ### Running Locally
 
+Copy the example environment file and fill in your ITX credentials (see [Getting Started](#getting-started) for how to obtain them):
+
 ```bash
-# Set required OAuth2 credentials for ITX (using private key JWT assertion)
-export ITX_CLIENT_ID=<your-oauth2-client-id>
-export ITX_CLIENT_PRIVATE_KEY="$(cat /path/to/your/private-key.pem)"
+cp .env.example .env
+# edit .env and set ITX_CLIENT_ID and ITX_CLIENT_PRIVATE_KEY
+```
 
-# For local development without JWT auth
-export JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL=test-user@example.com
+Then source it and run:
 
-# For local development without NATS ID mapping service
-export ID_MAPPING_DISABLED=true
-
-# Run the service
-make run
+```bash
+source .env && make run
 make debug # or run with debug log level
 ```
+
+The defaults in [.env.example](.env.example) already set `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL`, `ID_MAPPING_DISABLED=true`, and `EVENT_PROCESSING_ENABLED=false` so you don't need a running Heimdall or NATS instance for local development.
 
 The service will start on `http://localhost:8080`
 

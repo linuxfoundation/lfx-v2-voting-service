@@ -28,13 +28,12 @@ make check           # Check formatting + lint without modifying files
 ## Running Locally (Minimal Setup)
 
 ```bash
-export JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL=test-user@example.com
-export ID_MAPPING_DISABLED=true
-export EVENT_PROCESSING_ENABLED=false
-export ITX_CLIENT_ID=<ask a team member>
-export ITX_CLIENT_PRIVATE_KEY="$(cat tmp/private.key)"
-make run
+cp .env.example .env
+# Edit .env — set ITX_CLIENT_ID and ITX_CLIENT_PRIVATE_KEY (ask team member)
+source .env && make run
 ```
+
+See [.env.example](.env.example) for all variables with descriptions. JWT auth, NATS, and event processing are disabled by default in the example file.
 
 The service starts on `http://localhost:8080`. Health check: `GET /health`.
 
