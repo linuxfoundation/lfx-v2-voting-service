@@ -157,17 +157,9 @@ docker run -p 8080:8080 \
 
 The service includes a Helm chart for Kubernetes deployment.
 
-#### Prerequisites: Docker Image
-
-The Helm chart pulls from the local Docker image `linuxfoundation/lfx-v2-voting-service` with `pullPolicy: Never`. Run the following whenever you need to update the build:
-
-```bash
-make docker-build
-```
-
 #### Prerequisites: Kubernetes Secret
 
-Before installing the chart, create the `lfx-v2-voting-service` secret in the `lfx` namespace. The `ITX_CLIENT_ID` and `ITX_CLIENT_PRIVATE_KEY` values are in 1Password under the **LFX V2** vault, in the note **LFX V2 Voting Service Env Vars**.
+Regardless of which install method you use, first create the `lfx-v2-voting-service` secret in the `lfx` namespace. The `ITX_CLIENT_ID` and `ITX_CLIENT_PRIVATE_KEY` values are in 1Password under the **LFX V2** vault, in the note **LFX V2 Voting Service Env Vars**.
 
 ```bash
 # Create the namespace if it doesn't exist
@@ -178,31 +170,30 @@ kubectl create secret generic lfx-v2-voting-service -n lfx \
   --from-file=ITX_CLIENT_PRIVATE_KEY=/path/to/your/private.key
 ```
 
-#### Installing the Chart
+#### Option 1: Install from GHCR (no local build needed)
 
-The `values.yaml` file contains default local development values. If you don't need to override anything, install directly:
+Use this when you just want to run the service without making code changes:
 
 ```bash
-# Install with default values
 make helm-install
-
-# Or using Helm directly
-helm upgrade --force --install lfx-v2-voting-service ./charts/lfx-v2-voting-service \
-  --namespace lfx \
-  --create-namespace
 ```
 
-If you need to override values, create a `values.local.yaml` file alongside `values.yaml` (it is gitignored) and install with:
+#### Option 2: Install from Local Build (for active development)
+
+Use this when making code changes and testing them in Kubernetes. The chart uses `pullPolicy: Never` and pulls from the local image `linuxfoundation/lfx-v2-voting-service`.
+
+First, copy the example local values file and fill in any overrides you need:
 
 ```bash
-# Install with local values override
-make helm-install-local
+cp charts/lfx-v2-voting-service/values.local.example.yaml \
+   charts/lfx-v2-voting-service/values.local.yaml
+```
 
-# Or using Helm directly
-helm upgrade --force --install lfx-v2-voting-service ./charts/lfx-v2-voting-service \
-  --namespace lfx \
-  --create-namespace \
-  --values ./charts/lfx-v2-voting-service/values.local.yaml
+Then build the image and install. Re-run `make docker-build` whenever you want to pick up new changes:
+
+```bash
+make docker-build
+make helm-install-local
 ```
 
 #### Preview Helm Templates
