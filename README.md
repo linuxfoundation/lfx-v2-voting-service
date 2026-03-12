@@ -155,27 +155,63 @@ docker run -p 8080:8080 \
 
 ### Deploying with Helm
 
-The service includes Helm charts for Kubernetes deployment.
+The service includes a Helm chart for Kubernetes deployment.
 
-#### Install with production values
+#### Prerequisites: Docker Image
+
+The Helm chart pulls from the local Docker image `linuxfoundation/lfx-v2-voting-service` with `pullPolicy: Never`. Run the following whenever you need to update the build:
 
 ```bash
+make docker-build
+```
+
+#### Prerequisites: Kubernetes Secret
+
+Before installing the chart, create the `lfx-v2-voting-service` secret in the `lfx` namespace. The `ITX_CLIENT_ID` and `ITX_CLIENT_PRIVATE_KEY` values are in 1Password under the **LFX V2** vault, in the note **LFX V2 Voting Service Env Vars**.
+
+```bash
+# Create the namespace if it doesn't exist
+kubectl create namespace lfx
+
+kubectl create secret generic lfx-v2-voting-service -n lfx \
+  --from-literal=ITX_CLIENT_ID="<client-id-from-1password>" \
+  --from-file=ITX_CLIENT_PRIVATE_KEY=/path/to/your/private.key
+```
+
+#### Installing the Chart
+
+The `values.yaml` file contains default local development values. If you don't need to override anything, install directly:
+
+```bash
+# Install with default values
 make helm-install
+
+# Or using Helm directly
+helm upgrade --force --install lfx-v2-voting-service ./charts/lfx-v2-voting-service \
+  --namespace lfx \
+  --create-namespace
 ```
 
-#### Install with local development values
+If you need to override values, create a `values.local.yaml` file alongside `values.yaml` (it is gitignored) and install with:
 
 ```bash
+# Install with local values override
 make helm-install-local
+
+# Or using Helm directly
+helm upgrade --force --install lfx-v2-voting-service ./charts/lfx-v2-voting-service \
+  --namespace lfx \
+  --create-namespace \
+  --values ./charts/lfx-v2-voting-service/values.local.yaml
 ```
 
-#### Preview Helm templates
+#### Preview Helm Templates
 
 ```bash
-# With production values
+# With default values
 make helm-templates
 
-# With local values
+# With local values override
 make helm-templates-local
 ```
 
@@ -184,22 +220,6 @@ make helm-templates-local
 ```bash
 make helm-uninstall
 ```
-
-#### Helm Configuration
-
-- **Chart location**: `charts/lfx-v2-voting-service/`
-- **Production values**: `charts/lfx-v2-voting-service/values.yaml`
-- **Local values**: `charts/lfx-v2-voting-service/values.local.yaml`
-
-The Helm chart includes:
-
-- Kubernetes Deployment with health checks
-- ClusterIP Service
-- ServiceAccount with RBAC
-- HTTPRoute (Gateway API) for Traefik ingress
-- Heimdall middleware for authentication
-- Heimdall RuleSet for authorization rules
-- OpenFGA integration (optional)
 
 ## API Documentation
 
