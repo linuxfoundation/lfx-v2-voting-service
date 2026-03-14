@@ -88,7 +88,7 @@ Configure the service using environment variables:
 | `LOG_ADD_SOURCE` | Add source file/line to logs (`true`, `false`) | `false` |
 | `JWKS_URL` | Heimdall JWKS endpoint | `http://heimdall:4457/.well-known/jwks` |
 | `AUDIENCE` | JWT audience claim | `lfx-v2-voting-service` |
-| `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL` | Mock principal for local dev (disables auth) | `""` |
+| `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL` | Any non-empty string disables JWT validation and is used as the mock principal identity | `""` (disabled) |
 | `ITX_BASE_URL` | ITX API base URL | `https://api.dev.itx.linuxfoundation.org/` |
 | `ITX_AUTH0_DOMAIN` | Auth0 domain for ITX M2M auth | `linuxfoundation-dev.auth0.com` |
 | `ITX_CLIENT_ID` | OAuth2 client ID for ITX | **(required)** |
@@ -112,13 +112,22 @@ The service depends on NATS (for ID mapping and event processing) and Heimdall (
 
 ```bash
 kubectl create namespace lfx
+
+# Latest version (may include breaking changes):
 helm install -n lfx lfx-platform \
   oci://ghcr.io/linuxfoundation/lfx-v2-helm/chart/lfx-platform
+
+# Pinned version (recommended for reproducible local setup):
+helm install -n lfx lfx-platform \
+  oci://ghcr.io/linuxfoundation/lfx-v2-helm/chart/lfx-platform \
+  --version <version>
 ```
+
+For available versions, see the [lfx-v2-helm releases](https://github.com/linuxfoundation/lfx-v2-helm/releases).
 
 This deploys NATS, Heimdall, Traefik, OpenFGA, and other platform services into your local Kubernetes cluster. Once running, the default `NATS_URL` in [.env.example](.env.example) (`nats://lfx-platform-nats.lfx.svc.cluster.local:4222`) will connect automatically.
 
-If you prefer to skip NATS and Heimdall entirely, the defaults in [.env.example](.env.example) already set `ID_MAPPING_DISABLED=true`, `EVENT_PROCESSING_ENABLED=false`, and `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL` so no cluster is required.
+If you prefer to skip NATS and Heimdall entirely, the defaults in [.env.example](.env.example) already set `ID_MAPPING_DISABLED=true`, `EVENT_PROCESSING_ENABLED=false`, and `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL=test-user@example.com` so no cluster is required.
 
 ### Running Locally
 
@@ -136,7 +145,7 @@ source .env && make run
 make debug # or run with debug log level
 ```
 
-The defaults in [.env.example](.env.example) already set `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL`, `ID_MAPPING_DISABLED=true`, and `EVENT_PROCESSING_ENABLED=false` so you don't need a running Heimdall or NATS instance for local development.
+The defaults in [.env.example](.env.example) already set `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL=test-user@example.com`, `ID_MAPPING_DISABLED=true`, and `EVENT_PROCESSING_ENABLED=false` so you don't need a running Heimdall or NATS instance for local development.
 
 The service will start on `http://localhost:8080`
 

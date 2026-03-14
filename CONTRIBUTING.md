@@ -63,9 +63,18 @@ The service depends on NATS and Heimdall. Install the [lfx-platform Helm chart](
 
 ```bash
 kubectl create namespace lfx
+
+# Latest version (may include breaking changes):
 helm install -n lfx lfx-platform \
   oci://ghcr.io/linuxfoundation/lfx-v2-helm/chart/lfx-platform
+
+# Pinned version (recommended for reproducible local setup):
+helm install -n lfx lfx-platform \
+  oci://ghcr.io/linuxfoundation/lfx-v2-helm/chart/lfx-platform \
+  --version <version>
 ```
+
+For available versions, see the [lfx-v2-helm releases](https://github.com/linuxfoundation/lfx-v2-helm/releases).
 
 This provides NATS, Heimdall, Traefik, OpenFGA, and other platform services. The default `NATS_URL` in [.env.example](.env.example) connects to this chart's NATS instance automatically.
 

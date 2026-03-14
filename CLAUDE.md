@@ -107,11 +107,11 @@ Dependencies flow inward. Never import infrastructure from service or domain.
 | `PORT` | `8080` | HTTP port |
 | `LOG_LEVEL` | `debug` | `debug\|info\|warn\|error` |
 | `JWKS_URL` | `http://heimdall:4457/.well-known/jwks` | Skip with `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL` |
-| `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL` | `""` | Set to any string to bypass JWT auth locally |
+| `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL` | `""` | Any non-empty string disables JWT validation and uses the value as the mock principal (`.env.example` uses `test-user@example.com`) |
 | `ITX_BASE_URL` | `https://api.dev.itx.linuxfoundation.org/` | |
-| `ITX_CLIENT_ID` | **(required)** | Ask team member |
-| `ITX_CLIENT_PRIVATE_KEY` | **(required)** | RSA PEM key — ask team member |
-| `NATS_URL` | `nats://nats:4222` | Disable with `ID_MAPPING_DISABLED=true` |
+| `ITX_CLIENT_ID` | **(required)** | See [CONTRIBUTING.md#getting-dev-credentials](CONTRIBUTING.md#getting-dev-credentials) |
+| `ITX_CLIENT_PRIVATE_KEY` | **(required)** | RSA PEM key — see [CONTRIBUTING.md#getting-dev-credentials](CONTRIBUTING.md#getting-dev-credentials) |
+| `NATS_URL` | `nats://nats:4222` (code default); `.env.example` uses `nats://lfx-platform-nats.lfx.svc.cluster.local:4222` for Helm-based local setup | Disable with `ID_MAPPING_DISABLED=true` |
 | `ID_MAPPING_DISABLED` | `false` | Set `true` for local dev without NATS |
 | `EVENT_PROCESSING_ENABLED` | `true` | Set `false` for local dev without NATS |
 
