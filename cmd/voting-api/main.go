@@ -14,6 +14,7 @@ import (
 	"time"
 
 	apieventing "github.com/linuxfoundation/lfx-v2-voting-service/cmd/voting-api/eventing"
+	openapisvr "github.com/linuxfoundation/lfx-v2-voting-service/gen/http/openapi/server"
 	votesvr "github.com/linuxfoundation/lfx-v2-voting-service/gen/http/vote/server"
 	votesvc "github.com/linuxfoundation/lfx-v2-voting-service/gen/vote"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
@@ -153,9 +154,20 @@ func run() int {
 	// Create HTTP muxer
 	mux := goahttp.NewMuxer()
 
+	// Resolve kodata path for serving OpenAPI spec files
+	koDataPath := os.Getenv("KO_DATA_PATH")
+	if koDataPath == "" {
+		koDataPath = "../../gen/http"
+	}
+	koDataDir := http.Dir(koDataPath)
+
 	// Mount HTTP handlers
 	votingServer := votesvr.New(votingEndpoints, mux, goahttp.RequestDecoder, goahttp.ResponseEncoder, nil, nil)
 	votesvr.Mount(mux, votingServer)
+
+	// Mount OpenAPI spec file handlers
+	openapiServer := openapisvr.New(nil, mux, goahttp.RequestDecoder, goahttp.ResponseEncoder, nil, nil, koDataDir, koDataDir, koDataDir, koDataDir)
+	openapisvr.Mount(mux, openapiServer)
 
 	// Add health check endpoints
 	mux.Handle("GET", "/health", func(w http.ResponseWriter, r *http.Request) {

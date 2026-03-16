@@ -7381,5 +7381,6 @@ components:
             description: Heimdall JWT authorization
             scheme: bearer
 tags:
+    - name: openapi
     - name: vote
       description: Vote service that proxies to ITX voting API

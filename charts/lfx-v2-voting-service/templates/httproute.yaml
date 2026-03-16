@@ -23,6 +23,9 @@ spec:
     - path:
         type: PathPrefix
         value: /votes/
+    - path:
+        type: PathPrefix
+        value: /_voting/
     {{- if .Values.heimdall.enabled }}
     filters:
     - type: ExtensionRef
