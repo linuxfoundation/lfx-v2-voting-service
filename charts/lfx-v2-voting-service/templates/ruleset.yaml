@@ -12,6 +12,29 @@ metadata:
 spec:
   authClassName: default
   rules:
+    - id: "rule:lfx:lfx-v2-voting-service:openapi:get"
+      match:
+        methods:
+          - GET
+          - HEAD
+        routes:
+          - path: /_voting/openapi.json
+          - path: /_voting/openapi.yaml
+          - path: /_voting/openapi3.json
+          - path: /_voting/openapi3.yaml
+      allow_encoded_slashes: "off"
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        - authorizer: allow_all
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
+
     - id: "rule:lfx:lfx-v2-voting-service:votes:create"
       match:
         methods:
