@@ -251,14 +251,12 @@ To view the interactive Swagger UI documentation:
 
 1. **Generate the OpenAPI spec**: `make apigen`
 2. **Start the service**: `make run`
-3. **Access Swagger UI**: Use a tool like [Swagger Editor](https://editor.swagger.io/) and import `gen/http/openapi.yaml`
+3. **Access Swagger UI**: Import `gen/http/openapi.yaml` into [Swagger Editor](https://editor.swagger.io/)
 
-Alternatively, you can serve the Swagger UI locally:
+Or browse the deployed docs directly:
 
-```bash
-# Using npx and swagger-ui-watcher
-npx swagger-ui-watcher gen/http/openapi.yaml
-```
+- **Dev**: [lfx-api.dev.v2.cluster.linuxfound.info/docs](https://lfx-api.dev.v2.cluster.linuxfound.info/docs/#/)
+- **Production**: [lfx-api.v2.cluster.lfx.dev/docs](https://lfx-api.v2.cluster.lfx.dev/docs/#/)
 
 ### Available Endpoints
 

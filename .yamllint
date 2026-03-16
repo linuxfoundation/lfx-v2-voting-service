@@ -7,6 +7,7 @@ ignore: |
   megalinter-reports
   styles
   gen/
+  cmd/voting-api/kodata/
 rules:
   line-length:
     max: 120
