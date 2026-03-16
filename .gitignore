@@ -95,6 +95,7 @@ Thumbs.db
 docker-compose.override.yml
 docker-compose.local.yml
 *.pid
+*private.key*
 
 # Helm local values (keep template in charts/)
 /**/values.local.yaml
