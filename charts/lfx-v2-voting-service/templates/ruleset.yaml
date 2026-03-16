@@ -13,7 +13,6 @@ spec:
   authClassName: default
   rules:
     - id: "rule:lfx:lfx-v2-voting-service:openapi:get"
-      allow_encoded_slashes: "off"
       match:
         methods:
           - GET
@@ -23,9 +22,13 @@ spec:
           - path: /_voting/openapi.yaml
           - path: /_voting/openapi3.json
           - path: /_voting/openapi3.yaml
+      allow_encoded_slashes: "off"
       execute:
         - authenticator: oidc
         - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
         - authorizer: allow_all
         - finalizer: create_jwt
           config:
