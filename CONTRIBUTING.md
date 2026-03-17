@@ -32,53 +32,7 @@ By participating in this project, you agree to abide by the [Linux Foundation Co
 
 ## Development Setup
 
-Please refer to the [README.md](README.md) for detailed setup instructions, including all environment variables and how to run the service locally.
-
-### Quick Start
-
-```bash
-# Install dependencies (Go 1.24+ required)
-make deps
-
-# Generate API code from Goa design
-make apigen
-
-# Build the service
-make build
-
-# Set up your local environment (fill in ITX credentials — see below)
-cp .env.example .env
-
-# Run the service
-source .env && make run
-```
-
-The [.env.example](.env.example) file has all variables pre-configured for local development with sensible defaults — JWT auth, NATS, and event processing are all disabled out of the box. The only values you need to fill in are `ITX_CLIENT_ID` and `ITX_CLIENT_PRIVATE_KEY`.
-
-Run `make help` to see all available targets.
-
-## Local Infrastructure (NATS + Heimdall)
-
-The service depends on NATS and Heimdall. Install the [lfx-platform Helm chart](https://github.com/linuxfoundation/lfx-v2-helm/tree/main/charts/lfx-platform) to run both locally:
-
-```bash
-kubectl create namespace lfx
-
-# Latest version (may include breaking changes):
-helm install -n lfx lfx-platform \
-  oci://ghcr.io/linuxfoundation/lfx-v2-helm/chart/lfx-platform
-
-# Pinned version (recommended for reproducible local setup):
-helm install -n lfx lfx-platform \
-  oci://ghcr.io/linuxfoundation/lfx-v2-helm/chart/lfx-platform \
-  --version <version>
-```
-
-For available versions, see the [lfx-v2-helm releases](https://github.com/linuxfoundation/lfx-v2-helm/releases).
-
-This provides NATS, Heimdall, Traefik, OpenFGA, and other platform services. The default `NATS_URL` in [.env.example](.env.example) connects to this chart's NATS instance automatically.
-
-If you want to skip the cluster entirely, the defaults in [.env.example](.env.example) already disable NATS and Heimdall — just fill in the ITX credentials and run.
+See [README.md — Getting Started](README.md#getting-started) for full setup instructions: prerequisites, installation, environment variables, running locally, and optional NATS + Heimdall infrastructure via the lfx-platform Helm chart.
 
 ## Getting Dev Credentials
 

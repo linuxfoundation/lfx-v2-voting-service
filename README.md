@@ -27,27 +27,40 @@ This service provides a proxy layer between LFXv2 clients and the legacy ITX vot
 ```text
 lfx-v2-voting-service/
 ├── api/voting/v1/design/    # Goa DSL API definitions
-├── gen/                      # Generated Goa code (auto-generated)
+├── charts/                   # Helm chart for Kubernetes deployment
+│   └── lfx-v2-voting-service/
+│       ├── templates/        # Kubernetes manifests + Heimdall ruleset
+│       ├── values.yaml       # Default Helm values
+│       └── values.local.example.yaml  # Local dev values template
 ├── cmd/voting-api/           # Application entry point
 │   ├── eventing/             # Event processing handlers
 │   ├── service/              # Request/response converters
-│   ├── api.go                # API layer (Goa interface implementation)
-│   └── main.go               # Main application
-├── internal/
-│   ├── domain/               # Domain models and interfaces
-│   ├── service/              # Business logic layer
-│   ├── infrastructure/       # External integrations
-│   │   ├── auth/             # JWT authentication
-│   │   ├── eventing/         # Event processing infrastructure
-│   │   ├── idmapper/         # ID mapping (NATS)
-│   │   └── proxy/            # ITX HTTP client
-│   ├── middleware/           # HTTP middleware
-│   └── log/                  # Logging configuration
+│   ├── api.go                # Goa interface implementation (votes)
+│   ├── api_votes.go          # Vote handler helpers
+│   ├── api_vote_responses.go # Vote response handler implementations
+│   └── main.go               # App startup and wiring
 ├── docs/                     # Documentation
-│   ├── api-contracts.md      # API contract documentation
-│   └── event-processing.md   # Event processing guide
+│   ├── api-contracts.md      # LFXv2 ↔ ITX field mappings and examples
+│   ├── event-processing.md   # NATS event flow and operational guide
+│   ├── glossary.md           # Voting-service-specific terms (ITX, SFID, v1/v2, FGA roles)
+│   └── itx-proxy-implementation.md  # Proxy architecture deep-dive
+├── gen/                      # Generated Goa code (never edit directly)
+├── internal/
+│   ├── domain/               # Interfaces and domain models
+│   │   └── models/           # Shared domain model types
+│   ├── service/              # Business logic layer
+│   │   ├── vote_service.go
+│   │   └── vote_response_service.go
+│   ├── infrastructure/       # External system integrations
+│   │   ├── auth/             # JWT authentication (Heimdall)
+│   │   ├── eventing/         # NATS event publisher
+│   │   ├── idmapper/         # NATS-based v1↔v2 ID mapping
+│   │   └── proxy/            # ITX HTTP client
+│   ├── middleware/           # HTTP middleware (auth, request ID, logger)
+│   └── log/                  # Logging configuration
 └── pkg/
     ├── constants/            # Shared constants
+    ├── models/itx/           # ITX request/response model types
     └── utils/                # Utility functions
 ```
 
@@ -270,21 +283,21 @@ The service provides the following endpoints:
 
 #### Vote Management (Polls)
 
-- `POST /api/v1/votes` - Create a new vote/poll
-- `GET /api/v1/votes/{vote_uid}` - Get vote/poll details
-- `PUT /api/v1/votes/{vote_uid}` - Update a vote/poll (only when status is "disabled")
-- `DELETE /api/v1/votes/{vote_uid}` - Delete a vote/poll (only when status is "disabled")
-- `POST /api/v1/votes/{vote_uid}/extend` - Extend a vote/poll end time
-- `POST /api/v1/votes/{vote_uid}/enable` - Enable a vote/poll for voting
-- `POST /api/v1/votes/{vote_uid}/bulk_resend` - Bulk resend vote emails to recipients
-- `GET /api/v1/votes/{vote_uid}/results` - Get aggregated vote results
+- `POST /votes` - Create a new vote/poll
+- `GET /votes/{vote_uid}` - Get vote/poll details
+- `PUT /votes/{vote_uid}` - Update a vote/poll (only when status is "disabled")
+- `DELETE /votes/{vote_uid}` - Delete a vote/poll (only when status is "disabled")
+- `POST /votes/{vote_uid}/extend` - Extend a vote/poll end time
+- `POST /votes/{vote_uid}/enable` - Enable a vote/poll for voting
+- `POST /votes/{vote_uid}/bulk_resend` - Bulk resend vote emails to recipients
+- `GET /votes/{vote_uid}/results` - Get aggregated vote results
 
 #### Vote Responses (Ballot Submissions)
 
-- `POST /api/v1/vote_response/{vote_response_uid}` - Submit a vote response
-- `GET /api/v1/vote_response/{vote_response_uid}` - Get vote response details
-- `PUT /api/v1/vote_response/{vote_response_uid}` - Update a vote response
-- `POST /api/v1/vote_response/{vote_response_uid}/resend` - Resend vote email
+- `POST /vote_responses` - Submit a vote response
+- `GET /vote_responses/{vote_response_uid}` - Get vote response details
+- `PUT /vote_responses/{vote_response_uid}` - Update a vote response
+- `POST /vote_responses/{vote_response_uid}/resend` - Resend vote email
 
 For detailed request/response schemas, authentication requirements, and examples, refer to the generated OpenAPI specification or the Goa design files.
 
