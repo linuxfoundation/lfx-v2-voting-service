@@ -57,6 +57,8 @@ This allows the LFXv2 API to maintain a consistent UUID-based schema while trans
 
 **Endpoint**: `POST /api/v1/votes`
 
+**Required permission**: `writer` on `project:{project_uid}` (from request body)
+
 **Headers**:
 
 ```http
@@ -244,6 +246,8 @@ x-scope: manage:voting
 
 **Endpoint**: `GET /api/v1/votes/{vote_uid}`
 
+**Required permission**: `viewer` on `vote:{vote_uid}`
+
 **Headers**:
 
 ```http
@@ -326,6 +330,8 @@ x-scope: manage:voting
 ### LFXv2 Proxy API
 
 **Endpoint**: `PUT /api/v1/votes/{vote_uid}`
+
+**Required permission**: `writer` on `vote:{vote_uid}`
 
 **Headers**:
 
@@ -460,6 +466,8 @@ x-scope: manage:voting
 ### LFXv2 Proxy API
 
 **Endpoint**: `DELETE /api/v1/votes/{vote_uid}`
+
+**Required permission**: `writer` on `vote:{vote_uid}`
 
 **Headers**:
 
@@ -615,6 +623,579 @@ x-scope: manage:voting
 | `generic` | Simple poll | No |
 | `condorcet_irv` | Condorcet IRV voting | No |
 | `meek_stv` | Meek STV (Single Transferable Vote) | Yes (must be ≥ 2) |
+
+---
+
+## POST /api/v1/votes/{vote_uid}/extend (Extend Vote)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `POST /api/v1/votes/{vote_uid}/extend`
+
+**Required permission**: `writer` on `vote:{vote_uid}`
+
+**Headers**:
+
+```http
+Authorization: Bearer <heimdall-jwt-token>
+Content-Type: application/json
+```
+
+**Path Parameters**:
+
+- `vote_uid` (string, UUID): The vote identifier
+
+**Request Body**:
+
+```json
+{
+  "end_time": "2026-03-01T23:59:59Z"
+}
+```
+
+**Response** (200 OK):
+
+```json
+{
+  "vote_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+  "name": "Q1 2026 TSC Election",
+  "description": "Technical Steering Committee Election for Q1 2026",
+  "creation_time": "2026-01-23T10:00:00Z",
+  "last_modified_time": "2026-02-20T09:00:00Z",
+  "end_time": "2026-03-01T23:59:59Z",
+  "status": "active",
+  "project_uid": "c01adbaf-53b1-4d47-bc04-dd7e459dd301",
+  "committee_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+  "committee_name": "Technical Steering Committee",
+  "committee_type": "TSC",
+  "committee_voting_status": true,
+  "pseudo_anonymity": false,
+  "total_voting_request_invitations": 25,
+  "num_response_received": 10,
+  "allow_abstain": false,
+  "poll_questions": [...]
+}
+```
+
+---
+
+### ITX Service API (Underlying)
+
+**Endpoint**: `POST /v2/voting/poll/{poll_id}/extend`
+
+**Headers**:
+
+```http
+Authorization: Bearer <oauth2-m2m-token>
+Content-Type: application/json
+x-scope: manage:voting
+```
+
+**Request Body**:
+
+```json
+{
+  "end_time": "2026-03-01T23:59:59Z"
+}
+```
+
+**Response** (200 OK): Same structure as ITX `GetPoll` response (see GET above).
+
+---
+
+## PUT /api/v1/votes/{vote_uid}/enable (Enable Vote)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `PUT /api/v1/votes/{vote_uid}/enable`
+
+**Required permission**: `writer` on `vote:{vote_uid}`
+
+**Headers**:
+
+```http
+Authorization: Bearer <heimdall-jwt-token>
+```
+
+**Path Parameters**:
+
+- `vote_uid` (string, UUID): The vote identifier
+
+**Request Body**: None
+
+**Response** (204 No Content):
+
+```
+(empty body)
+```
+
+**Note**: Transitions a vote from `disabled` to `active`, sending ballot emails to all recipients.
+
+---
+
+### ITX Service API (Underlying)
+
+**Endpoint**: `PUT /v2/voting/poll/{poll_id}/enable`
+
+**Headers**:
+
+```http
+Authorization: Bearer <oauth2-m2m-token>
+x-scope: manage:voting
+```
+
+**Response** (200 OK or 204 No Content):
+
+```
+(empty body)
+```
+
+---
+
+## POST /api/v1/votes/{vote_uid}/bulk_resend (Bulk Resend Vote Emails)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `POST /api/v1/votes/{vote_uid}/bulk_resend`
+
+**Required permission**: `writer` on `vote:{vote_uid}`
+
+**Headers**:
+
+```http
+Authorization: Bearer <heimdall-jwt-token>
+Content-Type: application/json
+```
+
+**Path Parameters**:
+
+- `vote_uid` (string, UUID): The vote identifier
+
+**Request Body**:
+
+```json
+{
+  "recipient_ids": [
+    "user-uuid-1",
+    "user-uuid-2"
+  ]
+}
+```
+
+**Response** (204 No Content):
+
+```
+(empty body)
+```
+
+---
+
+### ITX Service API (Underlying)
+
+**Endpoint**: `POST /v2/voting/poll/{poll_id}/bulk_resend`
+
+**Headers**:
+
+```http
+Authorization: Bearer <oauth2-m2m-token>
+Content-Type: application/json
+x-scope: manage:voting
+```
+
+**Request Body**:
+
+```json
+{
+  "recipient_ids": [
+    "user-uuid-1",
+    "user-uuid-2"
+  ]
+}
+```
+
+**Note**: `recipient_ids` are passed through to ITX without transformation.
+
+**Response** (200 OK or 204 No Content):
+
+```
+(empty body)
+```
+
+---
+
+## GET /api/v1/votes/{vote_uid}/results (Get Vote Results)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `GET /api/v1/votes/{vote_uid}/results`
+
+**Required permission**: `results_viewer` on `vote:{vote_uid}`
+
+**Headers**:
+
+```http
+Authorization: Bearer <heimdall-jwt-token>
+```
+
+**Path Parameters**:
+
+- `vote_uid` (string, UUID): The vote identifier
+
+**Response** (200 OK):
+
+```json
+{
+  "num_recipients": 25,
+  "num_votes_cast": 18,
+  "num_abstained": 2,
+  "poll_end_time": "2026-02-15T23:59:59Z",
+  "poll_results": [
+    {
+      "question": {
+        "question_id": "q1-uuid",
+        "prompt": "Select up to 5 TSC members",
+        "type": "multiple_choice",
+        "choices": [
+          {"choice_id": "c1-uuid", "choice_text": "Alice Johnson"},
+          {"choice_id": "c2-uuid", "choice_text": "Bob Smith"}
+        ]
+      },
+      "generic_choice_votes": [
+        {"choice_id": "c1-uuid", "vote_count": 14, "percentage": 77.8},
+        {"choice_id": "c2-uuid", "vote_count": 10, "percentage": 55.6}
+      ],
+      "ranked_choice_votes": [],
+      "ranked_choice_winner_info": null,
+      "irv_round_summary": [],
+      "meek_stv_round_summary": []
+    }
+  ],
+  "comment_results": [
+    {
+      "prompt": "Any additional comments?",
+      "comments": ["Great candidates this year.", "No objections."]
+    }
+  ]
+}
+```
+
+**Note**: `ranked_choice_votes`, `irv_round_summary`, and `meek_stv_round_summary` are populated only for the corresponding `poll_type` values (`condorcet_irv`, `instant_runoff_vote`, `meek_stv`). For `generic` polls, only `generic_choice_votes` is populated.
+
+---
+
+### ITX Service API (Underlying)
+
+**Endpoint**: `GET /v2/voting/poll/{poll_id}/results`
+
+**Headers**:
+
+```http
+Authorization: Bearer <oauth2-m2m-token>
+x-scope: manage:voting
+```
+
+**Response**: Same structure — results are passed through from ITX without field transformation.
+
+---
+
+## POST /api/v1/vote_response/{vote_response_uid} (Submit Vote Response)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `POST /api/v1/vote_response/{vote_response_uid}`
+
+**Required permission**: `participant` on `vote:{vote_uid}` (from request body)
+
+**Headers**:
+
+```http
+Authorization: Bearer <heimdall-jwt-token>
+Content-Type: application/json
+```
+
+**Path Parameters**:
+
+- `vote_response_uid` (string, UUID): The vote response (ballot) identifier
+
+**Request Body** — standard choice:
+
+```json
+{
+  "vote_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+  "abstain": false,
+  "user_vote_content": [
+    {
+      "question_id": "q1-uuid",
+      "choice_ids": ["c1-uuid", "c3-uuid"]
+    }
+  ]
+}
+```
+
+**Request Body** — ranked choice:
+
+```json
+{
+  "vote_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+  "abstain": false,
+  "user_vote_content": [
+    {
+      "question_id": "q1-uuid",
+      "ranked_choices": [
+        {"choice_id": "c1-uuid", "choice_rank": 1},
+        {"choice_id": "c2-uuid", "choice_rank": 2}
+      ]
+    }
+  ]
+}
+```
+
+**Request Body** — abstain:
+
+```json
+{
+  "vote_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+  "abstain": true,
+  "user_vote_content": []
+}
+```
+
+**Response** (204 No Content):
+
+```
+(empty body)
+```
+
+---
+
+### ITX Service API (Underlying)
+
+**Endpoint**: `POST /v2/voting/vote`
+
+**Headers**:
+
+```http
+Authorization: Bearer <oauth2-m2m-token>
+Content-Type: application/json
+x-scope: manage:voting
+```
+
+**Note**: `vote_uid` is passed as `poll_id` to ITX. No ID mapping is applied to vote response identifiers — they are UUIDs in both systems.
+
+**Request Body**:
+
+```json
+{
+  "vote_id": "vote-response-uuid",
+  "poll_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+  "abstain": false,
+  "user_vote_content": [
+    {
+      "question_id": "q1-uuid",
+      "choice_ids": ["c1-uuid", "c3-uuid"]
+    }
+  ]
+}
+```
+
+**Response** (200 OK or 204 No Content):
+
+```
+(empty body)
+```
+
+---
+
+## GET /api/v1/vote_response/{vote_response_uid} (Get Vote Response)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `GET /api/v1/vote_response/{vote_response_uid}`
+
+**Required permission**: `auditor` on `vote_response:{vote_response_uid}`
+
+**Headers**:
+
+```http
+Authorization: Bearer <heimdall-jwt-token>
+```
+
+**Path Parameters**:
+
+- `vote_response_uid` (string, UUID): The vote response identifier
+
+**Response** (200 OK):
+
+```json
+{
+  "vote_response_uid": "vr-uuid-123",
+  "vote_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+  "project_uid": "c01adbaf-53b1-4d47-bc04-dd7e459dd301",
+  "vote_status": "voted",
+  "abstained": false,
+  "allow_abstain": false,
+  "vote_creation_time": "2026-01-25T14:30:00Z",
+  "user_name": "Alice Johnson",
+  "profile_picture": "https://example.com/alice.jpg",
+  "user_id": "user-uuid-alice",
+  "user_email": "alice@example.com",
+  "user_role": "Voting Rep",
+  "user_voting_status": "voted",
+  "user_org_name": "Acme Corp",
+  "user_org_id": "org-uuid-acme",
+  "ses_message_id": "ses-msg-id-123",
+  "ses_message_last_sent_time": "2026-01-24T10:00:00Z",
+  "ses_delivery_successful": true,
+  "ses_email_opened": true,
+  "ses_email_opened_last_time": "2026-01-24T11:30:00Z",
+  "ses_link_clicked": true,
+  "ses_link_clicked_last_time": "2026-01-25T14:28:00Z",
+  "ses_bounce_type": "",
+  "ses_bounce_subtype": "",
+  "ses_complaint_exists": false,
+  "ses_complaint_type": "",
+  "ses_complaint_date": null,
+  "poll_answers": [
+    {
+      "question_id": "q1-uuid",
+      "prompt": "Select up to 5 TSC members",
+      "type": "multiple_choice",
+      "user_choice": [
+        {"choice_id": "c1-uuid", "choice_text": "Alice Johnson"},
+        {"choice_id": "c3-uuid", "choice_text": "Carol White"}
+      ],
+      "ranked_user_choice": []
+    }
+  ]
+}
+```
+
+**Note**: The `ses_*` fields reflect email delivery and engagement tracking from AWS SES. `project_uid` is mapped from the ITX v1 Salesforce ID back to a LFXv2 UUID.
+
+---
+
+### ITX Service API (Underlying)
+
+**Endpoint**: `GET /v2/voting/vote/{vote_id}`
+
+**Headers**:
+
+```http
+Authorization: Bearer <oauth2-m2m-token>
+x-scope: manage:voting
+```
+
+**Response**: Same structure with ITX field names — `vote_response_uid` is `vote_id`, `vote_uid` is `poll_id`, and `project_uid` is `project_id` (Salesforce ID format).
+
+---
+
+## PUT /api/v1/vote_response/{vote_response_uid} (Update Vote Response)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `PUT /api/v1/vote_response/{vote_response_uid}`
+
+**Required permission**: `owner` on `vote_response:{vote_response_uid}`
+
+**Headers**:
+
+```http
+Authorization: Bearer <heimdall-jwt-token>
+Content-Type: application/json
+```
+
+**Path Parameters**:
+
+- `vote_response_uid` (string, UUID): The vote response identifier
+
+**Request Body**:
+
+```json
+{
+  "abstain": false,
+  "user_vote_content": [
+    {
+      "question_id": "q1-uuid",
+      "choice_ids": ["c2-uuid", "c3-uuid"]
+    }
+  ]
+}
+```
+
+**Response** (204 No Content):
+
+```
+(empty body)
+```
+
+---
+
+### ITX Service API (Underlying)
+
+**Endpoint**: `PUT /v2/voting/vote/{vote_id}`
+
+**Headers**:
+
+```http
+Authorization: Bearer <oauth2-m2m-token>
+Content-Type: application/json
+x-scope: manage:voting
+```
+
+**Request Body**: Same structure as create. No ID mapping applied to vote response fields.
+
+**Response** (200 OK or 204 No Content):
+
+```
+(empty body)
+```
+
+---
+
+## POST /api/v1/vote_response/{vote_response_uid}/resend (Resend Vote Email)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `POST /api/v1/vote_response/{vote_response_uid}/resend`
+
+**Required permission**: `writer` on `vote:{vote_response_uid}`
+
+**Headers**:
+
+```http
+Authorization: Bearer <heimdall-jwt-token>
+```
+
+**Path Parameters**:
+
+- `vote_response_uid` (string, UUID): The vote response identifier
+
+**Request Body**: None
+
+**Response** (204 No Content):
+
+```
+(empty body)
+```
+
+---
+
+### ITX Service API (Underlying)
+
+**Endpoint**: `POST /v2/voting/vote/{vote_id}/resend`
+
+**Headers**:
+
+```http
+Authorization: Bearer <oauth2-m2m-token>
+x-scope: manage:voting
+```
+
+**Response** (200 OK or 204 No Content):
+
+```
+(empty body)
+```
 
 ---
 
