@@ -51,11 +51,11 @@ This allows the LFXv2 API to maintain a consistent UUID-based schema while trans
 
 ---
 
-## POST /api/v1/votes (Create Vote)
+## POST /votes (Create Vote)
 
 ### LFXv2 Proxy API
 
-**Endpoint**: `POST /api/v1/votes`
+**Endpoint**: `POST /votes`
 
 **Required permission**: `writer` on `project:{project_uid}` (from request body)
 
@@ -240,11 +240,11 @@ x-scope: manage:voting
 
 ---
 
-## GET /api/v1/votes/{vote_uid} (Get Vote)
+## GET /votes/{vote_uid} (Get Vote)
 
 ### LFXv2 Proxy API
 
-**Endpoint**: `GET /api/v1/votes/{vote_uid}`
+**Endpoint**: `GET /votes/{vote_uid}`
 
 **Required permission**: `viewer` on `vote:{vote_uid}`
 
@@ -325,11 +325,11 @@ x-scope: manage:voting
 
 ---
 
-## PUT /api/v1/votes/{vote_uid} (Update Vote)
+## PUT /votes/{vote_uid} (Update Vote)
 
 ### LFXv2 Proxy API
 
-**Endpoint**: `PUT /api/v1/votes/{vote_uid}`
+**Endpoint**: `PUT /votes/{vote_uid}`
 
 **Required permission**: `writer` on `vote:{vote_uid}`
 
@@ -461,11 +461,11 @@ x-scope: manage:voting
 
 ---
 
-## DELETE /api/v1/votes/{vote_uid} (Delete Vote)
+## DELETE /votes/{vote_uid} (Delete Vote)
 
 ### LFXv2 Proxy API
 
-**Endpoint**: `DELETE /api/v1/votes/{vote_uid}`
+**Endpoint**: `DELETE /votes/{vote_uid}`
 
 **Required permission**: `writer` on `vote:{vote_uid}`
 
@@ -626,11 +626,11 @@ x-scope: manage:voting
 
 ---
 
-## POST /api/v1/votes/{vote_uid}/extend (Extend Vote)
+## POST /votes/{vote_uid}/extend (Extend Vote)
 
 ### LFXv2 Proxy API
 
-**Endpoint**: `POST /api/v1/votes/{vote_uid}/extend`
+**Endpoint**: `POST /votes/{vote_uid}/extend`
 
 **Required permission**: `writer` on `vote:{vote_uid}`
 
@@ -703,11 +703,11 @@ x-scope: manage:voting
 
 ---
 
-## PUT /api/v1/votes/{vote_uid}/enable (Enable Vote)
+## PUT /votes/{vote_uid}/enable (Enable Vote)
 
 ### LFXv2 Proxy API
 
-**Endpoint**: `PUT /api/v1/votes/{vote_uid}/enable`
+**Endpoint**: `PUT /votes/{vote_uid}/enable`
 
 **Required permission**: `writer` on `vote:{vote_uid}`
 
@@ -752,11 +752,11 @@ x-scope: manage:voting
 
 ---
 
-## POST /api/v1/votes/{vote_uid}/bulk_resend (Bulk Resend Vote Emails)
+## POST /votes/{vote_uid}/bulk_resend (Bulk Resend Vote Emails)
 
 ### LFXv2 Proxy API
 
-**Endpoint**: `POST /api/v1/votes/{vote_uid}/bulk_resend`
+**Endpoint**: `POST /votes/{vote_uid}/bulk_resend`
 
 **Required permission**: `writer` on `vote:{vote_uid}`
 
@@ -823,11 +823,11 @@ x-scope: manage:voting
 
 ---
 
-## GET /api/v1/votes/{vote_uid}/results (Get Vote Results)
+## GET /votes/{vote_uid}/results (Get Vote Results)
 
 ### LFXv2 Proxy API
 
-**Endpoint**: `GET /api/v1/votes/{vote_uid}/results`
+**Endpoint**: `GET /votes/{vote_uid}/results`
 
 **Required permission**: `results_viewer` on `vote:{vote_uid}`
 
@@ -898,11 +898,11 @@ x-scope: manage:voting
 
 ---
 
-## POST /api/v1/vote_response/{vote_response_uid} (Submit Vote Response)
+## POST /vote_responses (Submit Vote Response)
 
 ### LFXv2 Proxy API
 
-**Endpoint**: `POST /api/v1/vote_response/{vote_response_uid}`
+**Endpoint**: `POST /vote_responses`
 
 **Required permission**: `participant` on `vote:{vote_uid}` (from request body)
 
@@ -913,14 +913,11 @@ Authorization: Bearer <heimdall-jwt-token>
 Content-Type: application/json
 ```
 
-**Path Parameters**:
-
-- `vote_response_uid` (string, UUID): The vote response (ballot) identifier
-
-**Request Body** — standard choice:
+**Request Body** — standard choice (`vote_response_uid` is provided in the body, not the path):
 
 ```json
 {
+  "vote_response_uid": "vr-uuid-123",
   "vote_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
   "abstain": false,
   "user_vote_content": [
@@ -936,6 +933,7 @@ Content-Type: application/json
 
 ```json
 {
+  "vote_response_uid": "vr-uuid-123",
   "vote_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
   "abstain": false,
   "user_vote_content": [
@@ -954,6 +952,7 @@ Content-Type: application/json
 
 ```json
 {
+  "vote_response_uid": "vr-uuid-123",
   "vote_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
   "abstain": true,
   "user_vote_content": []
@@ -1006,11 +1005,11 @@ x-scope: manage:voting
 
 ---
 
-## GET /api/v1/vote_response/{vote_response_uid} (Get Vote Response)
+## GET /vote_responses/{vote_response_uid} (Get Vote Response)
 
 ### LFXv2 Proxy API
 
-**Endpoint**: `GET /api/v1/vote_response/{vote_response_uid}`
+**Endpoint**: `GET /vote_responses/{vote_response_uid}`
 
 **Required permission**: `auditor` on `vote_response:{vote_response_uid}`
 
@@ -1089,11 +1088,11 @@ x-scope: manage:voting
 
 ---
 
-## PUT /api/v1/vote_response/{vote_response_uid} (Update Vote Response)
+## PUT /vote_responses/{vote_response_uid} (Update Vote Response)
 
 ### LFXv2 Proxy API
 
-**Endpoint**: `PUT /api/v1/vote_response/{vote_response_uid}`
+**Endpoint**: `PUT /vote_responses/{vote_response_uid}`
 
 **Required permission**: `owner` on `vote_response:{vote_response_uid}`
 
@@ -1152,11 +1151,11 @@ x-scope: manage:voting
 
 ---
 
-## POST /api/v1/vote_response/{vote_response_uid}/resend (Resend Vote Email)
+## POST /vote_responses/{vote_response_uid}/resend (Resend Vote Email)
 
 ### LFXv2 Proxy API
 
-**Endpoint**: `POST /api/v1/vote_response/{vote_response_uid}/resend`
+**Endpoint**: `POST /vote_responses/{vote_response_uid}/resend`
 
 **Required permission**: `writer` on `vote:{vote_response_uid}`
 

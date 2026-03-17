@@ -283,21 +283,21 @@ The service provides the following endpoints:
 
 #### Vote Management (Polls)
 
-- `POST /api/v1/votes` - Create a new vote/poll
-- `GET /api/v1/votes/{vote_uid}` - Get vote/poll details
-- `PUT /api/v1/votes/{vote_uid}` - Update a vote/poll (only when status is "disabled")
-- `DELETE /api/v1/votes/{vote_uid}` - Delete a vote/poll (only when status is "disabled")
-- `POST /api/v1/votes/{vote_uid}/extend` - Extend a vote/poll end time
-- `POST /api/v1/votes/{vote_uid}/enable` - Enable a vote/poll for voting
-- `POST /api/v1/votes/{vote_uid}/bulk_resend` - Bulk resend vote emails to recipients
-- `GET /api/v1/votes/{vote_uid}/results` - Get aggregated vote results
+- `POST /votes` - Create a new vote/poll
+- `GET /votes/{vote_uid}` - Get vote/poll details
+- `PUT /votes/{vote_uid}` - Update a vote/poll (only when status is "disabled")
+- `DELETE /votes/{vote_uid}` - Delete a vote/poll (only when status is "disabled")
+- `POST /votes/{vote_uid}/extend` - Extend a vote/poll end time
+- `POST /votes/{vote_uid}/enable` - Enable a vote/poll for voting
+- `POST /votes/{vote_uid}/bulk_resend` - Bulk resend vote emails to recipients
+- `GET /votes/{vote_uid}/results` - Get aggregated vote results
 
 #### Vote Responses (Ballot Submissions)
 
-- `POST /api/v1/vote_response/{vote_response_uid}` - Submit a vote response
-- `GET /api/v1/vote_response/{vote_response_uid}` - Get vote response details
-- `PUT /api/v1/vote_response/{vote_response_uid}` - Update a vote response
-- `POST /api/v1/vote_response/{vote_response_uid}/resend` - Resend vote email
+- `POST /vote_responses` - Submit a vote response
+- `GET /vote_responses/{vote_response_uid}` - Get vote response details
+- `PUT /vote_responses/{vote_response_uid}` - Update a vote response
+- `POST /vote_responses/{vote_response_uid}/resend` - Resend vote email
 
 For detailed request/response schemas, authentication requirements, and examples, refer to the generated OpenAPI specification or the Goa design files.
 
