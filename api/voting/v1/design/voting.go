@@ -461,3 +461,19 @@ var _ = Service("vote", func() {
 		})
 	})
 })
+
+// Serve OpenAPI spec files for API documentation
+var _ = Service("openapi", func() {
+	Files("/_voting/openapi.json", "gen/http/openapi.json", func() {
+		Meta("swagger:generate", "false")
+	})
+	Files("/_voting/openapi.yaml", "gen/http/openapi.yaml", func() {
+		Meta("swagger:generate", "false")
+	})
+	Files("/_voting/openapi3.json", "gen/http/openapi3.json", func() {
+		Meta("swagger:generate", "false")
+	})
+	Files("/_voting/openapi3.yaml", "gen/http/openapi3.yaml", func() {
+		Meta("swagger:generate", "false")
+	})
+})

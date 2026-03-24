@@ -27,27 +27,40 @@ This service provides a proxy layer between LFXv2 clients and the legacy ITX vot
 ```text
 lfx-v2-voting-service/
 ├── api/voting/v1/design/    # Goa DSL API definitions
-├── gen/                      # Generated Goa code (auto-generated)
+├── charts/                   # Helm chart for Kubernetes deployment
+│   └── lfx-v2-voting-service/
+│       ├── templates/        # Kubernetes manifests + Heimdall ruleset
+│       ├── values.yaml       # Default Helm values
+│       └── values.local.example.yaml  # Local dev values template
 ├── cmd/voting-api/           # Application entry point
 │   ├── eventing/             # Event processing handlers
 │   ├── service/              # Request/response converters
-│   ├── api.go                # API layer (Goa interface implementation)
-│   └── main.go               # Main application
-├── internal/
-│   ├── domain/               # Domain models and interfaces
-│   ├── service/              # Business logic layer
-│   ├── infrastructure/       # External integrations
-│   │   ├── auth/             # JWT authentication
-│   │   ├── eventing/         # Event processing infrastructure
-│   │   ├── idmapper/         # ID mapping (NATS)
-│   │   └── proxy/            # ITX HTTP client
-│   ├── middleware/           # HTTP middleware
-│   └── log/                  # Logging configuration
+│   ├── api.go                # Goa interface implementation (votes)
+│   ├── api_votes.go          # Vote handler helpers
+│   ├── api_vote_responses.go # Vote response handler implementations
+│   └── main.go               # App startup and wiring
 ├── docs/                     # Documentation
-│   ├── api-contracts.md      # API contract documentation
-│   └── event-processing.md   # Event processing guide
+│   ├── api-contracts.md      # LFXv2 ↔ ITX field mappings and examples
+│   ├── event-processing.md   # NATS event flow and operational guide
+│   ├── glossary.md           # Voting-service-specific terms (ITX, SFID, v1/v2, FGA roles)
+│   └── itx-proxy-implementation.md  # Proxy architecture deep-dive
+├── gen/                      # Generated Goa code (never edit directly)
+├── internal/
+│   ├── domain/               # Interfaces and domain models
+│   │   └── models/           # Shared domain model types
+│   ├── service/              # Business logic layer
+│   │   ├── vote_service.go
+│   │   └── vote_response_service.go
+│   ├── infrastructure/       # External system integrations
+│   │   ├── auth/             # JWT authentication (Heimdall)
+│   │   ├── eventing/         # NATS event publisher
+│   │   ├── idmapper/         # NATS-based v1↔v2 ID mapping
+│   │   └── proxy/            # ITX HTTP client
+│   ├── middleware/           # HTTP middleware (auth, request ID, logger)
+│   └── log/                  # Logging configuration
 └── pkg/
     ├── constants/            # Shared constants
+    ├── models/itx/           # ITX request/response model types
     └── utils/                # Utility functions
 ```
 
@@ -57,8 +70,8 @@ lfx-v2-voting-service/
 
 - Go 1.24 or later
 - Goa CLI: `go install goa.design/goa/v3/cmd/goa@latest`
-- Access to Heimdall JWKS endpoint
-- ITX service account token
+- ITX service account credentials (see [Getting Dev Credentials](CONTRIBUTING.md#getting-dev-credentials))
+- **[lfx-platform Helm chart](https://github.com/linuxfoundation/lfx-v2-helm/tree/main/charts/lfx-platform)** — provides NATS and Heimdall for local development (optional: can be bypassed with env flags)
 
 ### Installation
 
@@ -88,7 +101,7 @@ Configure the service using environment variables:
 | `LOG_ADD_SOURCE` | Add source file/line to logs (`true`, `false`) | `false` |
 | `JWKS_URL` | Heimdall JWKS endpoint | `http://heimdall:4457/.well-known/jwks` |
 | `AUDIENCE` | JWT audience claim | `lfx-v2-voting-service` |
-| `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL` | Mock principal for local dev (disables auth) | `""` |
+| `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL` | Any non-empty string disables JWT validation and is used as the mock principal identity | `""` (disabled) |
 | `ITX_BASE_URL` | ITX API base URL | `https://api.dev.itx.linuxfoundation.org/` |
 | `ITX_AUTH0_DOMAIN` | Auth0 domain for ITX M2M auth | `linuxfoundation-dev.auth0.com` |
 | `ITX_CLIENT_ID` | OAuth2 client ID for ITX | **(required)** |
@@ -106,23 +119,46 @@ Configure the service using environment variables:
 
 See [Event Processing Documentation](docs/event-processing.md) for details.
 
-### Running Locally
+### Local Infrastructure (NATS + Heimdall)
+
+The service depends on NATS (for ID mapping and event processing) and Heimdall (for JWT validation). The easiest way to run both locally is with the [lfx-platform Helm chart](https://github.com/linuxfoundation/lfx-v2-helm/tree/main/charts/lfx-platform):
 
 ```bash
-# Set required OAuth2 credentials for ITX (using private key JWT assertion)
-export ITX_CLIENT_ID=<your-oauth2-client-id>
-export ITX_CLIENT_PRIVATE_KEY="$(cat /path/to/your/private-key.pem)"
+kubectl create namespace lfx
 
-# For local development without JWT auth
-export JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL=test-user@example.com
+# Latest version (may include breaking changes):
+helm install -n lfx lfx-platform \
+  oci://ghcr.io/linuxfoundation/lfx-v2-helm/chart/lfx-platform
 
-# For local development without NATS ID mapping service
-export ID_MAPPING_DISABLED=true
+# Pinned version (recommended for reproducible local setup):
+helm install -n lfx lfx-platform \
+  oci://ghcr.io/linuxfoundation/lfx-v2-helm/chart/lfx-platform \
+  --version <version>
+```
 
-# Run the service
-make run
+For available versions, see the [lfx-v2-helm releases](https://github.com/linuxfoundation/lfx-v2-helm/releases).
+
+This deploys NATS, Heimdall, Traefik, OpenFGA, and other platform services into your local Kubernetes cluster. Once running, the default `NATS_URL` in [.env.example](.env.example) (`nats://lfx-platform-nats.lfx.svc.cluster.local:4222`) will connect automatically.
+
+If you prefer to skip NATS and Heimdall entirely, the defaults in [.env.example](.env.example) already set `ID_MAPPING_DISABLED=true`, `EVENT_PROCESSING_ENABLED=false`, and `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL=test-user@example.com` so no cluster is required.
+
+### Running Locally
+
+Copy the example environment file and fill in your ITX credentials (see [Getting Dev Credentials](CONTRIBUTING.md#getting-dev-credentials)):
+
+```bash
+cp .env.example .env
+# edit .env and set ITX_CLIENT_ID and ITX_CLIENT_PRIVATE_KEY
+```
+
+Then source it and run:
+
+```bash
+source .env && make run
 make debug # or run with debug log level
 ```
+
+The defaults in [.env.example](.env.example) already set `JWT_AUTH_DISABLED_MOCK_LOCAL_PRINCIPAL=test-user@example.com`, `ID_MAPPING_DISABLED=true`, and `EVENT_PROCESSING_ENABLED=false` so you don't need a running Heimdall or NATS instance for local development.
 
 The service will start on `http://localhost:8080`
 
@@ -135,33 +171,60 @@ docker build -t lfx-v2-voting-service .
 # Run the container
 docker run -p 8080:8080 \
   -e ITX_CLIENT_ID=<your-client-id> \
-  -e ITX_CLIENT_SECRET=<your-client-secret> \
+  -e ITX_CLIENT_PRIVATE_KEY="$(cat /path/to/your/private-key.pem)" \
   lfx-v2-voting-service
 ```
 
 ### Deploying with Helm
 
-The service includes Helm charts for Kubernetes deployment.
+The service includes a Helm chart for Kubernetes deployment.
 
-#### Install with production values
+#### Prerequisites: Kubernetes Secret
+
+Regardless of which install method you use, first create the `lfx-v2-voting-service` secret in the `lfx` namespace. The `ITX_CLIENT_ID` and `ITX_CLIENT_PRIVATE_KEY` values are in 1Password under the **LFX V2** vault, in the note **LFX V2 Voting Service Env Vars**.
+
+```bash
+# Create the namespace if it doesn't exist
+kubectl create namespace lfx
+
+kubectl create secret generic lfx-v2-voting-service -n lfx \
+  --from-literal=ITX_CLIENT_ID="<client-id-from-1password>" \
+  --from-file=ITX_CLIENT_PRIVATE_KEY=/path/to/your/private.key
+```
+
+#### Option 1: Install from GHCR (no local build needed)
+
+Use this when you just want to run the service without making code changes:
 
 ```bash
 make helm-install
 ```
 
-#### Install with local development values
+#### Option 2: Install from Local Build (for active development)
+
+Use this when making code changes and testing them in Kubernetes. The chart uses `pullPolicy: Never` and pulls from the local image `linuxfoundation/lfx-v2-voting-service`.
+
+First, copy the example local values file and fill in any overrides you need:
 
 ```bash
+cp charts/lfx-v2-voting-service/values.local.example.yaml \
+   charts/lfx-v2-voting-service/values.local.yaml
+```
+
+Then build the image and install. Re-run `make docker-build` whenever you want to pick up new changes:
+
+```bash
+make docker-build
 make helm-install-local
 ```
 
-#### Preview Helm templates
+#### Preview Helm Templates
 
 ```bash
-# With production values
+# With default values
 make helm-templates
 
-# With local values
+# With local values override
 make helm-templates-local
 ```
 
@@ -170,22 +233,6 @@ make helm-templates-local
 ```bash
 make helm-uninstall
 ```
-
-#### Helm Configuration
-
-- **Chart location**: `charts/lfx-v2-voting-service/`
-- **Production values**: `charts/lfx-v2-voting-service/values.yaml`
-- **Local values**: `charts/lfx-v2-voting-service/values.local.yaml`
-
-The Helm chart includes:
-
-- Kubernetes Deployment with health checks
-- ClusterIP Service
-- ServiceAccount with RBAC
-- HTTPRoute (Gateway API) for Traefik ingress
-- Heimdall middleware for authentication
-- Heimdall RuleSet for authorization rules
-- OpenFGA integration (optional)
 
 ## API Documentation
 
@@ -217,14 +264,12 @@ To view the interactive Swagger UI documentation:
 
 1. **Generate the OpenAPI spec**: `make apigen`
 2. **Start the service**: `make run`
-3. **Access Swagger UI**: Use a tool like [Swagger Editor](https://editor.swagger.io/) and import `gen/http/openapi.yaml`
+3. **Access Swagger UI**: Import `gen/http/openapi.yaml` into [Swagger Editor](https://editor.swagger.io/)
 
-Alternatively, you can serve the Swagger UI locally:
+Or browse the deployed docs directly:
 
-```bash
-# Using npx and swagger-ui-watcher
-npx swagger-ui-watcher gen/http/openapi.yaml
-```
+- **Dev**: [lfx-api.dev.v2.cluster.linuxfound.info/docs](https://lfx-api.dev.v2.cluster.linuxfound.info/docs/#/)
+- **Production**: [lfx-api.v2.cluster.lfx.dev/docs](https://lfx-api.v2.cluster.lfx.dev/docs/#/)
 
 ### Available Endpoints
 
@@ -238,21 +283,21 @@ The service provides the following endpoints:
 
 #### Vote Management (Polls)
 
-- `POST /api/v1/votes` - Create a new vote/poll
-- `GET /api/v1/votes/{vote_uid}` - Get vote/poll details
-- `PUT /api/v1/votes/{vote_uid}` - Update a vote/poll (only when status is "disabled")
-- `DELETE /api/v1/votes/{vote_uid}` - Delete a vote/poll (only when status is "disabled")
-- `POST /api/v1/votes/{vote_uid}/extend` - Extend a vote/poll end time
-- `POST /api/v1/votes/{vote_uid}/enable` - Enable a vote/poll for voting
-- `POST /api/v1/votes/{vote_uid}/bulk_resend` - Bulk resend vote emails to recipients
-- `GET /api/v1/votes/{vote_uid}/results` - Get aggregated vote results
+- `POST /votes` - Create a new vote/poll
+- `GET /votes/{vote_uid}` - Get vote/poll details
+- `PUT /votes/{vote_uid}` - Update a vote/poll (only when status is "disabled")
+- `DELETE /votes/{vote_uid}` - Delete a vote/poll (only when status is "disabled")
+- `POST /votes/{vote_uid}/extend` - Extend a vote/poll end time
+- `POST /votes/{vote_uid}/enable` - Enable a vote/poll for voting
+- `POST /votes/{vote_uid}/bulk_resend` - Bulk resend vote emails to recipients
+- `GET /votes/{vote_uid}/results` - Get aggregated vote results
 
 #### Vote Responses (Ballot Submissions)
 
-- `POST /api/v1/vote_response/{vote_response_uid}` - Submit a vote response
-- `GET /api/v1/vote_response/{vote_response_uid}` - Get vote response details
-- `PUT /api/v1/vote_response/{vote_response_uid}` - Update a vote response
-- `POST /api/v1/vote_response/{vote_response_uid}/resend` - Resend vote email
+- `POST /vote_responses` - Submit a vote response
+- `GET /vote_responses/{vote_response_uid}` - Get vote response details
+- `PUT /vote_responses/{vote_response_uid}` - Update a vote response
+- `POST /vote_responses/{vote_response_uid}/resend` - Resend vote email
 
 For detailed request/response schemas, authentication requirements, and examples, refer to the generated OpenAPI specification or the Goa design files.
 

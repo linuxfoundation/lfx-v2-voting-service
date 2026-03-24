@@ -7,7 +7,7 @@ image:
   tag: ""  # Overrides appVersion from Chart.yaml
   pullPolicy: IfNotPresent
 
-replicaCount: 3
+replicaCount: 1
 
 # podAnnotations are additional annotations applied to the pod template.
 # Example:
@@ -144,7 +144,7 @@ heimdall:
 # External Secrets Operator
 externalSecretsOperator:
   # Enable/disable External Secrets Operator integration
-  enabled: true
+  enabled: false
 
   # ExternalSecret configuration
   externalSecret:

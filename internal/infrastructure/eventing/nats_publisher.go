@@ -116,6 +116,14 @@ func (p *NATSPublisher) sendVoteIndexerMessage(ctx context.Context, subject stri
 		parentRefs = append(parentRefs, fmt.Sprintf("committee:%s", data.CommitteeUID))
 	}
 
+	tags := []string{}
+	if data.CommitteeUID != "" {
+		tags = append(tags, fmt.Sprintf("committee_uid:%s", data.CommitteeUID))
+	}
+	if data.ProjectUID != "" {
+		tags = append(tags, fmt.Sprintf("project_uid:%s", data.ProjectUID))
+	}
+
 	indexingConfig := &indexerTypes.IndexingConfig{
 		ObjectID:             data.VoteUID,
 		AccessCheckObject:    fmt.Sprintf("vote:%s", data.VoteUID),
@@ -126,6 +134,7 @@ func (p *NATSPublisher) sendVoteIndexerMessage(ctx context.Context, subject stri
 		NameAndAliases:       nameAndAliases,
 		ParentRefs:           parentRefs,
 		Fulltext:             fmt.Sprintf("%s %s", data.Name, data.Description),
+		Tags:                 tags,
 	}
 
 	if action == indexerConstants.ActionDeleted {
@@ -190,6 +199,14 @@ func (p *NATSPublisher) sendVoteResponseIndexerMessage(ctx context.Context, subj
 		parentRefs = append(parentRefs, fmt.Sprintf("vote:%s", data.VoteUID))
 	}
 
+	tags := []string{}
+	if data.VoteUID != "" {
+		tags = append(tags, fmt.Sprintf("vote_uid:%s", data.VoteUID))
+	}
+	if data.ProjectUID != "" {
+		tags = append(tags, fmt.Sprintf("project_uid:%s", data.ProjectUID))
+	}
+
 	indexingConfig := &indexerTypes.IndexingConfig{
 		ObjectID:             data.UID,
 		AccessCheckObject:    fmt.Sprintf("vote:%s", data.VoteUID),
@@ -200,6 +217,7 @@ func (p *NATSPublisher) sendVoteResponseIndexerMessage(ctx context.Context, subj
 		NameAndAliases:       nameAndAliases,
 		ParentRefs:           parentRefs,
 		Fulltext:             data.Username,
+		Tags:                 tags,
 	}
 
 	if action == indexerConstants.ActionDeleted {
