@@ -85,39 +85,6 @@ Each element in `poll_questions` has:
 | `history_check_object` | `vote:{vote_uid}` |
 | `history_check_relation` | `auditor` |
 
-### FGA Access Message
-
-Published to `lfx.fga-sync.update_access` on create/update. Skipped when both `project_uid` and `committee_uid` are empty.
-
-```json
-{
-  "object_type": "vote",
-  "operation": "update_access",
-  "data": {
-    "uid": "<vote_uid>",
-    "public": false,
-    "references": {
-      "project": ["<project_uid>"],
-      "committee": ["<committee_uid>"]
-    }
-  }
-}
-```
-
-> `references.project` is only included when `project_uid` is non-empty; `references.committee` is only included when `committee_uid` is non-empty.
-
-On delete, a `lfx.fga-sync.delete_access` message is sent instead:
-
-```json
-{
-  "object_type": "vote",
-  "operation": "delete_access",
-  "data": {
-    "uid": "<vote_uid>"
-  }
-}
-```
-
 ### Search Behavior
 
 | Field | Value |
@@ -216,43 +183,6 @@ Each element in `poll_answers` has:
 | `history_check_relation` | `auditor` |
 
 > Note: access checks are scoped to the parent vote object, not the response itself.
-
-### FGA Access Message
-
-Published to `lfx.fga-sync.update_access` on create/update. Skipped when both relations and references are empty.
-
-```json
-{
-  "object_type": "vote_response",
-  "operation": "update_access",
-  "data": {
-    "uid": "<uid>",
-    "public": false,
-    "relations": {
-      "writer": ["<username>"],
-      "viewer": ["<username>"]
-    },
-    "references": {
-      "project": ["<project_uid>"],
-      "vote": ["<vote_uid>"]
-    }
-  }
-}
-```
-
-> `relations` entries are only included when `username` is non-empty. Reference entries are only included when their corresponding UID is non-empty.
-
-On delete, a `lfx.fga-sync.delete_access` message is sent instead:
-
-```json
-{
-  "object_type": "vote_response",
-  "operation": "delete_access",
-  "data": {
-    "uid": "<uid>"
-  }
-}
-```
 
 ### Search Behavior
 
