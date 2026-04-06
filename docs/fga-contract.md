@@ -1,0 +1,107 @@
+# FGA Contract — Voting Service
+
+This document is the authoritative reference for all messages the voting service sends to the fga-sync service, which writes and deletes [OpenFGA](https://openfga.dev/) relationship tuples to enforce access control.
+
+The full OpenFGA type definitions (relations, schema) for all object types are defined in the [platform model](https://github.com/linuxfoundation/lfx-v2-helm/blob/main/charts/lfx-platform/templates/openfga/model.yaml).
+
+**Update this document in the same PR as any change to FGA message construction.**
+
+---
+
+## Object Types
+
+- [Vote](#vote)
+- [Vote Response](#vote-response)
+
+---
+
+## Message Format
+
+All messages use the generic FGA message format on the following NATS subjects:
+
+| Subject | Used for |
+|---|---|
+| `lfx.fga-sync.update_access` | Create and update operations |
+| `lfx.fga-sync.delete_access` | Delete operations |
+
+Each message carries `object_type`, `operation`, and a `data` map. The sections below describe the `data` contents for each object type.
+
+---
+
+## Vote
+
+**Source struct:** `internal/domain/` — `VoteData`
+
+**Synced on:** create, update, delete of a vote (poll).
+
+### Access Config
+
+| Field | Value |
+|---|---|
+| `object_type` | `vote` |
+| `public` | `false` (always) |
+
+### Relations
+
+_(none set by this service)_
+
+### References
+
+| Reference | Value | Condition |
+|---|---|---|
+| `project` | `ProjectUID` | Only when `ProjectUID` is non-empty |
+| `committee` | `CommitteeUID` | Only when `CommitteeUID` is non-empty |
+
+> The update message is skipped entirely if both `ProjectUID` and `CommitteeUID` are empty.
+
+### Delete
+
+On delete, only `uid` is sent — all FGA tuples for `vote:{uid}` are removed by the fga-sync service.
+
+---
+
+## Vote Response
+
+**Source struct:** `internal/domain/` — `VoteResponseData`
+
+**Synced on:** create, update, delete of a vote response.
+
+### Access Config
+
+| Field | Value |
+|---|---|
+| `object_type` | `vote_response` |
+| `public` | `false` (always) |
+
+### Relations
+
+| Relation | Value | Condition |
+|---|---|---|
+| `writer` | `Username` (Auth0 `sub`) | Only when `Username` is non-empty |
+| `viewer` | `Username` (Auth0 `sub`) | Only when `Username` is non-empty |
+
+### References
+
+| Reference | Value | Condition |
+|---|---|---|
+| `project` | `ProjectUID` | Only when `ProjectUID` is non-empty |
+| `vote` | `VoteUID` | Only when `VoteUID` is non-empty |
+
+> The update message is skipped entirely if `Username`, `ProjectUID`, and `VoteUID` are all empty.
+
+### Delete
+
+On delete, only `uid` is sent — all FGA tuples for `vote_response:{uid}` are removed by the fga-sync service.
+
+---
+
+## Triggers
+
+| Operation | Object Type | Subject | Notes |
+|---|---|---|---|
+| Create vote | `vote` | `lfx.fga-sync.update_access` | Skipped if both `ProjectUID` and `CommitteeUID` are empty |
+| Update vote | `vote` | `lfx.fga-sync.update_access` | Skipped if both `ProjectUID` and `CommitteeUID` are empty |
+| Delete vote | `vote` | `lfx.fga-sync.delete_access` | Always sent |
+| Create vote response | `vote_response` | `lfx.fga-sync.update_access` | Skipped if `Username`, `ProjectUID`, and `VoteUID` are all empty |
+| Update vote response | `vote_response` | `lfx.fga-sync.update_access` | Skipped if `Username`, `ProjectUID`, and `VoteUID` are all empty |
+| Delete vote response | `vote_response` | `lfx.fga-sync.delete_access` | Always sent |
