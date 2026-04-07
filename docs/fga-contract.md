@@ -77,8 +77,8 @@ On delete, only `uid` is sent — all FGA tuples for `vote:{uid}` are removed by
 
 | Relation | Value | Condition |
 |---|---|---|
-| `writer` | `Username` (Auth0 `sub`) | Only when `Username` is non-empty |
-| `viewer` | `Username` (Auth0 `sub`) | Only when `Username` is non-empty |
+| `writer` | `Username` (Auth0 username) | Only when `Username` is non-empty |
+| `viewer` | `Username` (Auth0 username) | Only when `Username` is non-empty |
 
 ### References
 
