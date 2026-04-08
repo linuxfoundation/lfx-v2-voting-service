@@ -17,6 +17,8 @@ The voting service is a **wrapper service** — it ingests data from the legacy 
 
 ## Vote (Poll)
 
+**Object type:** `vote`
+
 **Source struct:** `internal/domain/event_models.go` — `VoteData`
 
 **Publisher:** `internal/infrastructure/eventing/nats_publisher.go` — `sendVoteIndexerMessage`
@@ -104,6 +106,8 @@ Each element in `poll_questions` has:
 ---
 
 ## Vote Response
+
+**Object type:** `vote_response`
 
 **Source struct:** `internal/domain/event_models.go` — `VoteResponseData`
 
