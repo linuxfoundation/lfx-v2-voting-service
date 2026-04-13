@@ -43,6 +43,7 @@ lfx-v2-voting-service/
 │   ├── api-contracts.md      # LFXv2 ↔ ITX field mappings and examples
 │   ├── event-processing.md   # NATS event flow and operational guide
 │   ├── glossary.md           # Voting-service-specific terms (ITX, SFID, v1/v2, FGA roles)
+│   ├── indexer-contract.md   # Authoritative schema for data sent to the indexer service
 │   └── itx-proxy-implementation.md  # Proxy architecture deep-dive
 ├── gen/                      # Generated Goa code (never edit directly)
 ├── internal/
