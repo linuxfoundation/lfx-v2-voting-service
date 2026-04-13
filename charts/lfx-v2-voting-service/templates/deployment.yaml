@@ -14,7 +14,6 @@ spec:
   selector:
     matchLabels:
       app: {{ .Chart.Name }}
-      app.kubernetes.io/name: {{ .Chart.Name }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
