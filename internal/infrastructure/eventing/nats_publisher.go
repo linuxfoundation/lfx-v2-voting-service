@@ -11,6 +11,8 @@ import (
 
 	indexerConstants "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/constants"
 	indexerTypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
+	fgaconstants "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/constants"
+	fgatypes "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"github.com/nats-io/nats.go"
@@ -23,20 +25,7 @@ const (
 
 	// IndexVoteResponseSubject is the subject for vote response indexing
 	IndexVoteResponseSubject = "lfx.index.vote_response"
-
-	// UpdateAccessSubject is the subject for FGA access control updates
-	UpdateAccessSubject = "lfx.fga-sync.update_access"
-
-	// DeleteAccessSubject is the subject for FGA access control deletions
-	DeleteAccessSubject = "lfx.fga-sync.delete_access"
 )
-
-// GenericFGAMessage represents a generic FGA message
-type GenericFGAMessage struct {
-	ObjectType string                 `json:"object_type"`
-	Operation  string                 `json:"operation"`
-	Data       map[string]interface{} `json:"data"`
-}
 
 // NATSPublisher implements the EventPublisher interface
 type NATSPublisher struct {
@@ -160,13 +149,13 @@ func (p *NATSPublisher) sendVoteAccessMessage(vote *domain.VoteData) error {
 		return nil
 	}
 
-	accessMsg := GenericFGAMessage{
+	accessMsg := fgatypes.GenericFGAMessage{
 		ObjectType: "vote",
 		Operation:  "update_access",
-		Data: map[string]interface{}{
-			"uid":        vote.VoteUID,
-			"public":     false,
-			"references": references,
+		Data: fgatypes.GenericAccessData{
+			UID:        vote.VoteUID,
+			Public:     false,
+			References: references,
 		},
 	}
 
@@ -176,8 +165,8 @@ func (p *NATSPublisher) sendVoteAccessMessage(vote *domain.VoteData) error {
 	}
 
 	// Publish the message to NATS
-	if err := p.conn.Publish(UpdateAccessSubject, accessMsgBytes); err != nil {
-		return fmt.Errorf("failed to publish access message to subject %s: %w", UpdateAccessSubject, err)
+	if err := p.conn.Publish(fgaconstants.GenericUpdateAccessSubject, accessMsgBytes); err != nil {
+		return fmt.Errorf("failed to publish access message to subject %s: %w", fgaconstants.GenericUpdateAccessSubject, err)
 	}
 
 	return nil
@@ -248,14 +237,14 @@ func (p *NATSPublisher) sendVoteResponseAccessMessage(data *domain.VoteResponseD
 		return nil
 	}
 
-	accessMsg := GenericFGAMessage{
+	accessMsg := fgatypes.GenericFGAMessage{
 		ObjectType: "vote_response",
 		Operation:  "update_access",
-		Data: map[string]interface{}{
-			"uid":        data.UID,
-			"public":     false,
-			"relations":  relations,
-			"references": references,
+		Data: fgatypes.GenericAccessData{
+			UID:        data.UID,
+			Public:     false,
+			Relations:  relations,
+			References: references,
 		},
 	}
 
@@ -265,8 +254,8 @@ func (p *NATSPublisher) sendVoteResponseAccessMessage(data *domain.VoteResponseD
 	}
 
 	// Publish the message to NATS
-	if err := p.conn.Publish(UpdateAccessSubject, accessMsgBytes); err != nil {
-		return fmt.Errorf("failed to publish access message to subject %s: %w", UpdateAccessSubject, err)
+	if err := p.conn.Publish(fgaconstants.GenericUpdateAccessSubject, accessMsgBytes); err != nil {
+		return fmt.Errorf("failed to publish access message to subject %s: %w", fgaconstants.GenericUpdateAccessSubject, err)
 	}
 
 	return nil
@@ -276,12 +265,10 @@ func (p *NATSPublisher) sendVoteResponseAccessMessage(data *domain.VoteResponseD
 // This removes all tuples for a resource (typically used when a resource is deleted)
 func (p *NATSPublisher) sendDeleteAccessMessage(objectType string, uid string) error {
 	// Construct delete access message
-	deleteMsg := GenericFGAMessage{
+	deleteMsg := fgatypes.GenericFGAMessage{
 		ObjectType: objectType,
 		Operation:  "delete_access",
-		Data: map[string]interface{}{
-			"uid": uid,
-		},
+		Data:       fgatypes.GenericDeleteData{UID: uid},
 	}
 
 	deleteMsgBytes, err := json.Marshal(deleteMsg)
@@ -290,8 +277,8 @@ func (p *NATSPublisher) sendDeleteAccessMessage(objectType string, uid string) e
 	}
 
 	// Publish the message to NATS
-	if err := p.conn.Publish(DeleteAccessSubject, deleteMsgBytes); err != nil {
-		return fmt.Errorf("failed to publish delete access message to subject %s: %w", DeleteAccessSubject, err)
+	if err := p.conn.Publish(fgaconstants.GenericDeleteAccessSubject, deleteMsgBytes); err != nil {
+		return fmt.Errorf("failed to publish delete access message to subject %s: %w", fgaconstants.GenericDeleteAccessSubject, err)
 	}
 
 	return nil
