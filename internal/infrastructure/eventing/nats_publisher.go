@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"log/slog"
 
-	indexerConstants "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/constants"
-	indexerTypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
 	fgaconstants "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/constants"
 	fgatypes "github.com/linuxfoundation/lfx-v2-fga-sync/pkg/types"
+	indexerConstants "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/constants"
+	indexerTypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"github.com/nats-io/nats.go"
