@@ -587,6 +587,7 @@ To add processing for new entity types:
 
 ## References
 
+- [Indexer Contract](indexer-contract.md) - Authoritative schema reference for all data sent to the indexer
 - [NATS JetStream Documentation](https://docs.nats.io/nats-concepts/jetstream)
 - [NATS KV Store Guide](https://docs.nats.io/nats-concepts/jetstream/key-value-store)
 - [OpenFGA Authorization](https://openfga.dev/)
