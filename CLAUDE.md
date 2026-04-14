@@ -97,6 +97,7 @@ Dependencies flow inward. Never import infrastructure from service or domain.
 - [README.md](README.md) — full env var reference, architecture overview, running locally
 - [docs/api-contracts.md](docs/api-contracts.md) — LFXv2 ↔ ITX field mappings, request/response examples
 - [docs/event-processing.md](docs/event-processing.md) — NATS event flow, deduplication logic, operational commands
+- [docs/indexer-contract.md](docs/indexer-contract.md) — authoritative schema for data sent to the indexer service
 - [docs/itx-proxy-implementation.md](docs/itx-proxy-implementation.md) — proxy layer deep-dive with code examples
 - [docs/glossary.md](docs/glossary.md) — voting-service-specific terms (ITX, SFID, v1/v2, FGA roles, etc.)
 - [CONTRIBUTING.md](CONTRIBUTING.md) — branch naming, PR process, commit conventions
