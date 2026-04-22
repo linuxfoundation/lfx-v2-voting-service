@@ -100,6 +100,6 @@ On delete, only `uid` is sent — all FGA tuples for `vote_response:{uid}` are r
 | Create vote | `vote` | `lfx.fga-sync.update_access` | Skipped if both `ProjectUID` and `CommitteeUID` are empty |
 | Update vote | `vote` | `lfx.fga-sync.update_access` | Skipped if both `ProjectUID` and `CommitteeUID` are empty |
 | Delete vote | `vote` | `lfx.fga-sync.delete_access` | Always sent |
-| Create vote response | `vote_response` | `lfx.fga-sync.update_access` | Skipped if `Username`, `ProjectUID`, and `VoteUID` are all empty |
-| Update vote response | `vote_response` | `lfx.fga-sync.update_access` | Skipped if `Username`, `ProjectUID`, and `VoteUID` are all empty |
+| Create vote response | `vote_response` | `lfx.fga-sync.update_access` | Skipped if `Username` and `VoteUID` are both empty |
+| Update vote response | `vote_response` | `lfx.fga-sync.update_access` | Skipped if `Username` and `VoteUID` are both empty |
 | Delete vote response | `vote_response` | `lfx.fga-sync.delete_access` | Always sent |
