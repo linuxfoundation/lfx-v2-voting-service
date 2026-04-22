@@ -77,17 +77,15 @@ On delete, only `uid` is sent — all FGA tuples for `vote:{uid}` are removed by
 
 | Relation | Value | Condition |
 |---|---|---|
-| `writer` | `Username` (Auth0 username) | Only when `Username` is non-empty |
-| `viewer` | `Username` (Auth0 username) | Only when `Username` is non-empty |
+| `owner` | `Username` (Auth0 username) | Only when `Username` is non-empty |
 
 ### References
 
 | Reference | Value | Condition |
 |---|---|---|
-| `project` | `ProjectUID` | Only when `ProjectUID` is non-empty |
 | `vote` | `VoteUID` | Only when `VoteUID` is non-empty |
 
-> The update message is skipped entirely if `Username`, `ProjectUID`, and `VoteUID` are all empty.
+> The update message is skipped entirely if `Username` and `VoteUID` are both empty.
 
 ### Delete
 
@@ -102,6 +100,6 @@ On delete, only `uid` is sent — all FGA tuples for `vote_response:{uid}` are r
 | Create vote | `vote` | `lfx.fga-sync.update_access` | Skipped if both `ProjectUID` and `CommitteeUID` are empty |
 | Update vote | `vote` | `lfx.fga-sync.update_access` | Skipped if both `ProjectUID` and `CommitteeUID` are empty |
 | Delete vote | `vote` | `lfx.fga-sync.delete_access` | Always sent |
-| Create vote response | `vote_response` | `lfx.fga-sync.update_access` | Skipped if `Username`, `ProjectUID`, and `VoteUID` are all empty |
-| Update vote response | `vote_response` | `lfx.fga-sync.update_access` | Skipped if `Username`, `ProjectUID`, and `VoteUID` are all empty |
+| Create vote response | `vote_response` | `lfx.fga-sync.update_access` | Skipped if `Username` and `VoteUID` are both empty |
+| Update vote response | `vote_response` | `lfx.fga-sync.update_access` | Skipped if `Username` and `VoteUID` are both empty |
 | Delete vote response | `vote_response` | `lfx.fga-sync.delete_access` | Always sent |

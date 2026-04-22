@@ -220,14 +220,10 @@ func (p *NATSPublisher) sendVoteResponseIndexerMessage(ctx context.Context, subj
 func (p *NATSPublisher) sendVoteResponseAccessMessage(data *domain.VoteResponseData) error {
 	relations := map[string][]string{}
 	if data.Username != "" {
-		relations["writer"] = []string{data.Username}
-		relations["viewer"] = []string{data.Username}
+		relations["owner"] = []string{data.Username}
 	}
 
 	references := map[string][]string{}
-	if data.ProjectUID != "" {
-		references["project"] = []string{data.ProjectUID}
-	}
 	if data.VoteUID != "" {
 		references["vote"] = []string{data.VoteUID}
 	}

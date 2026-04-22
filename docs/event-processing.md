@@ -148,7 +148,7 @@ The voting service implements NATS KV bucket event processing to automatically s
 - `poll_id` → `vote_uid` (parent reference)
 - Integer ranked choice ranks
 - Mapped project UIDs
-- User-specific permissions (writer/viewer)
+- User-specific permissions (owner)
 
 **Example Ranked Choice Transformation**:
 
