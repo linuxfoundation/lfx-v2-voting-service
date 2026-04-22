@@ -1157,7 +1157,7 @@ x-scope: manage:voting
 
 **Endpoint**: `POST /vote_responses/{vote_response_uid}/resend`
 
-**Required permission**: `writer` on `vote:{vote_response_uid}`
+**Required permission**: `owner` on `vote_response:{vote_response_uid}`
 
 **Headers**:
 
