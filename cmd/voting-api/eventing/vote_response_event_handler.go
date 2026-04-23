@@ -23,6 +23,7 @@ func handleVoteResponseUpdate(
 	v1Data map[string]interface{},
 	publisher domain.EventPublisher,
 	idMapper domain.IDMapper,
+	userLookup domain.V1UserLookup,
 	mappingsKV jetstream.KeyValue,
 	logger *slog.Logger,
 ) bool {
@@ -54,6 +55,22 @@ func handleVoteResponseUpdate(
 	if _, err := mappingsKV.Get(ctx, voteMappingKey); err != nil {
 		funcLogger.With(errKey, err).InfoContext(ctx, "parent vote not found in mappings, will retry vote response sync")
 		return true // NAK for retry - parent vote hasn't been processed yet
+	}
+
+	// Translate v1 username to Auth0 subject for FGA owner relation
+	if voteResponseData.Username != "" {
+		authSub, err := userLookup.MapUsernameToAuthSub(ctx, voteResponseData.Username)
+		if err != nil {
+			if isTransientError(err) {
+				funcLogger.With(errKey, err).WarnContext(ctx, "transient error resolving auth sub for vote response, will retry")
+				return true // NAK for retry
+			}
+			// Non-transient: log and clear username so FGA owner relation is skipped rather than written incorrectly
+			funcLogger.With(errKey, err).WarnContext(ctx, "failed to resolve auth sub for vote response username, skipping owner relation")
+			voteResponseData.Username = ""
+		} else {
+			voteResponseData.Username = authSub
+		}
 	}
 
 	// Determine action (created vs updated) by checking if mapping exists

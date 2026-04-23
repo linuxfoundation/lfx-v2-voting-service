@@ -174,7 +174,8 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, logger)
+		userLookup := &mockUserLookup{authSub: "auth0|testuser"}
+		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, userLookup, mappingsKV, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
@@ -194,7 +195,8 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, logger)
+		userLookup := &mockUserLookup{authSub: "auth0|testuser"}
+		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, userLookup, mappingsKV, logger)
 
 		assert.False(t, shouldRetry) // Permanent error, ACK
 		assert.Len(t, mockPublisher.publishedVoteResponses, 0)
@@ -221,7 +223,8 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-999", v1Data, mockPublisher, idMapper, mappingsKV, logger)
+		userLookup := &mockUserLookup{authSub: "auth0|testuser"}
+		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-999", v1Data, mockPublisher, idMapper, userLookup, mappingsKV, logger)
 
 		assert.True(t, shouldRetry) // Retry - parent vote not yet processed
 		assert.Len(t, mockPublisher.publishedVoteResponses, 0)
@@ -244,7 +247,8 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, logger)
+		userLookup := &mockUserLookup{authSub: "auth0|testuser"}
+		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, userLookup, mappingsKV, logger)
 
 		assert.False(t, shouldRetry) // Permanent error, ACK
 		assert.Len(t, mockPublisher.publishedVoteResponses, 0)
@@ -273,7 +277,8 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, logger)
+		userLookup := &mockUserLookup{authSub: "auth0|testuser"}
+		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, userLookup, mappingsKV, logger)
 
 		assert.True(t, shouldRetry) // Transient error, NAK for retry
 	})

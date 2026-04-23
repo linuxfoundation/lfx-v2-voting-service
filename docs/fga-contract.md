@@ -77,7 +77,7 @@ On delete, only `uid` is sent — all FGA tuples for `vote:{uid}` are removed by
 
 | Relation | Value | Condition |
 |---|---|---|
-| `owner` | `Username` (Auth0 username) | Only when `Username` is non-empty |
+| `owner` | Auth0 subject (resolved from v1 username via `lfx.auth-service.username_to_sub`) | Only when `Username` is non-empty and resolves successfully |
 
 ### References
 

@@ -38,6 +38,16 @@ func (m *mockEventPublisher) Close() error {
 	return nil
 }
 
+// mockUserLookup is a mock implementation of V1UserLookup for testing
+type mockUserLookup struct {
+	authSub string
+	err     error
+}
+
+func (m *mockUserLookup) MapUsernameToAuthSub(_ context.Context, _ string) (string, error) {
+	return m.authSub, m.err
+}
+
 func TestConvertMapToVoteData(t *testing.T) {
 	logging.InitStructureLogConfig()
 
