@@ -27,6 +27,7 @@ type EventProcessor struct {
 	consumeCtx jetstream.ConsumeContext
 	publisher  domain.EventPublisher
 	idMapper   domain.IDMapper
+	userLookup domain.V1UserLookup
 	mappingsKV jetstream.KeyValue
 	logger     *slog.Logger
 	config     eventing.Config
@@ -66,6 +67,9 @@ func NewEventProcessor(
 	// Initialize publisher
 	publisher := eventing.NewNATSPublisher(conn, logger)
 
+	// Initialize user lookup for translating v1 usernames to Auth0 subjects
+	userLookup := eventing.NewNATSUserLookup(conn, logger)
+
 	// Access the V1 mappings KV bucket
 	mappingsKV, err := jsContext.KeyValue(context.Background(), V1MappingsBucket)
 	if err != nil {
@@ -78,6 +82,7 @@ func NewEventProcessor(
 		jsInstance: jsContext,
 		publisher:  publisher,
 		idMapper:   idMapper,
+		userLookup: userLookup,
 		mappingsKV: mappingsKV,
 		logger:     logger,
 		config:     cfg,
@@ -107,7 +112,7 @@ func (ep *EventProcessor) Start(ctx context.Context) error {
 
 	// Start consuming messages
 	consumeCtx, err := consumer.Consume(func(msg jetstream.Msg) {
-		kvMessageHandler(ctx, msg, ep.publisher, ep.idMapper, ep.mappingsKV, ep.logger)
+		kvMessageHandler(ctx, msg, ep.publisher, ep.idMapper, ep.userLookup, ep.mappingsKV, ep.logger)
 	}, jetstream.ConsumeErrHandler(func(_ jetstream.ConsumeContext, err error) {
 		ep.logger.With("error", err).Error("KV consumer error encountered")
 	}))
