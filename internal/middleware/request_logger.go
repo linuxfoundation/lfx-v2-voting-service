@@ -31,7 +31,7 @@ func RequestLoggerMiddleware() func(http.Handler) http.Handler {
 				ctx = logging.AppendCtx(ctx, slog.String("req_header_etag", r.Header.Get(constants.EtagHeader)))
 			}
 
-			isHealthCheck := r.URL.Path == "/health" || r.URL.Path == "/livez" || r.URL.Path == "/readyz"
+			isHealthCheck := constants.IsHealthCheckPath(r.URL.Path)
 
 			// Create a new request with the updated context
 			r = r.WithContext(ctx)
