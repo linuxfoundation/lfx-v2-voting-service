@@ -25,6 +25,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/middleware"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/service"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	goahttp "goa.design/goa/v3/http"
 )
@@ -196,8 +197,7 @@ func run() int {
 	handler = middleware.AuthorizationMiddleware()(handler)
 	handler = otelhttp.NewHandler(handler, "voting-service",
 		otelhttp.WithFilter(func(r *http.Request) bool {
-			p := r.URL.Path
-			return p != "/health" && p != "/livez" && p != "/readyz"
+			return !constants.IsHealthCheckPath(r.URL.Path)
 		}),
 	)
 
