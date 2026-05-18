@@ -36,5 +36,4 @@ Terms specific to the LFX Voting Service. For general platform terms (Goa, NATS,
 | **viewer** | OpenFGA relation that grants read access to vote details (`GET /votes/{id}`). |
 | **results_viewer** | OpenFGA relation that grants access to aggregated vote results (`GET /votes/{id}/results`). Separate from `viewer` so results can be restricted independently. |
 | **auditor** | OpenFGA relation that grants access to individual vote response details (`GET /vote_responses/{id}`), including SES delivery tracking. |
-| **participant** | OpenFGA relation that allows a user to submit a vote response (`POST /vote_responses`). Granted to invited voters. |
-| **owner** | OpenFGA relation that allows a user to update their own vote response (`PUT /vote_responses/{id}`). |
+| **owner** | OpenFGA relation that allows a user to submit (`POST /vote_responses`) or update (`PUT /vote_responses/{id}`) their own vote response. |
