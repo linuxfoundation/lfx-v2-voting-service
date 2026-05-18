@@ -563,7 +563,7 @@ Authorization is handled by Heimdall with OpenFGA checks:
 - `viewer` - Can read vote details
 - `results_viewer` - Can view aggregated vote results
 - `auditor` - Can view vote response details
-- `participant` / `owner` - Can submit and update their own vote responses
+- `owner` - Can submit and update their own vote responses
 
 ---
 

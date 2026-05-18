@@ -302,8 +302,8 @@ spec:
         - authorizer: openfga_check
           config:
             values:
-              relation: participant
-              object: "vote:{{ "{{- .Request.Body.vote_uid -}}" }}"
+              relation: owner
+              object: "vote_response:{{ "{{- .Request.Body.vote_response_uid -}}" }}"
         {{- else }}
         {{/*
           When OpenFGA is disabled, allow all requests
