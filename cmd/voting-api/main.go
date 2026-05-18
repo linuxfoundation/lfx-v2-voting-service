@@ -51,7 +51,7 @@ func run() int {
 	logger := slog.Default()
 
 	// Set up OpenTelemetry SDK.
-	// Command-line/environment OTEL_SERVICE_VERSION takes precedence over
+	// Environment variable OTEL_SERVICE_VERSION takes precedence over
 	// the build-time Version variable.
 	otelConfig := utils.OTelConfigFromEnv()
 	if otelConfig.ServiceVersion == "" {

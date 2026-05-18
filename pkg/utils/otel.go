@@ -30,7 +30,7 @@ type OTelConfig struct {
 	// Env: OTEL_SERVICE_NAME (default: "lfx-v2-voting-service")
 	ServiceName string
 	// ServiceVersion is the version of the service.
-	// Env: OTEL_SERVICE_VERSION (default: build-time version from ldflags)
+	// Env: OTEL_SERVICE_VERSION (no default; caller may set from build-time ldflags)
 	ServiceVersion string
 }
 
@@ -65,7 +65,7 @@ func SetupOTelSDK(ctx context.Context) (shutdown func(context.Context) error, er
 // If it does not return an error, make sure to call shutdown for proper cleanup.
 //
 // Exporter type, protocol, and endpoint are configured via standard OTEL_* env vars:
-//   - OTEL_TRACES_EXPORTER, OTEL_METRICS_EXPORTER, OTEL_LOGS_EXPORTER ("otlp" or "none")
+//   - OTEL_TRACES_EXPORTER, OTEL_METRICS_EXPORTER, OTEL_LOGS_EXPORTER (as supported by autoexport, e.g. "otlp", "none", "stdout")
 //   - OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_EXPORTER_OTLP_PROTOCOL ("grpc" or "http/protobuf")
 //   - OTEL_PROPAGATORS ("tracecontext,baggage,jaeger" etc.)
 //   - OTEL_TRACES_SAMPLER ("always_on", "always_off", "traceidratio", "parentbased_*")
@@ -132,8 +132,9 @@ func SetupOTelSDKWithConfig(ctx context.Context, cfg OTelConfig) (shutdown func(
 
 // newResource creates an OpenTelemetry resource with service name and version attributes.
 func newResource(cfg OTelConfig) (*resource.Resource, error) {
-	attrs := []attribute.KeyValue{
-		semconv.ServiceName(cfg.ServiceName),
+	var attrs []attribute.KeyValue
+	if cfg.ServiceName != "" {
+		attrs = append(attrs, semconv.ServiceName(cfg.ServiceName))
 	}
 	if cfg.ServiceVersion != "" {
 		attrs = append(attrs, semconv.ServiceVersion(cfg.ServiceVersion))
