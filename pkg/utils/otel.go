@@ -9,11 +9,11 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
-	"time"
 
 	"go.opentelemetry.io/contrib/exporters/autoexport"
 	"go.opentelemetry.io/contrib/propagators/autoprop"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/sdk/log"
 	"go.opentelemetry.io/otel/sdk/metric"
@@ -132,13 +132,15 @@ func SetupOTelSDKWithConfig(ctx context.Context, cfg OTelConfig) (shutdown func(
 
 // newResource creates an OpenTelemetry resource with service name and version attributes.
 func newResource(cfg OTelConfig) (*resource.Resource, error) {
+	attrs := []attribute.KeyValue{
+		semconv.ServiceName(cfg.ServiceName),
+	}
+	if cfg.ServiceVersion != "" {
+		attrs = append(attrs, semconv.ServiceVersion(cfg.ServiceVersion))
+	}
 	return resource.Merge(
 		resource.Default(),
-		resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceName(cfg.ServiceName),
-			semconv.ServiceVersion(cfg.ServiceVersion),
-		),
+		resource.NewWithAttributes(semconv.SchemaURL, attrs...),
 	)
 }
 
@@ -189,9 +191,7 @@ func newTraceProvider(ctx context.Context, res *resource.Resource) (*trace.Trace
 	return trace.NewTracerProvider(
 		trace.WithResource(res),
 		trace.WithSampler(newSampler()),
-		trace.WithBatcher(exporter,
-			trace.WithBatchTimeout(time.Second),
-		),
+		trace.WithBatcher(exporter),
 	), nil
 }
 
