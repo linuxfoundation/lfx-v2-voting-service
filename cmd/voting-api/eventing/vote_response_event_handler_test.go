@@ -24,6 +24,7 @@ func TestConvertMapToVoteResponseData(t *testing.T) {
 			"poll_id":            "poll-456",
 			"project_id":         "project-sfid",
 			"vote_creation_time": "2024-01-01T00:00:00Z",
+			"last_modified_time": "2024-06-01T12:00:00Z",
 			"user_id":            "user-123",
 			"user_email":         "test@example.com",
 			"user_role":          "voter",
@@ -59,6 +60,7 @@ func TestConvertMapToVoteResponseData(t *testing.T) {
 		assert.Equal(t, "testuser", result.Username)
 		assert.Equal(t, "submitted", result.VoteStatus)
 		assert.False(t, result.Abstained)
+		assert.Equal(t, "2024-06-01T12:00:00Z", result.LastModifiedTime)
 	})
 
 	t.Run("converts ranked choice answers from string to int", func(t *testing.T) {
