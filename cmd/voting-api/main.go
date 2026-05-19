@@ -26,6 +26,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/middleware"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/service"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/utils"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	goahttp "goa.design/goa/v3/http"
 )
@@ -48,6 +49,27 @@ func run() int {
 	// Initialize structured logging
 	logging.InitStructureLogConfig()
 	logger := slog.Default()
+
+	// Set up OpenTelemetry SDK.
+	// Environment variable OTEL_SERVICE_VERSION takes precedence over
+	// the build-time Version variable.
+	otelConfig := utils.OTelConfigFromEnv()
+	if otelConfig.ServiceVersion == "" {
+		otelConfig.ServiceVersion = Version
+	}
+	otelShutdown, err := utils.SetupOTelSDKWithConfig(context.Background(), otelConfig)
+	if err != nil {
+		logger.Error("error setting up OpenTelemetry SDK", "error", err)
+		return 1
+	}
+	// Handle shutdown properly so nothing leaks.
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+		defer cancel()
+		if shutdownErr := otelShutdown(ctx); shutdownErr != nil {
+			logger.Error("error shutting down OpenTelemetry SDK", "error", shutdownErr)
+		}
+	}()
 
 	logger.Info("Starting voting service",
 		"version", Version,
