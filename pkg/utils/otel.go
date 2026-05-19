@@ -146,9 +146,10 @@ func newResource(cfg OTelConfig) (*resource.Resource, error) {
 }
 
 // newSampler creates a trace.Sampler from standard OTEL_TRACES_SAMPLER env vars.
-// Supported values: "always_on" (default), "always_off", "traceidratio",
+// Supported values: "always_on", "always_off", "traceidratio",
 // "parentbased_always_on", "parentbased_always_off", "parentbased_traceidratio".
 // The ratio for traceidratio samplers is read from OTEL_TRACES_SAMPLER_ARG.
+// Default (unset): "parentbased_always_on" per the OpenTelemetry specification.
 func newSampler() trace.Sampler {
 	sampler := os.Getenv("OTEL_TRACES_SAMPLER")
 	arg := os.Getenv("OTEL_TRACES_SAMPLER_ARG")
@@ -166,6 +167,8 @@ func newSampler() trace.Sampler {
 	}
 
 	switch sampler {
+	case "always_on":
+		return trace.AlwaysSample()
 	case "always_off":
 		return trace.NeverSample()
 	case "traceidratio":
@@ -176,8 +179,8 @@ func newSampler() trace.Sampler {
 		return trace.ParentBased(trace.NeverSample())
 	case "parentbased_traceidratio":
 		return trace.ParentBased(trace.TraceIDRatioBased(parseRatio()))
-	default: // "always_on" and any other value
-		return trace.AlwaysSample()
+	default: // unset or unrecognized — use OTel spec default
+		return trace.ParentBased(trace.AlwaysSample())
 	}
 }
 
