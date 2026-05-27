@@ -86,8 +86,8 @@ func NewClient(config Config) *Client {
 		panic("ITX_CLIENT_PRIVATE_KEY is required but not set")
 	}
 
-	// Create otel-instrumented HTTP client to use for both Auth0 token
-	// requests and ITX API calls, so both appear as child spans in traces.
+	// Create an otel-instrumented HTTP client for Auth0 token requests;
+	// ITX API calls are instrumented separately via httpClient below.
 	otelClient := &http.Client{
 		Transport: otelhttp.NewTransport(http.DefaultTransport),
 		Timeout:   config.Timeout,
