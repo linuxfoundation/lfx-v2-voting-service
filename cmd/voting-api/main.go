@@ -13,6 +13,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
+	"go.opentelemetry.io/otel/trace"
+	goahttp "goa.design/goa/v3/http"
+
 	apieventing "github.com/linuxfoundation/lfx-v2-voting-service/cmd/voting-api/eventing"
 	openapisvr "github.com/linuxfoundation/lfx-v2-voting-service/gen/http/openapi/server"
 	votesvr "github.com/linuxfoundation/lfx-v2-voting-service/gen/http/vote/server"
@@ -24,11 +30,6 @@ import (
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/proxy"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/middleware"
-	"github.com/go-chi/chi/v5"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
-	"go.opentelemetry.io/otel/trace"
-	goahttp "goa.design/goa/v3/http"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/service"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
@@ -198,17 +199,19 @@ func run() int {
 	// during routing (inside ServeHTTP), not before.
 	mux.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			next.ServeHTTP(w, r)
-			rctx := chi.RouteContext(r.Context())
-			if rctx != nil {
-				routePattern := rctx.RoutePattern()
-				if routePattern != "" {
-					if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
-						labeler.Add(semconv.HTTPRoute(routePattern))
+			defer func() {
+				rctx := chi.RouteContext(r.Context())
+				if rctx != nil {
+					routePattern := rctx.RoutePattern()
+					if routePattern != "" {
+						if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
+							labeler.Add(semconv.HTTPRoute(routePattern))
+						}
+						trace.SpanFromContext(r.Context()).SetName(r.Method + " " + routePattern)
 					}
-					trace.SpanFromContext(r.Context()).SetName(r.Method + " " + routePattern)
 				}
-			}
+			}()
+			next.ServeHTTP(w, r)
 		})
 	})
 
