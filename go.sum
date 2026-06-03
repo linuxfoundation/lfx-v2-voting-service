@@ -130,8 +130,6 @@ go.opentelemetry.io/contrib/bridges/prometheus v0.68.0 h1:w3zlHYETbDwXyWHZlyyR58
 go.opentelemetry.io/contrib/bridges/prometheus v0.68.0/go.mod h1:GR/mClR2nn7vE8RLwxKjoBNg+QtgdDhRzxVa93koy5o=
 go.opentelemetry.io/contrib/exporters/autoexport v0.68.0 h1:0D3GFvELGIwQGfC6agLsbrEYSGWZTRTxIXxcQUqrOuk=
 go.opentelemetry.io/contrib/exporters/autoexport v0.68.0/go.mod h1:DM2NV7Zb8CcGeVPt6glouY0FAiwZQ/iqgcWExhgWeN8=
-go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.65.0 h1:7iP2uCb7sGddAr30RRS6xjKy7AZ2JtTOPA3oolgVSw8=
-go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.65.0/go.mod h1:c7hN3ddxs/z6q9xwvfLPk+UHlWRQyaeR1LdgfL/66l0=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0 h1:CqXxU8VOmDefoh0+ztfGaymYbhdB/tT3zs79QaZTNGY=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.68.0/go.mod h1:BuhAPThV8PBHBvg8ZzZ/Ok3idOdhWIodywz2xEcRbJo=
 go.opentelemetry.io/contrib/propagators/autoprop v0.68.0 h1:wLGFvNBPqQhzBn0QRBZjrriH8lZ9gqtTz8ufHEjLg7k=
