@@ -904,7 +904,7 @@ x-scope: manage:voting
 
 **Endpoint**: `POST /vote_responses`
 
-**Required permission**: `participant` on `vote:{vote_uid}` (from request body)
+**Required permission**: `owner` on `vote_response:{vote_response_uid}` (from request body)
 
 **Headers**:
 

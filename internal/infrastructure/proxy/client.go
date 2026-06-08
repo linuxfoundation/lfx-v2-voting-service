@@ -16,6 +16,7 @@ import (
 	"github.com/auth0/go-auth0/authentication/oauth"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/oauth2"
 )
 
@@ -85,6 +86,13 @@ func NewClient(config Config) *Client {
 		panic("ITX_CLIENT_PRIVATE_KEY is required but not set")
 	}
 
+	// Create an otel-instrumented HTTP client for Auth0 token requests;
+	// ITX API calls are instrumented separately via httpClient below.
+	otelClient := &http.Client{
+		Transport: otelhttp.NewTransport(http.DefaultTransport),
+		Timeout:   config.Timeout,
+	}
+
 	// Create Auth0 authentication client with private key assertion (JWT)
 	// The private key should be in PEM format (raw, not base64-encoded)
 	authConfig, err := authentication.New(
@@ -92,6 +100,7 @@ func NewClient(config Config) *Client {
 		config.Auth0Domain,
 		authentication.WithClientID(config.ClientID),
 		authentication.WithClientAssertion(config.PrivateKey, "RS256"),
+		authentication.WithClient(otelClient),
 	)
 	if err != nil {
 		panic(fmt.Sprintf("failed to create Auth0 client: %v (ensure ITX_CLIENT_PRIVATE_KEY contains a valid RSA private key in PEM format)", err))
@@ -107,8 +116,10 @@ func NewClient(config Config) *Client {
 	// Wrap with oauth2.ReuseTokenSource for automatic caching and renewal
 	reuseTokenSource := oauth2.ReuseTokenSource(nil, tokenSource)
 
-	// Create HTTP client that automatically handles token management
+	// Create HTTP client that automatically handles token management.
+	// Wrap the oauth2 transport with otelhttp so ITX API calls appear in traces.
 	httpClient := oauth2.NewClient(ctx, reuseTokenSource)
+	httpClient.Transport = otelhttp.NewTransport(httpClient.Transport)
 	httpClient.Timeout = config.Timeout
 
 	return &Client{

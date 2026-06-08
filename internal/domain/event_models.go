@@ -157,6 +157,7 @@ type VoteDBRaw struct {
 	PollID                  string          `json:"poll_id"`
 	ProjectID               string          `json:"project_id"`
 	VoteCreationTime        string          `json:"vote_creation_time"`
+	LastModifiedTime        string          `json:"last_modified_time"`
 	UserID                  string          `json:"user_id"`
 	UserEmail               string          `json:"user_email"`
 	UserRole                string          `json:"user_role"`
@@ -282,6 +283,7 @@ type VoteResponseData struct {
 	ProjectID               string           `json:"project_id"`  // v1 project ID (SFID)
 	ProjectUID              string           `json:"project_uid"` // v2 project UID
 	VoteCreationTime        string           `json:"vote_creation_time"`
+	LastModifiedTime        string           `json:"last_modified_time"`
 	UserID                  string           `json:"user_id"`
 	UserEmail               string           `json:"user_email"`
 	UserRole                string           `json:"user_role"`

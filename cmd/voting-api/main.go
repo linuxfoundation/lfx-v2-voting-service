@@ -13,6 +13,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
+	"go.opentelemetry.io/otel/trace"
+	goahttp "goa.design/goa/v3/http"
+
 	apieventing "github.com/linuxfoundation/lfx-v2-voting-service/cmd/voting-api/eventing"
 	openapisvr "github.com/linuxfoundation/lfx-v2-voting-service/gen/http/openapi/server"
 	votesvr "github.com/linuxfoundation/lfx-v2-voting-service/gen/http/vote/server"
@@ -24,8 +30,10 @@ import (
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/proxy"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/middleware"
+
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/service"
-	goahttp "goa.design/goa/v3/http"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/utils"
 )
 
 // Build-time variables set via ldflags
@@ -46,6 +54,27 @@ func run() int {
 	// Initialize structured logging
 	logging.InitStructureLogConfig()
 	logger := slog.Default()
+
+	// Set up OpenTelemetry SDK.
+	// Environment variable OTEL_SERVICE_VERSION takes precedence over
+	// the build-time Version variable.
+	otelConfig := utils.OTelConfigFromEnv()
+	if otelConfig.ServiceVersion == "" {
+		otelConfig.ServiceVersion = Version
+	}
+	otelShutdown, err := utils.SetupOTelSDKWithConfig(context.Background(), otelConfig)
+	if err != nil {
+		logger.Error("error setting up OpenTelemetry SDK", "error", err)
+		return 1
+	}
+	// Handle shutdown properly so nothing leaks.
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+		defer cancel()
+		if shutdownErr := otelShutdown(ctx); shutdownErr != nil {
+			logger.Error("error shutting down OpenTelemetry SDK", "error", shutdownErr)
+		}
+	}()
 
 	logger.Info("Starting voting service",
 		"version", Version,
@@ -161,6 +190,33 @@ func run() int {
 	}
 	koDataDir := http.Dir(koDataPath)
 
+	// Register route-tagging middleware inside chi's routing chain so that
+	// http.route is set on the OTel span after chi has matched the route pattern.
+	// The span name is also updated here to avoid high-cardinality names from
+	// using raw URL paths (which contain actual path parameter values).
+	// Must be registered before Mount calls per chi convention.
+	// Reads RoutePattern after next.ServeHTTP because chi populates the pattern
+	// during routing (inside ServeHTTP), not before.
+	mux.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				rctx := chi.RouteContext(r.Context())
+				if rctx != nil {
+					routePattern := rctx.RoutePattern()
+					if routePattern != "" {
+						if labeler, ok := otelhttp.LabelerFromContext(r.Context()); ok {
+							labeler.Add(semconv.HTTPRoute(routePattern))
+						}
+						span := trace.SpanFromContext(r.Context())
+						span.SetAttributes(semconv.HTTPRoute(routePattern))
+						span.SetName(r.Method + " " + routePattern)
+					}
+				}
+			}()
+			next.ServeHTTP(w, r)
+		})
+	})
+
 	// Mount HTTP handlers
 	votingServer := votesvr.New(votingEndpoints, mux, goahttp.RequestDecoder, goahttp.ResponseEncoder, nil, nil)
 	votesvr.Mount(mux, votingServer)
@@ -193,6 +249,11 @@ func run() int {
 	handler = middleware.RequestLoggerMiddleware()(handler)
 	handler = middleware.RequestIDMiddleware()(handler)
 	handler = middleware.AuthorizationMiddleware()(handler)
+	handler = otelhttp.NewHandler(handler, "voting-service",
+		otelhttp.WithFilter(func(r *http.Request) bool {
+			return !constants.IsHealthCheckPath(r.URL.Path)
+		}),
+	)
 
 	// Create HTTP server
 	srv := &http.Server{

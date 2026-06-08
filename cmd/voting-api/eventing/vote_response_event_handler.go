@@ -135,6 +135,7 @@ func convertMapToVoteResponseData(
 		PollID:                  voteDB.PollID,
 		ProjectID:               voteDB.ProjectID,
 		VoteCreationTime:        voteDB.VoteCreationTime,
+		LastModifiedTime:        voteDB.LastModifiedTime,
 		UserID:                  voteDB.UserID,
 		UserEmail:               voteDB.UserEmail,
 		UserRole:                voteDB.UserRole,
