@@ -8,6 +8,14 @@ The full OpenFGA type definitions (relations, schema) for all object types are d
 
 ---
 
+## Prerequisites
+
+> **Deployment order:** `fga-sync` must be updated to accept LFX usernames in relation values (e.g., `owner`) before this service version is deployed. See [LFXV2-1962](https://linuxfoundation.atlassian.net/browse/LFXV2-1962).
+
+> **Username handling:** This service forwards the v1 `username` field unchanged. fga-sync builds OpenFGA user principals as `user:{username}` without additional sanitization. LFX usernames are expected to be valid LFID identifiers that do not contain OpenFGA-reserved characters (`:`, `*`, `#`).
+
+---
+
 ## Object Types
 
 - [Vote](#vote)

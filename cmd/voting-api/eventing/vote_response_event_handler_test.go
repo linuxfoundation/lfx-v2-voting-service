@@ -185,6 +185,35 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		assert.Equal(t, "testuser", mockPublisher.publishedVoteResponses[0].Username)
 	})
 
+	t.Run("handles empty username by publishing vote response without username", func(t *testing.T) {
+		mappingsKV, cleanup := setupTestKV(t)
+		defer cleanup()
+
+		ctx := context.Background()
+
+		_, err := mappingsKV.Put(ctx, "vote.poll-456", []byte("1"))
+		require.NoError(t, err)
+
+		v1Data := map[string]interface{}{
+			"vote_id":      "vote-123",
+			"poll_id":      "poll-456",
+			"project_id":   "project-sfid",
+			"user_id":      "user-123",
+			"vote_status":  "submitted",
+			"poll_answers": []interface{}{},
+		}
+
+		mockPublisher := &mockEventPublisher{}
+		idMapper := idmapper.NewNoOpMapper()
+
+		logger := slog.Default()
+		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, logger)
+
+		assert.False(t, shouldRetry)
+		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
+		assert.Equal(t, "", mockPublisher.publishedVoteResponses[0].Username)
+	})
+
 	t.Run("returns false for conversion error", func(t *testing.T) {
 		mappingsKV, cleanup := setupTestKV(t)
 		defer cleanup()
