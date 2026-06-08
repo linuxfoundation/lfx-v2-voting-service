@@ -168,6 +168,7 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 			"poll_id":      "poll-456",
 			"project_id":   "project-sfid",
 			"user_id":      "user-123",
+			"username":     "testuser",
 			"vote_status":  "submitted",
 			"poll_answers": []interface{}{},
 		}
@@ -181,6 +182,7 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
 		assert.Equal(t, "vote-123", mockPublisher.publishedVoteResponses[0].UID)
+		assert.Equal(t, "testuser", mockPublisher.publishedVoteResponses[0].Username)
 	})
 
 	t.Run("returns false for conversion error", func(t *testing.T) {
