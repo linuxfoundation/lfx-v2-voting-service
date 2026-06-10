@@ -132,7 +132,7 @@ Each element in `poll_questions` has:
 | `user_email` | string | User's email address |
 | `user_role` | string | User's role at time of voting |
 | `user_name` | string | User's display name |
-| `username` | string | User's Auth0 username |
+| `username` | string | User's LFX username |
 | `profile_picture` | string | URL to user's profile picture |
 | `user_voting_status` | string | User's voting eligibility status |
 | `user_org_id` | string | User's organization identifier |

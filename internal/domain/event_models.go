@@ -288,7 +288,7 @@ type VoteResponseData struct {
 	UserEmail               string           `json:"user_email"`
 	UserRole                string           `json:"user_role"`
 	UserName                string           `json:"user_name"` // actual user's name
-	Username                string           `json:"username"`  // Auth0 username
+	Username                string           `json:"username"`  // LFX username
 	ProfilePicture          string           `json:"profile_picture"`
 	UserVotingStatus        string           `json:"user_voting_status"`
 	UserOrgID               string           `json:"user_org_id"`
