@@ -85,3 +85,7 @@ spec:
             runAsNonRoot: true
             seccompProfile:
               type: RuntimeDefault
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
