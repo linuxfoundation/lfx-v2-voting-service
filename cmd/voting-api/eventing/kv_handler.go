@@ -29,6 +29,23 @@ func isTombstonedMapping(value []byte) bool {
 	return string(value) == tombstoneMarker
 }
 
+// decodeKVEntryData unmarshals KV entry bytes as JSON first, then msgpack.
+func decodeKVEntryData(data []byte) (map[string]any, error) {
+	var jsonResult map[string]any
+	jsonErr := json.Unmarshal(data, &jsonResult)
+	if jsonErr == nil {
+		return jsonResult, nil
+	}
+
+	var msgpackResult map[string]any
+	msgpackErr := msgpack.Unmarshal(data, &msgpackResult)
+	if msgpackErr == nil {
+		return msgpackResult, nil
+	}
+
+	return nil, fmt.Errorf("failed to decode KV data as JSON or msgpack: json: %w; msgpack: %w", jsonErr, msgpackErr)
+}
+
 // kvEntry implements a mock jetstream.KeyValueEntry interface for the handler
 type kvEntry struct {
 	key       string
@@ -177,17 +194,10 @@ func handleKVPut(
 	key := entry.Key()
 	value := entry.Value()
 
-	// Parse the data (try JSON first, then msgpack)
-	var v1Data map[string]any
-	if err := json.Unmarshal(value, &v1Data); err != nil {
-		// JSON failed, try msgpack
-		if msgErr := msgpack.Unmarshal(value, &v1Data); msgErr != nil {
-			logger.With(errKey, err, "msgpack_error", msgErr, "key", key).ErrorContext(ctx, "failed to unmarshal KV entry data as JSON or msgpack")
-			return false
-		}
-		logger.With("key", key).DebugContext(ctx, "successfully unmarshalled msgpack data")
-	} else {
-		logger.With("key", key).DebugContext(ctx, "successfully unmarshalled JSON data")
+	v1Data, err := decodeKVEntryData(value)
+	if err != nil {
+		logger.With(errKey, err, "key", key).ErrorContext(ctx, "failed to unmarshal KV entry data as JSON or msgpack")
+		return false
 	}
 
 	// Check if this is a soft delete (record has _sdc_deleted_at field).

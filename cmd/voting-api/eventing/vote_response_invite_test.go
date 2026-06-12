@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	inviteapi "github.com/linuxfoundation/lfx-v2-invite-service/pkg/api"
 	indexerConstants "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/constants"
+	inviteapi "github.com/linuxfoundation/lfx-v2-invite-service/pkg/api"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	votingconstants "github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"github.com/nats-io/nats.go/jetstream"
@@ -53,7 +53,7 @@ func TestDecodeKVData(t *testing.T) {
 		raw, err := json.Marshal(payload)
 		require.NoError(t, err)
 
-		got, err := decodeKVData(raw)
+		got, err := decodeKVEntryData(raw)
 		require.NoError(t, err)
 		assert.Equal(t, "Board Election", got["name"])
 	})
@@ -63,13 +63,13 @@ func TestDecodeKVData(t *testing.T) {
 		raw, err := msgpack.Marshal(payload)
 		require.NoError(t, err)
 
-		got, err := decodeKVData(raw)
+		got, err := decodeKVEntryData(raw)
 		require.NoError(t, err)
 		assert.Equal(t, "Board Election", got["name"])
 	})
 
 	t.Run("returns combined error when both decoders fail", func(t *testing.T) {
-		_, err := decodeKVData([]byte("not-json-or-msgpack"))
+		_, err := decodeKVEntryData([]byte("not-json-or-msgpack"))
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "json:")
 		assert.Contains(t, err.Error(), "msgpack:")

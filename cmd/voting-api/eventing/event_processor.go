@@ -78,15 +78,15 @@ func NewEventProcessor(
 		return nil, fmt.Errorf("failed to access %s KV bucket: %w", V1MappingsBucket, err)
 	}
 
-	v1ObjectsKV, err := jsContext.KeyValue(context.Background(), V1ObjectsBucket)
-	if err != nil {
-		conn.Close()
-		return nil, fmt.Errorf("failed to access %s KV bucket: %w", V1ObjectsBucket, err)
-	}
-
+	var v1ObjectsKV jetstream.KeyValue
 	var inviteHandler *VoteResponseInviteHandler
 	if inviteCfg.Enabled &&
 		strings.TrimSpace(inviteCfg.SelfServeBaseURL) != "" {
+		v1ObjectsKV, err = jsContext.KeyValue(context.Background(), V1ObjectsBucket)
+		if err != nil {
+			conn.Close()
+			return nil, fmt.Errorf("failed to access %s KV bucket: %w", V1ObjectsBucket, err)
+		}
 		inviteHandler = &VoteResponseInviteHandler{
 			inviteSender:     infraNATS.NewInviteSender(conn, logger),
 			userReader:       infraNATS.NewUserReader(conn, logger),

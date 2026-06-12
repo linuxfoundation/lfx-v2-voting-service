@@ -5,19 +5,17 @@ package eventing
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/url"
 	"strings"
 
-	inviteapi "github.com/linuxfoundation/lfx-v2-invite-service/pkg/api"
 	indexerConstants "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/constants"
+	inviteapi "github.com/linuxfoundation/lfx-v2-invite-service/pkg/api"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	votingconstants "github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"github.com/nats-io/nats.go/jetstream"
-	"github.com/vmihailenco/msgpack/v5"
 )
 
 // VoteResponseInviteHandler performs best-effort LFID invite sending for new vote responses.
@@ -81,7 +79,7 @@ func (h *VoteResponseInviteHandler) maybeSendInvite(
 	var voteName string
 	pollKey := fmt.Sprintf("itx-poll.%s", pollID)
 	if entry, kvErr := h.v1ObjectsKV.Get(ctx, pollKey); kvErr == nil {
-		if data, decErr := decodeKVData(entry.Value()); decErr == nil {
+		if data, decErr := decodeKVEntryData(entry.Value()); decErr == nil {
 			if name, ok := data["name"].(string); ok {
 				voteName = strings.TrimSpace(name)
 			}
@@ -121,22 +119,6 @@ func (h *VoteResponseInviteHandler) maybeSendInvite(
 		"invite_uid", result.InviteUID,
 		"expires_at", result.ExpiresAt,
 	)
-}
-
-func decodeKVData(data []byte) (map[string]any, error) {
-	var jsonResult map[string]any
-	jsonErr := json.Unmarshal(data, &jsonResult)
-	if jsonErr == nil {
-		return jsonResult, nil
-	}
-
-	var msgpackResult map[string]any
-	msgpackErr := msgpack.Unmarshal(data, &msgpackResult)
-	if msgpackErr == nil {
-		return msgpackResult, nil
-	}
-
-	return nil, fmt.Errorf("failed to decode KV data as JSON or msgpack: json: %w; msgpack: %w", jsonErr, msgpackErr)
 }
 
 // shouldSendVoteResponseInvite reports whether a new no-LFID vote response should trigger an invite.

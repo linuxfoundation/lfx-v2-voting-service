@@ -61,12 +61,20 @@ func (r *NATSUserReader) UsernameByEmail(ctx context.Context, email string) (str
 			return "", fmt.Errorf("email_to_username response missing success field")
 		}
 		if !*envelope.Success {
+			if errMsg := strings.TrimSpace(envelope.Error); errMsg != "" && !isEmailToUsernameNotFound(errMsg) {
+				return "", fmt.Errorf("email_to_username failed: %s", errMsg)
+			}
 			return "", domain.ErrUserNotFound
 		}
-		return "", fmt.Errorf("unexpected email_to_username success envelope")
+		return "", fmt.Errorf("unexpected email_to_username success envelope: %s", body)
 	}
 
 	return body, nil
+}
+
+func isEmailToUsernameNotFound(errMsg string) bool {
+	lower := strings.ToLower(errMsg)
+	return strings.Contains(lower, "not found") || strings.Contains(lower, "no user")
 }
 
 var _ domain.UserReader = (*NATSUserReader)(nil)
