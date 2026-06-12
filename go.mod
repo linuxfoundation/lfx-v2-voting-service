@@ -12,7 +12,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/linuxfoundation/lfx-v2-fga-sync v0.2.17
 	github.com/linuxfoundation/lfx-v2-indexer-service v0.4.14
-	github.com/linuxfoundation/lfx-v2-invite-service v0.1.5-0.20260605060750-cef0d5251933
+	github.com/linuxfoundation/lfx-v2-invite-service v0.1.5
 	github.com/nats-io/nats-server/v2 v2.12.6
 	github.com/nats-io/nats.go v1.49.0
 	github.com/remychantenay/slog-otel v1.3.4
@@ -68,6 +68,7 @@ require (
 	github.com/prometheus/otlptranslator v1.0.0 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.devnw.com/structs v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect

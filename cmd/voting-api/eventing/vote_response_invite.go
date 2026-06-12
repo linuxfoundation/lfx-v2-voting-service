@@ -124,14 +124,19 @@ func (h *VoteResponseInviteHandler) maybeSendInvite(
 }
 
 func decodeKVData(data []byte) (map[string]any, error) {
-	var result map[string]any
-	if err := json.Unmarshal(data, &result); err == nil {
-		return result, nil
+	var jsonResult map[string]any
+	jsonErr := json.Unmarshal(data, &jsonResult)
+	if jsonErr == nil {
+		return jsonResult, nil
 	}
-	if err := msgpack.Unmarshal(data, &result); err == nil {
-		return result, nil
+
+	var msgpackResult map[string]any
+	msgpackErr := msgpack.Unmarshal(data, &msgpackResult)
+	if msgpackErr == nil {
+		return msgpackResult, nil
 	}
-	return nil, json.Unmarshal(data, &result)
+
+	return nil, fmt.Errorf("failed to decode KV data as JSON or msgpack: json: %w; msgpack: %w", jsonErr, msgpackErr)
 }
 
 // shouldSendVoteResponseInvite reports whether a new no-LFID vote response should trigger an invite.

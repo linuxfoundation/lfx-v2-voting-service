@@ -128,7 +128,7 @@ func run() int {
 	// Create shutdown channel for coordinating graceful shutdown
 	shutdown := make(chan struct{}, 1)
 
-	inviteCfg := parseInviteConfig()
+	inviteCfg := parseInviteConfig(logger)
 
 	// Start invite_accepted subscriber independently of KV event processing.
 	var inviteAcceptedSub *apieventing.InviteAcceptedSubscriber
@@ -401,7 +401,7 @@ func getEnv(key, defaultVal string) string {
 	return defaultVal
 }
 
-func parseInviteConfig() apieventing.InviteFeatureConfig {
+func parseInviteConfig(logger *slog.Logger) apieventing.InviteFeatureConfig {
 	enabled := os.Getenv("INVITES_ENABLED") == "true"
 
 	selfServeBaseURL := os.Getenv("LFX_SELF_SERVE_BASE_URL")
@@ -419,7 +419,7 @@ func parseInviteConfig() apieventing.InviteFeatureConfig {
 	if enabled {
 		parsed, err := url.ParseRequestURI(selfServeBaseURL)
 		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
-			slog.Warn("LFX_SELF_SERVE_BASE_URL is missing or invalid; outbound invite sending disabled (invite_accepted subscriber remains active)",
+			logger.Warn("LFX_SELF_SERVE_BASE_URL is missing or invalid; outbound invite sending disabled (invite_accepted subscriber remains active)",
 				"url", selfServeBaseURL,
 				"error", err,
 			)

@@ -90,7 +90,7 @@ When `INVITES_ENABLED=true`, the voting service participates in the platform LFI
 
 During vote-response create processing (`itx-poll-vote.*`), after the vote response is indexed:
 
-1. Skip if the participant already has a username (LFID) or if an invite was already sent for this vote-response UID (tracked in `v1-mappings` as `v1_vote_response_lfid_invite_sent.{vote_id}`).
+1. Skip if the participant already has a username (LFID) or if an invite was already sent for this vote-response UID (tracked in `v1-mappings` as `v1_vote_response_lfid_invite_sent.{vote_response_uid}`).
 2. Look up the email via `lfx.auth-service.email_to_username` — skip if an LFID already exists.
 3. Resolve the vote name from the `v1-objects` KV bucket (`itx-poll.{poll_id}`); skip if unavailable.
 4. Send `lfx.invite-service.send_invite` with `resource.type=vote` and role `Voter`.
