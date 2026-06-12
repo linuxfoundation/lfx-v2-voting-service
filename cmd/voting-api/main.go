@@ -8,11 +8,13 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	natsgo "github.com/nats-io/nats.go"
 	"github.com/go-chi/chi/v5"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
@@ -126,6 +128,31 @@ func run() int {
 	// Create shutdown channel for coordinating graceful shutdown
 	shutdown := make(chan struct{}, 1)
 
+	inviteCfg := parseInviteConfig()
+
+	// Start invite_accepted subscriber independently of KV event processing.
+	var inviteAcceptedSub *apieventing.InviteAcceptedSubscriber
+	var inviteNatsConn *natsgo.Conn
+	if inviteCfg.Enabled {
+		if cfg.NATSURL == "" {
+			logger.Warn("INVITES_ENABLED but NATS_URL not set; invite_accepted subscriber will not start")
+		} else {
+			nc, err := natsgo.Connect(cfg.NATSURL)
+			if err != nil {
+				logger.Warn("failed to connect to NATS for invite_accepted subscriber; continuing without enrichment", "error", err)
+			} else {
+				sub := apieventing.NewInviteAcceptedSubscriber(nc, proxyClient, logger)
+				if err := sub.Start(context.Background()); err != nil {
+					nc.Close()
+					logger.Warn("failed to start invite_accepted subscriber; continuing without enrichment", "error", err)
+				} else {
+					inviteNatsConn = nc
+					inviteAcceptedSub = sub
+				}
+			}
+		}
+	}
+
 	// Initialize event processor (if enabled)
 	var eventProcessor *apieventing.EventProcessor
 	var eventProcessorCtx context.Context
@@ -143,7 +170,7 @@ func run() int {
 			MaxDeliver:    3,
 			AckWait:       30 * time.Second,
 			MaxAckPending: 1000,
-		}, idMapper, logger)
+		}, idMapper, logger, inviteCfg)
 		if err != nil {
 			logger.Error("Failed to initialize event processor", "error", err)
 			return 1
@@ -290,6 +317,14 @@ func run() int {
 
 	logger.Info("Shutting down server...")
 
+	if inviteAcceptedSub != nil {
+		logger.Info("Stopping invite_accepted subscriber...")
+		inviteAcceptedSub.Stop()
+	}
+	if inviteNatsConn != nil {
+		inviteNatsConn.Close()
+	}
+
 	// Stop event processor first (if enabled)
 	if eventProcessor != nil {
 		logger.Info("Stopping event processor...")
@@ -364,4 +399,36 @@ func getEnv(key, defaultVal string) string {
 		return val
 	}
 	return defaultVal
+}
+
+func parseInviteConfig() apieventing.InviteFeatureConfig {
+	enabled := os.Getenv("INVITES_ENABLED") == "true"
+
+	selfServeBaseURL := os.Getenv("LFX_SELF_SERVE_BASE_URL")
+	if selfServeBaseURL == "" {
+		switch getEnv("LFX_ENVIRONMENT", "prod") {
+		case "prod":
+			selfServeBaseURL = "https://app.lfx.dev"
+		case "staging":
+			selfServeBaseURL = "https://app.staging.lfx.dev"
+		default:
+			selfServeBaseURL = "https://app.dev.lfx.dev"
+		}
+	}
+
+	if enabled {
+		parsed, err := url.ParseRequestURI(selfServeBaseURL)
+		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+			slog.Warn("LFX_SELF_SERVE_BASE_URL is missing or invalid; outbound invite sending disabled (invite_accepted subscriber remains active)",
+				"url", selfServeBaseURL,
+				"error", err,
+			)
+			selfServeBaseURL = ""
+		}
+	}
+
+	return apieventing.InviteFeatureConfig{
+		Enabled:          enabled,
+		SelfServeBaseURL: selfServeBaseURL,
+	}
 }

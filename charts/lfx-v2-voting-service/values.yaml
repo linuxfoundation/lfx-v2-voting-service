@@ -83,6 +83,14 @@ app:
     ID_MAPPING_DISABLED:
       value: false
 
+    # LFX_ENVIRONMENT is optional (dev, staging, prod) - defaults to prod if not set
+    LFX_ENVIRONMENT:
+      value: dev
+    # INVITES_ENABLED gates outbound LFID invite requests for no-LFID vote responses
+    # and the invite_accepted enrichment subscriber.
+    INVITES_ENABLED:
+      value: "false"
+
     # OpenTelemetry configuration
     OTEL_SERVICE_NAME:
       value: lfx-v2-voting-service

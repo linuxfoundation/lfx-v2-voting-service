@@ -62,6 +62,11 @@ func TestNewEventProcessor(t *testing.T) {
 		})
 		require.NoError(t, err)
 
+		_, err = js.CreateKeyValue(context.Background(), jetstream.KeyValueConfig{
+			Bucket: V1ObjectsBucket,
+		})
+		require.NoError(t, err)
+
 		cfg := eventing.Config{
 			NATSURL:      natsURL,
 			ConsumerName: "test-consumer",
@@ -78,7 +83,7 @@ func TestNewEventProcessor(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		ep, err := NewEventProcessor(cfg, idMapper, logger)
+		ep, err := NewEventProcessor(cfg, idMapper, logger, InviteFeatureConfig{})
 		assert.NoError(t, err)
 		assert.NotNil(t, ep)
 		assert.NotNil(t, ep.natsConn)
@@ -104,7 +109,7 @@ func TestNewEventProcessor(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		ep, err := NewEventProcessor(cfg, idMapper, logger)
+		ep, err := NewEventProcessor(cfg, idMapper, logger, InviteFeatureConfig{})
 		assert.Error(t, err)
 		assert.Nil(t, ep)
 		assert.Contains(t, err.Error(), "failed to connect to NATS")
@@ -131,7 +136,7 @@ func TestNewEventProcessor(t *testing.T) {
 
 		// The bucket must exist before the processor starts — it does not auto-create
 		logger := slog.Default()
-		ep, err := NewEventProcessor(cfg, idMapper, logger)
+		ep, err := NewEventProcessor(cfg, idMapper, logger, InviteFeatureConfig{})
 		assert.Error(t, err)
 		assert.Nil(t, ep)
 		assert.Contains(t, err.Error(), "failed to access v1-mappings KV bucket")
@@ -179,7 +184,7 @@ func TestEventProcessor_Start(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		ep, err := NewEventProcessor(cfg, idMapper, logger)
+		ep, err := NewEventProcessor(cfg, idMapper, logger, InviteFeatureConfig{})
 		require.NoError(t, err)
 		require.NotNil(t, ep)
 
@@ -227,6 +232,11 @@ func TestEventProcessor_Start(t *testing.T) {
 		})
 		require.NoError(t, err)
 
+		_, err = js.CreateKeyValue(context.Background(), jetstream.KeyValueConfig{
+			Bucket: V1ObjectsBucket,
+		})
+		require.NoError(t, err)
+
 		// Use invalid stream name to cause consumer creation to fail
 		cfg := eventing.Config{
 			NATSURL:      natsURL,
@@ -244,7 +254,7 @@ func TestEventProcessor_Start(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		ep, err := NewEventProcessor(cfg, idMapper, logger)
+		ep, err := NewEventProcessor(cfg, idMapper, logger, InviteFeatureConfig{})
 		require.NoError(t, err)
 
 		ctx := context.Background()
@@ -295,7 +305,7 @@ func TestEventProcessor_Stop(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		ep, err := NewEventProcessor(cfg, idMapper, logger)
+		ep, err := NewEventProcessor(cfg, idMapper, logger, InviteFeatureConfig{})
 		require.NoError(t, err)
 
 		ctx, cancel := context.WithCancel(context.Background())
@@ -331,6 +341,11 @@ func TestEventProcessor_Stop(t *testing.T) {
 		})
 		require.NoError(t, err)
 
+		_, err = js.CreateKeyValue(context.Background(), jetstream.KeyValueConfig{
+			Bucket: V1ObjectsBucket,
+		})
+		require.NoError(t, err)
+
 		cfg := eventing.Config{
 			NATSURL:      natsURL,
 			ConsumerName: "test-consumer-idempotent",
@@ -347,7 +362,7 @@ func TestEventProcessor_Stop(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		ep, err := NewEventProcessor(cfg, idMapper, logger)
+		ep, err := NewEventProcessor(cfg, idMapper, logger, InviteFeatureConfig{})
 		require.NoError(t, err)
 
 		// Stop multiple times should not error

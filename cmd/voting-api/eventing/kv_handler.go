@@ -71,6 +71,7 @@ func kvMessageHandler(
 	publisher domain.EventPublisher,
 	idMapper domain.IDMapper,
 	mappingsKV jetstream.KeyValue,
+	inviteHandler *VoteResponseInviteHandler,
 	logger *slog.Logger,
 ) {
 	// Parse the message as a KV entry
@@ -102,7 +103,7 @@ func kvMessageHandler(
 	}
 
 	// Process the KV entry and check if retry is needed
-	shouldRetry := kvHandler(ctx, entry, publisher, idMapper, mappingsKV, logger)
+	shouldRetry := kvHandler(ctx, entry, publisher, idMapper, mappingsKV, inviteHandler, logger)
 
 	// Handle message acknowledgment based on retry decision
 	if shouldRetry {
@@ -149,11 +150,12 @@ func kvHandler(
 	publisher domain.EventPublisher,
 	idMapper domain.IDMapper,
 	mappingsKV jetstream.KeyValue,
+	inviteHandler *VoteResponseInviteHandler,
 	logger *slog.Logger,
 ) bool {
 	switch entry.Operation() {
 	case jetstream.KeyValuePut:
-		return handleKVPut(ctx, entry, publisher, idMapper, mappingsKV, logger)
+		return handleKVPut(ctx, entry, publisher, idMapper, mappingsKV, inviteHandler, logger)
 	case jetstream.KeyValueDelete, jetstream.KeyValuePurge:
 		return handleKVDelete(ctx, entry, publisher, mappingsKV, logger)
 	default:
@@ -169,6 +171,7 @@ func handleKVPut(
 	publisher domain.EventPublisher,
 	idMapper domain.IDMapper,
 	mappingsKV jetstream.KeyValue,
+	inviteHandler *VoteResponseInviteHandler,
 	logger *slog.Logger,
 ) bool {
 	key := entry.Key()
@@ -204,7 +207,7 @@ func handleKVPut(
 	case "itx-poll":
 		return handleVoteUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, logger)
 	case "itx-poll-vote":
-		return handleVoteResponseUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, logger)
+		return handleVoteResponseUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, inviteHandler, logger)
 	default:
 		// Not a voting-related key, ACK and skip
 		logger.With("key", key, "prefix", prefix).Debug("skipping update - unsupported type")
