@@ -50,11 +50,13 @@ spec:
         {{- end }}
         {{- if .Values.openfga.enabled }}
         - authorizer: json_content_type
-        - authorizer: openfga_check
+        - authorizer: openfga_or_check
           config:
             values:
               relation: writer
               object: "project:{{ "{{- .Request.Body.project_uid -}}" }}"
+              or_relation: "{{ "{{- if .Request.Body.committee_uid -}}writer{{- end -}}" }}"
+              or_object: "{{ "{{- if .Request.Body.committee_uid -}}committee:{{- .Request.Body.committee_uid -}}{{- end -}}" }}"
         {{- else }}
         {{/*
           When OpenFGA is disabled, allow all requests
