@@ -16,6 +16,10 @@ import (
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"github.com/nats-io/nats.go"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // NATS subject constants for voting operations
@@ -50,11 +54,11 @@ func (p *NATSPublisher) PublishVoteEvent(ctx context.Context, action string, vot
 
 	// Send to FGA-sync - different message for delete vs create/update
 	if action == string(indexerConstants.ActionDeleted) {
-		if err := p.sendDeleteAccessMessage("vote", vote.VoteUID); err != nil {
+		if err := p.sendDeleteAccessMessage(ctx, "vote", vote.VoteUID); err != nil {
 			return fmt.Errorf("failed to send vote delete access message: %w", err)
 		}
 	} else {
-		if err := p.sendVoteAccessMessage(vote); err != nil {
+		if err := p.sendVoteAccessMessage(ctx, vote); err != nil {
 			return fmt.Errorf("failed to send vote access message: %w", err)
 		}
 	}
@@ -71,11 +75,11 @@ func (p *NATSPublisher) PublishVoteResponseEvent(ctx context.Context, action str
 
 	// Send to FGA-sync - different message for delete vs create/update
 	if action == string(indexerConstants.ActionDeleted) {
-		if err := p.sendDeleteAccessMessage("vote_response", voteResponse.UID); err != nil {
+		if err := p.sendDeleteAccessMessage(ctx, "vote_response", voteResponse.UID); err != nil {
 			return fmt.Errorf("failed to send vote response delete access message: %w", err)
 		}
 	} else {
-		if err := p.sendVoteResponseAccessMessage(voteResponse); err != nil {
+		if err := p.sendVoteResponseAccessMessage(ctx, voteResponse); err != nil {
 			return fmt.Errorf("failed to send vote response access message: %w", err)
 		}
 	}
@@ -134,7 +138,7 @@ func (p *NATSPublisher) sendVoteIndexerMessage(ctx context.Context, subject stri
 }
 
 // sendVoteAccessMessage sends the message to the NATS server for the vote access control
-func (p *NATSPublisher) sendVoteAccessMessage(vote *domain.VoteData) error {
+func (p *NATSPublisher) sendVoteAccessMessage(ctx context.Context, vote *domain.VoteData) error {
 	references := map[string][]string{}
 
 	if vote.ProjectUID != "" {
@@ -165,7 +169,7 @@ func (p *NATSPublisher) sendVoteAccessMessage(vote *domain.VoteData) error {
 	}
 
 	// Publish the message to NATS
-	if err := p.conn.Publish(fgaconstants.GenericUpdateAccessSubject, accessMsgBytes); err != nil {
+	if err := p.publishWithSpan(ctx, fgaconstants.GenericUpdateAccessSubject, accessMsgBytes); err != nil {
 		return fmt.Errorf("failed to publish access message to subject %s: %w", fgaconstants.GenericUpdateAccessSubject, err)
 	}
 
@@ -217,7 +221,7 @@ func (p *NATSPublisher) sendVoteResponseIndexerMessage(ctx context.Context, subj
 }
 
 // sendVoteResponseAccessMessage sends the message to the NATS server for the vote response access control
-func (p *NATSPublisher) sendVoteResponseAccessMessage(data *domain.VoteResponseData) error {
+func (p *NATSPublisher) sendVoteResponseAccessMessage(ctx context.Context, data *domain.VoteResponseData) error {
 	relations := map[string][]string{}
 	if data.Username != "" {
 		relations["owner"] = []string{data.Username}
@@ -250,7 +254,7 @@ func (p *NATSPublisher) sendVoteResponseAccessMessage(data *domain.VoteResponseD
 	}
 
 	// Publish the message to NATS
-	if err := p.conn.Publish(fgaconstants.GenericUpdateAccessSubject, accessMsgBytes); err != nil {
+	if err := p.publishWithSpan(ctx, fgaconstants.GenericUpdateAccessSubject, accessMsgBytes); err != nil {
 		return fmt.Errorf("failed to publish access message to subject %s: %w", fgaconstants.GenericUpdateAccessSubject, err)
 	}
 
@@ -259,7 +263,7 @@ func (p *NATSPublisher) sendVoteResponseAccessMessage(data *domain.VoteResponseD
 
 // sendDeleteAccessMessage sends a delete access message to FGA-sync
 // This removes all tuples for a resource (typically used when a resource is deleted)
-func (p *NATSPublisher) sendDeleteAccessMessage(objectType string, uid string) error {
+func (p *NATSPublisher) sendDeleteAccessMessage(ctx context.Context, objectType string, uid string) error {
 	// Construct delete access message
 	deleteMsg := fgatypes.GenericFGAMessage{
 		ObjectType: objectType,
@@ -273,7 +277,7 @@ func (p *NATSPublisher) sendDeleteAccessMessage(objectType string, uid string) e
 	}
 
 	// Publish the message to NATS
-	if err := p.conn.Publish(fgaconstants.GenericDeleteAccessSubject, deleteMsgBytes); err != nil {
+	if err := p.publishWithSpan(ctx, fgaconstants.GenericDeleteAccessSubject, deleteMsgBytes); err != nil {
 		return fmt.Errorf("failed to publish delete access message to subject %s: %w", fgaconstants.GenericDeleteAccessSubject, err)
 	}
 
@@ -299,7 +303,7 @@ func (p *NATSPublisher) sendIndexerDeleteMessage(ctx context.Context, subject st
 	p.logger.With("subject", subject, "action", action, "uid", uid).DebugContext(ctx, "constructed indexer delete message")
 
 	// Publish the message to NATS
-	if err := p.conn.Publish(subject, messageBytes); err != nil {
+	if err := p.publishWithSpan(ctx, subject, messageBytes); err != nil {
 		return fmt.Errorf("failed to publish indexer delete message to subject %s: %w", subject, err)
 	}
 
@@ -329,10 +333,35 @@ func (p *NATSPublisher) sendIndexerCreateUpdateMessage(ctx context.Context, subj
 	p.logger.With("subject", subject, "action", action).DebugContext(ctx, "constructed indexer message")
 
 	// Publish the message to NATS
-	if err := p.conn.Publish(subject, messageBytes); err != nil {
+	if err := p.publishWithSpan(ctx, subject, messageBytes); err != nil {
 		return fmt.Errorf("failed to publish indexer message to subject %s: %w", subject, err)
 	}
 
+	return nil
+}
+
+// publishWithSpan wraps conn.PublishMsg with an OTel producer span and injects
+// trace context into the NATS message headers.
+func (p *NATSPublisher) publishWithSpan(ctx context.Context, subject string, data []byte) error {
+	ctx, span := tracer.Start(ctx, "nats.publish",
+		trace.WithSpanKind(trace.SpanKindProducer),
+		trace.WithAttributes(
+			attribute.String("messaging.system", "nats"),
+			attribute.String("messaging.destination.name", subject),
+			attribute.Int("messaging.message.body.size", len(data)),
+		),
+	)
+	defer span.End()
+
+	msg := nats.NewMsg(subject)
+	msg.Data = data
+	otel.GetTextMapPropagator().Inject(ctx, natsHeaderCarrier(msg.Header))
+
+	if err := p.conn.PublishMsg(msg); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		return domain.NewInternalError(fmt.Sprintf("failed to publish to subject %s", subject), err)
+	}
 	return nil
 }
 

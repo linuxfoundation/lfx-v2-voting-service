@@ -11,6 +11,7 @@ This service provides a proxy layer between LFXv2 clients and the legacy ITX vot
 - **Terminology Translation**: Maps LFXv2 "vote" terminology to ITX "poll" terminology
 - **ID Schema Translation**: Bidirectional mapping between LFXv2 UUIDs and LFXv1 Salesforce IDs via NATS
 - **Event Processing**: Real-time sync of v1 voting data to v2 indexer and FGA (see [Event Processing](docs/event-processing.md))
+- **LFID Invites**: Sends LFID invites to vote-response participants who lack a platform account, and enriches their records once they accept (see [LFID Invite Flow](docs/lfid-invites.md))
 - **Error Handling**: Provides consistent error responses following LFXv2 patterns
 - **Logging**: Structured logging with request tracking
 
@@ -44,7 +45,8 @@ lfx-v2-voting-service/
 │   ├── event-processing.md   # NATS event flow and operational guide
 │   ├── glossary.md           # Voting-service-specific terms (ITX, SFID, v1/v2, FGA roles)
 │   ├── indexer-contract.md   # Authoritative schema for data sent to the indexer service
-│   └── itx-proxy-implementation.md  # Proxy architecture deep-dive
+│   ├── itx-proxy-implementation.md  # Proxy architecture deep-dive
+│   └── lfid-invites.md       # LFID invite flow: outbound invites + acceptance enrichment
 ├── gen/                      # Generated Goa code (never edit directly)
 ├── internal/
 │   ├── domain/               # Interfaces and domain models
@@ -119,6 +121,13 @@ Configure the service using environment variables:
 - `EVENT_FILTER_SUBJECT` - NATS subject filter (default: $KV.v1-objects.>)
 
 See [Event Processing Documentation](docs/event-processing.md) for details.
+
+### LFID Invites
+
+- `INVITES_ENABLED` - Enable LFID invite sending and invite_accepted enrichment subscriber (default: false). Accepts `true`, `1`, or `yes`.
+- `LFX_SELF_SERVE_BASE_URL` - Base URL for invite return links. Defaults to the environment-appropriate LFX app URL based on `LFX_ENVIRONMENT`.
+
+See [LFID Invite Flow](docs/lfid-invites.md) for the full design, NATS subjects, KV markers, and operational notes.
 
 ### Local Infrastructure (NATS + Heimdall)
 
