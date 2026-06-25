@@ -24,6 +24,7 @@ func handleVoteResponseUpdate(
 	publisher domain.EventPublisher,
 	idMapper domain.IDMapper,
 	mappingsKV jetstream.KeyValue,
+	inviteHandler *VoteResponseInviteHandler,
 	logger *slog.Logger,
 ) bool {
 	funcLogger := logger.With("key", key, "handler", "vote_response")
@@ -77,6 +78,17 @@ func handleVoteResponseUpdate(
 	if _, err := mappingsKV.Put(ctx, mappingKey, []byte("1")); err != nil {
 		funcLogger.With(errKey, err).WarnContext(ctx, "failed to store vote response mapping")
 		// Don't retry on mapping storage failures
+	}
+
+	if inviteHandler != nil && shouldSendVoteResponseInvite(indexerAction, voteResponseData.Username, voteResponseData.UserEmail) {
+		inviteHandler.maybeSendInvite(
+			ctx,
+			funcLogger,
+			voteResponseData.UID,
+			voteResponseData.UserEmail,
+			voteResponseData.UserName,
+			voteResponseData.PollID,
+		)
 	}
 
 	funcLogger.InfoContext(ctx, "successfully sent vote response indexer and access messages")

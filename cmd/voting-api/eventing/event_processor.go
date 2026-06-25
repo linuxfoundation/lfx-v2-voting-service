@@ -7,10 +7,12 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/eventing"
+	infraNATS "github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/nats"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -21,15 +23,17 @@ const (
 
 // EventProcessor handles NATS KV bucket event processing
 type EventProcessor struct {
-	natsConn   *nats.Conn
-	jsInstance jetstream.JetStream
-	consumer   jetstream.Consumer
-	consumeCtx jetstream.ConsumeContext
-	publisher  domain.EventPublisher
-	idMapper   domain.IDMapper
-	mappingsKV jetstream.KeyValue
-	logger     *slog.Logger
-	config     eventing.Config
+	natsConn      *nats.Conn
+	jsInstance    jetstream.JetStream
+	consumer      jetstream.Consumer
+	consumeCtx    jetstream.ConsumeContext
+	publisher     domain.EventPublisher
+	idMapper      domain.IDMapper
+	mappingsKV    jetstream.KeyValue
+	v1ObjectsKV   jetstream.KeyValue
+	inviteHandler *VoteResponseInviteHandler
+	logger        *slog.Logger
+	config        eventing.Config
 }
 
 // NewEventProcessor creates a new event processor
@@ -37,6 +41,7 @@ func NewEventProcessor(
 	cfg eventing.Config,
 	idMapper domain.IDMapper,
 	logger *slog.Logger,
+	inviteCfg InviteFeatureConfig,
 ) (*EventProcessor, error) {
 	// Connect to NATS
 	conn, err := nats.Connect(cfg.NATSURL,
@@ -73,14 +78,34 @@ func NewEventProcessor(
 		return nil, fmt.Errorf("failed to access %s KV bucket: %w", V1MappingsBucket, err)
 	}
 
+	var v1ObjectsKV jetstream.KeyValue
+	var inviteHandler *VoteResponseInviteHandler
+	if inviteCfg.Enabled &&
+		strings.TrimSpace(inviteCfg.SelfServeBaseURL) != "" {
+		v1ObjectsKV, err = jsContext.KeyValue(context.Background(), V1ObjectsBucket)
+		if err != nil {
+			conn.Close()
+			return nil, fmt.Errorf("failed to access %s KV bucket: %w", V1ObjectsBucket, err)
+		}
+		inviteHandler = &VoteResponseInviteHandler{
+			inviteSender:     infraNATS.NewInviteSender(conn, logger),
+			userReader:       infraNATS.NewUserReader(conn, logger),
+			v1ObjectsKV:      v1ObjectsKV,
+			v1MappingsKV:     mappingsKV,
+			selfServeBaseURL: inviteCfg.SelfServeBaseURL,
+		}
+	}
+
 	return &EventProcessor{
-		natsConn:   conn,
-		jsInstance: jsContext,
-		publisher:  publisher,
-		idMapper:   idMapper,
-		mappingsKV: mappingsKV,
-		logger:     logger,
-		config:     cfg,
+		natsConn:      conn,
+		jsInstance:    jsContext,
+		publisher:     publisher,
+		idMapper:      idMapper,
+		mappingsKV:    mappingsKV,
+		v1ObjectsKV:   v1ObjectsKV,
+		inviteHandler: inviteHandler,
+		logger:        logger,
+		config:        cfg,
 	}, nil
 }
 
@@ -107,7 +132,7 @@ func (ep *EventProcessor) Start(ctx context.Context) error {
 
 	// Start consuming messages
 	consumeCtx, err := consumer.Consume(func(msg jetstream.Msg) {
-		kvMessageHandler(ctx, msg, ep.publisher, ep.idMapper, ep.mappingsKV, ep.logger)
+		kvMessageHandler(ctx, msg, ep.publisher, ep.idMapper, ep.mappingsKV, ep.inviteHandler, ep.logger)
 	}, jetstream.ConsumeErrHandler(func(_ jetstream.ConsumeContext, err error) {
 		ep.logger.With("error", err).Error("KV consumer error encountered")
 	}))

@@ -79,6 +79,28 @@ The voting service implements NATS KV bucket event processing to automatically s
 | `EVENT_CONSUMER_NAME` | `voting-service-kv-consumer` | JetStream consumer name |
 | `EVENT_STREAM_NAME` | `KV_v1-objects` | JetStream stream name |
 | `NATS_URL` | `nats://nats:4222` | NATS server URL |
+| `INVITES_ENABLED` | `false` | Enable LFID invite sending (vote-response handler) and `invite_accepted` enrichment |
+| `LFX_SELF_SERVE_BASE_URL` | derived from `LFX_ENVIRONMENT` | Base URL embedded in invite emails as `return_url` |
+
+### LFID Invite Flow
+
+When `INVITES_ENABLED=true`, the voting service participates in the platform LFID invite flow in two independent paths:
+
+#### Outbound invites (requires event processing)
+
+During vote-response create processing (`itx-poll-vote.*`), after the vote response is indexed:
+
+1. Skip if the participant already has a username (LFID) or if an invite was already sent for this vote-response UID (tracked in `v1-mappings` as `v1_vote_response_lfid_invite_sent.{vote_response_uid}`).
+2. Look up the email via `lfx.auth-service.email_to_username` — skip if an LFID already exists.
+3. Resolve the vote name from the `v1-objects` KV bucket (`itx-poll.{poll_id}`); skip if unavailable.
+4. Send `lfx.invite-service.send_invite` with `resource.type=vote` and role `Voter`.
+5. Store the invite UID in the sent-marker mapping key (best-effort).
+
+All invite operations are best-effort: errors are logged and never cause KV message retries.
+
+#### Invite acceptance enrichment (independent of event processing)
+
+When `INVITES_ENABLED=true` and `NATS_URL` is set, `main.go` starts a NATS queue subscriber on `lfx.invite-service.invite_accepted` (queue group: `voting-service-invite-accepted`). On acceptance it calls the ITX endpoint `POST /v2/voting/vote/invite_accepted` to enrich all vote-response DynamoDB records for the acceptor's email, regardless of the invite's `resource_type`.
 
 ### Consumer Configuration
 

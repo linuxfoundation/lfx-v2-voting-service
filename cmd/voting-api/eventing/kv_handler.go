@@ -29,6 +29,23 @@ func isTombstonedMapping(value []byte) bool {
 	return string(value) == tombstoneMarker
 }
 
+// decodeKVEntryData unmarshals KV entry bytes as JSON first, then msgpack.
+func decodeKVEntryData(data []byte) (map[string]any, error) {
+	var jsonResult map[string]any
+	jsonErr := json.Unmarshal(data, &jsonResult)
+	if jsonErr == nil {
+		return jsonResult, nil
+	}
+
+	var msgpackResult map[string]any
+	msgpackErr := msgpack.Unmarshal(data, &msgpackResult)
+	if msgpackErr == nil {
+		return msgpackResult, nil
+	}
+
+	return nil, fmt.Errorf("failed to decode KV data as JSON or msgpack: json: %w; msgpack: %w", jsonErr, msgpackErr)
+}
+
 // kvEntry implements a mock jetstream.KeyValueEntry interface for the handler
 type kvEntry struct {
 	key       string
@@ -71,6 +88,7 @@ func kvMessageHandler(
 	publisher domain.EventPublisher,
 	idMapper domain.IDMapper,
 	mappingsKV jetstream.KeyValue,
+	inviteHandler *VoteResponseInviteHandler,
 	logger *slog.Logger,
 ) {
 	// Parse the message as a KV entry
@@ -102,7 +120,7 @@ func kvMessageHandler(
 	}
 
 	// Process the KV entry and check if retry is needed
-	shouldRetry := kvHandler(ctx, entry, publisher, idMapper, mappingsKV, logger)
+	shouldRetry := kvHandler(ctx, entry, publisher, idMapper, mappingsKV, inviteHandler, logger)
 
 	// Handle message acknowledgment based on retry decision
 	if shouldRetry {
@@ -149,11 +167,12 @@ func kvHandler(
 	publisher domain.EventPublisher,
 	idMapper domain.IDMapper,
 	mappingsKV jetstream.KeyValue,
+	inviteHandler *VoteResponseInviteHandler,
 	logger *slog.Logger,
 ) bool {
 	switch entry.Operation() {
 	case jetstream.KeyValuePut:
-		return handleKVPut(ctx, entry, publisher, idMapper, mappingsKV, logger)
+		return handleKVPut(ctx, entry, publisher, idMapper, mappingsKV, inviteHandler, logger)
 	case jetstream.KeyValueDelete, jetstream.KeyValuePurge:
 		return handleKVDelete(ctx, entry, publisher, mappingsKV, logger)
 	default:
@@ -169,22 +188,16 @@ func handleKVPut(
 	publisher domain.EventPublisher,
 	idMapper domain.IDMapper,
 	mappingsKV jetstream.KeyValue,
+	inviteHandler *VoteResponseInviteHandler,
 	logger *slog.Logger,
 ) bool {
 	key := entry.Key()
 	value := entry.Value()
 
-	// Parse the data (try JSON first, then msgpack)
-	var v1Data map[string]any
-	if err := json.Unmarshal(value, &v1Data); err != nil {
-		// JSON failed, try msgpack
-		if msgErr := msgpack.Unmarshal(value, &v1Data); msgErr != nil {
-			logger.With(errKey, err, "msgpack_error", msgErr, "key", key).ErrorContext(ctx, "failed to unmarshal KV entry data as JSON or msgpack")
-			return false
-		}
-		logger.With("key", key).DebugContext(ctx, "successfully unmarshalled msgpack data")
-	} else {
-		logger.With("key", key).DebugContext(ctx, "successfully unmarshalled JSON data")
+	v1Data, err := decodeKVEntryData(value)
+	if err != nil {
+		logger.With(errKey, err, "key", key).ErrorContext(ctx, "failed to unmarshal KV entry data as JSON or msgpack")
+		return false
 	}
 
 	// Check if this is a soft delete (record has _sdc_deleted_at field).
@@ -204,7 +217,7 @@ func handleKVPut(
 	case "itx-poll":
 		return handleVoteUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, logger)
 	case "itx-poll-vote":
-		return handleVoteResponseUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, logger)
+		return handleVoteResponseUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, inviteHandler, logger)
 	default:
 		// Not a voting-related key, ACK and skip
 		logger.With("key", key, "prefix", prefix).Debug("skipping update - unsupported type")

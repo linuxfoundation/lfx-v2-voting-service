@@ -75,6 +75,8 @@ github.com/linuxfoundation/lfx-v2-fga-sync v0.2.17 h1:ZW2PyrEPB6SmT14qa3qlrcU4rB
 github.com/linuxfoundation/lfx-v2-fga-sync v0.2.17/go.mod h1:075J7/39UbsuLsJCXgVkbpKK1VIuPa7gbyhLsoTBAXo=
 github.com/linuxfoundation/lfx-v2-indexer-service v0.4.14 h1:GQpAYAjEUNJgg/r4gxGG/teWAAp0eN5+pt/eiM3uaXo=
 github.com/linuxfoundation/lfx-v2-indexer-service v0.4.14/go.mod h1:j013GdKST/hMWFhciRuzJd0sy764sNtlmO3gqmsnaCA=
+github.com/linuxfoundation/lfx-v2-invite-service v0.1.5 h1:S3l0FPg7MpDo4p88yBFuA7B6ss+/0S7vtm0S2ItadmE=
+github.com/linuxfoundation/lfx-v2-invite-service v0.1.5/go.mod h1:tf1P/Gf7QBOZ/e1XKQgtOeKUve5PcwZYniTm28O/Lq0=
 github.com/manveru/faker v0.0.0-20171103152722-9fbc68a78c4d h1:Zj+PHjnhRYWBK6RqCDBcAhLXoi3TzC27Zad/Vn+gnVQ=
 github.com/manveru/faker v0.0.0-20171103152722-9fbc68a78c4d/go.mod h1:WZy8Q5coAB1zhY9AOBJP0O6J4BuDfbupUDavKY+I3+s=
 github.com/manveru/gobdd v0.0.0-20131210092515-f1a17fdd710b h1:3E44bLeN8uKYdfQqVQycPnaVviZdBLbizFhU49mtbe4=
@@ -113,6 +115,8 @@ github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7
 github.com/segmentio/asm v1.2.0 h1:9BQrFxC+YOHJlTlHGkTrFWf59nbL3XnCoFLTwDCI7ys=
 github.com/segmentio/asm v1.2.0/go.mod h1:BqMnlJP91P8d+4ibuonYZw9mfnzI9HfxselHZr5aAcs=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
+github.com/stretchr/objx v0.5.2 h1:xuMeJ0Sdp5ZMRXx/aWO6RZxdr3beISkG5/G/aIRr3pY=
+github.com/stretchr/objx v0.5.2/go.mod h1:FRsXN1f5AsAjCGJKqEizvkpNtU+EGNCLh3NxZ/8L+MA=
 github.com/stretchr/testify v1.6.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=

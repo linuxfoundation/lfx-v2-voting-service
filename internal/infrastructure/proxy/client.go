@@ -665,3 +665,48 @@ func (c *Client) ResendVote(ctx context.Context, voteID string) error {
 
 	return nil
 }
+
+// acceptInviteRequestBody is the JSON payload for POST /v2/voting/vote/invite_accepted.
+type acceptInviteRequestBody struct {
+	Email    string `json:"email"`
+	Username string `json:"username"`
+}
+
+// AcceptInvite calls the ITX Voting Service to enrich all vote-response records tied to
+// email with the accepted username and profile data from the LFX user service.
+func (c *Client) AcceptInvite(ctx context.Context, email, username string) error {
+	body, err := json.Marshal(acceptInviteRequestBody{Email: email, Username: username})
+	if err != nil {
+		return domain.NewInternalError("failed to marshal accept-invite request", err)
+	}
+
+	reqURL := fmt.Sprintf("%sv2/voting/vote/invite_accepted", c.config.BaseURL)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, reqURL, bytes.NewReader(body))
+	if err != nil {
+		return domain.NewInternalError("failed to create accept-invite request", err)
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Accept", "application/json")
+	httpReq.Header.Set("x-scope", "manage:voting")
+
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return domain.NewUnavailableError("ITX accept-invite request failed", err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return domain.NewInternalError("failed to read accept-invite response", err)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return c.mapHTTPError(resp.StatusCode, respBody)
+	}
+
+	return nil
+}
+
+var _ domain.InviteAcceptanceClient = (*Client)(nil)
