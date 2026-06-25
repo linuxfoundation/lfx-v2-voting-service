@@ -28,6 +28,16 @@ podDisruptionBudget:
   # minAvailable: 1
   # maxUnavailable: 1
 
+# topologySpreadConstraints controls how pods are spread across nodes/zones.
+# Empty by default (no constraints). Example:
+#   - maxSkew: 1
+#     topologyKey: kubernetes.io/hostname
+#     whenUnsatisfiable: DoNotSchedule
+#     labelSelector:
+#       matchLabels:
+#         app: lfx-v2-voting-service
+topologySpreadConstraints: []
+
 # Resource limits and requests
 resources:
   limits:
