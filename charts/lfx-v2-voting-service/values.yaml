@@ -90,6 +90,10 @@ app:
     # and the invite_accepted enrichment subscriber.
     INVITES_ENABLED:
       value: false
+    # LFX_SELF_SERVE_BASE_URL overrides the base URL embedded in invite emails.
+    # Defaults to the environment-appropriate app URL derived from LFX_ENVIRONMENT.
+    LFX_SELF_SERVE_BASE_URL:
+      value: ""
 
     # OpenTelemetry configuration
     OTEL_SERVICE_NAME:

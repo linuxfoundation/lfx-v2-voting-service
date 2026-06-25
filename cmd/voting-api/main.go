@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -399,7 +400,15 @@ func getEnv(key, defaultVal string) string {
 }
 
 func parseInviteConfig(logger *slog.Logger) apieventing.InviteFeatureConfig {
-	enabled, _ := strconv.ParseBool(os.Getenv("INVITES_ENABLED"))
+	raw := os.Getenv("INVITES_ENABLED")
+	enabled, err := strconv.ParseBool(raw)
+	if err != nil {
+		if strings.EqualFold(raw, "yes") {
+			enabled = true
+		} else if raw != "" {
+			logger.Warn("unrecognised INVITES_ENABLED value; feature disabled", "value", raw)
+		}
+	}
 
 	selfServeBaseURL := os.Getenv("LFX_SELF_SERVE_BASE_URL")
 	if selfServeBaseURL == "" {
