@@ -66,6 +66,14 @@ func (r *NATSUserReader) UsernameByEmail(ctx context.Context, email string) (str
 			}
 			return "", domain.ErrUserNotFound
 		}
+		// Success envelope: try to extract a username field in case the contract
+		// evolves to {"success": true, "username": "alice"}.
+		var successEnvelope struct {
+			Username string `json:"username"`
+		}
+		if jsonErr := json.Unmarshal(msg.Data, &successEnvelope); jsonErr == nil && successEnvelope.Username != "" {
+			return successEnvelope.Username, nil
+		}
 		return "", fmt.Errorf("unexpected email_to_username success envelope: %s", body)
 	}
 

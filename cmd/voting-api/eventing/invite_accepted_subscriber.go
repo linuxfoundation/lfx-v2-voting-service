@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"sync"
 	"time"
 
 	natsgo "github.com/nats-io/nats.go"
@@ -33,7 +32,6 @@ type InviteAcceptedSubscriber struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
-	wg     sync.WaitGroup
 }
 
 // NewInviteAcceptedSubscriber creates a new subscriber but does not start it.
@@ -69,23 +67,21 @@ func (s *InviteAcceptedSubscriber) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop cancels in-flight handlers, drains the subscription, and waits for handlers to finish.
+// Stop drains the subscription (allowing in-flight handlers to complete), then cancels
+// the context. Drain must precede cancel so that handlers blocked in AcceptInvite are
+// not aborted mid-request by context cancellation.
 func (s *InviteAcceptedSubscriber) Stop() {
-	if s.cancel != nil {
-		s.cancel()
-	}
 	if s.sub != nil {
 		if err := s.sub.Drain(); err != nil {
 			s.logger.With(errKey, err).Warn("error draining invite_accepted subscription")
 		}
 	}
-	s.wg.Wait()
+	if s.cancel != nil {
+		s.cancel()
+	}
 }
 
 func (s *InviteAcceptedSubscriber) handle(msg *natsgo.Msg) {
-	s.wg.Add(1)
-	defer s.wg.Done()
-
 	ctx, cancel := context.WithTimeout(s.ctx, inviteAcceptedCallTimeout)
 	defer cancel()
 

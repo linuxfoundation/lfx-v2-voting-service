@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -134,21 +135,17 @@ func run() int {
 	var inviteAcceptedSub *apieventing.InviteAcceptedSubscriber
 	var inviteNatsConn *natsgo.Conn
 	if inviteCfg.Enabled {
-		if cfg.NATSURL == "" {
-			logger.Warn("INVITES_ENABLED but NATS_URL not set; invite_accepted subscriber will not start")
+		nc, err := natsgo.Connect(cfg.NATSURL)
+		if err != nil {
+			logger.Warn("failed to connect to NATS for invite_accepted subscriber; continuing without enrichment", "error", err)
 		} else {
-			nc, err := natsgo.Connect(cfg.NATSURL)
-			if err != nil {
-				logger.Warn("failed to connect to NATS for invite_accepted subscriber; continuing without enrichment", "error", err)
+			sub := apieventing.NewInviteAcceptedSubscriber(nc, proxyClient, logger)
+			if err := sub.Start(context.Background()); err != nil {
+				nc.Close()
+				logger.Warn("failed to start invite_accepted subscriber; continuing without enrichment", "error", err)
 			} else {
-				sub := apieventing.NewInviteAcceptedSubscriber(nc, proxyClient, logger)
-				if err := sub.Start(context.Background()); err != nil {
-					nc.Close()
-					logger.Warn("failed to start invite_accepted subscriber; continuing without enrichment", "error", err)
-				} else {
-					inviteNatsConn = nc
-					inviteAcceptedSub = sub
-				}
+				inviteNatsConn = nc
+				inviteAcceptedSub = sub
 			}
 		}
 	}
@@ -402,7 +399,7 @@ func getEnv(key, defaultVal string) string {
 }
 
 func parseInviteConfig(logger *slog.Logger) apieventing.InviteFeatureConfig {
-	enabled := os.Getenv("INVITES_ENABLED") == "true"
+	enabled, _ := strconv.ParseBool(os.Getenv("INVITES_ENABLED"))
 
 	selfServeBaseURL := os.Getenv("LFX_SELF_SERVE_BASE_URL")
 	if selfServeBaseURL == "" {

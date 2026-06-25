@@ -131,7 +131,8 @@ func TestMaybeSendInvite(t *testing.T) {
 			userReader: stubVoteInviteUserReader{err: domain.ErrUserNotFound},
 			setupMaps: func(kv *mockKeyValue) {
 				kv.On("Get", mock.Anything, inviteSentKey).Return(nil, jetstream.ErrKeyNotFound)
-				kv.On("Put", mock.Anything, inviteSentKey, []byte("invite-new")).Return(uint64(1), nil)
+				kv.On("Put", mock.Anything, inviteSentKey, []byte("pending")).Return(uint64(1), nil)
+				kv.On("Put", mock.Anything, inviteSentKey, []byte("invite-new")).Return(uint64(2), nil)
 			},
 			setupObjects: func(kv *mockKeyValue) {
 				kv.On("Get", mock.Anything, pollKey).
@@ -140,11 +141,18 @@ func TestMaybeSendInvite(t *testing.T) {
 			wantCalled: true,
 		},
 		{
-			name:       "skips on transient auth lookup failure",
+			name:       "proceeds with invite on transient auth lookup failure",
 			userReader: stubVoteInviteUserReader{err: errors.New("auth unavailable")},
 			setupMaps: func(kv *mockKeyValue) {
 				kv.On("Get", mock.Anything, inviteSentKey).Return(nil, jetstream.ErrKeyNotFound)
+				kv.On("Put", mock.Anything, inviteSentKey, []byte("pending")).Return(uint64(1), nil)
+				kv.On("Put", mock.Anything, inviteSentKey, []byte("invite-new")).Return(uint64(2), nil)
 			},
+			setupObjects: func(kv *mockKeyValue) {
+				kv.On("Get", mock.Anything, pollKey).
+					Return(mockKeyValueEntry{key: pollKey, value: pollPayload}, nil)
+			},
+			wantCalled: true,
 		},
 	}
 

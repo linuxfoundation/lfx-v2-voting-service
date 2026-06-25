@@ -72,8 +72,11 @@ func (h *VoteResponseInviteHandler) maybeSendInvite(
 		return
 	}
 	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
-		logger.With(errKey, err).WarnContext(ctx, "failed to check LFID for vote response; skipping invite")
-		return
+		// Transient auth-service error: fall through and attempt the invite anyway.
+		// Skipping here would permanently lose the invite opportunity — the KV mapping
+		// is already stored so this message won't be redelivered as ActionCreated.
+		// The invite service handles the edge case where the user already has an LFID.
+		logger.With(errKey, err).WarnContext(ctx, "failed to check LFID for vote response; proceeding with invite as best-effort")
 	}
 
 	var voteName string
@@ -107,13 +110,21 @@ func (h *VoteResponseInviteHandler) maybeSendInvite(
 		ExpirationDays: 30,
 	}
 
+	// Write a "pending" marker before calling SendInvite to close the duplicate-invite
+	// window: a concurrent redelivery that passes the Get check above would also see
+	// this marker and skip, preventing two goroutines from both calling SendInvite.
+	if _, err := h.v1MappingsKV.Put(ctx, inviteSentKey, []byte("pending")); err != nil {
+		logger.With(errKey, err).WarnContext(ctx, "failed to store pending invite marker; skipping to avoid duplicate")
+		return
+	}
+
 	result, sendErr := h.inviteSender.SendInvite(ctx, req)
 	if sendErr != nil {
 		logger.With(errKey, sendErr).WarnContext(ctx, "failed to send LFID invite for vote response; continuing")
 		return
 	}
 	if _, err := h.v1MappingsKV.Put(ctx, inviteSentKey, []byte(result.InviteUID)); err != nil {
-		logger.With(errKey, err).WarnContext(ctx, "failed to store vote response LFID invite sent marker")
+		logger.With(errKey, err).WarnContext(ctx, "failed to update vote response LFID invite sent marker")
 	}
 	logger.InfoContext(ctx, "sent LFID invite for vote response",
 		"invite_uid", result.InviteUID,

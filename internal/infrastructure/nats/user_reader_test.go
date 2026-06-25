@@ -65,8 +65,13 @@ func TestNATSUserReader_UsernameByEmail(t *testing.T) {
 			wantErrStr: "email_to_username response missing success field",
 		},
 		{
-			name:       "JSON success envelope returns unexpected envelope error",
-			reply:      replyMsg([]byte(`{"success":true,"username":"alice"}`)),
+			name:     "JSON success envelope with username field returns username",
+			reply:    replyMsg([]byte(`{"success":true,"username":"alice"}`)),
+			wantUser: "alice",
+		},
+		{
+			name:       "JSON success envelope without username field returns unexpected envelope error",
+			reply:      replyMsg([]byte(`{"success":true}`)),
 			wantErrStr: "unexpected email_to_username success envelope",
 		},
 		{
