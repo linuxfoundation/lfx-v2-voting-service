@@ -608,6 +608,10 @@ type VoteResult struct {
 	LastModifiedTime *string
 	// End time
 	EndTime *string
+	// Actual close time when the poll auto-ended early because all voters
+	// responded before end_time. Absent when the poll closed on schedule or is
+	// still active. RFC3339.
+	EarlyEndTime *string
 	// Vote status
 	Status string
 	// Project UID

@@ -71,6 +71,7 @@ type PollResponse struct {
 	CreationTime                  string               `json:"creation_time"`
 	LastModifiedTime              string               `json:"last_modified_time"`
 	EndTime                       string               `json:"end_time"`
+	EarlyEndTime                  string               `json:"early_end_time,omitempty"`
 	Status                        string               `json:"status"`
 	ProjectID                     string               `json:"project_id"`
 	ProjectName                   string               `json:"project_name,omitempty"`

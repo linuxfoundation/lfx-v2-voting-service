@@ -3215,6 +3215,11 @@ definitions:
                 type: string
                 description: Vote description
                 example: Accusantium accusantium quos consequatur placeat.
+            early_end_time:
+                type: string
+                description: Actual close time when the poll auto-ended early because all voters responded before end_time. Absent when the poll closed on schedule or is still active. RFC3339.
+                example: "2026-02-10T14:32:11Z"
+                format: date-time
             end_time:
                 type: string
                 description: End time
@@ -3344,6 +3349,7 @@ definitions:
             committee_voting_status: false
             creation_time: "1973-01-29T20:25:32Z"
             description: Aliquam et voluptatem sit.
+            early_end_time: "2026-02-10T14:32:11Z"
             end_time: "1977-10-29T13:52:29Z"
             last_modified_time: "2002-07-05T08:27:26Z"
             name: Aut vel exercitationem in unde sapiente.

@@ -49,6 +49,7 @@ func TestConvertMapToVoteData(t *testing.T) {
 			"creation_time":                    "2024-01-01T00:00:00Z",
 			"last_modified_time":               "2024-01-02T00:00:00Z",
 			"end_time":                         "2024-12-31T23:59:59Z",
+			"early_end_time":                   "2024-12-30T10:00:00Z",
 			"status":                           "active",
 			"project_id":                       "project-sfid",
 			"project_name":                     "Test Project",
@@ -87,6 +88,7 @@ func TestConvertMapToVoteData(t *testing.T) {
 		assert.Equal(t, 5, result.NumResponseReceived)
 		assert.Equal(t, 1, result.NumWinners)
 		assert.True(t, result.AllowAbstain)
+		assert.Equal(t, "2024-12-30T10:00:00Z", result.EarlyEndTime)
 	})
 
 	t.Run("handles missing optional fields", func(t *testing.T) {
