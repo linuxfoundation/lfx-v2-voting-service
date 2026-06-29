@@ -50,7 +50,7 @@ func TestConvertMapToVoteData(t *testing.T) {
 			"last_modified_time":               "2024-01-02T00:00:00Z",
 			"end_time":                         "2024-12-31T23:59:59Z",
 			"early_end_time":                   "2024-12-30T10:00:00Z",
-			"status":                           "active",
+			"status":                           "ended",
 			"project_id":                       "project-sfid",
 			"project_name":                     "Test Project",
 			"committee_id":                     "committee-sfid",
@@ -79,7 +79,7 @@ func TestConvertMapToVoteData(t *testing.T) {
 		assert.Equal(t, "poll-123", result.PollID)
 		assert.Equal(t, "Test Vote", result.Name)
 		assert.Equal(t, "Test Description", result.Description)
-		assert.Equal(t, "active", result.Status)
+		assert.Equal(t, "ended", result.Status)
 		assert.Equal(t, "project-sfid", result.ProjectID)
 		assert.Equal(t, "project-sfid", result.ProjectUID) // NoOp mapper returns same value
 		assert.Equal(t, "committee-sfid", result.CommitteeID)
