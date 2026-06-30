@@ -15,6 +15,7 @@ func TestNormalizeTimestamp(t *testing.T) {
 		{"zero value", "0001-01-01T00:00:00Z", ""},
 		{"invalid", "not-a-time", ""},
 		{"valid", "2026-02-10T14:32:11Z", "2026-02-10T14:32:11Z"},
+		{"valid fractional", "2026-02-10T14:32:11.123Z", "2026-02-10T14:32:11.123Z"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
