@@ -12,6 +12,7 @@ import (
 
 	indexerConstants "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/utils"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
@@ -110,6 +111,7 @@ func convertMapToVoteData(
 		CreationTime:                  pollDB.CreationTime,
 		LastModifiedTime:              pollDB.LastModifiedTime,
 		EndTime:                       pollDB.EndTime,
+		EarlyEndTime:                  utils.NormalizeTimestamp(pollDB.EarlyEndTime),
 		Status:                        pollDB.Status,
 		ProjectID:                     pollDB.ProjectID,
 		ProjectName:                   pollDB.ProjectName,

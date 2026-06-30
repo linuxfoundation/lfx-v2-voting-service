@@ -20,6 +20,7 @@ type PollDBRaw struct {
 	CreationTime                  string                   `json:"creation_time"`
 	LastModifiedTime              string                   `json:"last_modified_time"`
 	EndTime                       string                   `json:"end_time"`
+	EarlyEndTime                  string                   `json:"early_end_time,omitempty"`
 	Status                        string                   `json:"status"`
 	ProjectID                     string                   `json:"project_id"`
 	ProjectName                   string                   `json:"project_name"`
@@ -46,6 +47,7 @@ func (p *PollDBRaw) UnmarshalJSON(data []byte) error {
 		CreationTime                  string                   `json:"creation_time"`
 		LastModifiedTime              string                   `json:"last_modified_time"`
 		EndTime                       string                   `json:"end_time"`
+		EarlyEndTime                  string                   `json:"early_end_time,omitempty"`
 		Status                        string                   `json:"status"`
 		ProjectID                     string                   `json:"project_id"`
 		ProjectName                   string                   `json:"project_name"`
@@ -134,6 +136,7 @@ func (p *PollDBRaw) UnmarshalJSON(data []byte) error {
 	p.CreationTime = tmp.CreationTime
 	p.LastModifiedTime = tmp.LastModifiedTime
 	p.EndTime = tmp.EndTime
+	p.EarlyEndTime = tmp.EarlyEndTime
 	p.Status = tmp.Status
 	p.ProjectID = tmp.ProjectID
 	p.ProjectName = tmp.ProjectName
@@ -255,6 +258,7 @@ type VoteData struct {
 	CreationTime                  string                   `json:"creation_time"`
 	LastModifiedTime              string                   `json:"last_modified_time"`
 	EndTime                       string                   `json:"end_time"`
+	EarlyEndTime                  string                   `json:"early_end_time,omitempty"`
 	Status                        string                   `json:"status"`
 	ProjectID                     string                   `json:"project_id"`  // v1 project ID (SFID)
 	ProjectUID                    string                   `json:"project_uid"` // v2 project UID

@@ -138,6 +138,9 @@ func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *votesvc.VoteResult
 		NumWinners:                    utils.IntPtr(poll.NumWinners),
 		AllowAbstain:                  utils.BoolPtr(poll.AllowAbstain),
 	}
+	if v := utils.NormalizeTimestamp(poll.EarlyEndTime); v != "" {
+		result.EarlyEndTime = utils.StringPtr(v)
+	}
 
 	// Convert poll questions
 	if len(poll.PollQuestions) > 0 {

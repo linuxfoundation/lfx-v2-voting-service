@@ -136,6 +136,10 @@ type CreateVoteResponseBody struct {
 	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// Actual close time when the poll auto-ended early because all voters
+	// responded before end_time. Absent when the poll closed on schedule or is
+	// still active. RFC3339.
+	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
 	// Vote status
 	Status string `form:"status" json:"status" xml:"status"`
 	// Project UID
@@ -183,6 +187,10 @@ type GetVoteResponseBody struct {
 	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// Actual close time when the poll auto-ended early because all voters
+	// responded before end_time. Absent when the poll closed on schedule or is
+	// still active. RFC3339.
+	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
 	// Vote status
 	Status string `form:"status" json:"status" xml:"status"`
 	// Project UID
@@ -230,6 +238,10 @@ type UpdateVoteResponseBody struct {
 	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// Actual close time when the poll auto-ended early because all voters
+	// responded before end_time. Absent when the poll closed on schedule or is
+	// still active. RFC3339.
+	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
 	// Vote status
 	Status string `form:"status" json:"status" xml:"status"`
 	// Project UID
@@ -277,6 +289,10 @@ type ExtendVoteResponseBody struct {
 	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// Actual close time when the poll auto-ended early because all voters
+	// responded before end_time. Absent when the poll closed on schedule or is
+	// still active. RFC3339.
+	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
 	// Vote status
 	Status string `form:"status" json:"status" xml:"status"`
 	// Project UID
@@ -1341,6 +1357,7 @@ func NewCreateVoteResponseBody(res *vote.VoteResult) *CreateVoteResponseBody {
 		CreationTime:                  res.CreationTime,
 		LastModifiedTime:              res.LastModifiedTime,
 		EndTime:                       res.EndTime,
+		EarlyEndTime:                  res.EarlyEndTime,
 		Status:                        res.Status,
 		ProjectUID:                    res.ProjectUID,
 		ProjectName:                   res.ProjectName,
@@ -1390,6 +1407,7 @@ func NewGetVoteResponseBody(res *vote.VoteResult) *GetVoteResponseBody {
 		CreationTime:                  res.CreationTime,
 		LastModifiedTime:              res.LastModifiedTime,
 		EndTime:                       res.EndTime,
+		EarlyEndTime:                  res.EarlyEndTime,
 		Status:                        res.Status,
 		ProjectUID:                    res.ProjectUID,
 		ProjectName:                   res.ProjectName,
@@ -1439,6 +1457,7 @@ func NewUpdateVoteResponseBody(res *vote.VoteResult) *UpdateVoteResponseBody {
 		CreationTime:                  res.CreationTime,
 		LastModifiedTime:              res.LastModifiedTime,
 		EndTime:                       res.EndTime,
+		EarlyEndTime:                  res.EarlyEndTime,
 		Status:                        res.Status,
 		ProjectUID:                    res.ProjectUID,
 		ProjectName:                   res.ProjectName,
@@ -1488,6 +1507,7 @@ func NewExtendVoteResponseBody(res *vote.VoteResult) *ExtendVoteResponseBody {
 		CreationTime:                  res.CreationTime,
 		LastModifiedTime:              res.LastModifiedTime,
 		EndTime:                       res.EndTime,
+		EarlyEndTime:                  res.EarlyEndTime,
 		Status:                        res.Status,
 		ProjectUID:                    res.ProjectUID,
 		ProjectName:                   res.ProjectName,

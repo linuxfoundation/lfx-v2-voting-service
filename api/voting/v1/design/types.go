@@ -165,6 +165,12 @@ var VoteResult = Type("VoteResult", func() {
 
 	Attribute("end_time", String, "End time", func() {
 		Format(FormatDateTime)
+		Example("2026-02-15T23:59:59Z")
+	})
+
+	Attribute("early_end_time", String, "Actual close time when the poll auto-ended early because all voters responded before end_time. Absent when the poll closed on schedule or is still active. RFC3339.", func() {
+		Format(FormatDateTime)
+		Example("2026-02-10T14:32:11Z")
 	})
 
 	Attribute("status", String, "Vote status", func() {

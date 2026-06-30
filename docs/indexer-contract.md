@@ -40,6 +40,7 @@ These fields are indexed and queryable via `filters` or `cel_filter` in the quer
 | `creation_time` | string | Creation timestamp from ITX |
 | `last_modified_time` | string | Last modified timestamp from ITX |
 | `end_time` | string | Vote end time |
+| `early_end_time` | string | Actual close time when the poll auto-ended (all voters responded before `end_time`). Absent for polls that closed on schedule. RFC3339. |
 | `status` | string | Vote status (e.g., `Open`, `Closed`) |
 | `project_id` | string | ITX project identifier (v1 SFID) |
 | `project_uid` | string | LFX project UID (v2) |

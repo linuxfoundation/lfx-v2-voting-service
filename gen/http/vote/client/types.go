@@ -134,6 +134,10 @@ type CreateVoteResponseBody struct {
 	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// Actual close time when the poll auto-ended early because all voters
+	// responded before end_time. Absent when the poll closed on schedule or is
+	// still active. RFC3339.
+	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
 	// Vote status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// Project UID
@@ -181,6 +185,10 @@ type GetVoteResponseBody struct {
 	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// Actual close time when the poll auto-ended early because all voters
+	// responded before end_time. Absent when the poll closed on schedule or is
+	// still active. RFC3339.
+	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
 	// Vote status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// Project UID
@@ -228,6 +236,10 @@ type UpdateVoteResponseBody struct {
 	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// Actual close time when the poll auto-ended early because all voters
+	// responded before end_time. Absent when the poll closed on schedule or is
+	// still active. RFC3339.
+	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
 	// Vote status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// Project UID
@@ -275,6 +287,10 @@ type ExtendVoteResponseBody struct {
 	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// Actual close time when the poll auto-ended early because all voters
+	// responded before end_time. Absent when the poll closed on schedule or is
+	// still active. RFC3339.
+	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
 	// Vote status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
 	// Project UID
@@ -1557,6 +1573,7 @@ func NewCreateVoteVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResu
 		CreationTime:                  body.CreationTime,
 		LastModifiedTime:              body.LastModifiedTime,
 		EndTime:                       body.EndTime,
+		EarlyEndTime:                  body.EarlyEndTime,
 		Status:                        *body.Status,
 		ProjectUID:                    *body.ProjectUID,
 		ProjectName:                   body.ProjectName,
@@ -1683,6 +1700,7 @@ func NewGetVoteVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
 		CreationTime:                  body.CreationTime,
 		LastModifiedTime:              body.LastModifiedTime,
 		EndTime:                       body.EndTime,
+		EarlyEndTime:                  body.EarlyEndTime,
 		Status:                        *body.Status,
 		ProjectUID:                    *body.ProjectUID,
 		ProjectName:                   body.ProjectName,
@@ -1796,6 +1814,7 @@ func NewUpdateVoteVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
 		CreationTime:                  body.CreationTime,
 		LastModifiedTime:              body.LastModifiedTime,
 		EndTime:                       body.EndTime,
+		EarlyEndTime:                  body.EarlyEndTime,
 		Status:                        *body.Status,
 		ProjectUID:                    *body.ProjectUID,
 		ProjectName:                   body.ProjectName,
@@ -1977,6 +1996,7 @@ func NewExtendVoteVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
 		CreationTime:                  body.CreationTime,
 		LastModifiedTime:              body.LastModifiedTime,
 		EndTime:                       body.EndTime,
+		EarlyEndTime:                  body.EarlyEndTime,
 		Status:                        *body.Status,
 		ProjectUID:                    *body.ProjectUID,
 		ProjectName:                   body.ProjectName,
@@ -2654,6 +2674,9 @@ func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
 	if body.EndTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", *body.EndTime, goa.FormatDateTime))
 	}
+	if body.EarlyEndTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.early_end_time", *body.EarlyEndTime, goa.FormatDateTime))
+	}
 	if body.Status != nil {
 		if !(*body.Status == "disabled" || *body.Status == "active" || *body.Status == "ended") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"disabled", "active", "ended"}))
@@ -2706,6 +2729,9 @@ func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
 	}
 	if body.EndTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", *body.EndTime, goa.FormatDateTime))
+	}
+	if body.EarlyEndTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.early_end_time", *body.EarlyEndTime, goa.FormatDateTime))
 	}
 	if body.Status != nil {
 		if !(*body.Status == "disabled" || *body.Status == "active" || *body.Status == "ended") {
@@ -2760,6 +2786,9 @@ func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
 	if body.EndTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", *body.EndTime, goa.FormatDateTime))
 	}
+	if body.EarlyEndTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.early_end_time", *body.EarlyEndTime, goa.FormatDateTime))
+	}
 	if body.Status != nil {
 		if !(*body.Status == "disabled" || *body.Status == "active" || *body.Status == "ended") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"disabled", "active", "ended"}))
@@ -2812,6 +2841,9 @@ func ValidateExtendVoteResponseBody(body *ExtendVoteResponseBody) (err error) {
 	}
 	if body.EndTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", *body.EndTime, goa.FormatDateTime))
+	}
+	if body.EarlyEndTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.early_end_time", *body.EarlyEndTime, goa.FormatDateTime))
 	}
 	if body.Status != nil {
 		if !(*body.Status == "disabled" || *body.Status == "active" || *body.Status == "ended") {
