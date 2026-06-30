@@ -111,6 +111,27 @@ func TestConvertMapToVoteData(t *testing.T) {
 		assert.Equal(t, "Minimal Vote", result.Name)
 		assert.Equal(t, 0, result.TotalVotingRequestInvitations)
 		assert.Equal(t, 0, result.NumResponseReceived)
+		assert.Empty(t, result.EarlyEndTime)
+	})
+
+	t.Run("drops zero-value early_end_time from raw DynamoDB", func(t *testing.T) {
+		v1Data := map[string]interface{}{
+			"poll_id":        "poll-zero",
+			"name":           "Scheduled Close Vote",
+			"status":         "ended",
+			"project_id":     "project-sfid",
+			"end_time":       "2026-02-15T23:59:59Z",
+			"early_end_time": "0001-01-01T00:00:00Z",
+		}
+
+		idMapper := idmapper.NewNoOpMapper()
+		ctx := context.Background()
+
+		logger := slog.Default()
+		result, err := convertMapToVoteData(ctx, v1Data, idMapper, logger)
+		require.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Empty(t, result.EarlyEndTime)
 	})
 
 	t.Run("returns error for invalid numeric string", func(t *testing.T) {

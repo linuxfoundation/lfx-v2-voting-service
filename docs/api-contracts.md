@@ -282,7 +282,7 @@ Authorization: Bearer <heimdall-jwt-token>
 }
 ```
 
-When a poll auto-ends because all eligible voters respond before its scheduled `end_time`, ITX stamps `early_end_time` with the actual close time and preserves the original `end_time`. The proxy forwards `early_end_time` as a read-only field, present only on auto-ended polls:
+When a poll auto-ends because all eligible voters respond (by voting or being removed) before its scheduled `end_time`, ITX stamps `early_end_time` with the actual close time and preserves the original `end_time`. Extending an ended poll reactivates it and clears `early_end_time`. The proxy forwards `early_end_time` as a read-only field, present only on auto-ended polls, and normalizes zero-value timestamps to absent (mirroring ITX, since the NATS KV ingress reads raw DynamoDB attributes):
 
 ```jsonc
 {
