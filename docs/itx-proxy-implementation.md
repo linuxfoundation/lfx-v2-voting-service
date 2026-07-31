@@ -332,11 +332,6 @@ type VoteResponseClient interface {
     UpdateVote(ctx context.Context, voteID string, req *itx.UpdateVoteRequest) error
     ResendVote(ctx context.Context, voteID string) error
 }
-
-type ITXProxyClient interface {
-    PollClient
-    VoteResponseClient
-}
 ```
 
 **Implementation**: [internal/infrastructure/proxy/client.go](../internal/infrastructure/proxy/client.go)
