@@ -3,6 +3,13 @@
 
 package itx
 
+// PollSource marks polls created through the LFX self-serve proxy, so ITX links
+// the poll-ended email back to the self-serve app instead of PCC.
+type PollSource string
+
+// PollSourceSelfServe is the source value for polls created via the self-serve proxy.
+const PollSourceSelfServe PollSource = "self_serve"
+
 // CreatePollRequest represents the request to create a poll in ITX
 type CreatePollRequest struct {
 	Name                       string              `json:"name"`
@@ -12,6 +19,8 @@ type CreatePollRequest struct {
 	CommitteeID                string              `json:"committee_id"`
 	CommitteeIDs               []string            `json:"committee_ids,omitempty"`
 	CommitteeFilters           []string            `json:"committee_filters,omitempty"`
+	CreatedBy                  *CreatedByInput     `json:"created_by,omitempty"`
+	Source                     PollSource          `json:"source,omitempty"`
 	PollQuestions              []PollQuestionInput `json:"poll_questions"`
 	PollCommentPrompts         []PollCommentPrompt `json:"poll_comment_prompts,omitempty"`
 	PseudoAnonymity            bool                `json:"pseudo_anonymity"`
@@ -20,6 +29,16 @@ type CreatePollRequest struct {
 	AllowAbstain               bool                `json:"allow_abstain"`
 	QuorumPercentage           *int                `json:"quorum_percentage,omitempty"`
 	WinningThresholdPercentage *int                `json:"winning_threshold_percentage,omitempty"`
+}
+
+// CreatedByInput identifies the poll creator so ITX can enrich the record from LFX
+// and notify them when the poll ends. Field names match the ITX created_by object;
+// the proxy supplies the authenticated user's LFID username and ITX resolves the rest.
+type CreatedByInput struct {
+	ID       string `json:"id,omitempty"`
+	Username string `json:"username,omitempty"`
+	Email    string `json:"email,omitempty"`
+	Name     string `json:"name,omitempty"`
 }
 
 // UpdatePollRequest represents the request to update a poll in ITX

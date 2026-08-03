@@ -6,6 +6,7 @@ package service
 import (
 	"context"
 	"log/slog"
+	"strings"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
@@ -55,7 +56,7 @@ func (s *VoteService) JWTAuth(ctx context.Context, token string, scheme *securit
 func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*itx.PollResponse, error) {
 	// Extract principal from context
 	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
-	if !ok {
+	if !ok || strings.TrimSpace(principal) == "" {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
 		return nil, domain.NewValidationError("authentication required")
 	}
@@ -89,6 +90,15 @@ func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*
 		QuorumPercentage:           req.QuorumPercentage,
 		WinningThresholdPercentage: req.WinningThresholdPercentage,
 	}
+
+	// Forward the authenticated user's LFID username so ITX can enrich the creator
+	// record from LFX and notify them when the poll ends. ITX keys enrichment on
+	// username/email, so the principal must be sent as the username, not a bare ID.
+	proxyReq.CreatedBy = creatorFromPrincipal(principal)
+
+	// Mark the origin so ITX links the poll-ended email to the self-serve app: the proxy
+	// is the sole self-serve entry point, so every poll it creates is self-serve.
+	proxyReq.Source = itx.PollSourceSelfServe
 
 	// Convert poll questions
 	proxyReq.PollQuestions = make([]itx.PollQuestionInput, len(req.PollQuestions))
@@ -446,6 +456,18 @@ func (s *VoteService) mapRequestIDsV2ToV1(ctx context.Context, projectUID, commi
 	}
 
 	return projectID, committeeID, committeeIDs, nil
+}
+
+// creatorFromPrincipal builds the ITX created_by payload from the JWT principal claim.
+// The LFXv2 principal is the LFID username, so it is sent as the username field; ITX
+// resolves the creator's email and display name from LFX for the poll-ended notification.
+// Returns nil when no principal is present so no empty created_by is forwarded.
+func creatorFromPrincipal(principal string) *itx.CreatedByInput {
+	username := strings.TrimSpace(principal)
+	if username == "" {
+		return nil
+	}
+	return &itx.CreatedByInput{Username: username}
 }
 
 // CreateVoteRequest is the internal request type for creating a vote
