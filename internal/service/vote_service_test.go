@@ -5,6 +5,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"testing"
@@ -61,6 +62,31 @@ func TestCreateVoteForwardsSelfServeSource(t *testing.T) {
 	}
 	if client.lastCreate.Source != itx.PollSourceSelfServe {
 		t.Fatalf("expected Source %q, got %q", itx.PollSourceSelfServe, client.lastCreate.Source)
+	}
+}
+
+// Guards the CreateVote authentication check at the service layer so a future
+// refactor that drops or bypasses the principal guard fails this test, not just
+// the creatorFromPrincipal unit test.
+func TestCreateVoteRejectsWhitespaceOnlyPrincipal(t *testing.T) {
+	client := &capturePollClient{}
+	svc := NewVoteService(nil, client, identityIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	ctx := context.WithValue(context.Background(), constants.PrincipalContextID, "   ")
+	_, err := svc.CreateVote(ctx, &CreateVoteRequest{Name: "poll", ProjectUID: "project-uid"})
+
+	if err == nil {
+		t.Fatal("expected validation error for whitespace-only principal, got nil")
+	}
+	var dErr *domain.DomainError
+	if !errors.As(err, &dErr) {
+		t.Fatalf("expected *domain.DomainError, got %T: %v", err, err)
+	}
+	if dErr.Type != domain.ErrorTypeValidation {
+		t.Fatalf("expected ErrorTypeValidation, got %d", dErr.Type)
+	}
+	if client.lastCreate != nil {
+		t.Fatalf("expected CreatePoll not to be called, but it was with %+v", client.lastCreate)
 	}
 }
 
