@@ -82,30 +82,37 @@ type PollCommentPrompt struct {
 	Prompt string `json:"prompt"`
 }
 
+// PollCommentPromptOutput represents a comment prompt in the response
+type PollCommentPromptOutput struct {
+	PromptID string `json:"prompt_id"`
+	Prompt   string `json:"prompt"`
+}
+
 // PollResponse represents a poll from ITX
 type PollResponse struct {
-	PollID                        string               `json:"poll_id"`
-	Name                          string               `json:"name"`
-	Description                   string               `json:"description"`
-	CreationTime                  string               `json:"creation_time"`
-	LastModifiedTime              string               `json:"last_modified_time"`
-	EndTime                       string               `json:"end_time"`
-	EarlyEndTime                  string               `json:"early_end_time,omitempty"`
-	Status                        string               `json:"status"`
-	ProjectID                     string               `json:"project_id"`
-	ProjectName                   string               `json:"project_name,omitempty"`
-	CommitteeID                   string               `json:"committee_id"`
-	CommitteeName                 string               `json:"committee_name"`
-	CommitteeFilters              []string             `json:"committee_filters,omitempty"`
-	CommitteeType                 string               `json:"committee_type"`
-	CommitteeVotingStatus         bool                 `json:"committee_voting_status"`
-	PseudoAnonymity               bool                 `json:"pseudo_anonymity"`
-	TotalVotingRequestInvitations int                  `json:"total_voting_request_invitations"`
-	NumResponseReceived           int                  `json:"num_response_received"`
-	PollQuestions                 []PollQuestionOutput `json:"poll_questions"`
-	PollType                      string               `json:"poll_type,omitempty"`
-	NumWinners                    int                  `json:"num_winners,omitempty"`
-	AllowAbstain                  bool                 `json:"allow_abstain"`
+	PollID                        string                    `json:"poll_id"`
+	Name                          string                    `json:"name"`
+	Description                   string                    `json:"description"`
+	CreationTime                  string                    `json:"creation_time"`
+	LastModifiedTime              string                    `json:"last_modified_time"`
+	EndTime                       string                    `json:"end_time"`
+	EarlyEndTime                  string                    `json:"early_end_time,omitempty"`
+	Status                        string                    `json:"status"`
+	ProjectID                     string                    `json:"project_id"`
+	ProjectName                   string                    `json:"project_name,omitempty"`
+	CommitteeID                   string                    `json:"committee_id"`
+	CommitteeName                 string                    `json:"committee_name"`
+	CommitteeFilters              []string                  `json:"committee_filters,omitempty"`
+	CommitteeType                 string                    `json:"committee_type"`
+	CommitteeVotingStatus         bool                      `json:"committee_voting_status"`
+	PseudoAnonymity               bool                      `json:"pseudo_anonymity"`
+	TotalVotingRequestInvitations int                       `json:"total_voting_request_invitations"`
+	NumResponseReceived           int                       `json:"num_response_received"`
+	PollQuestions                 []PollQuestionOutput      `json:"poll_questions"`
+	PollCommentPrompts            []PollCommentPromptOutput `json:"poll_comment_prompts,omitempty"`
+	PollType                      string                    `json:"poll_type,omitempty"`
+	NumWinners                    int                       `json:"num_winners,omitempty"`
+	AllowAbstain                  bool                      `json:"allow_abstain"`
 }
 
 // PollQuestionOutput represents a question in the response
@@ -124,15 +131,28 @@ type PollChoiceOutput struct {
 
 // CreateVoteRequest represents the request to submit a vote in ITX
 type CreateVoteRequest struct {
-	VoteID          string            `json:"vote_id"`
-	UserVoteContent []PollAnswerInput `json:"user_vote_content"`
-	Abstain         bool              `json:"abstain"`
+	VoteID           string            `json:"vote_id"`
+	UserVoteContent  []PollAnswerInput `json:"user_vote_content"`
+	Abstain          bool              `json:"abstain"`
+	CommentResponses []CommentResponse `json:"comment_responses,omitempty"`
 }
 
-// UpdateVoteRequest represents the request to update a vote in ITX
+// UpdateVoteRequest represents the request to update a vote in ITX.
+// CommentResponses is a pointer-to-slice so a nil value can be omitted from the
+// request body (ITX preserves existing comments) while a non-nil, possibly-empty
+// slice is still encoded as an explicit array (ITX validates and replaces them).
+// A plain slice cannot express this: encoding/json's `omitempty` drops both nil
+// and empty slices identically.
 type UpdateVoteRequest struct {
-	UserVoteContent []PollAnswerInput `json:"user_vote_content"`
-	Abstain         bool              `json:"abstain"`
+	UserVoteContent  []PollAnswerInput  `json:"user_vote_content"`
+	Abstain          bool               `json:"abstain"`
+	CommentResponses *[]CommentResponse `json:"comment_responses,omitempty"`
+}
+
+// CommentResponse represents a voter's free-text response to a comment prompt
+type CommentResponse struct {
+	PromptID    string `json:"prompt_id"`
+	CommentText string `json:"comment_text"`
 }
 
 // PollAnswerInput represents a vote answer submission
@@ -150,34 +170,35 @@ type RankedChoiceInput struct {
 
 // VoteResponse represents a vote response from ITX
 type VoteResponse struct {
-	VoteID                 string       `json:"vote_id"`
-	PollID                 string       `json:"poll_id"`
-	ProjectID              string       `json:"project_id"`
-	VoteStatus             string       `json:"vote_status"`
-	Abstained              bool         `json:"abstained"`
-	AllowAbstain           bool         `json:"allow_abstain"`
-	VoteCreationTime       string       `json:"vote_creation_time"`
-	UserName               string       `json:"user_name"`
-	ProfilePicture         string       `json:"profile_picture"`
-	UserID                 string       `json:"user_id"`
-	UserEmail              string       `json:"user_email"`
-	UserRole               string       `json:"user_role"`
-	UserVotingStatus       string       `json:"user_voting_status"`
-	UserOrgName            string       `json:"user_org_name"`
-	UserOrgID              string       `json:"user_org_id"`
-	SESMessageID           string       `json:"ses_message_id"`
-	SESMessageLastSentTime string       `json:"ses_message_last_sent_time"`
-	SESBounceType          string       `json:"ses_bounce_type,omitempty"`
-	SESBounceSubtype       string       `json:"ses_bounce_subtype,omitempty"`
-	SESComplaintExists     bool         `json:"ses_complaint_exists"`
-	SESComplaintType       string       `json:"ses_complaint_type,omitempty"`
-	SESComplaintDate       string       `json:"ses_complaint_date,omitempty"`
-	SESDeliverySuccessful  bool         `json:"ses_delivery_successful"`
-	SESEmailOpened         bool         `json:"ses_email_opened"`
-	SESEmailOpenedLastTime string       `json:"ses_email_opened_last_time,omitempty"`
-	SESLinkClicked         bool         `json:"ses_link_clicked"`
-	SESLinkClickedLastTime string       `json:"ses_link_clicked_last_time,omitempty"`
-	PollAnswers            []PollAnswer `json:"poll_answers"`
+	VoteID                 string            `json:"vote_id"`
+	PollID                 string            `json:"poll_id"`
+	ProjectID              string            `json:"project_id"`
+	VoteStatus             string            `json:"vote_status"`
+	Abstained              bool              `json:"abstained"`
+	AllowAbstain           bool              `json:"allow_abstain"`
+	VoteCreationTime       string            `json:"vote_creation_time"`
+	UserName               string            `json:"user_name"`
+	ProfilePicture         string            `json:"profile_picture"`
+	UserID                 string            `json:"user_id"`
+	UserEmail              string            `json:"user_email"`
+	UserRole               string            `json:"user_role"`
+	UserVotingStatus       string            `json:"user_voting_status"`
+	UserOrgName            string            `json:"user_org_name"`
+	UserOrgID              string            `json:"user_org_id"`
+	SESMessageID           string            `json:"ses_message_id"`
+	SESMessageLastSentTime string            `json:"ses_message_last_sent_time"`
+	SESBounceType          string            `json:"ses_bounce_type,omitempty"`
+	SESBounceSubtype       string            `json:"ses_bounce_subtype,omitempty"`
+	SESComplaintExists     bool              `json:"ses_complaint_exists"`
+	SESComplaintType       string            `json:"ses_complaint_type,omitempty"`
+	SESComplaintDate       string            `json:"ses_complaint_date,omitempty"`
+	SESDeliverySuccessful  bool              `json:"ses_delivery_successful"`
+	SESEmailOpened         bool              `json:"ses_email_opened"`
+	SESEmailOpenedLastTime string            `json:"ses_email_opened_last_time,omitempty"`
+	SESLinkClicked         bool              `json:"ses_link_clicked"`
+	SESLinkClickedLastTime string            `json:"ses_link_clicked_last_time,omitempty"`
+	PollAnswers            []PollAnswer      `json:"poll_answers"`
+	CommentResponses       []CommentResponse `json:"comment_responses"`
 }
 
 // PollAnswer represents a vote answer in the response
@@ -312,8 +333,18 @@ type MeekSTVElectedChoice struct {
 	SurplusVotes int    `json:"surplus_votes"`
 }
 
-// CommentResult represents comment results
+// CommentResult represents the results for a single comment prompt, grouped with every response to it
 type CommentResult struct {
-	Prompt   string   `json:"prompt"`
-	Comments []string `json:"comments"`
+	Prompt    PollCommentPromptOutput   `json:"prompt"`
+	Responses []CommentResponseWithUser `json:"responses"`
+}
+
+// CommentResponseWithUser represents a voter's comment response with attribution, as returned in results
+type CommentResponseWithUser struct {
+	VoteID           string `json:"vote_id"`
+	UserID           string `json:"user_id"`
+	CommentText      string `json:"comment_text"`
+	UserName         string `json:"user_name,omitempty"`
+	VoteCreationTime string `json:"vote_creation_time"`
+	Abstained        bool   `json:"abstained"`
 }

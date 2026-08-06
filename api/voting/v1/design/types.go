@@ -191,6 +191,7 @@ var VoteResult = Type("VoteResult", func() {
 	Attribute("total_voting_request_invitations", Int, "Total invitations sent")
 	Attribute("num_response_received", Int, "Responses received")
 	Attribute("poll_questions", ArrayOf(PollQuestion), "Vote questions")
+	Attribute("poll_comment_prompts", ArrayOf(PollCommentPrompt), "Comment prompts for the vote")
 	Attribute("poll_type", String, "Poll type", func() {
 		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
 		Default("generic")
@@ -242,11 +243,28 @@ var PollChoice = Type("PollChoice", func() {
 var PollCommentPrompt = Type("PollCommentPrompt", func() {
 	Description("Comment prompt for collecting feedback")
 
+	Attribute("prompt_id", String, "Comment prompt identifier. Server-assigned; present in "+
+		"responses, ignored if sent on a create or update request.", func() {
+		Format(FormatUUID)
+	})
 	Attribute("prompt", String, "Comment prompt text", func() {
 		Example("Please provide any additional feedback")
 	})
 
 	Required("prompt")
+})
+
+// CommentResponse represents a voter's free-text response to a comment prompt
+// (matches ITX CommentResponse structure)
+var CommentResponse = Type("CommentResponse", func() {
+	Description("A voter's free-text response to a comment prompt")
+
+	Attribute("prompt_id", String, "The comment prompt this response answers", func() {
+		Format(FormatUUID)
+	})
+	Attribute("comment_text", String, "The voter's free-text response")
+
+	Required("prompt_id", "comment_text")
 })
 
 // BadRequestError represents a 400 Bad Request error
@@ -349,6 +367,9 @@ var VoteResponseResult = Type("VoteResponseResult", func() {
 	Attribute("ses_link_clicked", Boolean, "SES link clicked")
 	Attribute("ses_link_clicked_last_time", String, "SES link clicked last time")
 	Attribute("poll_answers", ArrayOf(VoteAnswer), "Vote answers")
+	Attribute("comment_responses", ArrayOf(CommentResponse), "The voter's free-text responses to "+
+		"the poll's comment prompts. Always an array (empty if the poll has no comment prompts "+
+		"or the voter left none).")
 
 	Required("vote_response_uid", "vote_uid", "project_uid", "vote_status")
 })
@@ -601,12 +622,34 @@ var MeekSTVElectedChoice = Type("MeekSTVElectedChoice", func() {
 	Required("choice_id", "vote_count", "surplus_votes")
 })
 
-// CommentResultItem represents comment results
+// CommentResultItem represents the results for a single comment prompt, including
+// every voter's response to it (matches ITX comment_results structure)
 var CommentResultItem = Type("CommentResultItem", func() {
-	Description("Comment results")
+	Description("Results for a single comment prompt, grouped with every response to it. Every " +
+		"comment prompt on the poll is included, even one with zero responses.")
 
-	Attribute("prompt", String, "Comment prompt")
-	Attribute("comments", ArrayOf(String), "List of comments")
+	Attribute("prompt", PollCommentPrompt, "The comment prompt these responses answer")
+	Attribute("responses", ArrayOf(CommentResponseWithUser), "The comment responses submitted for this prompt")
 
-	Required("prompt", "comments")
+	Required("prompt", "responses")
+})
+
+// CommentResponseWithUser represents a voter's comment response with attribution
+// (matches ITX CommentResponseWithUser structure)
+var CommentResponseWithUser = Type("CommentResponseWithUser", func() {
+	Description("A voter's free-text comment response, with attribution")
+
+	Attribute("vote_id", String, "The vote that submitted this comment", func() {
+		Format(FormatUUID)
+	})
+	Attribute("user_id", String, "The LFX identifier of the voter who submitted this comment")
+	Attribute("comment_text", String, "The comment text")
+	Attribute("user_name", String, "The name of the voter who submitted this comment. Absent "+
+		"entirely when the poll has pseudo_anonymity enabled.")
+	Attribute("vote_creation_time", String, "The time the voter submitted this comment (their vote_creation_time)", func() {
+		Format(FormatDateTime)
+	})
+	Attribute("abstained", Boolean, "Whether the voter who submitted this comment abstained from voting on the poll")
+
+	Required("vote_id", "user_id", "comment_text", "vote_creation_time", "abstained")
 })

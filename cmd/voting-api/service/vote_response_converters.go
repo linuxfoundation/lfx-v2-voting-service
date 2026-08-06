@@ -38,6 +38,17 @@ func ConvertCreateVoteResponsePayloadToDomain(payload *votesvc.CreateVoteRespons
 		}
 	}
 
+	// Convert comment responses
+	if payload.CommentResponses != nil {
+		req.CommentResponses = make([]service.CommentResponseRequest, len(payload.CommentResponses))
+		for i, c := range payload.CommentResponses {
+			req.CommentResponses[i] = service.CommentResponseRequest{
+				PromptID:    c.PromptID,
+				CommentText: c.CommentText,
+			}
+		}
+	}
+
 	return req
 }
 
@@ -66,6 +77,20 @@ func ConvertUpdateVoteResponsePayloadToDomain(payload *votesvc.UpdateVoteRespons
 				}
 			}
 		}
+	}
+
+	// Convert comment responses. A nil payload.CommentResponses means the field
+	// was omitted (preserve existing comments); a non-nil value (including an
+	// empty slice) means it was included (validate and replace them).
+	if payload.CommentResponses != nil {
+		converted := make([]service.CommentResponseRequest, len(payload.CommentResponses))
+		for i, c := range payload.CommentResponses {
+			converted[i] = service.CommentResponseRequest{
+				PromptID:    c.PromptID,
+				CommentText: c.CommentText,
+			}
+		}
+		req.CommentResponses = &converted
 	}
 
 	return req
@@ -151,6 +176,16 @@ func ConvertVoteResponseToResult(resp *itx.VoteResponse) *votesvc.VoteResponseRe
 			}
 
 			result.PollAnswers[i] = voteAnswer
+		}
+	}
+
+	// Convert comment responses. Always an array (empty if the poll has no
+	// comment prompts or the voter left none).
+	result.CommentResponses = make([]*votesvc.CommentResponse, len(resp.CommentResponses))
+	for i, c := range resp.CommentResponses {
+		result.CommentResponses[i] = &votesvc.CommentResponse{
+			PromptID:    c.PromptID,
+			CommentText: c.CommentText,
 		}
 	}
 

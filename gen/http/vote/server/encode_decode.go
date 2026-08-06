@@ -1820,7 +1820,8 @@ func unmarshalPollCommentPromptRequestBodyToVotePollCommentPrompt(v *PollComment
 		return nil
 	}
 	res := &vote.PollCommentPrompt{
-		Prompt: *v.Prompt,
+		PromptID: v.PromptID,
+		Prompt:   *v.Prompt,
 	}
 
 	return res
@@ -1859,6 +1860,21 @@ func marshalVotePollChoiceToPollChoiceResponseBody(v *vote.PollChoice) *PollChoi
 	res := &PollChoiceResponseBody{
 		ChoiceID:   v.ChoiceID,
 		ChoiceText: v.ChoiceText,
+	}
+
+	return res
+}
+
+// marshalVotePollCommentPromptToPollCommentPromptResponseBody builds a value
+// of type *PollCommentPromptResponseBody from a value of type
+// *vote.PollCommentPrompt.
+func marshalVotePollCommentPromptToPollCommentPromptResponseBody(v *vote.PollCommentPrompt) *PollCommentPromptResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &PollCommentPromptResponseBody{
+		PromptID: v.PromptID,
+		Prompt:   v.Prompt,
 	}
 
 	return res
@@ -2208,16 +2224,37 @@ func marshalVoteCommentResultItemToCommentResultItemResponseBody(v *vote.Comment
 	if v == nil {
 		return nil
 	}
-	res := &CommentResultItemResponseBody{
-		Prompt: v.Prompt,
+	res := &CommentResultItemResponseBody{}
+	if v.Prompt != nil {
+		res.Prompt = marshalVotePollCommentPromptToPollCommentPromptResponseBody(v.Prompt)
 	}
-	if v.Comments != nil {
-		res.Comments = make([]string, len(v.Comments))
-		for i, val := range v.Comments {
-			res.Comments[i] = val
+	if v.Responses != nil {
+		res.Responses = make([]*CommentResponseWithUserResponseBody, len(v.Responses))
+		for i, val := range v.Responses {
+			if val == nil {
+				res.Responses[i] = nil
+				continue
+			}
+			res.Responses[i] = marshalVoteCommentResponseWithUserToCommentResponseWithUserResponseBody(val)
 		}
 	} else {
-		res.Comments = []string{}
+		res.Responses = []*CommentResponseWithUserResponseBody{}
+	}
+
+	return res
+}
+
+// marshalVoteCommentResponseWithUserToCommentResponseWithUserResponseBody
+// builds a value of type *CommentResponseWithUserResponseBody from a value of
+// type *vote.CommentResponseWithUser.
+func marshalVoteCommentResponseWithUserToCommentResponseWithUserResponseBody(v *vote.CommentResponseWithUser) *CommentResponseWithUserResponseBody {
+	res := &CommentResponseWithUserResponseBody{
+		VoteID:           v.VoteID,
+		UserID:           v.UserID,
+		CommentText:      v.CommentText,
+		UserName:         v.UserName,
+		VoteCreationTime: v.VoteCreationTime,
+		Abstained:        v.Abstained,
 	}
 
 	return res
@@ -2262,6 +2299,20 @@ func unmarshalRankedChoiceInputRequestBodyToVoteRankedChoiceInput(v *RankedChoic
 	res := &vote.RankedChoiceInput{
 		ChoiceID:   *v.ChoiceID,
 		ChoiceRank: *v.ChoiceRank,
+	}
+
+	return res
+}
+
+// unmarshalCommentResponseRequestBodyToVoteCommentResponse builds a value of
+// type *vote.CommentResponse from a value of type *CommentResponseRequestBody.
+func unmarshalCommentResponseRequestBodyToVoteCommentResponse(v *CommentResponseRequestBody) *vote.CommentResponse {
+	if v == nil {
+		return nil
+	}
+	res := &vote.CommentResponse{
+		PromptID:    *v.PromptID,
+		CommentText: *v.CommentText,
 	}
 
 	return res
@@ -2328,6 +2379,20 @@ func marshalVoteRankedVoteChoiceAnswerToRankedVoteChoiceAnswerResponseBody(v *vo
 		ChoiceID:   v.ChoiceID,
 		ChoiceText: v.ChoiceText,
 		ChoiceRank: v.ChoiceRank,
+	}
+
+	return res
+}
+
+// marshalVoteCommentResponseToCommentResponseResponseBody builds a value of
+// type *CommentResponseResponseBody from a value of type *vote.CommentResponse.
+func marshalVoteCommentResponseToCommentResponseResponseBody(v *vote.CommentResponse) *CommentResponseResponseBody {
+	if v == nil {
+		return nil
+	}
+	res := &CommentResponseResponseBody{
+		PromptID:    v.PromptID,
+		CommentText: v.CommentText,
 	}
 
 	return res
