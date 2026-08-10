@@ -38,6 +38,12 @@ func TestConvertMapToVoteResponseData(t *testing.T) {
 			"abstained":          false,
 			"voter_removed":      false,
 			"poll_answers":       []interface{}{},
+			"comment_responses": []interface{}{
+				map[string]interface{}{
+					"prompt_id":    "prompt-1",
+					"comment_text": "Because the incumbent earned it.",
+				},
+			},
 		}
 
 		idMapper := idmapper.NewNoOpMapper()
@@ -61,6 +67,10 @@ func TestConvertMapToVoteResponseData(t *testing.T) {
 		assert.Equal(t, "submitted", result.VoteStatus)
 		assert.False(t, result.Abstained)
 		assert.Equal(t, "2024-06-01T12:00:00Z", result.LastModifiedTime)
+
+		require.Len(t, result.CommentResponses, 1)
+		assert.Equal(t, "prompt-1", result.CommentResponses[0].PromptID)
+		assert.Equal(t, "Because the incumbent earned it.", result.CommentResponses[0].CommentText)
 	})
 
 	t.Run("converts ranked choice answers from string to int", func(t *testing.T) {
