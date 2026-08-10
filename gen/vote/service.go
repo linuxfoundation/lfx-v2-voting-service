@@ -164,7 +164,7 @@ type CreateVotePayload struct {
 	// Questions for the vote
 	PollQuestions []*PollQuestion
 	// Comment prompts for the vote
-	PollCommentPrompts []*PollCommentPrompt
+	PollCommentPrompts []*PollCommentPromptInput
 	// Enable pseudo-anonymity
 	PseudoAnonymity bool
 	// Type of poll
@@ -361,9 +361,14 @@ type PollChoice struct {
 
 // Comment prompt for collecting feedback
 type PollCommentPrompt struct {
-	// Comment prompt identifier. Server-assigned; present in responses, ignored if
-	// sent on a create or update request.
-	PromptID *string
+	// Comment prompt identifier (server-assigned)
+	PromptID string
+	// Comment prompt text
+	Prompt string
+}
+
+// Comment prompt for collecting feedback (request)
+type PollCommentPromptInput struct {
 	// Comment prompt text
 	Prompt string
 }
@@ -500,7 +505,7 @@ type UpdateVotePayload struct {
 	// Questions for the vote
 	PollQuestions []*PollQuestion
 	// Comment prompts for the vote
-	PollCommentPrompts []*PollCommentPrompt
+	PollCommentPrompts []*PollCommentPromptInput
 	// Enable pseudo-anonymity
 	PseudoAnonymity bool
 	// Type of poll

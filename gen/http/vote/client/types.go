@@ -33,7 +33,7 @@ type CreateVoteRequestBody struct {
 	// Questions for the vote
 	PollQuestions []*PollQuestionRequestBody `form:"poll_questions" json:"poll_questions" xml:"poll_questions"`
 	// Comment prompts for the vote
-	PollCommentPrompts []*PollCommentPromptRequestBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
+	PollCommentPrompts []*PollCommentPromptInputRequestBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
 	// Enable pseudo-anonymity
 	PseudoAnonymity bool `form:"pseudo_anonymity" json:"pseudo_anonymity" xml:"pseudo_anonymity"`
 	// Type of poll
@@ -68,7 +68,7 @@ type UpdateVoteRequestBody struct {
 	// Questions for the vote
 	PollQuestions []*PollQuestionRequestBody `form:"poll_questions" json:"poll_questions" xml:"poll_questions"`
 	// Comment prompts for the vote
-	PollCommentPrompts []*PollCommentPromptRequestBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
+	PollCommentPrompts []*PollCommentPromptInputRequestBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
 	// Enable pseudo-anonymity
 	PseudoAnonymity bool `form:"pseudo_anonymity" json:"pseudo_anonymity" xml:"pseudo_anonymity"`
 	// Type of poll
@@ -1128,11 +1128,9 @@ type PollChoiceRequestBody struct {
 	ChoiceText string `form:"choice_text" json:"choice_text" xml:"choice_text"`
 }
 
-// PollCommentPromptRequestBody is used to define fields on request body types.
-type PollCommentPromptRequestBody struct {
-	// Comment prompt identifier. Server-assigned; present in responses, ignored if
-	// sent on a create or update request.
-	PromptID *string `form:"prompt_id,omitempty" json:"prompt_id,omitempty" xml:"prompt_id,omitempty"`
+// PollCommentPromptInputRequestBody is used to define fields on request body
+// types.
+type PollCommentPromptInputRequestBody struct {
 	// Comment prompt text
 	Prompt string `form:"prompt" json:"prompt" xml:"prompt"`
 }
@@ -1160,8 +1158,7 @@ type PollChoiceResponseBody struct {
 // PollCommentPromptResponseBody is used to define fields on response body
 // types.
 type PollCommentPromptResponseBody struct {
-	// Comment prompt identifier. Server-assigned; present in responses, ignored if
-	// sent on a create or update request.
+	// Comment prompt identifier (server-assigned)
 	PromptID *string `form:"prompt_id,omitempty" json:"prompt_id,omitempty" xml:"prompt_id,omitempty"`
 	// Comment prompt text
 	Prompt *string `form:"prompt,omitempty" json:"prompt,omitempty" xml:"prompt,omitempty"`
@@ -1461,13 +1458,13 @@ func NewCreateVoteRequestBody(p *vote.CreateVotePayload) *CreateVoteRequestBody 
 		body.PollQuestions = []*PollQuestionRequestBody{}
 	}
 	if p.PollCommentPrompts != nil {
-		body.PollCommentPrompts = make([]*PollCommentPromptRequestBody, len(p.PollCommentPrompts))
+		body.PollCommentPrompts = make([]*PollCommentPromptInputRequestBody, len(p.PollCommentPrompts))
 		for i, val := range p.PollCommentPrompts {
 			if val == nil {
 				body.PollCommentPrompts[i] = nil
 				continue
 			}
-			body.PollCommentPrompts[i] = marshalVotePollCommentPromptToPollCommentPromptRequestBody(val)
+			body.PollCommentPrompts[i] = marshalVotePollCommentPromptInputToPollCommentPromptInputRequestBody(val)
 		}
 	}
 	{
@@ -1538,13 +1535,13 @@ func NewUpdateVoteRequestBody(p *vote.UpdateVotePayload) *UpdateVoteRequestBody 
 		body.PollQuestions = []*PollQuestionRequestBody{}
 	}
 	if p.PollCommentPrompts != nil {
-		body.PollCommentPrompts = make([]*PollCommentPromptRequestBody, len(p.PollCommentPrompts))
+		body.PollCommentPrompts = make([]*PollCommentPromptInputRequestBody, len(p.PollCommentPrompts))
 		for i, val := range p.PollCommentPrompts {
 			if val == nil {
 				body.PollCommentPrompts[i] = nil
 				continue
 			}
-			body.PollCommentPrompts[i] = marshalVotePollCommentPromptToPollCommentPromptRequestBody(val)
+			body.PollCommentPrompts[i] = marshalVotePollCommentPromptInputToPollCommentPromptInputRequestBody(val)
 		}
 	}
 	{
@@ -2574,15 +2571,13 @@ func NewGetVoteResponseVoteResponseResultOK(body *GetVoteResponseResponseBody) *
 			v.PollAnswers[i] = unmarshalVoteAnswerResponseBodyToVoteVoteAnswer(val)
 		}
 	}
-	if body.CommentResponses != nil {
-		v.CommentResponses = make([]*vote.CommentResponse, len(body.CommentResponses))
-		for i, val := range body.CommentResponses {
-			if val == nil {
-				v.CommentResponses[i] = nil
-				continue
-			}
-			v.CommentResponses[i] = unmarshalCommentResponseResponseBodyToVoteCommentResponse(val)
+	v.CommentResponses = make([]*vote.CommentResponse, len(body.CommentResponses))
+	for i, val := range body.CommentResponses {
+		if val == nil {
+			v.CommentResponses[i] = nil
+			continue
 		}
+		v.CommentResponses[i] = unmarshalCommentResponseResponseBodyToVoteCommentResponse(val)
 	}
 
 	return v
@@ -3087,6 +3082,9 @@ func ValidateGetVoteResponseResponseBody(body *GetVoteResponseResponseBody) (err
 	}
 	if body.VoteStatus == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("vote_status", "body"))
+	}
+	if body.CommentResponses == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("comment_responses", "body"))
 	}
 	if body.VoteResponseUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_response_uid", *body.VoteResponseUID, goa.FormatUUID))
@@ -4021,15 +4019,6 @@ func ValidatePollChoiceRequestBody(body *PollChoiceRequestBody) (err error) {
 	return
 }
 
-// ValidatePollCommentPromptRequestBody runs the validations defined on
-// PollCommentPromptRequestBody
-func ValidatePollCommentPromptRequestBody(body *PollCommentPromptRequestBody) (err error) {
-	if body.PromptID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.prompt_id", *body.PromptID, goa.FormatUUID))
-	}
-	return
-}
-
 // ValidatePollQuestionResponseBody runs the validations defined on
 // PollQuestionResponseBody
 func ValidatePollQuestionResponseBody(body *PollQuestionResponseBody) (err error) {
@@ -4075,6 +4064,9 @@ func ValidatePollChoiceResponseBody(body *PollChoiceResponseBody) (err error) {
 // ValidatePollCommentPromptResponseBody runs the validations defined on
 // PollCommentPromptResponseBody
 func ValidatePollCommentPromptResponseBody(body *PollCommentPromptResponseBody) (err error) {
+	if body.PromptID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("prompt_id", "body"))
+	}
 	if body.Prompt == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("prompt", "body"))
 	}

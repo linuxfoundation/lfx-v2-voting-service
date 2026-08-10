@@ -168,7 +168,7 @@ func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *votesvc.VoteResult
 		prompts := make([]*votesvc.PollCommentPrompt, len(poll.PollCommentPrompts))
 		for i, p := range poll.PollCommentPrompts {
 			prompts[i] = &votesvc.PollCommentPrompt{
-				PromptID: utils.StringPtr(p.PromptID),
+				PromptID: p.PromptID,
 				Prompt:   p.Prompt,
 			}
 		}
@@ -401,7 +401,7 @@ func ConvertVoteResultsToResult(results *itx.VoteResults) *votesvc.VoteResultsRe
 		for i, cr := range results.CommentResults {
 			commentResultItem := &votesvc.CommentResultItem{
 				Prompt: &votesvc.PollCommentPrompt{
-					PromptID: utils.StringPtr(cr.Prompt.PromptID),
+					PromptID: cr.Prompt.PromptID,
 					Prompt:   cr.Prompt.Prompt,
 				},
 			}

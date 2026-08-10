@@ -118,8 +118,10 @@ func CommitteeUIDsAttribute() {
 }
 
 // PollCommentPromptsAttribute is the DSL attribute for poll comment prompts.
+// Uses the request-only type: prompt IDs are server-assigned and never
+// accepted on create or update requests.
 func PollCommentPromptsAttribute() {
-	Attribute("poll_comment_prompts", ArrayOf(PollCommentPrompt), "Comment prompts for the vote")
+	Attribute("poll_comment_prompts", ArrayOf(PollCommentPromptInput), "Comment prompts for the vote")
 }
 
 // QuorumPercentageAttribute is the DSL attribute for quorum percentage.
@@ -239,19 +241,30 @@ var PollChoice = Type("PollChoice", func() {
 	Required("choice_text")
 })
 
-// PollCommentPrompt represents a comment prompt in a vote
+// PollCommentPromptInput represents a comment prompt on create/update requests.
+// Prompt IDs are server-assigned, so the request type carries only the text.
+var PollCommentPromptInput = Type("PollCommentPromptInput", func() {
+	Description("Comment prompt for collecting feedback (request)")
+
+	Attribute("prompt", String, "Comment prompt text", func() {
+		Example("Please provide any additional feedback")
+	})
+
+	Required("prompt")
+})
+
+// PollCommentPrompt represents a comment prompt in vote responses
 var PollCommentPrompt = Type("PollCommentPrompt", func() {
 	Description("Comment prompt for collecting feedback")
 
-	Attribute("prompt_id", String, "Comment prompt identifier. Server-assigned; present in "+
-		"responses, ignored if sent on a create or update request.", func() {
+	Attribute("prompt_id", String, "Comment prompt identifier (server-assigned)", func() {
 		Format(FormatUUID)
 	})
 	Attribute("prompt", String, "Comment prompt text", func() {
 		Example("Please provide any additional feedback")
 	})
 
-	Required("prompt")
+	Required("prompt_id", "prompt")
 })
 
 // CommentResponse represents a voter's free-text response to a comment prompt
@@ -371,7 +384,7 @@ var VoteResponseResult = Type("VoteResponseResult", func() {
 		"the poll's comment prompts. Always an array (empty if the poll has no comment prompts "+
 		"or the voter left none).")
 
-	Required("vote_response_uid", "vote_uid", "project_uid", "vote_status")
+	Required("vote_response_uid", "vote_uid", "project_uid", "vote_status", "comment_responses")
 })
 
 // VoteAnswer represents an answer to a poll question

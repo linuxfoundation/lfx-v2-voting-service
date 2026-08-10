@@ -4,14 +4,20 @@
 package service
 
 import (
+	"fmt"
+
 	votesvc "github.com/linuxfoundation/lfx-v2-voting-service/gen/vote"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/service"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/utils"
 )
 
-// ConvertCreateVoteResponsePayloadToDomain converts Goa payload to service request
-func ConvertCreateVoteResponsePayloadToDomain(payload *votesvc.CreateVoteResponsePayload) *service.CreateVoteResponseRequest {
+// ConvertCreateVoteResponsePayloadToDomain converts Goa payload to service request.
+// Returns a validation error (400) when comment_responses contains null entries —
+// the generated validator skips nil array elements, so they are rejected here
+// before they can cause a nil dereference.
+func ConvertCreateVoteResponsePayloadToDomain(payload *votesvc.CreateVoteResponsePayload) (*service.CreateVoteResponseRequest, error) {
 	req := &service.CreateVoteResponseRequest{
 		VoteID:          payload.VoteResponseUID,
 		UserVoteContent: make([]service.VoteAnswerRequest, 0),
@@ -42,6 +48,9 @@ func ConvertCreateVoteResponsePayloadToDomain(payload *votesvc.CreateVoteRespons
 	if payload.CommentResponses != nil {
 		req.CommentResponses = make([]service.CommentResponseRequest, len(payload.CommentResponses))
 		for i, c := range payload.CommentResponses {
+			if c == nil {
+				return nil, domain.NewValidationError(fmt.Sprintf("comment_responses[%d] must not be null", i))
+			}
 			req.CommentResponses[i] = service.CommentResponseRequest{
 				PromptID:    c.PromptID,
 				CommentText: c.CommentText,
@@ -49,11 +58,14 @@ func ConvertCreateVoteResponsePayloadToDomain(payload *votesvc.CreateVoteRespons
 		}
 	}
 
-	return req
+	return req, nil
 }
 
-// ConvertUpdateVoteResponsePayloadToDomain converts Goa payload to service request
-func ConvertUpdateVoteResponsePayloadToDomain(payload *votesvc.UpdateVoteResponsePayload) *service.UpdateVoteResponseRequest {
+// ConvertUpdateVoteResponsePayloadToDomain converts Goa payload to service request.
+// Returns a validation error (400) when comment_responses contains null entries —
+// the generated validator skips nil array elements, so they are rejected here
+// before they can cause a nil dereference.
+func ConvertUpdateVoteResponsePayloadToDomain(payload *votesvc.UpdateVoteResponsePayload) (*service.UpdateVoteResponseRequest, error) {
 	req := &service.UpdateVoteResponseRequest{
 		UserVoteContent: make([]service.VoteAnswerRequest, 0),
 		Abstain:         payload.Abstain,
@@ -85,6 +97,9 @@ func ConvertUpdateVoteResponsePayloadToDomain(payload *votesvc.UpdateVoteRespons
 	if payload.CommentResponses != nil {
 		converted := make([]service.CommentResponseRequest, len(payload.CommentResponses))
 		for i, c := range payload.CommentResponses {
+			if c == nil {
+				return nil, domain.NewValidationError(fmt.Sprintf("comment_responses[%d] must not be null", i))
+			}
 			converted[i] = service.CommentResponseRequest{
 				PromptID:    c.PromptID,
 				CommentText: c.CommentText,
@@ -93,7 +108,7 @@ func ConvertUpdateVoteResponsePayloadToDomain(payload *votesvc.UpdateVoteRespons
 		req.CommentResponses = &converted
 	}
 
-	return req
+	return req, nil
 }
 
 // ConvertVoteResponseToResult converts ITX response to Goa result

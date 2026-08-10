@@ -2123,16 +2123,15 @@ func marshalVotePollChoiceToPollChoiceRequestBody(v *vote.PollChoice) *PollChoic
 	return res
 }
 
-// marshalVotePollCommentPromptToPollCommentPromptRequestBody builds a value of
-// type *PollCommentPromptRequestBody from a value of type
-// *vote.PollCommentPrompt.
-func marshalVotePollCommentPromptToPollCommentPromptRequestBody(v *vote.PollCommentPrompt) *PollCommentPromptRequestBody {
+// marshalVotePollCommentPromptInputToPollCommentPromptInputRequestBody builds
+// a value of type *PollCommentPromptInputRequestBody from a value of type
+// *vote.PollCommentPromptInput.
+func marshalVotePollCommentPromptInputToPollCommentPromptInputRequestBody(v *vote.PollCommentPromptInput) *PollCommentPromptInputRequestBody {
 	if v == nil {
 		return nil
 	}
-	res := &PollCommentPromptRequestBody{
-		PromptID: v.PromptID,
-		Prompt:   v.Prompt,
+	res := &PollCommentPromptInputRequestBody{
+		Prompt: v.Prompt,
 	}
 
 	return res
@@ -2173,16 +2172,15 @@ func marshalPollChoiceRequestBodyToVotePollChoice(v *PollChoiceRequestBody) *vot
 	return res
 }
 
-// marshalPollCommentPromptRequestBodyToVotePollCommentPrompt builds a value of
-// type *vote.PollCommentPrompt from a value of type
-// *PollCommentPromptRequestBody.
-func marshalPollCommentPromptRequestBodyToVotePollCommentPrompt(v *PollCommentPromptRequestBody) *vote.PollCommentPrompt {
+// marshalPollCommentPromptInputRequestBodyToVotePollCommentPromptInput builds
+// a value of type *vote.PollCommentPromptInput from a value of type
+// *PollCommentPromptInputRequestBody.
+func marshalPollCommentPromptInputRequestBodyToVotePollCommentPromptInput(v *PollCommentPromptInputRequestBody) *vote.PollCommentPromptInput {
 	if v == nil {
 		return nil
 	}
-	res := &vote.PollCommentPrompt{
-		PromptID: v.PromptID,
-		Prompt:   v.Prompt,
+	res := &vote.PollCommentPromptInput{
+		Prompt: v.Prompt,
 	}
 
 	return res
@@ -2230,7 +2228,7 @@ func unmarshalPollCommentPromptResponseBodyToVotePollCommentPrompt(v *PollCommen
 		return nil
 	}
 	res := &vote.PollCommentPrompt{
-		PromptID: v.PromptID,
+		PromptID: *v.PromptID,
 		Prompt:   *v.Prompt,
 	}
 
@@ -2774,9 +2772,6 @@ func unmarshalRankedVoteChoiceAnswerResponseBodyToVoteRankedVoteChoiceAnswer(v *
 // unmarshalCommentResponseResponseBodyToVoteCommentResponse builds a value of
 // type *vote.CommentResponse from a value of type *CommentResponseResponseBody.
 func unmarshalCommentResponseResponseBodyToVoteCommentResponse(v *CommentResponseResponseBody) *vote.CommentResponse {
-	if v == nil {
-		return nil
-	}
 	res := &vote.CommentResponse{
 		PromptID:    *v.PromptID,
 		CommentText: *v.CommentText,
