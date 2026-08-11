@@ -139,6 +139,12 @@ func convertMapToVoteResponseData(
 		pollAnswers = append(pollAnswers, pollAnswer)
 	}
 
+	// Default to an empty array so the indexer payload emits [] rather than null
+	commentResponses := voteDB.CommentResponses
+	if commentResponses == nil {
+		commentResponses = []itx.CommentResponse{}
+	}
+
 	// Build v2 vote response data struct
 	voteResponseData := &domain.VoteResponseData{
 		UID:                     voteDB.VoteID,
@@ -158,6 +164,7 @@ func convertMapToVoteResponseData(
 		UserOrgID:               voteDB.UserOrgID,
 		UserOrgName:             voteDB.UserOrgName,
 		PollAnswers:             pollAnswers,
+		CommentResponses:        commentResponses,
 		VoteStatus:              voteDB.VoteStatus,
 		Abstained:               voteDB.Abstained,
 		VoterRemoved:            voteDB.VoterRemoved,

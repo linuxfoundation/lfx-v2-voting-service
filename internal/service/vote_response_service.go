@@ -89,6 +89,18 @@ func (s *VoteResponseService) CreateVoteResponse(ctx context.Context, req *Creat
 		}
 	}
 
+	// Comment responses are allowed alongside abstain — an abstaining voter
+	// skips the ballot but may still comment. Omitting the field (empty slice)
+	// is fine for create: there are no existing comments to preserve on a new
+	// ballot, so ITX accepts the absent field identically to [].
+	proxyReq.CommentResponses = make([]itx.CommentResponse, len(req.CommentResponses))
+	for i, c := range req.CommentResponses {
+		proxyReq.CommentResponses[i] = itx.CommentResponse{
+			PromptID:    c.PromptID,
+			CommentText: c.CommentText,
+		}
+	}
+
 	// Call ITX proxy
 	err := s.proxyClient.CreateVote(ctx, proxyReq)
 	if err != nil {
@@ -167,6 +179,21 @@ func (s *VoteResponseService) UpdateVoteResponse(ctx context.Context, voteID str
 		}
 	}
 
+	// Comment semantics (matching ITX exactly): a nil CommentResponses preserves
+	// existing comments untouched; a non-nil value (including an empty slice)
+	// validates and replaces them. Abstain does not override either branch —
+	// an abstaining voter skips the ballot but may still comment.
+	if req.CommentResponses != nil {
+		converted := make([]itx.CommentResponse, len(*req.CommentResponses))
+		for i, c := range *req.CommentResponses {
+			converted[i] = itx.CommentResponse{
+				PromptID:    c.PromptID,
+				CommentText: c.CommentText,
+			}
+		}
+		proxyReq.CommentResponses = &converted
+	}
+
 	// Call ITX proxy
 	err := s.proxyClient.UpdateVote(ctx, voteID, proxyReq)
 	if err != nil {
@@ -204,15 +231,26 @@ func (s *VoteResponseService) ResendVoteResponse(ctx context.Context, voteID str
 
 // CreateVoteResponseRequest is the internal request type for creating a vote response
 type CreateVoteResponseRequest struct {
-	VoteID          string
-	UserVoteContent []VoteAnswerRequest
-	Abstain         bool
+	VoteID           string
+	UserVoteContent  []VoteAnswerRequest
+	Abstain          bool
+	CommentResponses []CommentResponseRequest
 }
 
-// UpdateVoteResponseRequest is the internal request type for updating a vote response
+// UpdateVoteResponseRequest is the internal request type for updating a vote response.
+// CommentResponses is a pointer to slice: nil means the field was omitted (preserve
+// existing comments); a non-nil pointer (even to an empty slice) means the field was
+// included (validate and replace existing comments).
 type UpdateVoteResponseRequest struct {
-	UserVoteContent []VoteAnswerRequest
-	Abstain         bool
+	UserVoteContent  []VoteAnswerRequest
+	Abstain          bool
+	CommentResponses *[]CommentResponseRequest
+}
+
+// CommentResponseRequest represents a voter's free-text response to a comment prompt
+type CommentResponseRequest struct {
+	PromptID    string
+	CommentText string
 }
 
 // VoteAnswerRequest represents a vote answer
