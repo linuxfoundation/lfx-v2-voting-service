@@ -1336,7 +1336,8 @@ type CommentResultItemResponseBody struct {
 type CommentResponseWithUserResponseBody struct {
 	// The vote that submitted this comment
 	VoteID *string `form:"vote_id,omitempty" json:"vote_id,omitempty" xml:"vote_id,omitempty"`
-	// The LFX identifier of the voter who submitted this comment
+	// The LFX identifier of the voter who submitted this comment. Absent entirely
+	// when the poll has pseudo_anonymity enabled.
 	UserID *string `form:"user_id,omitempty" json:"user_id,omitempty" xml:"user_id,omitempty"`
 	// The comment text
 	CommentText *string `form:"comment_text,omitempty" json:"comment_text,omitempty" xml:"comment_text,omitempty"`
@@ -4417,9 +4418,6 @@ func ValidateCommentResultItemResponseBody(body *CommentResultItemResponseBody) 
 func ValidateCommentResponseWithUserResponseBody(body *CommentResponseWithUserResponseBody) (err error) {
 	if body.VoteID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("vote_id", "body"))
-	}
-	if body.UserID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("user_id", "body"))
 	}
 	if body.CommentText == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("comment_text", "body"))

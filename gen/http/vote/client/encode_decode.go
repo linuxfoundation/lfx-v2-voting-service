@@ -2577,7 +2577,7 @@ func unmarshalCommentResultItemResponseBodyToVoteCommentResultItem(v *CommentRes
 func unmarshalCommentResponseWithUserResponseBodyToVoteCommentResponseWithUser(v *CommentResponseWithUserResponseBody) *vote.CommentResponseWithUser {
 	res := &vote.CommentResponseWithUser{
 		VoteID:           *v.VoteID,
-		UserID:           *v.UserID,
+		UserID:           v.UserID,
 		CommentText:      *v.CommentText,
 		UserName:         v.UserName,
 		VoteCreationTime: *v.VoteCreationTime,

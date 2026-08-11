@@ -1038,7 +1038,7 @@ definitions:
                 example: Corrupti ut provident magni doloribus et.
             user_id:
                 type: string
-                description: The LFX identifier of the voter who submitted this comment
+                description: The LFX identifier of the voter who submitted this comment. Absent entirely when the poll has pseudo_anonymity enabled.
                 example: Eaque aspernatur a aut dolorem illum.
             user_name:
                 type: string
@@ -1064,7 +1064,6 @@ definitions:
             vote_id: 4be91885-946d-4a1b-941e-9c1d228d68ca
         required:
             - vote_id
-            - user_id
             - comment_text
             - vote_creation_time
             - abstained

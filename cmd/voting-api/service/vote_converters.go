@@ -411,12 +411,14 @@ func ConvertVoteResultsToResult(results *itx.VoteResults) *votesvc.VoteResultsRe
 				for j, r := range cr.Responses {
 					response := &votesvc.CommentResponseWithUser{
 						VoteID:           r.VoteID,
-						UserID:           r.UserID,
 						CommentText:      r.CommentText,
 						VoteCreationTime: r.VoteCreationTime,
 						Abstained:        r.Abstained,
 					}
-					// user_name is absent (not empty string) under pseudo_anonymity.
+					// user_id and user_name are absent (not empty string) under pseudo_anonymity.
+					if r.UserID != "" {
+						response.UserID = utils.StringPtr(r.UserID)
+					}
 					if r.UserName != "" {
 						response.UserName = utils.StringPtr(r.UserName)
 					}

@@ -98,8 +98,9 @@ type CommentResponse struct {
 type CommentResponseWithUser struct {
 	// The vote that submitted this comment
 	VoteID string
-	// The LFX identifier of the voter who submitted this comment
-	UserID string
+	// The LFX identifier of the voter who submitted this comment. Absent entirely
+	// when the poll has pseudo_anonymity enabled.
+	UserID *string
 	// The comment text
 	CommentText string
 	// The name of the voter who submitted this comment. Absent entirely when the

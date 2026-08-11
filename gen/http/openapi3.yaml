@@ -2715,7 +2715,7 @@ components:
                     example: Ducimus veniam.
                 user_id:
                     type: string
-                    description: The LFX identifier of the voter who submitted this comment
+                    description: The LFX identifier of the voter who submitted this comment. Absent entirely when the poll has pseudo_anonymity enabled.
                     example: Est quas at eligendi voluptatem in.
                 user_name:
                     type: string
@@ -2741,7 +2741,6 @@ components:
                 vote_id: 6890c9b6-6730-4901-9bee-3f5b73759923
             required:
                 - vote_id
-                - user_id
                 - comment_text
                 - vote_creation_time
                 - abstained

@@ -1311,8 +1311,9 @@ type CommentResultItemResponseBody struct {
 type CommentResponseWithUserResponseBody struct {
 	// The vote that submitted this comment
 	VoteID string `form:"vote_id" json:"vote_id" xml:"vote_id"`
-	// The LFX identifier of the voter who submitted this comment
-	UserID string `form:"user_id" json:"user_id" xml:"user_id"`
+	// The LFX identifier of the voter who submitted this comment. Absent entirely
+	// when the poll has pseudo_anonymity enabled.
+	UserID *string `form:"user_id,omitempty" json:"user_id,omitempty" xml:"user_id,omitempty"`
 	// The comment text
 	CommentText string `form:"comment_text" json:"comment_text" xml:"comment_text"`
 	// The name of the voter who submitted this comment. Absent entirely when the

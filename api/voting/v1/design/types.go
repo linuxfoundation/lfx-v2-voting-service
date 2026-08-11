@@ -655,7 +655,8 @@ var CommentResponseWithUser = Type("CommentResponseWithUser", func() {
 	Attribute("vote_id", String, "The vote that submitted this comment", func() {
 		Format(FormatUUID)
 	})
-	Attribute("user_id", String, "The LFX identifier of the voter who submitted this comment")
+	Attribute("user_id", String, "The LFX identifier of the voter who submitted this comment. Absent "+
+		"entirely when the poll has pseudo_anonymity enabled.")
 	Attribute("comment_text", String, "The comment text")
 	Attribute("user_name", String, "The name of the voter who submitted this comment. Absent "+
 		"entirely when the poll has pseudo_anonymity enabled.")
@@ -664,5 +665,5 @@ var CommentResponseWithUser = Type("CommentResponseWithUser", func() {
 	})
 	Attribute("abstained", Boolean, "Whether the voter who submitted this comment abstained from voting on the poll")
 
-	Required("vote_id", "user_id", "comment_text", "vote_creation_time", "abstained")
+	Required("vote_id", "comment_text", "vote_creation_time", "abstained")
 })
