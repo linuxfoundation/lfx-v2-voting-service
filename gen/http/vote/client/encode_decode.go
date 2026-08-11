@@ -2580,6 +2580,7 @@ func unmarshalCommentResponseWithUserResponseBodyToVoteCommentResponseWithUser(v
 		UserID:           v.UserID,
 		CommentText:      *v.CommentText,
 		UserName:         v.UserName,
+		ProfilePicture:   v.ProfilePicture,
 		VoteCreationTime: *v.VoteCreationTime,
 		Abstained:        *v.Abstained,
 	}

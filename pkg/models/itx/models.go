@@ -340,12 +340,13 @@ type CommentResult struct {
 }
 
 // CommentResponseWithUser represents a voter's comment response with attribution, as returned in results.
-// UserID and UserName are omitted by ITX when the poll has pseudo_anonymity enabled.
+// UserID, UserName, and ProfilePicture are omitted by ITX when the poll has pseudo_anonymity enabled.
 type CommentResponseWithUser struct {
 	VoteID           string `json:"vote_id"`
 	UserID           string `json:"user_id,omitempty"`
 	CommentText      string `json:"comment_text"`
 	UserName         string `json:"user_name,omitempty"`
+	ProfilePicture   string `json:"profile_picture,omitempty"`
 	VoteCreationTime string `json:"vote_creation_time"`
 	Abstained        bool   `json:"abstained"`
 }

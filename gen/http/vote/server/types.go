@@ -1319,6 +1319,9 @@ type CommentResponseWithUserResponseBody struct {
 	// The name of the voter who submitted this comment. Absent entirely when the
 	// poll has pseudo_anonymity enabled.
 	UserName *string `form:"user_name,omitempty" json:"user_name,omitempty" xml:"user_name,omitempty"`
+	// URL of the voter's profile picture. Absent entirely when the poll has
+	// pseudo_anonymity enabled.
+	ProfilePicture *string `form:"profile_picture,omitempty" json:"profile_picture,omitempty" xml:"profile_picture,omitempty"`
 	// The time the voter submitted this comment (their vote_creation_time)
 	VoteCreationTime string `form:"vote_creation_time" json:"vote_creation_time" xml:"vote_creation_time"`
 	// Whether the voter who submitted this comment abstained from voting on the

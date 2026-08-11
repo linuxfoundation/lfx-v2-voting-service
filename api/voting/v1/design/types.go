@@ -660,6 +660,8 @@ var CommentResponseWithUser = Type("CommentResponseWithUser", func() {
 	Attribute("comment_text", String, "The comment text")
 	Attribute("user_name", String, "The name of the voter who submitted this comment. Absent "+
 		"entirely when the poll has pseudo_anonymity enabled.")
+	Attribute("profile_picture", String, "URL of the voter's profile picture. Absent "+
+		"entirely when the poll has pseudo_anonymity enabled.")
 	Attribute("vote_creation_time", String, "The time the voter submitted this comment (their vote_creation_time)", func() {
 		Format(FormatDateTime)
 	})

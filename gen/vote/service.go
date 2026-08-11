@@ -106,6 +106,9 @@ type CommentResponseWithUser struct {
 	// The name of the voter who submitted this comment. Absent entirely when the
 	// poll has pseudo_anonymity enabled.
 	UserName *string
+	// URL of the voter's profile picture. Absent entirely when the poll has
+	// pseudo_anonymity enabled.
+	ProfilePicture *string
 	// The time the voter submitted this comment (their vote_creation_time)
 	VoteCreationTime string
 	// Whether the voter who submitted this comment abstained from voting on the
