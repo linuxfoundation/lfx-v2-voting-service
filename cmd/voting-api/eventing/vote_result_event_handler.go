@@ -32,10 +32,7 @@ func handleVoteResultUpdate(
 	pollResultData, err := convertMapToPollResultData(ctx, v1Data, idMapper, funcLogger)
 	if err != nil {
 		funcLogger.With(errKey, err).ErrorContext(ctx, "failed to convert v1Data to poll result")
-		if isTransientError(err) {
-			return true
-		}
-		return false
+		return isTransientError(err)
 	}
 
 	if pollResultData.VoteUID == "" {
@@ -61,10 +58,7 @@ func handleVoteResultUpdate(
 
 	if err := publisher.PublishVoteResultEvent(ctx, string(indexerAction), pollResultData); err != nil {
 		funcLogger.With(errKey, err).ErrorContext(ctx, "failed to publish vote result event")
-		if isTransientError(err) {
-			return true
-		}
-		return false
+		return isTransientError(err)
 	}
 
 	if _, err := mappingsKV.Put(ctx, mappingKey, []byte("1")); err != nil {
@@ -176,10 +170,7 @@ func handleVoteResultDelete(
 
 	if err := publisher.PublishVoteResultEvent(ctx, string(indexerConstants.ActionDeleted), pollResultData); err != nil {
 		funcLogger.With(errKey, err).ErrorContext(ctx, "failed to publish vote result delete event")
-		if isTransientError(err) {
-			return true
-		}
-		return false
+		return isTransientError(err)
 	}
 
 	if _, err := mappingsKV.Put(ctx, mappingKey, []byte(tombstoneMarker)); err != nil {
