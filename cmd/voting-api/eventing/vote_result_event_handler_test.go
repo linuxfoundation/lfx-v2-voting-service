@@ -221,6 +221,7 @@ func TestHandleVoteResultUpdate(t *testing.T) {
 		assert.False(t, shouldRetry)
 		require.Len(t, mockPublisher.publishedVoteResults, 1)
 		assert.Equal(t, "poll-123", mockPublisher.publishedVoteResults[0].VoteUID)
+		assert.Equal(t, "created", mockPublisher.publishedVoteResultActions[0])
 
 		// Verify mapping was stored
 		entry, err := mappingsKV.Get(ctx, "vote_result.poll-123")
@@ -251,7 +252,8 @@ func TestHandleVoteResultUpdate(t *testing.T) {
 		shouldRetry := handleVoteResultUpdate(ctx, "itx-poll-results.poll-123", v1Data, mockPublisher, idMapper, mappingsKV, logger)
 
 		assert.False(t, shouldRetry)
-		assert.Len(t, mockPublisher.publishedVoteResults, 1)
+		require.Len(t, mockPublisher.publishedVoteResults, 1)
+		assert.Equal(t, "updated", mockPublisher.publishedVoteResultActions[0])
 	})
 
 	t.Run("treats tombstoned vote_result mapping as created", func(t *testing.T) {
@@ -278,7 +280,9 @@ func TestHandleVoteResultUpdate(t *testing.T) {
 		shouldRetry := handleVoteResultUpdate(ctx, "itx-poll-results.poll-123", v1Data, mockPublisher, idMapper, mappingsKV, logger)
 
 		assert.False(t, shouldRetry)
-		assert.Len(t, mockPublisher.publishedVoteResults, 1)
+		require.Len(t, mockPublisher.publishedVoteResults, 1)
+		// Tombstoned prior mapping must be treated as a new create, not an update
+		assert.Equal(t, "created", mockPublisher.publishedVoteResultActions[0])
 	})
 
 	t.Run("returns true for transient publish error", func(t *testing.T) {
@@ -343,6 +347,7 @@ func TestHandleVoteResultDelete(t *testing.T) {
 		assert.False(t, shouldRetry)
 		require.Len(t, mockPublisher.publishedVoteResults, 1)
 		assert.Equal(t, "poll-123", mockPublisher.publishedVoteResults[0].VoteUID)
+		assert.Equal(t, "deleted", mockPublisher.publishedVoteResultActions[0])
 
 		// Mapping should be tombstoned
 		entry, err := mappingsKV.Get(ctx, "vote_result.poll-123")
