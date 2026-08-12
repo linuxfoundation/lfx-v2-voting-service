@@ -208,6 +208,11 @@ func isTransientError(err error) bool {
 		return false
 	}
 
+	// Domain errors with ErrorTypeUnavailable (e.g. from IDMapper) are always transient.
+	if domain.GetErrorType(err) == domain.ErrorTypeUnavailable {
+		return true
+	}
+
 	errStr := err.Error()
 	// NATS publish errors, timeouts, connection issues
 	if strings.Contains(errStr, "timeout") || strings.Contains(errStr, "connection") ||

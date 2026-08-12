@@ -325,6 +325,30 @@ func CoerceToInt(v interface{}, field string) (int, error) {
 	}
 }
 
+// CoerceToFloat64 converts string, float64, or int interface values to float64, matching
+// the pattern used by CoerceToInt for fields that Meltano may send as strings.
+func CoerceToFloat64(v interface{}, field string) (float64, error) {
+	switch val := v.(type) {
+	case string:
+		if val == "" {
+			return 0, nil
+		}
+		f, err := strconv.ParseFloat(val, 64)
+		if err != nil {
+			return 0, fmt.Errorf("invalid string value for %s: %w", field, err)
+		}
+		return f, nil
+	case float64:
+		return val, nil
+	case int:
+		return float64(val), nil
+	case nil:
+		return 0, nil
+	default:
+		return 0, fmt.Errorf("invalid type for %s: %T", field, v)
+	}
+}
+
 // PollQuestionResultRaw is the per-question tally from a v1 poll result snapshot.
 type PollQuestionResultRaw struct {
 	QuestionID    string            `json:"question_id"`
@@ -332,12 +356,13 @@ type PollQuestionResultRaw struct {
 	ChoiceResults []ChoiceResultRaw `json:"choice_results"`
 }
 
-// ChoiceResultRaw is the per-choice tally; VoteCount may arrive as string from Meltano.
+// ChoiceResultRaw is the per-choice tally; both VoteCount and Percentage may arrive
+// as strings from Meltano (DynamoDB Decimal values are recursively stringified by the tap).
 type ChoiceResultRaw struct {
 	ChoiceID   string      `json:"choice_id"`
 	ChoiceText string      `json:"choice_text"`
 	VoteCount  interface{} `json:"vote_count"`
-	Percentage float64     `json:"percentage"`
+	Percentage interface{} `json:"percentage"`
 }
 
 // PollQuestionResult is the v2 per-question tally with proper int VoteCount.

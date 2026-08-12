@@ -104,7 +104,7 @@ func TestConvertMapToPollResultData(t *testing.T) {
 		assert.Empty(t, result.PollQuestionsResult)
 	})
 
-	t.Run("invalid vote_count degrades to zero with warning", func(t *testing.T) {
+	t.Run("returns error for invalid vote_count", func(t *testing.T) {
 		v1Data := map[string]interface{}{
 			"poll_id": "poll-789",
 			"status":  "Closed",
@@ -129,9 +129,39 @@ func TestConvertMapToPollResultData(t *testing.T) {
 		logger := slog.Default()
 
 		result, err := convertMapToPollResultData(ctx, v1Data, idMapper, logger)
-		require.NoError(t, err) // degraded to 0, not an error
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.Contains(t, err.Error(), "invalid vote_count")
+	})
+
+	t.Run("coerces string percentage from Meltano", func(t *testing.T) {
+		v1Data := map[string]interface{}{
+			"poll_id": "poll-999",
+			"status":  "Closed",
+			"poll_questions_result": []interface{}{
+				map[string]interface{}{
+					"question_id": "q1",
+					"prompt":      "Pick one",
+					"choice_results": []interface{}{
+						map[string]interface{}{
+							"choice_id":   "c1",
+							"choice_text": "Option A",
+							"vote_count":  float64(20),
+							"percentage":  "66.7",
+						},
+					},
+				},
+			},
+		}
+
+		idMapper := idmapper.NewNoOpMapper()
+		ctx := context.Background()
+		logger := slog.Default()
+
+		result, err := convertMapToPollResultData(ctx, v1Data, idMapper, logger)
+		require.NoError(t, err)
 		require.Len(t, result.PollQuestionsResult[0].ChoiceResults, 1)
-		assert.Equal(t, 0, result.PollQuestionsResult[0].ChoiceResults[0].VoteCount)
+		assert.InDelta(t, 66.7, result.PollQuestionsResult[0].ChoiceResults[0].Percentage, 0.001)
 	})
 
 	t.Run("returns error for invalid JSON", func(t *testing.T) {

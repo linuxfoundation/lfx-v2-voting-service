@@ -108,13 +108,17 @@ func convertMapToPollResultData(
 		for _, c := range q.ChoiceResults {
 			voteCount, err := domain.CoerceToInt(c.VoteCount, "vote_count")
 			if err != nil {
-				logger.With(errKey, err, "question_id", q.QuestionID).WarnContext(ctx, "invalid vote_count in choice result, using 0")
+				return nil, fmt.Errorf("question %s choice %s: invalid vote_count: %w", q.QuestionID, c.ChoiceID, err)
+			}
+			percentage, err := domain.CoerceToFloat64(c.Percentage, "percentage")
+			if err != nil {
+				return nil, fmt.Errorf("question %s choice %s: invalid percentage: %w", q.QuestionID, c.ChoiceID, err)
 			}
 			question.ChoiceResults = append(question.ChoiceResults, domain.ChoiceResult{
 				ChoiceID:   c.ChoiceID,
 				ChoiceText: c.ChoiceText,
 				VoteCount:  voteCount,
-				Percentage: c.Percentage,
+				Percentage: percentage,
 			})
 		}
 		result.PollQuestionsResult = append(result.PollQuestionsResult, question)
