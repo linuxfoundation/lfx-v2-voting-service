@@ -18,12 +18,12 @@ import (
 
 // mockEventPublisher is a mock implementation of EventPublisher for testing
 type mockEventPublisher struct {
-	publishVoteErr          error
-	publishVoteResponseErr  error
-	publishVoteResultErr    error
-	publishedVotes          []*domain.VoteData
-	publishedVoteResponses  []*domain.VoteResponseData
-	publishedVoteResults    []*domain.PollResultData
+	publishVoteErr         error
+	publishVoteResponseErr error
+	publishVoteResultErr   error
+	publishedVotes         []*domain.VoteData
+	publishedVoteResponses []*domain.VoteResponseData
+	publishedVoteResults   []*domain.PollResultData
 }
 
 func (m *mockEventPublisher) PublishVoteEvent(ctx context.Context, action string, vote *domain.VoteData) error {

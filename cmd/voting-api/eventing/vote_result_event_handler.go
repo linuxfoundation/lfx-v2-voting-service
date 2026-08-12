@@ -45,15 +45,17 @@ func handleVoteResultUpdate(
 	funcLogger = funcLogger.With("vote_uid", pollResultData.VoteUID)
 
 	// Parent dependency guard: wait for the parent vote to be indexed first.
+	// A tombstoned parent means the vote was deleted; treat it as unavailable.
 	voteMappingKey := fmt.Sprintf("vote.%s", pollResultData.PollID)
-	if _, err := mappingsKV.Get(ctx, voteMappingKey); err != nil {
-		funcLogger.With(errKey, err).InfoContext(ctx, "parent vote not found in mappings, will retry vote result sync")
+	if entry, err := mappingsKV.Get(ctx, voteMappingKey); err != nil || isTombstonedMapping(entry.Value()) {
+		funcLogger.InfoContext(ctx, "parent vote not found or deleted, will retry vote result sync")
 		return true
 	}
 
 	mappingKey := fmt.Sprintf("vote_result.%s", pollResultData.VoteUID)
 	indexerAction := indexerConstants.ActionCreated
-	if _, err := mappingsKV.Get(ctx, mappingKey); err == nil {
+	// A tombstoned mapping means the vote_result was previously deleted; treat as a new create.
+	if entry, err := mappingsKV.Get(ctx, mappingKey); err == nil && !isTombstonedMapping(entry.Value()) {
 		indexerAction = indexerConstants.ActionUpdated
 	}
 

@@ -342,8 +342,8 @@ type ChoiceResultRaw struct {
 
 // PollQuestionResult is the v2 per-question tally with proper int VoteCount.
 type PollQuestionResult struct {
-	QuestionID    string        `json:"question_id"`
-	Prompt        string        `json:"prompt"`
+	QuestionID    string         `json:"question_id"`
+	Prompt        string         `json:"prompt"`
 	ChoiceResults []ChoiceResult `json:"choice_results"`
 }
 
