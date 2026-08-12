@@ -245,9 +245,137 @@ func (r *RankedChoiceAnswerRaw) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// PollResultDBRaw represents raw poll result data from v1 DynamoDB/NATS KV bucket.
+// Numeric count fields may arrive as strings from the Meltano batch path, so
+// custom UnmarshalJSON coerces them to int.
+type PollResultDBRaw struct {
+	PollID              string                  `json:"poll_id"`
+	CommitteeID         string                  `json:"committee_id"`
+	ProjectID           string                  `json:"project_id"`
+	Status              string                  `json:"status"`
+	NumRecipients       int                     `json:"num_recipients"`
+	NumVotesCast        int                     `json:"num_votes_cast"`
+	NumAbstained        int                     `json:"num_abstained"`
+	PollEndTime         string                  `json:"poll_end_time"`
+	CreatedTime         string                  `json:"created_time"`
+	LastModifiedTime    string                  `json:"last_modified_time"`
+	PollQuestionsResult []PollQuestionResultRaw `json:"poll_questions_result"`
+}
+
+// UnmarshalJSON coerces string/float64 representations of integer counts to int.
+func (p *PollResultDBRaw) UnmarshalJSON(data []byte) error {
+	tmp := struct {
+		PollID              string                  `json:"poll_id"`
+		CommitteeID         string                  `json:"committee_id"`
+		ProjectID           string                  `json:"project_id"`
+		Status              string                  `json:"status"`
+		NumRecipients       interface{}             `json:"num_recipients"`
+		NumVotesCast        interface{}             `json:"num_votes_cast"`
+		NumAbstained        interface{}             `json:"num_abstained"`
+		PollEndTime         string                  `json:"poll_end_time"`
+		CreatedTime         string                  `json:"created_time"`
+		LastModifiedTime    string                  `json:"last_modified_time"`
+		PollQuestionsResult []PollQuestionResultRaw `json:"poll_questions_result"`
+	}{}
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	p.PollID = tmp.PollID
+	p.CommitteeID = tmp.CommitteeID
+	p.ProjectID = tmp.ProjectID
+	p.Status = tmp.Status
+	p.PollEndTime = tmp.PollEndTime
+	p.CreatedTime = tmp.CreatedTime
+	p.LastModifiedTime = tmp.LastModifiedTime
+	p.PollQuestionsResult = tmp.PollQuestionsResult
+	var err error
+	if p.NumRecipients, err = CoerceToInt(tmp.NumRecipients, "num_recipients"); err != nil {
+		return err
+	}
+	if p.NumVotesCast, err = CoerceToInt(tmp.NumVotesCast, "num_votes_cast"); err != nil {
+		return err
+	}
+	if p.NumAbstained, err = CoerceToInt(tmp.NumAbstained, "num_abstained"); err != nil {
+		return err
+	}
+	return nil
+}
+
+// CoerceToInt converts string, float64, or int interface values to int, matching
+// the pattern used by PollDBRaw for fields that Meltano may send as strings.
+func CoerceToInt(v interface{}, field string) (int, error) {
+	switch val := v.(type) {
+	case string:
+		if val == "" {
+			return 0, nil
+		}
+		n, err := strconv.Atoi(val)
+		if err != nil {
+			return 0, fmt.Errorf("invalid string value for %s: %w", field, err)
+		}
+		return n, nil
+	case float64:
+		return int(val), nil
+	case int:
+		return val, nil
+	case nil:
+		return 0, nil
+	default:
+		return 0, fmt.Errorf("invalid type for %s: %T", field, v)
+	}
+}
+
+// PollQuestionResultRaw is the per-question tally from a v1 poll result snapshot.
+type PollQuestionResultRaw struct {
+	QuestionID    string            `json:"question_id"`
+	Prompt        string            `json:"prompt"`
+	ChoiceResults []ChoiceResultRaw `json:"choice_results"`
+}
+
+// ChoiceResultRaw is the per-choice tally; VoteCount may arrive as string from Meltano.
+type ChoiceResultRaw struct {
+	ChoiceID   string      `json:"choice_id"`
+	ChoiceText string      `json:"choice_text"`
+	VoteCount  interface{} `json:"vote_count"`
+	Percentage float64     `json:"percentage"`
+}
+
+// PollQuestionResult is the v2 per-question tally with proper int VoteCount.
+type PollQuestionResult struct {
+	QuestionID    string        `json:"question_id"`
+	Prompt        string        `json:"prompt"`
+	ChoiceResults []ChoiceResult `json:"choice_results"`
+}
+
+// ChoiceResult is the v2 per-choice tally.
+type ChoiceResult struct {
+	ChoiceID   string  `json:"choice_id"`
+	ChoiceText string  `json:"choice_text"`
+	VoteCount  int     `json:"vote_count"`
+	Percentage float64 `json:"percentage"`
+}
+
 //
 // V2 Transformed Data Models (after parsing and ID mapping)
 //
+
+// PollResultData represents v2 poll result data after transformation.
+type PollResultData struct {
+	VoteUID             string               `json:"vote_uid"`      // v2 primary key (same as PollID)
+	PollID              string               `json:"poll_id"`       // v1 primary key
+	CommitteeID         string               `json:"committee_id"`  // v1 SFID
+	CommitteeUID        string               `json:"committee_uid"` // v2 UID
+	ProjectID           string               `json:"project_id"`    // v1 SFID
+	ProjectUID          string               `json:"project_uid"`   // v2 UID
+	Status              string               `json:"status"`
+	NumRecipients       int                  `json:"num_recipients"`
+	NumVotesCast        int                  `json:"num_votes_cast"`
+	NumAbstained        int                  `json:"num_abstained"`
+	PollEndTime         string               `json:"poll_end_time"`
+	CreatedTime         string               `json:"created_time"`
+	LastModifiedTime    string               `json:"last_modified_time"`
+	PollQuestionsResult []PollQuestionResult `json:"poll_questions_result"`
+}
 
 // VoteData represents v2 vote (poll) data after transformation
 type VoteData struct {
