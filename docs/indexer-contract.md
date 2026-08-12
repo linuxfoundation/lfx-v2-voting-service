@@ -259,6 +259,7 @@ Each element in `poll_questions_result` has:
 |---|---|
 | `vote_uid:{value}` | Always (required field) |
 | `committee_uid:{value}` | Only when `committee_uid` is non-empty |
+| `project_uid:{value}` | Only when `project_uid` is non-empty |
 
 ### Access Control (IndexingConfig)
 

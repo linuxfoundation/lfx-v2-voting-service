@@ -114,6 +114,9 @@ func (p *NATSPublisher) sendVoteResultIndexerMessage(ctx context.Context, subjec
 	if data.CommitteeUID != "" {
 		tags = append(tags, fmt.Sprintf("committee_uid:%s", data.CommitteeUID))
 	}
+	if data.ProjectUID != "" {
+		tags = append(tags, fmt.Sprintf("project_uid:%s", data.ProjectUID))
+	}
 
 	indexingConfig := &indexerTypes.IndexingConfig{
 		ObjectID:             data.VoteUID,
