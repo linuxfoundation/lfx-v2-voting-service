@@ -86,12 +86,43 @@ type BulkResendVotePayload struct {
 	RecipientIds []string
 }
 
-// Comment results
+// A voter's free-text response to a comment prompt
+type CommentResponse struct {
+	// The comment prompt this response answers
+	PromptID string
+	// The voter's free-text response
+	CommentText string
+}
+
+// A voter's free-text comment response, with attribution
+type CommentResponseWithUser struct {
+	// The vote that submitted this comment
+	VoteID string
+	// The LFX identifier of the voter who submitted this comment. Absent entirely
+	// when the poll has pseudo_anonymity enabled.
+	UserID *string
+	// The comment text
+	CommentText string
+	// The name of the voter who submitted this comment. Absent entirely when the
+	// poll has pseudo_anonymity enabled.
+	UserName *string
+	// URL of the voter's profile picture. Absent entirely when the poll has
+	// pseudo_anonymity enabled.
+	ProfilePicture *string
+	// The time the voter submitted this comment (their vote_creation_time)
+	VoteCreationTime string
+	// Whether the voter who submitted this comment abstained from voting on the
+	// poll
+	Abstained bool
+}
+
+// Results for a single comment prompt, grouped with every response to it.
+// Every comment prompt on the poll is included, even one with zero responses.
 type CommentResultItem struct {
-	// Comment prompt
-	Prompt string
-	// List of comments
-	Comments []string
+	// The comment prompt these responses answer
+	Prompt *PollCommentPrompt
+	// The comment responses submitted for this prompt
+	Responses []*CommentResponseWithUser
 }
 
 // Condorcet matrix entry for pairwise comparison
@@ -137,7 +168,7 @@ type CreateVotePayload struct {
 	// Questions for the vote
 	PollQuestions []*PollQuestion
 	// Comment prompts for the vote
-	PollCommentPrompts []*PollCommentPrompt
+	PollCommentPrompts []*PollCommentPromptInput
 	// Enable pseudo-anonymity
 	PseudoAnonymity bool
 	// Type of poll
@@ -165,6 +196,13 @@ type CreateVoteResponsePayload struct {
 	UserVoteContent []*VoteAnswerInput
 	// Whether to abstain from voting
 	Abstain bool
+	// The voter's free-text responses to the poll's comment prompts. Optional;
+	// only meaningful if the poll has poll_comment_prompts. Allowed regardless of
+	// whether abstain is true — an abstaining voter skips the ballot but may still
+	// comment. Each prompt_id must match one of the poll's comment prompts and
+	// must not repeat; each comment_text is required (cannot be empty after
+	// trimming) and is rejected with a 400 if longer than 5000 characters.
+	CommentResponses []*CommentResponse
 }
 
 // DeleteVotePayload is the payload type of the vote service delete_vote method.
@@ -327,6 +365,14 @@ type PollChoice struct {
 
 // Comment prompt for collecting feedback
 type PollCommentPrompt struct {
+	// Comment prompt identifier (server-assigned)
+	PromptID string
+	// Comment prompt text
+	Prompt string
+}
+
+// Comment prompt for collecting feedback (request)
+type PollCommentPromptInput struct {
 	// Comment prompt text
 	Prompt string
 }
@@ -463,7 +509,7 @@ type UpdateVotePayload struct {
 	// Questions for the vote
 	PollQuestions []*PollQuestion
 	// Comment prompts for the vote
-	PollCommentPrompts []*PollCommentPrompt
+	PollCommentPrompts []*PollCommentPromptInput
 	// Enable pseudo-anonymity
 	PseudoAnonymity bool
 	// Type of poll
@@ -489,6 +535,15 @@ type UpdateVoteResponsePayload struct {
 	UserVoteContent []*VoteAnswerInput
 	// Whether to abstain from voting
 	Abstain bool
+	// The voter's free-text responses to the poll's comment prompts. Allowed
+	// regardless of whether abstain is true — an abstaining voter skips the ballot
+	// but may still comment. Otherwise, omitting this field entirely preserves the
+	// vote's existing comments untouched; including it (even as an empty array)
+	// validates and replaces them. Each prompt_id must match one of the poll's
+	// comment prompts and must not repeat; each comment_text is required (cannot
+	// be empty after trimming) and is rejected with a 400 if longer than 5000
+	// characters.
+	CommentResponses []*CommentResponse
 }
 
 // Vote answer for a question
@@ -592,6 +647,9 @@ type VoteResponseResult struct {
 	SesLinkClickedLastTime *string
 	// Vote answers
 	PollAnswers []*VoteAnswer
+	// The voter's free-text responses to the poll's comment prompts. Always an
+	// array (empty if the poll has no comment prompts or the voter left none).
+	CommentResponses []*CommentResponse
 }
 
 // VoteResult is the result type of the vote service create_vote method.
@@ -636,6 +694,8 @@ type VoteResult struct {
 	NumResponseReceived *int
 	// Vote questions
 	PollQuestions []*PollQuestion
+	// Comment prompts for the vote
+	PollCommentPrompts []*PollCommentPrompt
 	// Poll type
 	PollType string
 	// Number of winners (meek_stv only)

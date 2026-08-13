@@ -163,6 +163,18 @@ func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *votesvc.VoteResult
 		result.PollQuestions = questions
 	}
 
+	// Convert poll comment prompts
+	if len(poll.PollCommentPrompts) > 0 {
+		prompts := make([]*votesvc.PollCommentPrompt, len(poll.PollCommentPrompts))
+		for i, p := range poll.PollCommentPrompts {
+			prompts[i] = &votesvc.PollCommentPrompt{
+				PromptID: p.PromptID,
+				Prompt:   p.Prompt,
+			}
+		}
+		result.PollCommentPrompts = prompts
+	}
+
 	return result
 }
 
@@ -387,10 +399,37 @@ func ConvertVoteResultsToResult(results *itx.VoteResults) *votesvc.VoteResultsRe
 	if len(results.CommentResults) > 0 {
 		result.CommentResults = make([]*votesvc.CommentResultItem, len(results.CommentResults))
 		for i, cr := range results.CommentResults {
-			result.CommentResults[i] = &votesvc.CommentResultItem{
-				Prompt:   cr.Prompt,
-				Comments: cr.Comments,
+			commentResultItem := &votesvc.CommentResultItem{
+				Prompt: &votesvc.PollCommentPrompt{
+					PromptID: cr.Prompt.PromptID,
+					Prompt:   cr.Prompt.Prompt,
+				},
 			}
+
+			if len(cr.Responses) > 0 {
+				commentResultItem.Responses = make([]*votesvc.CommentResponseWithUser, len(cr.Responses))
+				for j, r := range cr.Responses {
+					response := &votesvc.CommentResponseWithUser{
+						VoteID:           r.VoteID,
+						CommentText:      r.CommentText,
+						VoteCreationTime: r.VoteCreationTime,
+						Abstained:        r.Abstained,
+					}
+					// user_id, user_name, and profile_picture are absent (not empty string) under pseudo_anonymity.
+					if r.UserID != "" {
+						response.UserID = utils.StringPtr(r.UserID)
+					}
+					if r.UserName != "" {
+						response.UserName = utils.StringPtr(r.UserName)
+					}
+					if r.ProfilePicture != "" {
+						response.ProfilePicture = utils.StringPtr(r.ProfilePicture)
+					}
+					commentResultItem.Responses[j] = response
+				}
+			}
+
+			result.CommentResults[i] = commentResultItem
 		}
 	}
 

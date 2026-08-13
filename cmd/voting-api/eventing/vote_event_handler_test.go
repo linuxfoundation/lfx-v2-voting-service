@@ -18,20 +18,33 @@ import (
 
 // mockEventPublisher is a mock implementation of EventPublisher for testing
 type mockEventPublisher struct {
-	publishVoteErr         error
-	publishVoteResponseErr error
-	publishedVotes         []*domain.VoteData
-	publishedVoteResponses []*domain.VoteResponseData
+	publishVoteErr               error
+	publishVoteResponseErr       error
+	publishVoteResultErr         error
+	publishedVotes               []*domain.VoteData
+	publishedVoteActions         []string
+	publishedVoteResponses       []*domain.VoteResponseData
+	publishedVoteResponseActions []string
+	publishedVoteResults         []*domain.PollResultData
+	publishedVoteResultActions   []string
 }
 
 func (m *mockEventPublisher) PublishVoteEvent(ctx context.Context, action string, vote *domain.VoteData) error {
 	m.publishedVotes = append(m.publishedVotes, vote)
+	m.publishedVoteActions = append(m.publishedVoteActions, action)
 	return m.publishVoteErr
 }
 
 func (m *mockEventPublisher) PublishVoteResponseEvent(ctx context.Context, action string, voteResponse *domain.VoteResponseData) error {
 	m.publishedVoteResponses = append(m.publishedVoteResponses, voteResponse)
+	m.publishedVoteResponseActions = append(m.publishedVoteResponseActions, action)
 	return m.publishVoteResponseErr
+}
+
+func (m *mockEventPublisher) PublishVoteResultEvent(ctx context.Context, action string, pollResult *domain.PollResultData) error {
+	m.publishedVoteResults = append(m.publishedVoteResults, pollResult)
+	m.publishedVoteResultActions = append(m.publishedVoteResultActions, action)
+	return m.publishVoteResultErr
 }
 
 func (m *mockEventPublisher) Close() error {
@@ -65,6 +78,12 @@ func TestConvertMapToVoteData(t *testing.T) {
 			"num_winners":                      "1",
 			"allow_abstain":                    true,
 			"poll_questions":                   []interface{}{},
+			"poll_comment_prompts": []interface{}{
+				map[string]interface{}{
+					"prompt_id": "prompt-1",
+					"prompt":    "Why did you vote this way?",
+				},
+			},
 		}
 
 		idMapper := idmapper.NewNoOpMapper()
@@ -89,6 +108,10 @@ func TestConvertMapToVoteData(t *testing.T) {
 		assert.Equal(t, 1, result.NumWinners)
 		assert.True(t, result.AllowAbstain)
 		assert.Equal(t, "2024-12-30T10:00:00Z", result.EarlyEndTime)
+
+		require.Len(t, result.PollCommentPrompts, 1)
+		assert.Equal(t, "prompt-1", result.PollCommentPrompts[0].PromptID)
+		assert.Equal(t, "Why did you vote this way?", result.PollCommentPrompts[0].Prompt)
 	})
 
 	t.Run("handles missing optional fields", func(t *testing.T) {
@@ -355,5 +378,11 @@ func TestIsTransientError(t *testing.T) {
 		err := errors.New("invalid data format")
 		result := isTransientError(err)
 		assert.False(t, result)
+	})
+
+	t.Run("returns true for domain ErrorTypeUnavailable", func(t *testing.T) {
+		err := domain.NewUnavailableError("id mapper temporarily overloaded")
+		result := isTransientError(err)
+		assert.True(t, result)
 	})
 }

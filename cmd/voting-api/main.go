@@ -164,6 +164,7 @@ func run() int {
 			FilterSubjects: []string{
 				"$KV.v1-objects.itx-poll.>",
 				"$KV.v1-objects.itx-poll-vote.>",
+				"$KV.v1-objects.itx-poll-results.>",
 			},
 			MaxDeliver:    3,
 			AckWait:       30 * time.Second,

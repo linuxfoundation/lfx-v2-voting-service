@@ -12,6 +12,7 @@ import (
 
 	indexerConstants "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/utils"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -102,6 +103,12 @@ func convertMapToVoteData(
 		return nil, fmt.Errorf("failed to unmarshal JSON into PollDBRaw: %w", err)
 	}
 
+	// Default to an empty array so the indexer payload emits [] rather than null
+	pollCommentPrompts := pollDB.PollCommentPrompts
+	if pollCommentPrompts == nil {
+		pollCommentPrompts = []itx.PollCommentPromptOutput{}
+	}
+
 	// Build v2 vote data struct
 	voteData := &domain.VoteData{
 		VoteUID:                       pollDB.PollID,
@@ -122,6 +129,7 @@ func convertMapToVoteData(
 		CommitteeFilters:              pollDB.CommitteeFilters,
 		TotalVotingRequestInvitations: pollDB.TotalVotingRequestInvitations,
 		PollQuestions:                 pollDB.PollQuestions,
+		PollCommentPrompts:            pollCommentPrompts,
 		NumResponseReceived:           pollDB.NumResponseReceived,
 		PollType:                      pollDB.PollType,
 		PseudoAnonymity:               pollDB.PseudoAnonymity,
@@ -206,6 +214,11 @@ func handleVoteDelete(
 func isTransientError(err error) bool {
 	if err == nil {
 		return false
+	}
+
+	// Domain errors with ErrorTypeUnavailable (e.g. from IDMapper) are always transient.
+	if domain.GetErrorType(err) == domain.ErrorTypeUnavailable {
+		return true
 	}
 
 	errStr := err.Error()
