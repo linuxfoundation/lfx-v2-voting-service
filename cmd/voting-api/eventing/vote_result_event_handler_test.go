@@ -9,12 +9,41 @@ import (
 	"log/slog"
 	"testing"
 
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/idmapper"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// mockIDMapper is a controllable IDMapper for testing error paths.
+type mockIDMapper struct {
+	projectErr   error
+	committeeErr error
+}
+
+func (m *mockIDMapper) MapProjectV2ToV1(_ context.Context, v2UID string) (string, error) {
+	return v2UID, m.projectErr
+}
+
+func (m *mockIDMapper) MapProjectV1ToV2(_ context.Context, v1SFID string) (string, error) {
+	if m.projectErr != nil {
+		return "", m.projectErr
+	}
+	return v1SFID, nil
+}
+
+func (m *mockIDMapper) MapCommitteeV2ToV1(_ context.Context, v2UID string) (string, error) {
+	return v2UID, m.committeeErr
+}
+
+func (m *mockIDMapper) MapCommitteeV1ToV2(_ context.Context, v1SFID string) (string, error) {
+	if m.committeeErr != nil {
+		return "", m.committeeErr
+	}
+	return v1SFID, nil
+}
 
 func TestConvertMapToPollResultData(t *testing.T) {
 	logging.InitStructureLogConfig()
@@ -131,7 +160,7 @@ func TestConvertMapToPollResultData(t *testing.T) {
 		result, err := convertMapToPollResultData(ctx, v1Data, idMapper, logger)
 		assert.Error(t, err)
 		assert.Nil(t, result)
-		assert.Contains(t, err.Error(), "invalid vote_count")
+		assert.Contains(t, err.Error(), "vote_count")
 	})
 
 	t.Run("coerces string percentage from Meltano", func(t *testing.T) {
@@ -177,6 +206,59 @@ func TestConvertMapToPollResultData(t *testing.T) {
 		assert.Error(t, err)
 		assert.Nil(t, result)
 		assert.Contains(t, err.Error(), "failed to marshal v1Data to JSON")
+	})
+
+	t.Run("continues without CommitteeUID when committee mapping fails", func(t *testing.T) {
+		v1Data := map[string]interface{}{
+			"poll_id":      "poll-123",
+			"committee_id": "committee-sfid",
+			"project_id":   "project-sfid",
+			"status":       "Closed",
+		}
+
+		idMapper := &mockIDMapper{committeeErr: errors.New("committee not found")}
+		ctx := context.Background()
+		logger := slog.Default()
+
+		result, err := convertMapToPollResultData(ctx, v1Data, idMapper, logger)
+		require.NoError(t, err) // committee failure is non-fatal
+		assert.Equal(t, "poll-123", result.VoteUID)
+		assert.Equal(t, "project-sfid", result.ProjectUID) // project mapping still works
+		assert.Empty(t, result.CommitteeUID)               // omitted on committee error
+	})
+
+	t.Run("returns transient error when project mapping is unavailable", func(t *testing.T) {
+		v1Data := map[string]interface{}{
+			"poll_id":    "poll-123",
+			"project_id": "project-sfid",
+			"status":     "Closed",
+		}
+
+		idMapper := &mockIDMapper{projectErr: domain.NewUnavailableError("id mapper temporarily overloaded")}
+		ctx := context.Background()
+		logger := slog.Default()
+
+		result, err := convertMapToPollResultData(ctx, v1Data, idMapper, logger)
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.True(t, isTransientError(err))
+	})
+
+	t.Run("returns permanent error when project mapping fails non-transiently", func(t *testing.T) {
+		v1Data := map[string]interface{}{
+			"poll_id":    "poll-123",
+			"project_id": "project-sfid",
+			"status":     "Closed",
+		}
+
+		idMapper := &mockIDMapper{projectErr: errors.New("project not found in registry")}
+		ctx := context.Background()
+		logger := slog.Default()
+
+		result, err := convertMapToPollResultData(ctx, v1Data, idMapper, logger)
+		assert.Error(t, err)
+		assert.Nil(t, result)
+		assert.False(t, isTransientError(err))
 	})
 }
 

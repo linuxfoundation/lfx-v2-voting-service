@@ -356,13 +356,38 @@ type PollQuestionResultRaw struct {
 	ChoiceResults []ChoiceResultRaw `json:"choice_results"`
 }
 
-// ChoiceResultRaw is the per-choice tally; both VoteCount and Percentage may arrive
-// as strings from Meltano (DynamoDB Decimal values are recursively stringified by the tap).
+// ChoiceResultRaw is the per-choice tally with coerced numeric fields.
+// Both VoteCount and Percentage may arrive as strings from Meltano (DynamoDB
+// Decimal values are recursively stringified by the tap); UnmarshalJSON handles
+// this centrally, matching the pattern used by PollResultDBRaw at the top level.
 type ChoiceResultRaw struct {
-	ChoiceID   string      `json:"choice_id"`
-	ChoiceText string      `json:"choice_text"`
-	VoteCount  interface{} `json:"vote_count"`
-	Percentage interface{} `json:"percentage"`
+	ChoiceID   string  `json:"choice_id"`
+	ChoiceText string  `json:"choice_text"`
+	VoteCount  int     // coerced via UnmarshalJSON
+	Percentage float64 // coerced via UnmarshalJSON
+}
+
+// UnmarshalJSON coerces string/float64/int representations of VoteCount and Percentage.
+func (c *ChoiceResultRaw) UnmarshalJSON(data []byte) error {
+	tmp := struct {
+		ChoiceID   string      `json:"choice_id"`
+		ChoiceText string      `json:"choice_text"`
+		VoteCount  interface{} `json:"vote_count"`
+		Percentage interface{} `json:"percentage"`
+	}{}
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+	c.ChoiceID = tmp.ChoiceID
+	c.ChoiceText = tmp.ChoiceText
+	var err error
+	if c.VoteCount, err = CoerceToInt(tmp.VoteCount, "vote_count"); err != nil {
+		return err
+	}
+	if c.Percentage, err = CoerceToFloat64(tmp.Percentage, "percentage"); err != nil {
+		return err
+	}
+	return nil
 }
 
 // PollQuestionResult is the v2 per-question tally with proper int VoteCount.
