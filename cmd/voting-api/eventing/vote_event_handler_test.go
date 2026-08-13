@@ -78,6 +78,12 @@ func TestConvertMapToVoteData(t *testing.T) {
 			"num_winners":                      "1",
 			"allow_abstain":                    true,
 			"poll_questions":                   []interface{}{},
+			"poll_comment_prompts": []interface{}{
+				map[string]interface{}{
+					"prompt_id": "prompt-1",
+					"prompt":    "Why did you vote this way?",
+				},
+			},
 		}
 
 		idMapper := idmapper.NewNoOpMapper()
@@ -102,6 +108,10 @@ func TestConvertMapToVoteData(t *testing.T) {
 		assert.Equal(t, 1, result.NumWinners)
 		assert.True(t, result.AllowAbstain)
 		assert.Equal(t, "2024-12-30T10:00:00Z", result.EarlyEndTime)
+
+		require.Len(t, result.PollCommentPrompts, 1)
+		assert.Equal(t, "prompt-1", result.PollCommentPrompts[0].PromptID)
+		assert.Equal(t, "Why did you vote this way?", result.PollCommentPrompts[0].Prompt)
 	})
 
 	t.Run("handles missing optional fields", func(t *testing.T) {

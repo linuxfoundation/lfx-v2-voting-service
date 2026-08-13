@@ -22,10 +22,14 @@ func (s *VotingAPI) CreateVoteResponse(ctx context.Context, payload *votesvc.Cre
 	)
 
 	// Convert Goa payload to service request
-	req := apiservice.ConvertCreateVoteResponsePayloadToDomain(payload)
+	req, err := apiservice.ConvertCreateVoteResponsePayloadToDomain(payload)
+	if err != nil {
+		logger.ErrorContext(ctx, "Invalid create vote response payload", "error", err)
+		return handleError(err)
+	}
 
 	// Call service layer
-	err := s.voteResponseService.CreateVoteResponse(ctx, req)
+	err = s.voteResponseService.CreateVoteResponse(ctx, req)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to create vote response", "error", err)
 		return handleError(err)
@@ -67,10 +71,14 @@ func (s *VotingAPI) UpdateVoteResponse(ctx context.Context, payload *votesvc.Upd
 	)
 
 	// Convert Goa payload to service request
-	req := apiservice.ConvertUpdateVoteResponsePayloadToDomain(payload)
+	req, err := apiservice.ConvertUpdateVoteResponsePayloadToDomain(payload)
+	if err != nil {
+		logger.ErrorContext(ctx, "Invalid update vote response payload", "error", err)
+		return handleError(err)
+	}
 
 	// Call service layer
-	err := s.voteResponseService.UpdateVoteResponse(ctx, payload.VoteResponseUID, req)
+	err = s.voteResponseService.UpdateVoteResponse(ctx, payload.VoteResponseUID, req)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to update vote response", "error", err)
 		return handleError(err)
