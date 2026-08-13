@@ -218,6 +218,8 @@ func handleKVPut(
 		return handleVoteUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, logger)
 	case "itx-poll-vote":
 		return handleVoteResponseUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, inviteHandler, logger)
+	case "itx-poll-results":
+		return handleVoteResultUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, logger)
 	default:
 		// Not a voting-related key, ACK and skip
 		logger.With("key", key, "prefix", prefix).Debug("skipping update - unsupported type")
@@ -280,6 +282,8 @@ func handleResourceDelete(ctx context.Context,
 		return handleVoteDelete(ctx, uid, publisher, mappingsKV, logger)
 	case "itx-poll-vote":
 		return handleVoteResponseDelete(ctx, uid, publisher, mappingsKV, logger)
+	case "itx-poll-results":
+		return handleVoteResultDelete(ctx, uid, publisher, mappingsKV, logger)
 	default:
 		logger.With("key", key, "prefix", prefix).Debug("skipping delete - unsupported type")
 		return false // ACK unsupported types

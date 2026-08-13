@@ -29,6 +29,9 @@ const (
 
 	// IndexVoteResponseSubject is the subject for vote response indexing
 	IndexVoteResponseSubject = "lfx.index.vote_response"
+
+	// IndexVoteResultSubject is the subject for vote result snapshot indexing
+	IndexVoteResultSubject = "lfx.index.vote_result"
 )
 
 // NATSPublisher implements the EventPublisher interface
@@ -85,6 +88,50 @@ func (p *NATSPublisher) PublishVoteResponseEvent(ctx context.Context, action str
 	}
 
 	return nil
+}
+
+// PublishVoteResultEvent publishes a poll result snapshot to the indexer.
+// No FGA message is emitted — access to vote_result is governed by the parent
+// vote's results_viewer relation, so no tuples need to be written or removed.
+func (p *NATSPublisher) PublishVoteResultEvent(ctx context.Context, action string, pollResult *domain.PollResultData) error {
+	if err := p.sendVoteResultIndexerMessage(ctx, IndexVoteResultSubject, indexerConstants.MessageAction(action), pollResult); err != nil {
+		return fmt.Errorf("failed to send vote result indexer message: %w", err)
+	}
+	return nil
+}
+
+// sendVoteResultIndexerMessage builds and publishes an indexer envelope for a poll result.
+func (p *NATSPublisher) sendVoteResultIndexerMessage(ctx context.Context, subject string, action indexerConstants.MessageAction, data *domain.PollResultData) error {
+	parentRefs := []string{fmt.Sprintf("vote:%s", data.VoteUID)}
+	if data.ProjectUID != "" {
+		parentRefs = append(parentRefs, fmt.Sprintf("project:%s", data.ProjectUID))
+	}
+	if data.CommitteeUID != "" {
+		parentRefs = append(parentRefs, fmt.Sprintf("committee:%s", data.CommitteeUID))
+	}
+
+	tags := []string{fmt.Sprintf("vote_uid:%s", data.VoteUID)}
+	if data.CommitteeUID != "" {
+		tags = append(tags, fmt.Sprintf("committee_uid:%s", data.CommitteeUID))
+	}
+	if data.ProjectUID != "" {
+		tags = append(tags, fmt.Sprintf("project_uid:%s", data.ProjectUID))
+	}
+
+	indexingConfig := &indexerTypes.IndexingConfig{
+		ObjectID:             data.VoteUID,
+		AccessCheckObject:    fmt.Sprintf("vote:%s", data.VoteUID),
+		AccessCheckRelation:  "results_viewer",
+		HistoryCheckObject:   fmt.Sprintf("vote:%s", data.VoteUID),
+		HistoryCheckRelation: "auditor",
+		ParentRefs:           parentRefs,
+		Tags:                 tags,
+	}
+
+	if action == indexerConstants.ActionDeleted {
+		return p.sendIndexerDeleteMessage(ctx, subject, action, data.VoteUID, indexingConfig)
+	}
+	return p.sendIndexerCreateUpdateMessage(ctx, subject, action, data, indexingConfig)
 }
 
 // Close closes the publisher connection

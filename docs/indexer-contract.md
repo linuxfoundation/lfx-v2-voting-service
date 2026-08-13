@@ -12,6 +12,7 @@ The voting service is a **wrapper service** — it ingests data from the legacy 
 
 - [Vote (Poll)](#vote-poll)
 - [Vote Response](#vote-response)
+- [Vote Result](#vote-result)
 
 ---
 
@@ -224,3 +225,76 @@ Each element in `comment_responses` has:
 | --- | --- |
 | `project:{project_uid}` | Only when `project_uid` is non-empty |
 | `vote:{vote_uid}` | Only when `vote_uid` is non-empty |
+
+---
+
+## Vote Result
+
+**Object type:** `vote_result`
+
+**Source struct:** `internal/domain/event_models.go` — `PollResultData`
+
+**Publisher:** `internal/infrastructure/eventing/nats_publisher.go` — `sendVoteResultIndexerMessage`
+
+**NATS subject:** `lfx.index.vote_result`
+
+**KV source:** `v1-objects` bucket, key prefix `itx-poll-results.*`
+
+**Indexed on:** create, update, delete events streamed from the `itx-poll-results` DynamoDB table via `lfx-v1-sync-helper`.
+
+**No FGA messages are emitted.** Access to `vote_result` is governed entirely by the parent vote's `results_viewer` relation in OpenFGA.
+
+### Data Schema
+
+| Field | Type | Description |
+|---|---|---|
+| `vote_uid` | string | Vote UID (v2 primary key; same value as `poll_id`) |
+| `poll_id` | string | ITX poll identifier (v1 primary key) |
+| `committee_id` | string | ITX committee identifier (v1 SFID) |
+| `committee_uid` | string | LFX committee UID (v2) |
+| `project_id` | string | ITX project identifier (v1 SFID) |
+| `project_uid` | string | LFX project UID (v2) |
+| `status` | string | Vote status at snapshot time (e.g., `Open`, `Closed`) |
+| `num_recipients` | int | Number of eligible voters |
+| `num_votes_cast` | int | Number of votes submitted |
+| `num_abstained` | int | Number of abstentions |
+| `poll_end_time` | string | Scheduled end time of the vote |
+| `created_time` | string | When the result snapshot was first created |
+| `last_modified_time` | string | When the result snapshot was last updated |
+| `poll_questions_result` | []object | Per-question choice tallies (see schema below) |
+
+#### Poll Question Result Schema
+
+Each element in `poll_questions_result` has:
+
+| Field | Type | Description |
+|---|---|---|
+| `question_id` | string | Question identifier |
+| `prompt` | string | Question text |
+| `choice_results` | []object | Per-choice tallies (each has `choice_id`, `choice_text`, `vote_count` int, `percentage` float64) |
+
+### Tags
+
+| Tag Format | Condition |
+|---|---|
+| `vote_uid:{value}` | Always (required field) |
+| `committee_uid:{value}` | Only when `committee_uid` is non-empty |
+| `project_uid:{value}` | Only when `project_uid` is non-empty |
+
+### Access Control (IndexingConfig)
+
+| Field | Value |
+|---|---|
+| `access_check_object` | `vote:{vote_uid}` |
+| `access_check_relation` | `results_viewer` |
+| `history_check_object` | `vote:{vote_uid}` |
+| `history_check_relation` | `auditor` |
+| `public` | `false` (always) |
+
+### Parent References
+
+| Ref | Condition |
+|---|---|
+| `vote:{vote_uid}` | Always (required) |
+| `project:{project_uid}` | Only when `project_uid` is non-empty |
+| `committee:{committee_uid}` | Only when `committee_uid` is non-empty |
