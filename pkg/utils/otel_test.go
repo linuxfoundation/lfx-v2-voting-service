@@ -199,33 +199,6 @@ func TestNewSampler_InvalidArg(t *testing.T) {
 	}
 }
 
-// TestSetupOTelSDK tests the convenience function SetupOTelSDK which reads
-// configuration from environment variables. With all exporters set to "none",
-// it should successfully initialize the SDK.
-func TestSetupOTelSDK(t *testing.T) {
-	t.Setenv("OTEL_TRACES_EXPORTER", "none")
-	t.Setenv("OTEL_METRICS_EXPORTER", "none")
-	t.Setenv("OTEL_LOGS_EXPORTER", "none")
-	t.Setenv("OTEL_SERVICE_NAME", "")
-	t.Setenv("OTEL_SERVICE_VERSION", "")
-
-	ctx := context.Background()
-	shutdown, err := SetupOTelSDK(ctx)
-
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if shutdown == nil {
-		t.Fatal("expected non-nil shutdown function")
-	}
-
-	err = shutdown(ctx)
-	if err != nil {
-		t.Errorf("shutdown returned unexpected error: %v", err)
-	}
-}
-
 // TestOTelConfig_MinimalConfig verifies that the SDK can be initialized with
 // a minimal OTelConfig (no service name or version set).
 func TestOTelConfig_MinimalConfig(t *testing.T) {

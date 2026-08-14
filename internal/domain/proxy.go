@@ -50,9 +50,3 @@ type VoteResponseClient interface {
 	// ResendVote resends the vote email in ITX
 	ResendVote(ctx context.Context, voteID string) error
 }
-
-// ITXProxyClient combines both poll and vote response operations
-type ITXProxyClient interface {
-	PollClient
-	VoteResponseClient
-}

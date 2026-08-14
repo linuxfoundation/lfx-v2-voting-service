@@ -32,7 +32,7 @@ type Config struct {
 	Timeout     time.Duration
 }
 
-// Client implements domain.ITXProxyClient
+// Client implements domain.PollClient and domain.VoteResponseClient.
 type Client struct {
 	httpClient *http.Client
 	config     Config

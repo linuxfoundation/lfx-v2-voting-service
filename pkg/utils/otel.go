@@ -55,12 +55,6 @@ func OTelConfigFromEnv() OTelConfig {
 	return cfg
 }
 
-// SetupOTelSDK bootstraps the OpenTelemetry pipeline.
-// If it does not return an error, make sure to call shutdown for proper cleanup.
-func SetupOTelSDK(ctx context.Context) (shutdown func(context.Context) error, err error) {
-	return SetupOTelSDKWithConfig(ctx, OTelConfigFromEnv())
-}
-
 // SetupOTelSDKWithConfig bootstraps the OpenTelemetry pipeline with the provided configuration.
 // If it does not return an error, make sure to call shutdown for proper cleanup.
 //
