@@ -73,10 +73,8 @@ setup:
 # Install dependencies
 deps:
 	@echo "==> Installing dependencies..."
-	@command -v goa >/dev/null 2>&1 || { \
-		echo "==> Installing goa CLI..."; \
-		go install goa.design/goa/v3/cmd/goa@latest; \
-	}
+	@echo "==> Installing goa CLI (version pinned to go.mod)..."
+	@go install goa.design/goa/v3/cmd/goa@$(shell go list -m -f '{{.Version}}' goa.design/goa/v3)
 	@command -v golangci-lint >/dev/null 2>&1 || { \
 		echo "==> Installing golangci-lint..."; \
 		go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest; \

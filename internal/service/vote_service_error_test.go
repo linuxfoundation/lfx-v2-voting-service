@@ -76,6 +76,35 @@ func ctxWithPrincipal(principal string) context.Context {
 	return context.WithValue(context.Background(), constants.PrincipalContextID, principal)
 }
 
+// ---- Name-length validation --------------------------------------------------
+
+// TestCreateVote_NameTooLong pins the 200-character name limit. If the constant is
+// accidentally removed or the check is bypassed, this test fails and prevents a
+// silent regression where ITX returns an opaque 400.
+func TestCreateVote_NameTooLong(t *testing.T) {
+	svc := NewVoteService(nil, &returnPollClient{}, identityIDMapper{}, discardLogger())
+
+	req := &CreateVoteRequest{Name: string(make([]byte, 201))}
+	_, err := svc.CreateVote(ctxWithPrincipal("user"), req)
+	if err == nil {
+		t.Fatal("expected validation error for name > 200 chars, got nil")
+	}
+	if domain.GetErrorType(err) != domain.ErrorTypeValidation {
+		t.Errorf("expected ErrorTypeValidation, got %d (%v)", domain.GetErrorType(err), err)
+	}
+}
+
+// TestCreateVote_NameAtLimit verifies that a 200-character name is accepted.
+func TestCreateVote_NameAtLimit(t *testing.T) {
+	svc := NewVoteService(nil, &returnPollClient{resp: &itx.PollResponse{}}, identityIDMapper{}, discardLogger())
+
+	req := &CreateVoteRequest{Name: string(make([]byte, 200))}
+	_, err := svc.CreateVote(ctxWithPrincipal("user"), req)
+	if err != nil {
+		t.Fatalf("expected no error for name == 200 chars, got: %v", err)
+	}
+}
+
 // ---- JWTAuth ----------------------------------------------------------------
 
 // TestVoteService_JWTAuth_ValidToken verifies that a successful ParsePrincipal result

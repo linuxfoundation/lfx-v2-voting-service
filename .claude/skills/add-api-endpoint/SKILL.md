@@ -128,6 +128,19 @@ All of the following must pass: `make verify` (gen/ is current), `make check` (f
 
 ---
 
+## Adding a new HTTP error status (e.g. 429 Rate Limited)
+
+If you need an error type that currently doesn't exist in the domain (see `internal/domain/errors.go`), you must wire it through **four places**:
+
+1. **`internal/domain/errors.go`** — add `ErrorTypeXxx ErrorType = iota` and `NewXxxError(...)` constructor.
+2. **`internal/infrastructure/proxy/client.go`** — update `mapHTTPError` to return `domain.NewXxxError` for the new status code(s).
+3. **`api/voting/v1/design/voting.go`** — add `Error("xxx_name", XxxError)` to every method that can return this error, and define the Goa error type in `types.go`.
+4. **`cmd/voting-api/api.go`** — add `case domain.ErrorTypeXxx: code = http.StatusXxx` in `handleError`.
+
+Then run `make deps && make generate` after step 3 (Goa must generate the new `*votesvc.XxxError` struct before the handler can use it).
+
+**Prerequisite:** `make deps` must be run first to ensure the local `goa` CLI matches `go.mod`. A version mismatch causes `make generate` to fail silently with a compile error.
+
 ## Things that commonly go wrong
 
 - **Skipping `make generate`** — the build compiles against stale generated types, producing confusing errors or silent mismatches.

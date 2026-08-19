@@ -44,6 +44,30 @@ myDisabled := os.Getenv("MY_FEATURE_DISABLED") == "true"
 
 Use the same style as the nearest existing flag. Check `ID_MAPPING_DISABLED` and `EVENT_PROCESSING_ENABLED` as canonical examples of the feature-disable pattern.
 
+### Step 1b — Thread into the handler layer (feature flags only)
+
+If the flag controls an API endpoint's behavior (e.g. disabling a specific route), you must also thread it from `config` to `VotingAPI`:
+
+1. Add the field to the `config` struct in `main.go`.
+2. Pass it from `loadConfig()` (already handled by step 1).
+3. Add the field to `VotingAPI` in `cmd/voting-api/api.go`:
+   ```go
+   type VotingAPI struct {
+       voteService         *service.VoteService
+       voteResponseService *service.VoteResponseService
+       myFeatureEnabled    bool // add here
+   }
+   ```
+4. Pass it in `NewVotingAPI` and store on the struct.
+5. In the handler method (`cmd/voting-api/api_votes.go` or `api_vote_responses.go`), guard with:
+   ```go
+   if !s.myFeatureEnabled {
+       return nil, handleError(domain.NewNotFoundError("endpoint disabled"))
+   }
+   ```
+
+For flags that only affect infrastructure wiring (e.g. `ID_MAPPING_DISABLED` which selects a different `IDMapper` implementation), you do NOT need to modify `VotingAPI` — the flag is consumed entirely in `main.go` during dependency construction.
+
 ### Step 2 — Add to `.env.example`
 
 Add the new variable in the relevant section of `.env.example`. Include:
@@ -90,7 +114,8 @@ source .env && make run
 
 ## Checklist
 
-- [ ] Variable loaded in `cmd/voting-api/main.go`
+- [ ] Variable loaded in `cmd/voting-api/main.go` (added to `config` struct + `loadConfig`)
+- [ ] If it gates a handler: `VotingAPI` struct updated + guard added in the handler method
 - [ ] `.env.example` has the variable with a comment and safe local default
 - [ ] README configuration table updated
 - [ ] For secrets: ExternalSecret updated; `.env.example` uses a placeholder

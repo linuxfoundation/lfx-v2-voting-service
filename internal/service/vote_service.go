@@ -68,6 +68,13 @@ func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*
 		"committee_uid", req.CommitteeUID,
 	)
 
+	// Validate name length — ITX rejects names over 200 chars but returns an opaque 400.
+	// We validate here so the client receives a clear, actionable error message.
+	const maxVoteNameLen = 200
+	if len(req.Name) > maxVoteNameLen {
+		return nil, domain.NewValidationError("vote name must not exceed 200 characters")
+	}
+
 	// Map IDs from v2 (UIDs) to v1 (SFIDs)
 	projectSFID, committeeSFID, committeeIDs, err := s.mapRequestIDsV2ToV1(ctx, req.ProjectUID, req.CommitteeUID, req.CommitteeUIDs)
 	if err != nil {
@@ -146,10 +153,10 @@ func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*
 // GetVote retrieves vote details (proxies to ITX GET /voting/poll/{poll_id})
 func (s *VoteService) GetVote(ctx context.Context, voteID string) (*itx.PollResponse, error) {
 	// Extract principal from context
-	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
-	if !ok {
+	principal, err := requirePrincipal(ctx)
+	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
-		return nil, domain.NewValidationError("authentication required")
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Getting vote", "principal", principal, "vote_id", voteID)
@@ -456,6 +463,17 @@ func (s *VoteService) mapRequestIDsV2ToV1(ctx context.Context, projectUID, commi
 	}
 
 	return projectID, committeeID, committeeIDs, nil
+}
+
+// requirePrincipal extracts the principal string from a context and returns a
+// validation error if it is absent or empty. Centralises the auth guard that
+// every service method must perform before calling ITX.
+func requirePrincipal(ctx context.Context) (string, error) {
+	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
+	if !ok || strings.TrimSpace(principal) == "" {
+		return "", domain.NewValidationError("authentication required")
+	}
+	return principal, nil
 }
 
 // creatorFromPrincipal builds the ITX created_by payload from the JWT principal claim.

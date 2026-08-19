@@ -69,6 +69,7 @@ Use `#` prefix for YAML, Makefile, and shell files. CI enforces this on all file
 `gen/` is produced by Goa from the DSL in `api/voting/v1/design/`.
 
 - Never edit `gen/` directly — changes are overwritten on next `make generate`.
+- Run `make deps` first if you have not set up this repo — it installs the `goa` CLI at the exact version pinned in `go.mod`. A version mismatch causes `make generate` to fail with a compile error.
 - Run `make generate` after editing design files and commit the result.
 - `make ci` calls `make verify`, which regenerates and fails if `gen/` is stale.
 
