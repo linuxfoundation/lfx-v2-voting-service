@@ -60,6 +60,8 @@ Use `#` prefix for YAML, Makefile, and shell files. CI enforces this on all file
 
 **Errors** — use the `ErrorType` enum in `internal/domain/errors.go`. Return domain errors from service/infrastructure; convert to Goa errors only in `cmd/voting-api/api.go`.
 
+> **Why ITX 401/403 maps to `ErrorTypeInternal`**: When the proxy receives a 401 or 403 from ITX it means the service's own M2M token is invalid or expired — an infrastructure problem, not a client-auth failure. There is deliberately no `ErrorTypeForbidden`. See the comment in `internal/domain/errors.go` for the full rationale.
+
 **Doc comments** — all exported functions and types must have Go doc comments.
 
 **Terminology** — "vote" = a poll/election (what ITX calls a "poll"); "vote response" = a ballot submission. See `docs/glossary.md`.
@@ -70,7 +72,7 @@ Use `#` prefix for YAML, Makefile, and shell files. CI enforces this on all file
 
 - Never edit `gen/` directly — changes are overwritten on next `make generate`.
 - Run `make deps` first if you have not set up this repo — it installs the `goa` CLI at the exact version pinned in `go.mod`. A version mismatch causes `make generate` to fail with a compile error.
-- Run `make generate` after editing design files and commit the result.
+- Run `make generate` (or `go generate ./api/...`) after editing design files and commit the result.
 - `make ci` calls `make verify`, which regenerates and fails if `gen/` is stale.
 
 ## Validation After Changes

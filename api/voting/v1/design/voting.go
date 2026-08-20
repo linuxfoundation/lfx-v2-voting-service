@@ -1,6 +1,12 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
+// Run `go generate ./api/...` (or `make generate`) after editing any file in this
+// package to regenerate the code in gen/. Both commands install the correct goa
+// CLI version from go.mod before generating.
+//
+//go:generate make -C ../../../.. generate
+
 package design
 
 import (
