@@ -44,6 +44,25 @@ func newResponseSvc(client domain.VoteResponseClient, mapper domain.IDMapper) *V
 	return NewVoteResponseService(nil, client, mapper, discardLogger())
 }
 
+// prefixIDMapper is a test mapper that prepends "uid:" to every v1→v2 mapping so
+// tests can assert the exact transformed value rather than a pass-through echo.
+// This distinguishes "mapper was called and its result was used" from "value was
+// copied directly without going through the mapper".
+type prefixIDMapper struct{}
+
+func (prefixIDMapper) MapProjectV2ToV1(_ context.Context, v2UID string) (string, error) {
+	return v2UID, nil
+}
+func (prefixIDMapper) MapProjectV1ToV2(_ context.Context, v1SFID string) (string, error) {
+	return "uid:" + v1SFID, nil
+}
+func (prefixIDMapper) MapCommitteeV2ToV1(_ context.Context, v2UID string) (string, error) {
+	return v2UID, nil
+}
+func (prefixIDMapper) MapCommitteeV1ToV2(_ context.Context, v1SFID string) (string, error) {
+	return "uid:" + v1SFID, nil
+}
+
 // ---- CreateVoteResponse -----------------------------------------------------
 
 func TestCreateVoteResponse_MissingPrincipal(t *testing.T) {
@@ -87,21 +106,25 @@ func TestGetVoteResponse_PropagatesNotFound(t *testing.T) {
 // TestGetVoteResponse_ResponseIDMappingPopulatesProjectUID mirrors the equivalent
 // VoteService test: verifies the response mapping path is actually invoked so a
 // caller does not receive a raw v1 SFID in the ProjectID field.
+//
+// prefixIDMapper returns "uid:" + input for v1→v2 mapping. If the mapping call is
+// skipped and resp.ProjectID is copied directly, the assertion fails because the
+// raw SFID "proj-sfid" != the transformed value "uid:proj-sfid".
 func TestGetVoteResponse_ResponseIDMappingPopulatesProjectUID(t *testing.T) {
 	svc := newResponseSvc(
 		&returnVoteResponseClient{resp: &itx.VoteResponse{
 			VoteID:    "vote-1",
 			ProjectID: "proj-sfid",
 		}},
-		identityIDMapper{}, // pass-through; verifies field is set, not its value
+		prefixIDMapper{},
 	)
 
 	result, err := svc.GetVoteResponse(ctxWithPrincipal("user"), "vote-1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.ProjectID == "" {
-		t.Error("expected ProjectID to be mapped (non-empty)")
+	if result.ProjectID != "uid:proj-sfid" {
+		t.Errorf("expected ProjectID %q (mapper applied), got %q", "uid:proj-sfid", result.ProjectID)
 	}
 }
 

@@ -27,6 +27,9 @@ jobs:
       - name: Verify generated code is up to date
         run: make verify
 
+      - name: Check formatting and lint
+        run: make check
+
       - name: Build
         run: make build
 

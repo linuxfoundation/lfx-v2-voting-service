@@ -13,6 +13,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"strings"
 	"testing"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
@@ -81,27 +82,37 @@ func ctxWithPrincipal(principal string) context.Context {
 // TestCreateVote_NameTooLong pins the 200-character name limit. If the constant is
 // accidentally removed or the check is bypassed, this test fails and prevents a
 // silent regression where ITX returns an opaque 400.
+//
+// Uses multibyte characters (é = 2 bytes, 1 rune) so a regression from
+// utf8.RuneCountInString to byte-based len would still reject the name (402 > 200),
+// but the at-limit test below would catch the regression (400 bytes rejected by len,
+// but 200 runes correctly accepted by utf8.RuneCountInString).
 func TestCreateVote_NameTooLong(t *testing.T) {
 	svc := NewVoteService(nil, &returnPollClient{}, identityIDMapper{}, discardLogger())
 
-	req := &CreateVoteRequest{Name: string(make([]byte, 201))}
+	// 201 × "é" = 201 runes (402 bytes) — must be rejected
+	req := &CreateVoteRequest{Name: strings.Repeat("é", 201)}
 	_, err := svc.CreateVote(ctxWithPrincipal("user"), req)
 	if err == nil {
-		t.Fatal("expected validation error for name > 200 chars, got nil")
+		t.Fatal("expected validation error for name > 200 runes, got nil")
 	}
 	if domain.GetErrorType(err) != domain.ErrorTypeValidation {
 		t.Errorf("expected ErrorTypeValidation, got %d (%v)", domain.GetErrorType(err), err)
 	}
 }
 
-// TestCreateVote_NameAtLimit verifies that a 200-character name is accepted.
+// TestCreateVote_NameAtLimit verifies that a 200-rune name is accepted.
+// Uses multibyte characters: 200 × "é" = 200 runes (400 bytes). If the implementation
+// regresses to byte-based len, it would wrongly reject this name (400 > 200), failing
+// this test and catching the regression.
 func TestCreateVote_NameAtLimit(t *testing.T) {
 	svc := NewVoteService(nil, &returnPollClient{resp: &itx.PollResponse{}}, identityIDMapper{}, discardLogger())
 
-	req := &CreateVoteRequest{Name: string(make([]byte, 200))}
+	// 200 × "é" = 200 runes (400 bytes) — must be accepted
+	req := &CreateVoteRequest{Name: strings.Repeat("é", 200)}
 	_, err := svc.CreateVote(ctxWithPrincipal("user"), req)
 	if err != nil {
-		t.Fatalf("expected no error for name == 200 chars, got: %v", err)
+		t.Fatalf("expected no error for name == 200 runes, got: %v", err)
 	}
 }
 
@@ -286,6 +297,38 @@ func TestDeleteVote_MissingPrincipal(t *testing.T) {
 	}
 	if dErr.Type != domain.ErrorTypeValidation {
 		t.Errorf("expected ErrorTypeValidation, got %d", dErr.Type)
+	}
+}
+
+// TestUpdateVote_NameTooLong verifies that UpdateVote rejects names over 200 Unicode characters.
+// Uses multibyte characters (é = 2 bytes, 1 rune) so a regression to byte-based len would
+// return 402 instead of 201 — both fail, but the rune count is the contract.
+func TestUpdateVote_NameTooLong(t *testing.T) {
+	svc := NewVoteService(nil, &returnPollClient{}, identityIDMapper{}, discardLogger())
+
+	// 201 × "é" = 201 runes (402 bytes) — must be rejected
+	req := &UpdateVoteRequest{Name: strings.Repeat("é", 201)}
+	_, err := svc.UpdateVote(ctxWithPrincipal("user"), "vote-1", req)
+	if err == nil {
+		t.Fatal("expected validation error for name > 200 runes, got nil")
+	}
+	if domain.GetErrorType(err) != domain.ErrorTypeValidation {
+		t.Errorf("expected ErrorTypeValidation, got %d (%v)", domain.GetErrorType(err), err)
+	}
+}
+
+// TestUpdateVote_NameAtLimit verifies that a 200-rune name is accepted by UpdateVote.
+// Uses multibyte characters: 200 × "é" = 200 runes (400 bytes). If the implementation
+// regresses to byte-based len, it would wrongly reject this name (400 > 200), failing
+// this test and catching the regression.
+func TestUpdateVote_NameAtLimit(t *testing.T) {
+	svc := NewVoteService(nil, &returnPollClient{resp: &itx.PollResponse{}}, identityIDMapper{}, discardLogger())
+
+	// 200 × "é" = 200 runes (400 bytes) — must be accepted
+	req := &UpdateVoteRequest{Name: strings.Repeat("é", 200)}
+	_, err := svc.UpdateVote(ctxWithPrincipal("user"), "vote-1", req)
+	if err != nil {
+		t.Fatalf("expected no error for name == 200 runes, got: %v", err)
 	}
 }
 

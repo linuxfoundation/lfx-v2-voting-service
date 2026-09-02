@@ -15,6 +15,8 @@ package eventing
 
 import (
 	"fmt"
+	"reflect"
+	"sort"
 	"testing"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
@@ -45,13 +47,17 @@ func TestBuildVoteIndexingConfig_Contract(t *testing.T) {
 	assertField(t, "SortName", cfg.SortName, data.Name)
 	assertField(t, "Fulltext", cfg.Fulltext, fmt.Sprintf("%s %s", data.Name, data.Description))
 
-	// Tags — both UIDs present
-	assertContains(t, "Tags", cfg.Tags, fmt.Sprintf("committee_uid:%s", data.CommitteeUID))
-	assertContains(t, "Tags", cfg.Tags, fmt.Sprintf("project_uid:%s", data.ProjectUID))
+	// Tags — exactly these two entries, no more
+	assertExactSlice(t, "Tags", cfg.Tags, []string{
+		fmt.Sprintf("committee_uid:%s", data.CommitteeUID),
+		fmt.Sprintf("project_uid:%s", data.ProjectUID),
+	})
 
-	// Parent refs — both UIDs present
-	assertContains(t, "ParentRefs", cfg.ParentRefs, fmt.Sprintf("project:%s", data.ProjectUID))
-	assertContains(t, "ParentRefs", cfg.ParentRefs, fmt.Sprintf("committee:%s", data.CommitteeUID))
+	// Parent refs — exactly these two entries, no more
+	assertExactSlice(t, "ParentRefs", cfg.ParentRefs, []string{
+		fmt.Sprintf("project:%s", data.ProjectUID),
+		fmt.Sprintf("committee:%s", data.CommitteeUID),
+	})
 }
 
 func TestBuildVoteIndexingConfig_EmptyOptionalFields(t *testing.T) {
@@ -96,13 +102,17 @@ func TestBuildVoteResponseIndexingConfig_Contract(t *testing.T) {
 	assertField(t, "SortName", cfg.SortName, data.Username)
 	assertField(t, "Fulltext", cfg.Fulltext, data.Username)
 
-	// Tags
-	assertContains(t, "Tags", cfg.Tags, fmt.Sprintf("vote_uid:%s", voteUID))
-	assertContains(t, "Tags", cfg.Tags, fmt.Sprintf("project_uid:%s", data.ProjectUID))
+	// Tags — exactly these two entries, no more
+	assertExactSlice(t, "Tags", cfg.Tags, []string{
+		fmt.Sprintf("vote_uid:%s", voteUID),
+		fmt.Sprintf("project_uid:%s", data.ProjectUID),
+	})
 
-	// Parent refs
-	assertContains(t, "ParentRefs", cfg.ParentRefs, fmt.Sprintf("vote:%s", voteUID))
-	assertContains(t, "ParentRefs", cfg.ParentRefs, fmt.Sprintf("project:%s", data.ProjectUID))
+	// Parent refs — exactly these two entries, no more
+	assertExactSlice(t, "ParentRefs", cfg.ParentRefs, []string{
+		fmt.Sprintf("project:%s", data.ProjectUID),
+		fmt.Sprintf("vote:%s", voteUID),
+	})
 }
 
 // ---- Vote Result ------------------------------------------------------------
@@ -124,15 +134,19 @@ func TestBuildVoteResultIndexingConfig_Contract(t *testing.T) {
 	assertField(t, "HistoryCheckRelation", cfg.HistoryCheckRelation, "auditor")
 	assertField(t, "ObjectID", cfg.ObjectID, voteUID)
 
-	// Tags — vote_uid is always present; optional UIDs added when non-empty
-	assertContains(t, "Tags", cfg.Tags, fmt.Sprintf("vote_uid:%s", voteUID))
-	assertContains(t, "Tags", cfg.Tags, fmt.Sprintf("committee_uid:%s", data.CommitteeUID))
-	assertContains(t, "Tags", cfg.Tags, fmt.Sprintf("project_uid:%s", data.ProjectUID))
+	// Tags — exactly these three entries, no more
+	assertExactSlice(t, "Tags", cfg.Tags, []string{
+		fmt.Sprintf("vote_uid:%s", voteUID),
+		fmt.Sprintf("committee_uid:%s", data.CommitteeUID),
+		fmt.Sprintf("project_uid:%s", data.ProjectUID),
+	})
 
-	// Parent refs — vote always present; optional refs added when non-empty
-	assertContains(t, "ParentRefs", cfg.ParentRefs, fmt.Sprintf("vote:%s", voteUID))
-	assertContains(t, "ParentRefs", cfg.ParentRefs, fmt.Sprintf("project:%s", data.ProjectUID))
-	assertContains(t, "ParentRefs", cfg.ParentRefs, fmt.Sprintf("committee:%s", data.CommitteeUID))
+	// Parent refs — exactly these three entries, no more
+	assertExactSlice(t, "ParentRefs", cfg.ParentRefs, []string{
+		fmt.Sprintf("vote:%s", voteUID),
+		fmt.Sprintf("project:%s", data.ProjectUID),
+		fmt.Sprintf("committee:%s", data.CommitteeUID),
+	})
 }
 
 func TestBuildVoteResultIndexingConfig_AlwaysEmitsVoteUID(t *testing.T) {
@@ -165,4 +179,18 @@ func assertContains(t *testing.T, field string, slice []string, want string) {
 		}
 	}
 	t.Errorf("IndexingConfig.%s does not contain %q (got %v); check docs/indexer-contract.md", field, want, slice)
+}
+
+// assertExactSlice verifies that got and want contain exactly the same elements
+// (order-independent). An extra or missing element in got fails the test, which
+// is stronger than assertContains (subset check).
+func assertExactSlice(t *testing.T, field string, got, want []string) {
+	t.Helper()
+	gotCopy := append([]string(nil), got...)
+	wantCopy := append([]string(nil), want...)
+	sort.Strings(gotCopy)
+	sort.Strings(wantCopy)
+	if !reflect.DeepEqual(gotCopy, wantCopy) {
+		t.Errorf("IndexingConfig.%s mismatch (check docs/indexer-contract.md):\n  got:  %v\n  want: %v", field, got, want)
+	}
 }
