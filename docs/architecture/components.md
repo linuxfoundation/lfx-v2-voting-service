@@ -173,8 +173,8 @@ All outbound HTTP calls to the ITX Voting API:
 ### Known technical debt
 
 Every method follows the same pattern (build request → set headers → execute → read body → map
-errors → unmarshal) with no shared helper. This produces ~667 lines of repetition.
-See `tmp/refactoring-suggestions.md` §2 for a proposed `doJSON[T]` / `doNoContent` refactor.
+errors → unmarshal) with no shared helper. This produces ~667 lines of repetition. A future
+refactor could extract a `doJSON[T]` / `doNoContent` helper to eliminate the duplication.
 
 ---
 

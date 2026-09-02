@@ -2,20 +2,20 @@
 
 ## Purpose
 
-Guide writing tests for the currently untested HTTP proxy path — the service layer (`internal/service/`), converter layer (`cmd/voting-api/service/`), and proxy client (`internal/infrastructure/proxy/`) — using the established mock patterns in this repository.
+Guide writing tests for the HTTP proxy path — the service layer (`internal/service/`), converter layer (`cmd/voting-api/service/`), and proxy client (`internal/infrastructure/proxy/`) — using the established mock patterns in this repository.
 
 ## When to use
 
 - Adding tests for any new service method
-- Closing the known testing gap (no tests exist yet for `internal/service/` or `internal/infrastructure/proxy/`)
+- Extending coverage in `internal/service/` or `internal/infrastructure/proxy/`
 - Writing tests for a new converter in `cmd/voting-api/service/`
 
 ---
 
 ## Context you need first
 
-- `tmp/refactoring-suggestions.md` — identifies the exact gaps and the highest-value test targets
-- `internal/service/vote_service_test.go` — the only existing service test; use as style reference
+- `internal/service/vote_service_error_test.go` — existing service tests; use as style reference for auth guard, proxy error, and ID mapping tests
+- `internal/service/vote_response_service_test.go` — coverage for all four vote-response service methods
 - `cmd/voting-api/eventing/*_test.go` — richer mock patterns (table-driven, mock interfaces, mock KV); the best style reference even though it tests a different layer
 - `internal/infrastructure/idmapper/noop_mapper.go` — ready-made `IDMapper` no-op for happy-path tests
 
@@ -167,6 +167,6 @@ go test ./internal/infrastructure/proxy/... -v -race
 
 ## Further reading
 
-- `tmp/refactoring-suggestions.md` — prioritized list of test gaps
 - `cmd/voting-api/eventing/vote_event_handler_test.go` — best mock pattern reference
 - `internal/domain/errors.go` — error types to assert in error-path tests
+- `internal/infrastructure/eventing/indexing_contract_test.go` — example of contract-verification tests asserting field values against documentation

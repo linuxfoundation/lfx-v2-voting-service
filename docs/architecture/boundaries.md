@@ -73,7 +73,8 @@ and the ITX types were confined to `internal/infrastructure/proxy/`.
 
 **Evidence:** `internal/domain/proxy.go:PollClient` interface returning `*itx.PollResponse`;
 `internal/service/vote_service.go:CreateVote()` returning `(*itx.PollResponse, error)`.
-Noted in `tmp/refactoring-suggestions.md` §5.
+A future refactor would introduce a distinct v2 domain response type and confine ITX types to
+`internal/infrastructure/proxy/`.
 
 ---
 
@@ -188,8 +189,8 @@ This logic is not in `internal/` and is not independently testable without the `
 ### Evidence
 
 `cmd/voting-api/eventing/vote_event_handler.go`, `vote_response_event_handler.go`,
-`vote_result_event_handler.go`, `vote_response_invite.go` — all contain non-trivial logic.
-Noted in `tmp/refactoring-suggestions.md` §6 as a candidate for relocation to `internal/`.
+`vote_result_event_handler.go`, `vote_response_invite.go` — all contain non-trivial logic that
+ideally belongs in `internal/service/`. Moving it there is a known future refactoring task.
 
 ---
 
@@ -246,8 +247,18 @@ be passed in explicitly.
 ### Evidence this boundary is followed
 
 `internal/infrastructure/proxy/client.go` accepts a `Config` struct. `internal/infrastructure/
-idmapper/nats_mapper.go` accepts a `Config` struct. No `os.Getenv` calls outside `main.go` and
-`pkg/utils/otel.go` (OTel reads its own standard env vars independently).
+idmapper/nats_mapper.go` accepts a `Config` struct.
+
+### Named exceptions
+
+Two packages read environment variables directly at initialisation time rather than receiving
+a config struct:
+
+- `internal/logging/logging.go` — reads `LOG_LEVEL` and `LOG_ADD_SOURCE` in
+  `InitStructureLogConfig()`. This is intentional: the logger is initialised before the config
+  struct is parsed, so it cannot be passed a config value.
+- `pkg/utils/otel.go` — reads standard OpenTelemetry env vars (`OTEL_*`). These are owned by
+  the OTel SDK and are not part of the service's own config contract.
 
 ### Exception
 

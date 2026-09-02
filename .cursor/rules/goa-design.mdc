@@ -19,7 +19,7 @@ Commit the resulting `gen/` changes in the same PR as the design change. CI runs
 ## Rules for this layer
 
 - **No business logic here** — DSL only (method definitions, types, security, HTTP mappings).
-- **Declare all error responses** — every error the handler can return must be declared in the DSL (e.g., `Response("not_found", StatusNotFound)`). Missing declarations prevent Goa from generating the error helper function, causing a compile error.
+- **Declare all error responses** — every error the handler can return must be declared in the DSL (e.g., `Response("NotFound", StatusNotFound)`). Error names are **PascalCase** — they must match the `Error()` declarations at the service level exactly. Wrong casing causes a Goa generation error. Missing declarations prevent Goa from generating the error helper function, also causing a compile error.
 - **Follow existing naming** — use snake_case for Goa attribute names; they map to JSON fields automatically.
 
 ## After generating, continue with

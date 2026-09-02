@@ -12,7 +12,7 @@ alwaysApply: false
 
 - **Do not add new business logic here.** If you are adding substantive transformation or decision-making, place it in `internal/service/` and call it from the handler.
 - **Do not add new infrastructure wiring here.** Wire dependencies in `cmd/voting-api/main.go`.
-- The correct long-term location for event handlers is `internal/infrastructure/eventing/` (see `tmp/refactoring-suggestions.md` item 6).
+- The correct long-term location for event handler business logic is `internal/service/`. The KV subscription plumbing stays in `cmd/voting-api/eventing/`; move decision-making and data transformation out to the service layer.
 
 ## Patterns you must follow when touching this package
 

@@ -7,12 +7,18 @@ import (
 	"context"
 	"log/slog"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 	"goa.design/goa/v3/security"
 )
+
+// maxVoteNameLen is the maximum allowed Unicode character count for a vote name.
+// ITX rejects names over 200 characters with an opaque 400; we validate early so
+// callers receive a clear error message. Both CreateVote and UpdateVote enforce this.
+const maxVoteNameLen = 200
 
 // VoteService implements the vote service business logic
 type VoteService struct {
@@ -67,10 +73,10 @@ func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*
 		"committee_uid", req.CommitteeUID,
 	)
 
-	// Validate name length — ITX rejects names over 200 chars but returns an opaque 400.
-	// We validate here so the client receives a clear, actionable error message.
-	const maxVoteNameLen = 200
-	if len(req.Name) > maxVoteNameLen {
+	// Validate name length — ITX rejects names over 200 Unicode characters but returns an
+	// opaque 400. We validate here so the client receives a clear, actionable error message.
+	// utf8.RuneCountInString is used (not len) so multi-byte characters count as one character.
+	if utf8.RuneCountInString(req.Name) > maxVoteNameLen {
 		return nil, domain.NewValidationError("vote name must not exceed 200 characters")
 	}
 
@@ -191,6 +197,11 @@ func (s *VoteService) UpdateVote(ctx context.Context, voteID string, req *Update
 		"vote_id", voteID,
 		"name", req.Name,
 	)
+
+	// Validate name length — same 200-character limit as CreateVote.
+	if req.Name != "" && utf8.RuneCountInString(req.Name) > maxVoteNameLen {
+		return nil, domain.NewValidationError("vote name must not exceed 200 characters")
+	}
 
 	// Map IDs from v2 (UIDs) to v1 (SFIDs)
 	projectID, committeeID, committeeIDs, err := s.mapRequestIDsV2ToV1(ctx, req.ProjectUID, req.CommitteeUID, req.CommitteeUIDs)

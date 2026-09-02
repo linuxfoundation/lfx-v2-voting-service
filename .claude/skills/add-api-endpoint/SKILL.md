@@ -36,8 +36,11 @@ Method("method_name", func() {
     HTTP(func() {
         POST("/path")
         Response(StatusOK)
-        Response("not_found", StatusNotFound)
+        Response("NotFound", StatusNotFound)
         // add all error responses your method can return
+        // NOTE: error names are PascalCase (e.g. "NotFound", "BadRequest") —
+        // they must match the Error() declarations at the service level exactly.
+        // Wrong casing causes a Goa generation error.
     })
 })
 ```
@@ -79,7 +82,9 @@ Consult `docs/api-contracts.md` for every field that renames between LFXv2 and I
 Add the method to the appropriate file in `internal/service/` (`vote_service.go` or `vote_response_service.go`).
 
 Service method responsibilities:
-- Extract and validate the principal from context (`ctx.Value(constants.PrincipalContextID)`)
+- Extract and validate the principal from context using the shared `requirePrincipal(ctx)` helper
+  (defined in `internal/service/vote_service.go`). Do **not** call `ctx.Value(constants.PrincipalContextID)`
+  directly — that pattern has been replaced to avoid duplication.
 - Call `idMapper.MapXxxV2ToV1` / `MapXxxV1ToV2` for any UID ↔ SFID translation
 - Call the domain interface method (proxy client)
 - Return `domain.DomainError` for all error paths
@@ -104,19 +109,21 @@ Add the method implementation in `cmd/voting-api/api.go` (or `api_votes.go` / `a
 
 1. Call the converter to build the service request
 2. Call the service method
-3. Map errors: use the `handleVoteError` / `handleVoteResponseError` helper (or follow its pattern for new resource types)
+3. Map errors using the shared `handleError(err)` helper (defined in `cmd/voting-api/api.go`)
 4. Call the response converter and return
 
-Error mapping pattern:
+Error mapping pattern — use `handleError`, which already covers every `ErrorType`:
 ```go
-switch domain.GetErrorType(err) {
-case domain.ErrorTypeNotFound:
-    return nil, vote.MakeNotFound(err)
-case domain.ErrorTypeValidation:
-    return nil, vote.MakeBadRequest(err)
-// ...
+result, err := s.voteService.MyMethod(ctx, req)
+if err != nil {
+    return nil, handleError(err)
 }
+return svc.ConvertMyMethodToResult(result), nil
 ```
+
+Do **not** call `vote.MakeNotFound`, `vote.MakeBadRequest`, `handleVoteError`, or
+`handleVoteResponseError` — those functions do not exist. `handleError` is the single entry point
+for domain → Goa error conversion in this service.
 
 ### Step 10 — Validate
 
