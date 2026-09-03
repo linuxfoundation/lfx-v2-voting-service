@@ -1,7 +1,7 @@
 # Copyright The Linux Foundation and each contributor to LFX.
 # SPDX-License-Identifier: MIT
 
-.PHONY: all help deps apigen build test clean run debug lint fmt check verify docker-build helm-install helm-install-local helm-templates helm-templates-local helm-uninstall
+.PHONY: all help setup deps apigen generate verify build run debug test test-cover lint fmt check tidy ci clean clean-bin docker-build helm-install helm-install-local helm-templates helm-templates-local helm-uninstall
 
 # Default target
 all: clean deps apigen fmt lint test build
@@ -21,44 +21,72 @@ GO_FILES=$(shell find . -name "*.go" -not -path "./gen/*" -not -path "./vendor/*
 
 # Help target
 help:
-	@echo "Available targets:"
-	@echo "  all            - Run clean, deps, apigen, fmt, lint, test, and build"
-	@echo "  deps           - Install dependencies including goa CLI and golangci-lint"
-	@echo "  apigen         - Generate API code from design files"
-	@echo "  build          - Build the binary"
-	@echo "  run            - Run the service"
-	@echo "  debug          - Run the service with debug logging"
-	@echo "  test           - Run unit tests"
-	@echo "  clean          - Remove generated files and binaries"
+	@echo "LFX V2 Voting Service — available make targets"
+	@echo ""
+	@echo "First-time setup:"
+	@echo "  setup          - Copy .env.example → .env (if .env does not exist)"
+	@echo "  deps           - Install goa CLI, golangci-lint, and download Go modules"
+	@echo ""
+	@echo "Core workflow:"
+	@echo "  generate       - Regenerate API code from Goa design files (alias: apigen)"
+	@echo "  build          - Build binary to bin/voting-api"
+	@echo "  run            - Build and run the service (requires env vars)"
+	@echo "  debug          - Build and run with LOG_LEVEL=debug"
+	@echo ""
+	@echo "Testing:"
+	@echo "  test           - Run all tests with -race and -timeout 5m"
+	@echo "  test-cover     - Run tests with coverage; write coverage.out"
+	@echo ""
+	@echo "Code quality:"
+	@echo "  fmt            - Format all Go source files in place"
 	@echo "  lint           - Run golangci-lint"
-	@echo "  fmt            - Format Go code"
-	@echo "  check          - Run fmt and lint without modifying files"
-	@echo "  verify         - Verify API generation is up to date"
-	@echo "  docker-build   - Build Docker image"
-	@echo "  helm-install   - Install Helm chart"
-	@echo "  helm-install-local - Install Helm chart with local values file"
-	@echo "  helm-templates   - Print templates for Helm chart"
-	@echo "  helm-templates-local - Print templates for Helm chart with local values file"
-	@echo "  helm-uninstall - Uninstall Helm chart"
+	@echo "  check          - Check formatting and lint without modifying files"
+	@echo "  tidy           - Run go mod tidy"
+	@echo ""
+	@echo "Validation:"
+	@echo "  verify         - Regenerate API code and fail if gen/ changed (CI use)"
+	@echo "  ci             - Full pre-submit check: verify + check + build + test"
+	@echo ""
+	@echo "Cleanup:"
+	@echo "  clean          - Remove gen/ and bin/ (run 'make generate' after)"
+	@echo "  clean-bin      - Remove bin/ only (preserves gen/)"
+	@echo ""
+	@echo "Container / Kubernetes:"
+	@echo "  docker-build          - Build Docker image"
+	@echo "  helm-install          - Install Helm chart with default values"
+	@echo "  helm-install-local    - Install Helm chart with values.local.yaml"
+	@echo "  helm-templates        - Render Helm templates with default values"
+	@echo "  helm-templates-local  - Render Helm templates with values.local.yaml"
+	@echo "  helm-uninstall        - Uninstall Helm chart"
+
+# First-time setup: create .env from .env.example if it doesn't exist
+setup:
+	@if [ ! -f .env ]; then \
+		echo "==> Creating .env from .env.example..."; \
+		cp .env.example .env; \
+		echo "==> .env created. Set ITX_CLIENT_ID and ITX_CLIENT_PRIVATE_KEY before running."; \
+		echo "==> See CONTRIBUTING.md#getting-dev-credentials for instructions."; \
+	else \
+		echo "==> .env already exists, skipping. Delete it first to regenerate."; \
+	fi
 
 # Install dependencies
 deps:
 	@echo "==> Installing dependencies..."
-	@command -v goa >/dev/null 2>&1 || { \
-		echo "==> Installing goa CLI..."; \
-		go install goa.design/goa/v3/cmd/goa@latest; \
-	}
-	@command -v golangci-lint >/dev/null 2>&1 || { \
-		echo "==> Installing golangci-lint..."; \
-		go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest; \
-	}
+	@echo "==> Installing goa CLI (version pinned to go.mod)..."
+	@go install goa.design/goa/v3/cmd/goa@$(shell go list -m -f '{{.Version}}' goa.design/goa/v3)
+	@echo "==> Installing golangci-lint v2.12.2..."
+	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
 	@echo "==> Downloading Go modules..."
 	@go mod download
 
 apigen:
 	@echo "==> Generating API code from Goa design..."
-	goa gen github.com/linuxfoundation/lfx-v2-voting-service/api/voting/v1/design
+	$(shell go env GOPATH)/bin/goa gen github.com/linuxfoundation/lfx-v2-voting-service/api/voting/v1/design
 	@echo "==> API generation complete"
+
+# Alias for apigen — preferred name for documentation and agent use
+generate: apigen
 
 build:
 	@echo "==> Building voting service..."
@@ -67,6 +95,13 @@ build:
 test:
 	@echo "==> Running tests..."
 	go test ./... -v -race -timeout 5m
+
+test-cover:
+	@echo "==> Running tests with coverage..."
+	go test ./... -v -race -timeout 5m -coverprofile=coverage.out -covermode=atomic
+	go tool cover -func=coverage.out
+	@echo "==> Coverage report written to coverage.out"
+	@echo "==> Open HTML report: go tool cover -html=coverage.out"
 
 run: build
 	@echo "==> Running voting service..."
@@ -77,19 +112,18 @@ debug: build
 	LOG_LEVEL=debug ./bin/voting-api
 
 clean:
-	@echo "==> Cleaning generated files..."
+	@echo "==> Removing gen/ and bin/ (run 'make generate' to regenerate API code)..."
 	rm -rf gen/
+	rm -rf bin/
+
+clean-bin:
+	@echo "==> Removing bin/ (gen/ preserved)..."
 	rm -rf bin/
 
 # Run linter
 lint:
 	@echo "==> Running linter..."
-	@if command -v golangci-lint >/dev/null 2>&1; then \
-		golangci-lint run ./...; \
-	else \
-		echo "golangci-lint not found. Run 'make deps' to install it."; \
-		exit 1; \
-	fi
+	$(shell go env GOPATH)/bin/golangci-lint run ./...
 
 # Format code
 fmt:
@@ -107,6 +141,16 @@ check:
 	fi
 	@echo "==> Code format check passed"
 	@$(MAKE) lint
+
+# Tidy Go module dependencies
+tidy:
+	@echo "==> Tidying Go modules..."
+	go mod tidy
+
+# Full pre-submit check: mirrors what CI validates.
+# Run this before opening a pull request.
+ci: verify check build test
+	@echo "==> All CI checks passed"
 
 # Verify that generated code is up to date
 verify: apigen

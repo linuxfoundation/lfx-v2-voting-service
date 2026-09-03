@@ -24,11 +24,14 @@ jobs:
       - name: Download Dependencies
         run: make deps
 
-      - name: Generate service code
-        run: make apigen
+      - name: Verify generated code is up to date
+        run: make verify
+
+      - name: Check formatting and lint
+        run: make check
 
       - name: Build
         run: make build
 
       - name: Test
-        run: go test ./... -v
+        run: make test

@@ -1,0 +1,28 @@
+---
+description: PR title convention for LFX V2 backend services
+alwaysApply: true
+---
+
+# LFX V2 Backend PR Title Convention
+
+When opening a pull request for any LFX V2 / LFX Self-Service backend service repo (e.g. `lfx-v2-*`), the PR title must follow this format:
+
+```
+<type>(<scope>): <summary> [<ticket>]
+```
+
+**Types:** `feat` | `fix` | `refactor` | `docs` | `chore`
+
+**Examples:**
+```
+feat(auth): add login button validation [LFXV2-1000]
+fix(committee): resolve nil pointer on empty member list [LFXV2-2345]
+refactor(project): extract NATS publisher into shared module [LFXV2-3012]
+chore(deps): bump Go to 1.22 [LFXV2-4001]
+docs(api): update OpenAPI spec for voting endpoints [LFXV2-5678]
+```
+
+**Rules:**
+- Scope is optional but recommended when the change is isolated to a domain or package.
+- Ticket reference is required — always include the Jira issue ID in `[LFXV2-XXXX]` brackets at the end.
+- Summary is lowercase, imperative mood, no trailing period.

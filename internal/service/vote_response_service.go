@@ -53,11 +53,10 @@ func (s *VoteResponseService) JWTAuth(ctx context.Context, token string, scheme 
 
 // CreateVoteResponse submits a vote response (proxies to ITX POST /voting/vote)
 func (s *VoteResponseService) CreateVoteResponse(ctx context.Context, req *CreateVoteResponseRequest) error {
-	// Extract principal from context
-	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
-	if !ok {
+	principal, err := requirePrincipal(ctx)
+	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
-		return domain.NewValidationError("authentication required")
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "Creating vote response",
@@ -102,7 +101,7 @@ func (s *VoteResponseService) CreateVoteResponse(ctx context.Context, req *Creat
 	}
 
 	// Call ITX proxy
-	err := s.proxyClient.CreateVote(ctx, proxyReq)
+	err = s.proxyClient.CreateVote(ctx, proxyReq)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create vote response in ITX", "error", err)
 		return err // Return domain error as-is
@@ -115,11 +114,10 @@ func (s *VoteResponseService) CreateVoteResponse(ctx context.Context, req *Creat
 
 // GetVoteResponse retrieves vote response details (proxies to ITX GET /voting/vote/{vote_id})
 func (s *VoteResponseService) GetVoteResponse(ctx context.Context, voteID string) (*itx.VoteResponse, error) {
-	// Extract principal from context
-	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
-	if !ok {
+	principal, err := requirePrincipal(ctx)
+	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
-		return nil, domain.NewValidationError("authentication required")
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Getting vote response", "principal", principal, "vote_id", voteID)
@@ -144,11 +142,10 @@ func (s *VoteResponseService) GetVoteResponse(ctx context.Context, voteID string
 
 // UpdateVoteResponse updates a vote response (proxies to ITX PUT /voting/vote/{vote_id})
 func (s *VoteResponseService) UpdateVoteResponse(ctx context.Context, voteID string, req *UpdateVoteResponseRequest) error {
-	// Extract principal from context
-	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
-	if !ok {
+	principal, err := requirePrincipal(ctx)
+	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
-		return domain.NewValidationError("authentication required")
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "Updating vote response",
@@ -195,7 +192,7 @@ func (s *VoteResponseService) UpdateVoteResponse(ctx context.Context, voteID str
 	}
 
 	// Call ITX proxy
-	err := s.proxyClient.UpdateVote(ctx, voteID, proxyReq)
+	err = s.proxyClient.UpdateVote(ctx, voteID, proxyReq)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update vote response in ITX", "error", err)
 		return err // Return domain error as-is
@@ -208,17 +205,16 @@ func (s *VoteResponseService) UpdateVoteResponse(ctx context.Context, voteID str
 
 // ResendVoteResponse resends the vote email (proxies to ITX POST /voting/vote/{vote_id}/resend)
 func (s *VoteResponseService) ResendVoteResponse(ctx context.Context, voteID string) error {
-	// Extract principal from context
-	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
-	if !ok {
+	principal, err := requirePrincipal(ctx)
+	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
-		return domain.NewValidationError("authentication required")
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "Resending vote email", "principal", principal, "vote_id", voteID)
 
 	// Call ITX proxy
-	err := s.proxyClient.ResendVote(ctx, voteID)
+	err = s.proxyClient.ResendVote(ctx, voteID)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to resend vote email in ITX", "error", err)
 		return err // Return domain error as-is

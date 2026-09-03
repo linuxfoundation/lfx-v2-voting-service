@@ -50,7 +50,6 @@ lfx-v2-voting-service/
 ├── gen/                      # Generated Goa code (never edit directly)
 ├── internal/
 │   ├── domain/               # Interfaces and domain models
-│   │   └── models/           # Shared domain model types
 │   ├── service/              # Business logic layer
 │   │   ├── vote_service.go
 │   │   └── vote_response_service.go
@@ -60,7 +59,7 @@ lfx-v2-voting-service/
 │   │   ├── idmapper/         # NATS-based v1↔v2 ID mapping
 │   │   └── proxy/            # ITX HTTP client
 │   ├── middleware/           # HTTP middleware (auth, request ID, logger)
-│   └── log/                  # Logging configuration
+│   └── logging/              # Logging configuration
 └── pkg/
     ├── constants/            # Shared constants
     ├── models/itx/           # ITX request/response model types
@@ -71,8 +70,8 @@ lfx-v2-voting-service/
 
 ### Prerequisites
 
-- Go 1.24 or later
-- Goa CLI: `go install goa.design/goa/v3/cmd/goa@latest`
+- Go 1.25.4 or later (version pinned in `go.mod`)
+- Goa CLI and other dev tools: run `make deps` (installs the version pinned in `go.mod` — do **not** use `go install goa@latest`, which will install a mismatched version and break `make generate`)
 - ITX service account credentials (see [Getting Dev Credentials](CONTRIBUTING.md#getting-dev-credentials))
 - **[lfx-platform Helm chart](https://github.com/linuxfoundation/lfx-v2-helm/tree/main/charts/lfx-platform)** — provides NATS and Heimdall for local development (optional: can be bypassed with env flags)
 
@@ -83,11 +82,11 @@ lfx-v2-voting-service/
 git clone https://github.com/linuxfoundation/lfx-v2-voting-service.git
 cd lfx-v2-voting-service
 
-# Install dependencies
+# Install dependencies (goa CLI, golangci-lint, go modules)
 make deps
 
 # Generate API code from Goa design
-make apigen
+make generate
 
 # Build the service
 make build
@@ -313,19 +312,51 @@ For detailed request/response schemas, authentication requirements, and examples
 
 ## Development
 
+### Common commands
+
+```bash
+make help          # list all available targets with descriptions
+make setup         # copy .env.example → .env (first-time setup)
+make deps          # install goa CLI, golangci-lint, download modules
+make generate      # regenerate API code from Goa design files
+make build         # build binary to bin/voting-api
+make run           # build and run (requires env vars from .env)
+make debug         # build and run with LOG_LEVEL=debug
+make test          # run all tests with -race and -timeout 5m
+make test-cover    # run tests with coverage report (writes coverage.out)
+make fmt           # format all Go source files in place
+make check         # check formatting and lint without modifying files
+make tidy          # run go mod tidy
+make ci            # full pre-submit check: verify + check + build + test
+make clean-bin     # remove bin/ only (preserves gen/)
+make clean         # remove gen/ and bin/
+```
+
 ### Running Tests
 
 ```bash
 make test
 ```
 
+### Pre-submit validation
+
+Before opening a pull request, run the full check:
+
+```bash
+make ci
+```
+
+This runs `make verify` (regenerates API code and fails if gen/ was stale), `make check` (format + lint), `make build`, and `make test` — the same checks CI runs.
+
 ### Regenerating API Code
 
 After modifying files in `api/voting/v1/design/`:
 
 ```bash
-make apigen
+make generate
 ```
+
+Commit the resulting changes in `gen/` alongside the design file changes.
 
 ### Adding New Endpoints
 
