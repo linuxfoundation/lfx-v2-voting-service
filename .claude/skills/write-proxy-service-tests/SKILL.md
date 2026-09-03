@@ -17,7 +17,7 @@ Guide writing tests for the HTTP proxy path — the service layer (`internal/ser
 - `internal/service/vote_service_error_test.go` — existing service tests; use as style reference for auth guard, proxy error, and ID mapping tests
 - `internal/service/vote_response_service_test.go` — coverage for all four vote-response service methods
 - `cmd/voting-api/eventing/*_test.go` — richer mock patterns (table-driven, mock interfaces, mock KV); the best style reference even though it tests a different layer
-- `internal/infrastructure/idmapper/noop_mapper.go` — ready-made `IDMapper` no-op for happy-path tests
+- `internal/service/vote_service_error_test.go` — defines `identityIDMapper` (echo mapper for happy-path tests) and `failingIDMapper` (returns configured error for error-path tests); use these patterns rather than importing infrastructure packages
 
 ---
 
@@ -42,12 +42,23 @@ func (m *mockPollClient) CreatePoll(ctx context.Context, req *itx.CreatePollRequ
 // implement remaining interface methods with zero-value returns
 ```
 
-For `domain.IDMapper`, prefer `idmapper.NewNoOpMapper()` for happy-path tests. For error-path tests, implement a minimal failing mock:
+For `domain.IDMapper`, define a local test double in the test file — do **not** import `internal/infrastructure/idmapper`; that violates the layer rule (service tests must not import infrastructure). Two patterns already established in the codebase:
 
 ```go
+// identityIDMapper — returns input unchanged; for happy-path tests where
+// mapping correctness is not under test.
+type identityIDMapper struct{}
+func (identityIDMapper) MapProjectV2ToV1(_ context.Context, id string) (string, error) { return id, nil }
+func (identityIDMapper) MapProjectV1ToV2(_ context.Context, id string) (string, error) { return id, nil }
+func (identityIDMapper) MapCommitteeV2ToV1(_ context.Context, id string) (string, error) { return id, nil }
+func (identityIDMapper) MapCommitteeV1ToV2(_ context.Context, id string) (string, error) { return id, nil }
+
+// failingIDMapper — returns a configured error; for ID-mapping failure tests.
 type failingIDMapper struct{ err error }
-func (m *failingIDMapper) MapProjectV1ToV2(ctx context.Context, id string) (string, error) { return "", m.err }
-// ... other methods
+func (m *failingIDMapper) MapProjectV2ToV1(_ context.Context, _ string) (string, error) { return "", m.err }
+func (m *failingIDMapper) MapProjectV1ToV2(_ context.Context, _ string) (string, error) { return "", m.err }
+func (m *failingIDMapper) MapCommitteeV2ToV1(_ context.Context, _ string) (string, error) { return "", m.err }
+func (m *failingIDMapper) MapCommitteeV1ToV2(_ context.Context, _ string) (string, error) { return "", m.err }
 ```
 
 For `domain.Authenticator`, implement `ParsePrincipal` inline:
@@ -92,7 +103,7 @@ func TestVoteService_CreateVote(t *testing.T) {
                     return &itx.PollResponse{PollID: "poll-123"}, nil
                 }
             },
-            setupMapper: func() domain.IDMapper { return idmapper.NewNoOpMapper() },
+            setupMapper: func() domain.IDMapper { return identityIDMapper{} },
         },
         // ...
     }

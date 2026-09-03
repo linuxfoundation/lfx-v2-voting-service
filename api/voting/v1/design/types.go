@@ -31,7 +31,7 @@ func VoteNameAttribute() {
 	Attribute("name", String, "Vote name", func() {
 		Example("Q1 2026 Technical Steering Committee Election")
 		MinLength(1)
-		MaxLength(255)
+		MaxLength(200) // matches the 200-rune service-level guard in vote_service.go
 	})
 }
 

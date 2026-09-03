@@ -237,7 +237,8 @@ read at runtime.
 
 The populated `config` struct fields are used to construct all infrastructure instances.
 No environment variables are read outside `main.go` (except `LFX_ENVIRONMENT` and
-`INVITES_ENABLED` in `parseInviteConfig()`).
+`INVITES_ENABLED` in `parseInviteConfig()`, and `LFX_SELF_SERVE_BASE_URL` read directly
+for invite URL validation at `main.go:414`).
 
 ### What should NOT cross this boundary
 

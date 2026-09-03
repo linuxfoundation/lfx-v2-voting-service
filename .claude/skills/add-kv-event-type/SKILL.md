@@ -76,6 +76,13 @@ case "itx-xxx":
 
 ### Step 5 — Create the event handler file
 
+> **Architecture boundary:** `cmd/voting-api/eventing/` is known tech debt — business logic
+> has accumulated here instead of in `internal/service/`. **Do not add new business logic here.**
+> Keep the handler thin: decode the payload, call an `internal/service/` method for any
+> substantive transformation or decision-making, then publish the result. Only the KV routing,
+> ACK/NAK semantics, and tombstone tracking belong in this package.
+> See `AGENTS.md` and `.cursor/rules/eventing-boundary.mdc` for the full boundary rule.
+
 Create `cmd/voting-api/eventing/xxx_event_handler.go` with:
 
 **`convertMapToXxxData`** — converts `map[string]interface{}` to `*domain.XxxData`:

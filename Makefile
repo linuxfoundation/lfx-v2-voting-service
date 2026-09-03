@@ -76,15 +76,15 @@ deps:
 	@echo "==> Installing goa CLI (version pinned to go.mod)..."
 	@go install goa.design/goa/v3/cmd/goa@$(shell go list -m -f '{{.Version}}' goa.design/goa/v3)
 	@command -v golangci-lint >/dev/null 2>&1 || { \
-		echo "==> Installing golangci-lint..."; \
-		go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest; \
+		echo "==> Installing golangci-lint v2.12.2..."; \
+		go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.12.2; \
 	}
 	@echo "==> Downloading Go modules..."
 	@go mod download
 
 apigen:
 	@echo "==> Generating API code from Goa design..."
-	goa gen github.com/linuxfoundation/lfx-v2-voting-service/api/voting/v1/design
+	$(shell go env GOPATH)/bin/goa gen github.com/linuxfoundation/lfx-v2-voting-service/api/voting/v1/design
 	@echo "==> API generation complete"
 
 # Alias for apigen — preferred name for documentation and agent use

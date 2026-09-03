@@ -18,10 +18,11 @@ const (
 	// Note: there is intentionally no ErrorTypeForbidden (403) or
 	// ErrorTypeUnauthorized (401). When the ITX proxy receives a 401 or 403
 	// from ITX it means our service-to-service M2M token is invalid or the
-	// proxy is misconfigured — an infrastructure problem, not a client error.
-	// Surfacing it as Internal (500) prevents leaking auth details downstream
-	// and alerts operators that the service credentials need attention.
-	// The caller's own JWT is validated earlier, in the auth middleware.
+	// proxy is misconfigured — an infrastructure problem, not a client auth
+	// failure. Surfacing it as Internal (500) signals to operators that the
+	// service credentials need attention rather than suggesting the caller
+	// lacks permission. The caller's own JWT is validated earlier, in the
+	// auth middleware, before any ITX call is made.
 )
 
 // DomainError represents a domain-level error with semantic type

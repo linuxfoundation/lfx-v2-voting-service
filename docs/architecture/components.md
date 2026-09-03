@@ -335,8 +335,8 @@ Three HTTP middleware functions applied to all routes in `main.go`:
 - `RequestIDMiddleware` — generates and attaches a request ID
 - `RequestLoggerMiddleware` — logs structured HTTP request/response data
 
-Applied in reverse registration order (outermost is registered last):
-`otelhttp → RequestLogger → RequestID → Authorization → mux`
+Applied in reverse registration order (outermost is registered last in code, first to run on a request):
+`otelhttp → Authorization → RequestID → RequestLogger → mux`
 
 ---
 
