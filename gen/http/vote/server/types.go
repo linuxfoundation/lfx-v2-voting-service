@@ -2811,8 +2811,8 @@ func ValidateCreateVoteRequestBody(body *CreateVoteRequestBody) (err error) {
 		}
 	}
 	if body.Name != nil {
-		if utf8.RuneCountInString(*body.Name) > 255 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", *body.Name, utf8.RuneCountInString(*body.Name), 255, false))
+		if utf8.RuneCountInString(*body.Name) > 200 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", *body.Name, utf8.RuneCountInString(*body.Name), 200, false))
 		}
 	}
 	if body.EndTime != nil {
@@ -2899,8 +2899,8 @@ func ValidateUpdateVoteRequestBody(body *UpdateVoteRequestBody) (err error) {
 		}
 	}
 	if body.Name != nil {
-		if utf8.RuneCountInString(*body.Name) > 255 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", *body.Name, utf8.RuneCountInString(*body.Name), 255, false))
+		if utf8.RuneCountInString(*body.Name) > 200 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", *body.Name, utf8.RuneCountInString(*body.Name), 200, false))
 		}
 	}
 	if body.EndTime != nil {
