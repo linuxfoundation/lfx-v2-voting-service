@@ -76,7 +76,7 @@ NATS is used for four distinct purposes, each with different interaction pattern
 | **KV bucket** | `v1-mappings` (also used for deduplication tracking) |
 | **Pattern** | Request/reply with 5-second timeout |
 | **Config env vars** | `NATS_URL`, `ID_MAPPING_DISABLED` |
-| **Architectural implication** | Used on every synchronous HTTP request that includes a project or committee UID. Unavailability of NATS (when not disabled) causes all CRUD API calls to fail. |
+| **Architectural implication** | Used on synchronous HTTP requests that translate project or committee UIDs. When NATS mapping is unavailable (and not disabled), the following calls fail: `CreateVote`, `GetVote`, `UpdateVote`, `ExtendVote`, `CreateVoteResponse`, `GetVoteResponse`, `UpdateVoteResponse`. Operations that pass a vote ID directly to ITX without UID translation (`DeleteVote`, `EnableVote`, `BulkResendVote`, `GetVoteResults`) continue to work. |
 
 #### 4c. Downstream event publishing (fire-and-forget pub/sub)
 

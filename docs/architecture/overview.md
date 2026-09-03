@@ -2,8 +2,10 @@
 
 ## Purpose
 
-The LFX Voting Service is a **stateless HTTP proxy** that sits between LFXv2 clients and the ITX
-legacy voting system. It owns no persistent storage. Its responsibilities are:
+The LFX Voting Service is a **stateless HTTP proxy for the synchronous API path** — it sits between
+LFXv2 clients and the ITX legacy voting system and owns no persistent poll or ballot data. The
+asynchronous event path maintains create/update/delete deduplication markers and invite-sent state
+in the NATS `v1-mappings` KV bucket. Its responsibilities are:
 
 1. **Authentication translation** — validates Heimdall-issued JWTs from LFXv2 clients; obtains
    OAuth2 M2M tokens to authenticate outbound ITX calls.

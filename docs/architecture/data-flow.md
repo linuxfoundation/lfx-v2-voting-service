@@ -132,8 +132,13 @@ sequenceDiagram
     Handler-->>Proc: Ack (success) or Nak (transient error)
 ```
 
-**Error classification:** `domain.ErrorTypeInternal` and `ErrorTypeUnavailable` → NAK (retry up
-to 3×). Invalid data, missing fields, malformed JSON → ACK (skip permanently).
+**Error classification:**
+- `domain.ErrorTypeUnavailable` → always NAK (retry with exponential backoff)
+- Raw errors whose message contains `timeout`, `connection`, `unavailable`, or `deadline` → NAK
+- `domain.ErrorTypeInternal` without a transient keyword → ACK (skip permanently)
+- Invalid data, missing fields, malformed JSON → ACK (skip permanently)
+
+See `isTransientError` in `cmd/voting-api/eventing/vote_event_handler.go` for the authoritative implementation.
 
 **Evidence:** `cmd/voting-api/eventing/kv_handler.go`, `vote_event_handler.go`,
 `vote_response_event_handler.go`, `vote_result_event_handler.go`,

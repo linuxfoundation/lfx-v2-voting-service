@@ -141,7 +141,7 @@ If you need an error type that currently doesn't exist in the domain (see `inter
 
 1. **`internal/domain/errors.go`** — add `ErrorTypeXxx ErrorType = iota` and `NewXxxError(...)` constructor.
 2. **`internal/infrastructure/proxy/client.go`** — update `mapHTTPError` to return `domain.NewXxxError` for the new status code(s).
-3. **`api/voting/v1/design/voting.go`** — add `Error("xxx_name", XxxError)` to every method that can return this error, and define the Goa error type in `types.go`.
+3. **`api/voting/v1/design/voting.go`** — declare the error **once at `Service(...)` scope**: `Error("YourError", YourErrorType)`. Error names must be **PascalCase** (e.g. `"NotFound"`, `"BadRequest"`) — wrong casing causes `make generate` to fail. Then in each method's `HTTP(func(){...})` block that can return this error, add: `Response("YourError", StatusXxx)`. Also define the Goa error type in `types.go`.
 4. **`cmd/voting-api/api.go`** — add `case domain.ErrorTypeXxx: code = http.StatusXxx` in `handleError`.
 
 Then run `make deps && make generate` after step 3 (Goa must generate the new `*votesvc.XxxError` struct before the handler can use it).
@@ -152,7 +152,7 @@ Then run `make deps && make generate` after step 3 (Goa must generate the new `*
 
 - **Skipping `make generate`** — the build compiles against stale generated types, producing confusing errors or silent mismatches.
 - **Putting converters in the wrong package** — Goa payload → service request converters belong in `cmd/voting-api/service/`, not in `internal/service/`.
-- **Missing error responses in the DSL** — if a Goa method doesn't declare an error response (e.g., `Response("not_found", StatusNotFound)`), Goa won't generate the helper function for it and the handler won't compile.
+- **Missing error responses in the DSL** — if a Goa method doesn't declare an error response (e.g., `Response("NotFound", StatusNotFound)`), Goa won't generate the helper function for it and the handler won't compile. Error names in `Response(...)` must use the same PascalCase spelling as the `Error(...)` declaration at service scope.
 - **Wrong field names in converters** — always compare against `docs/api-contracts.md`, not the ITX or Goa source alone.
 - **Importing `gen/` from `internal/`** — generated types must not be imported below `cmd/voting-api/`. If you need a type in both layers, define it in `internal/service/` or `internal/domain/` and convert at the `cmd/` boundary.
 
