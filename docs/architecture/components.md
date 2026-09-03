@@ -42,7 +42,8 @@ diffs.
 
 **Location:** `gen/`  
 **Key subdirectories:** `gen/vote/`, `gen/http/vote/server/`, `gen/http/vote/client/`,
-`gen/http/openapi/`
+`gen/http/openapi/` (OpenAPI handler); OpenAPI spec files are at `gen/http/openapi.json`,
+`gen/http/openapi.yaml`, `gen/http/openapi3.json`, `gen/http/openapi3.yaml`
 
 ### Responsibility
 

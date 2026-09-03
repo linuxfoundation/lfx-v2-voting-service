@@ -5,10 +5,11 @@ implementation are documented here.
 
 ---
 
-## Flow 1 — Synchronous HTTP API (Vote CRUD)
+## Flow 1 — Synchronous HTTP API (Vote CRUD — Create / Get / Update)
 
-This flow covers all vote (poll) management operations: create, get, update, delete, extend,
-enable, bulk-resend, and get-results.
+This flow shows the full create path as a representative example. Get and update follow the same
+shape (request ID mapping → proxy → response ID mapping). **Simpler operations** (delete, enable,
+bulk-resend, get-results) skip the ID-mapping steps — they pass the vote ID directly to ITX.
 
 ```mermaid
 sequenceDiagram

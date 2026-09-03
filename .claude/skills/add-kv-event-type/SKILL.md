@@ -78,25 +78,30 @@ case "itx-xxx":
 
 > **Architecture boundary:** `cmd/voting-api/eventing/` is known tech debt — business logic
 > has accumulated here instead of in `internal/service/`. **Do not add new business logic here.**
-> Keep the handler thin: decode the payload, call an `internal/service/` method for any
-> substantive transformation or decision-making, then publish the result. Only the KV routing,
-> ACK/NAK semantics, and tombstone tracking belong in this package.
-> See `AGENTS.md` and `.cursor/rules/eventing-boundary.mdc` for the full boundary rule.
+> The handler file below is intentionally thin: it decodes the raw NATS payload, maps NATS-format
+> field names to domain types (tight coupling to the wire format is acceptable here), and then
+> delegates to `publisher` for the side-effects. Any substantive decision-making, enrichment, or
+> validation beyond "is this field present?" belongs in `internal/service/` instead.
+> See `AGENTS.md` and `.cursor/rules/eventing-boundary.mdc` for the full rule.
 
 Create `cmd/voting-api/eventing/xxx_event_handler.go` with:
 
-**`convertMapToXxxData`** — converts `map[string]interface{}` to `*domain.XxxData`:
+**`convertMapToXxxData`** — thin adapter: converts `map[string]interface{}` (raw NATS payload)
+to `*domain.XxxData` (domain type). Acceptable here because the mapping is tightly coupled to
+the wire format of the KV message; it is **not** business logic:
 1. `json.Marshal` the map to bytes
 2. `json.Unmarshal` into `XxxDBRaw`
-3. Build `XxxData`, mapping field names and types
-4. Call `idMapper.MapProjectV1ToV2` / `MapCommitteeV1ToV2` for any SFID → UUID conversions; return a wrapped error so the caller can apply `isTransientError`
+3. Build `XxxData`, copying field names and coercing types (e.g. string → int)
+4. Call `idMapper.MapProjectV1ToV2` / `MapCommitteeV1ToV2` for SFID → UUID translation
 
-**`handleXxxUpdate`** — full update handler:
-1. `convertMapToXxxData` — on error, check `isTransientError`, return accordingly
-2. Validate required fields (UID must be non-empty)
+Do **not** add conditional logic, enrichment, or validation beyond presence checks here.
+
+**`handleXxxUpdate`** — ACK/NAK router:
+1. `convertMapToXxxData` — on error, apply `isTransientError`, return NAK or ACK accordingly
+2. Validate required fields (UID must be non-empty) — ACK on permanent invalid data
 3. Check `mappingsKV.Get(ctx, "xxx."+uid)` to determine `ActionCreated` vs `ActionUpdated`
 4. `publisher.PublishXxxEvent(ctx, action, data)` — on transient error return `true` (NAK), on permanent error return `false` (ACK)
-5. `mappingsKV.Put(ctx, "xxx."+uid, []byte("1"))` to record the mapping (warn on failure, don't retry)
+5. `mappingsKV.Put(ctx, "xxx."+uid, []byte("1"))` to record the tracking key (warn on failure, don't retry)
 6. Return `false` (success ACK)
 
 **`handleXxxDelete`** — tombstone-aware delete handler:

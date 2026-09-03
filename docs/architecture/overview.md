@@ -43,6 +43,7 @@ flowchart TD
     API["HTTP API\n(Goa + chi)"]
     Service["Service Layer\nVoteService / VoteResponseService"]
     IDMapper["ID Mapper\n(NATS request/reply)"]
+    MappingResponder["Mapping Responder\n(external NATS service)"]
     Proxy["ITX Proxy Client\n(HTTP + OAuth2 M2M)"]
     Auth0["Auth0\n(token issuer)"]
     ITX["ITX Voting API\n(legacy system)"]
@@ -51,7 +52,7 @@ flowchart TD
     Indexer["indexer-service\n(OpenSearch)"]
     FGASync["fga-sync\n(OpenFGA)"]
     V1KV["NATS KV: v1-objects\n(mirrors v1 DynamoDB)"]
-    V1Mappings["NATS KV: v1-mappings\n(ID lookup + dedup tracking)"]
+    V1Mappings["NATS KV: v1-mappings\n(event dedup tracking)"]
     InviteService["invite-service\n(NATS request/reply)"]
     AuthService["auth-service\n(NATS request/reply)"]
 
@@ -59,13 +60,14 @@ flowchart TD
     API -->|"validate token"| Heimdall
     API --> Service
     Service -->|"lookup v1/v2 IDs"| IDMapper
-    IDMapper -->|"lfx.lookup_v1_mapping"| V1Mappings
+    IDMapper -->|"lfx.lookup_v1_mapping"| MappingResponder
     Service --> Proxy
     Proxy -->|"get M2M token"| Auth0
     Proxy -->|"HTTPS"| ITX
 
     V1KV -->|"KV change events"| EventProc
     EventProc -->|"ID mapping"| IDMapper
+    EventProc -->|"dedup/tombstone tracking"| V1Mappings
     EventProc --> NATSPublisher
     NATSPublisher -->|"lfx.index.vote*"| Indexer
     NATSPublisher -->|"lfx.fga-sync.*"| FGASync

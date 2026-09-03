@@ -75,10 +75,8 @@ deps:
 	@echo "==> Installing dependencies..."
 	@echo "==> Installing goa CLI (version pinned to go.mod)..."
 	@go install goa.design/goa/v3/cmd/goa@$(shell go list -m -f '{{.Version}}' goa.design/goa/v3)
-	@command -v golangci-lint >/dev/null 2>&1 || { \
-		echo "==> Installing golangci-lint v2.12.2..."; \
-		go install github.com/golangci/golangci-lint/cmd/golangci-lint@v2.12.2; \
-	}
+	@echo "==> Installing golangci-lint v2.12.2..."
+	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
 	@echo "==> Downloading Go modules..."
 	@go mod download
 
@@ -125,12 +123,7 @@ clean-bin:
 # Run linter
 lint:
 	@echo "==> Running linter..."
-	@if command -v golangci-lint >/dev/null 2>&1; then \
-		golangci-lint run ./...; \
-	else \
-		echo "golangci-lint not found. Run 'make deps' to install it."; \
-		exit 1; \
-	fi
+	$(shell go env GOPATH)/bin/golangci-lint run ./...
 
 # Format code
 fmt:

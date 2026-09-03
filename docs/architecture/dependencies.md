@@ -73,8 +73,8 @@ NATS is used for four distinct purposes, each with different interaction pattern
 | **Purpose** | Translates v2 UUIDs ↔ v1 SFIDs for projects and committees |
 | **Used by** | `internal/infrastructure/idmapper/nats_mapper.go` |
 | **Subject** | `lfx.lookup_v1_mapping` |
-| **KV bucket** | `v1-mappings` (also used for deduplication tracking) |
-| **Pattern** | Request/reply with 5-second timeout |
+| **Pattern** | Request/reply with 5-second timeout — sends a key string, receives the mapped ID |
+| **Note** | The mapper sends to an external responder over NATS; it does **not** access the `v1-mappings` KV bucket directly. The `v1-mappings` bucket is used separately by the event processor for create/update/delete tracking (section 4a). |
 | **Config env vars** | `NATS_URL`, `ID_MAPPING_DISABLED` |
 | **Architectural implication** | Used on synchronous HTTP requests that translate project or committee UIDs. When NATS mapping is unavailable (and not disabled), the following calls fail: `CreateVote`, `GetVote`, `UpdateVote`, `ExtendVote`, `CreateVoteResponse`, `GetVoteResponse`, `UpdateVoteResponse`. Operations that pass a vote ID directly to ITX without UID translation (`DeleteVote`, `EnableVote`, `BulkResendVote`, `GetVoteResults`) continue to work. |
 
