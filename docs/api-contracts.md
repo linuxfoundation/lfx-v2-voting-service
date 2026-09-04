@@ -73,6 +73,7 @@ Content-Type: application/json
   "name": "Q1 2026 TSC Election",
   "description": "Technical Steering Committee Election for Q1 2026",
   "end_time": "2026-02-15T23:59:59Z",
+  "end_time_timezone": "America/New_York",
   "project_uid": "c01adbaf-53b1-4d47-bc04-dd7e459dd301",
   "committee_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
   "committee_uids": [
@@ -103,6 +104,8 @@ Content-Type: application/json
 }
 ```
 
+`end_time_timezone` is required: an IANA timezone name (e.g., `America/New_York`) that ITX uses to interpret `end_time` exactly as sent. Omitting it fails contract validation with a 400 before ITX is called. The proxy passes the value through untouched and performs no validation of its own; ITX rejects invalid timezone names with a 400, which the proxy surfaces as a 400.
+
 **Response** (201 Created):
 
 ```json
@@ -113,6 +116,7 @@ Content-Type: application/json
   "creation_time": "2026-01-23T10:00:00Z",
   "last_modified_time": "2026-01-23T10:00:00Z",
   "end_time": "2026-02-15T23:59:59Z",
+  "end_time_timezone": "America/New_York",
   "status": "disabled",
   "project_uid": "c01adbaf-53b1-4d47-bc04-dd7e459dd301",
   "committee_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
@@ -168,6 +172,7 @@ x-scope: manage:voting
   "name": "Q1 2026 TSC Election",
   "description": "Technical Steering Committee Election for Q1 2026",
   "end_time": "2026-02-15T23:59:59Z",
+  "end_time_timezone": "America/New_York",
   "project_id": "a09P000000DsCBuIRT",
   "committee_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
   "committee_ids": [
@@ -204,6 +209,7 @@ x-scope: manage:voting
   "creation_time": "2026-01-23T10:00:00Z",
   "last_modified_time": "2026-01-23T10:00:00Z",
   "end_time": "2026-02-15T23:59:59Z",
+  "end_time_timezone": "America/New_York",
   "status": "disabled",
   "project_id": "a09P000000DsCBuIRT",
   "committee_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
@@ -268,6 +274,7 @@ Authorization: Bearer <heimdall-jwt-token>
   "creation_time": "2026-01-23T10:00:00Z",
   "last_modified_time": "2026-01-23T10:00:00Z",
   "end_time": "2026-02-15T23:59:59Z",
+  "end_time_timezone": "America/New_York",
   "status": "active",
   "project_uid": "c01adbaf-53b1-4d47-bc04-dd7e459dd301",
   "committee_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
@@ -320,6 +327,7 @@ x-scope: manage:voting
   "creation_time": "2026-01-23T10:00:00Z",
   "last_modified_time": "2026-01-23T10:00:00Z",
   "end_time": "2026-02-15T23:59:59Z",
+  "end_time_timezone": "America/New_York",
   "status": "active",
   "project_id": "a09P000000DsCBuIRT",
   "committee_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
@@ -362,6 +370,7 @@ Content-Type: application/json
   "name": "Q1 2026 TSC Election - Updated",
   "description": "Updated description",
   "end_time": "2026-02-20T23:59:59Z",
+  "end_time_timezone": "America/New_York",
   "project_uid": "c01adbaf-53b1-4d47-bc04-dd7e459dd301",
   "committee_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
   "committee_uids": ["a02bdbaf-53b1-4d47-bc04-dd7e459dd308"],
@@ -387,6 +396,8 @@ Content-Type: application/json
   "winning_threshold_percentage": 60
 }
 ```
+
+`end_time_timezone` is required, as on create. Omitting it fails contract validation with a 400 before ITX is called. This is deliberate: ITX rebuilds the whole poll record on update, so an omitted timezone would silently clear the stored one. As on create, ITX rejects invalid timezone names with a 400, surfaced as a 400.
 
 **Response** (200 OK):
 
@@ -431,6 +442,7 @@ x-scope: manage:voting
   "name": "Q1 2026 TSC Election - Updated",
   "description": "Updated description",
   "end_time": "2026-02-20T23:59:59Z",
+  "end_time_timezone": "America/New_York",
   "project_id": "a09P000000DsCBuIRT",
   "committee_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
   "committee_ids": ["a02bdbaf-53b1-4d47-bc04-dd7e459dd308"],
@@ -660,9 +672,12 @@ Content-Type: application/json
 
 ```json
 {
-  "end_time": "2026-03-01T23:59:59Z"
+  "end_time": "2026-03-01T23:59:59Z",
+  "end_time_timezone": "America/New_York"
 }
 ```
+
+`end_time_timezone` is required, as on create and update. Omitting it fails contract validation with a 400 before ITX is called; ITX rejects invalid timezone names with a 400, surfaced as a 400.
 
 **Response** (200 OK):
 
@@ -674,6 +689,7 @@ Content-Type: application/json
   "creation_time": "2026-01-23T10:00:00Z",
   "last_modified_time": "2026-02-20T09:00:00Z",
   "end_time": "2026-03-01T23:59:59Z",
+  "end_time_timezone": "America/New_York",
   "status": "active",
   "project_uid": "c01adbaf-53b1-4d47-bc04-dd7e459dd301",
   "committee_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
@@ -706,7 +722,8 @@ x-scope: manage:voting
 
 ```json
 {
-  "end_time": "2026-03-01T23:59:59Z"
+  "end_time": "2026-03-01T23:59:59Z",
+  "end_time_timezone": "America/New_York"
 }
 ```
 
@@ -860,6 +877,7 @@ Authorization: Bearer <heimdall-jwt-token>
   "num_votes_cast": 18,
   "num_abstained": 2,
   "poll_end_time": "2026-02-15T23:59:59Z",
+  "poll_end_time_timezone": "America/New_York",
   "poll_results": [
     {
       "question": {
