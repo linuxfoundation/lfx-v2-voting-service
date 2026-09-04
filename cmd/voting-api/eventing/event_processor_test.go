@@ -199,7 +199,9 @@ func TestEventProcessor_Start(t *testing.T) {
 		// Give it time to start
 		time.Sleep(100 * time.Millisecond)
 
-		// Cancel context to stop
+		// Cancel context to stop. Reading internal fields (ep.consumer, ep.consumeCtx)
+		// here would race with the Start() goroutine that writes them; successful
+		// return from Start() is sufficient proof that the consumer was created.
 		cancel()
 
 		// Wait for Start to return

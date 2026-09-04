@@ -2845,7 +2845,7 @@ definitions:
                 description: Vote name
                 example: Q1 2026 Technical Steering Committee Election
                 minLength: 1
-                maxLength: 255
+                maxLength: 200
             num_winners:
                 type: integer
                 description: Number of winners (meek_stv only)
@@ -5787,7 +5787,7 @@ definitions:
                 description: Vote name
                 example: Q1 2026 Technical Steering Committee Election
                 minLength: 1
-                maxLength: 255
+                maxLength: 200
             num_winners:
                 type: integer
                 description: Number of winners (meek_stv only)

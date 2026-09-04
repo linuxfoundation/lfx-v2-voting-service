@@ -33,8 +33,8 @@ func BuildCreateVotePayload(voteCreateVoteBody string, voteCreateVoteToken strin
 		if utf8.RuneCountInString(body.Name) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", body.Name, utf8.RuneCountInString(body.Name), 1, true))
 		}
-		if utf8.RuneCountInString(body.Name) > 255 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", body.Name, utf8.RuneCountInString(body.Name), 255, false))
+		if utf8.RuneCountInString(body.Name) > 200 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", body.Name, utf8.RuneCountInString(body.Name), 200, false))
 		}
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", body.EndTime, goa.FormatDateTime))
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", body.CommitteeUID, goa.FormatUUID))
@@ -207,8 +207,8 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteUID string,
 		if utf8.RuneCountInString(body.Name) < 1 {
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", body.Name, utf8.RuneCountInString(body.Name), 1, true))
 		}
-		if utf8.RuneCountInString(body.Name) > 255 {
-			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", body.Name, utf8.RuneCountInString(body.Name), 255, false))
+		if utf8.RuneCountInString(body.Name) > 200 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", body.Name, utf8.RuneCountInString(body.Name), 200, false))
 		}
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", body.EndTime, goa.FormatDateTime))
 		if body.CommitteeUID != nil {

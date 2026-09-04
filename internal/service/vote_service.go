@@ -7,12 +7,18 @@ import (
 	"context"
 	"log/slog"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 	"goa.design/goa/v3/security"
 )
+
+// maxVoteNameLen is the maximum allowed Unicode character count for a vote name.
+// ITX rejects names over 200 characters with an opaque 400; we validate early so
+// callers receive a clear error message. Both CreateVote and UpdateVote enforce this.
+const maxVoteNameLen = 200
 
 // VoteService implements the vote service business logic
 type VoteService struct {
@@ -54,11 +60,10 @@ func (s *VoteService) JWTAuth(ctx context.Context, token string, scheme *securit
 
 // CreateVote creates a new vote (proxies to ITX POST /voting/poll)
 func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*itx.PollResponse, error) {
-	// Extract principal from context
-	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
-	if !ok || strings.TrimSpace(principal) == "" {
+	principal, err := requirePrincipal(ctx)
+	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
-		return nil, domain.NewValidationError("authentication required")
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Creating vote",
@@ -67,6 +72,13 @@ func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*
 		"project_uid", req.ProjectUID,
 		"committee_uid", req.CommitteeUID,
 	)
+
+	// Validate name length — ITX rejects names over 200 Unicode characters but returns an
+	// opaque 400. We validate here so the client receives a clear, actionable error message.
+	// utf8.RuneCountInString is used (not len) so multi-byte characters count as one character.
+	if utf8.RuneCountInString(req.Name) > maxVoteNameLen {
+		return nil, domain.NewValidationError("vote name must not exceed 200 characters")
+	}
 
 	// Map IDs from v2 (UIDs) to v1 (SFIDs)
 	projectSFID, committeeSFID, committeeIDs, err := s.mapRequestIDsV2ToV1(ctx, req.ProjectUID, req.CommitteeUID, req.CommitteeUIDs)
@@ -147,10 +159,10 @@ func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*
 // GetVote retrieves vote details (proxies to ITX GET /voting/poll/{poll_id})
 func (s *VoteService) GetVote(ctx context.Context, voteID string) (*itx.PollResponse, error) {
 	// Extract principal from context
-	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
-	if !ok {
+	principal, err := requirePrincipal(ctx)
+	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
-		return nil, domain.NewValidationError("authentication required")
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Getting vote", "principal", principal, "vote_id", voteID)
@@ -175,11 +187,10 @@ func (s *VoteService) GetVote(ctx context.Context, voteID string) (*itx.PollResp
 
 // UpdateVote updates a vote (proxies to ITX PUT /voting/poll/{poll_id})
 func (s *VoteService) UpdateVote(ctx context.Context, voteID string, req *UpdateVoteRequest) (*itx.PollResponse, error) {
-	// Extract principal from context
-	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
-	if !ok {
+	principal, err := requirePrincipal(ctx)
+	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
-		return nil, domain.NewValidationError("authentication required")
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Updating vote",
@@ -187,6 +198,11 @@ func (s *VoteService) UpdateVote(ctx context.Context, voteID string, req *Update
 		"vote_id", voteID,
 		"name", req.Name,
 	)
+
+	// Validate name length — same 200-character limit as CreateVote.
+	if req.Name != "" && utf8.RuneCountInString(req.Name) > maxVoteNameLen {
+		return nil, domain.NewValidationError("vote name must not exceed 200 characters")
+	}
 
 	// Map IDs from v2 (UIDs) to v1 (SFIDs)
 	projectID, committeeID, committeeIDs, err := s.mapRequestIDsV2ToV1(ctx, req.ProjectUID, req.CommitteeUID, req.CommitteeUIDs)
@@ -254,17 +270,16 @@ func (s *VoteService) UpdateVote(ctx context.Context, voteID string, req *Update
 
 // DeleteVote deletes a vote (proxies to ITX DELETE /voting/poll/{poll_id})
 func (s *VoteService) DeleteVote(ctx context.Context, voteID string) error {
-	// Extract principal from context
-	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
-	if !ok {
+	principal, err := requirePrincipal(ctx)
+	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
-		return domain.NewValidationError("authentication required")
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "Deleting vote", "principal", principal, "vote_id", voteID)
 
 	// Call ITX proxy
-	err := s.proxyClient.DeletePoll(ctx, voteID)
+	err = s.proxyClient.DeletePoll(ctx, voteID)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to delete poll from ITX", "error", err)
 		return err // Return domain error as-is
@@ -277,11 +292,10 @@ func (s *VoteService) DeleteVote(ctx context.Context, voteID string) error {
 
 // ExtendVote extends a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)
 func (s *VoteService) ExtendVote(ctx context.Context, voteID string, endTime string, endTimeTimezone string) (*itx.PollResponse, error) {
-	// Extract principal from context
-	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
-	if !ok {
+	principal, err := requirePrincipal(ctx)
+	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
-		return nil, domain.NewValidationError("authentication required")
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Extending vote", "principal", principal, "vote_id", voteID, "end_time", endTime)
@@ -312,17 +326,16 @@ func (s *VoteService) ExtendVote(ctx context.Context, voteID string, endTime str
 
 // EnableVote enables a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)
 func (s *VoteService) EnableVote(ctx context.Context, voteID string) error {
-	// Extract principal from context
-	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
-	if !ok {
+	principal, err := requirePrincipal(ctx)
+	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
-		return domain.NewValidationError("authentication required")
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "Enabling vote", "principal", principal, "vote_id", voteID)
 
 	// Call ITX proxy
-	err := s.proxyClient.EnablePoll(ctx, voteID)
+	err = s.proxyClient.EnablePoll(ctx, voteID)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to enable poll in ITX", "error", err)
 		return err // Return domain error as-is
@@ -335,11 +348,10 @@ func (s *VoteService) EnableVote(ctx context.Context, voteID string) error {
 
 // BulkResendVote bulk resends vote emails to select recipients (proxies to ITX POST /voting/poll/{poll_id}/bulk_resend)
 func (s *VoteService) BulkResendVote(ctx context.Context, voteID string, recipientIDs []string) error {
-	// Extract principal from context
-	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
-	if !ok {
+	principal, err := requirePrincipal(ctx)
+	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
-		return domain.NewValidationError("authentication required")
+		return err
 	}
 
 	s.logger.InfoContext(ctx, "Bulk resending vote emails",
@@ -354,7 +366,7 @@ func (s *VoteService) BulkResendVote(ctx context.Context, voteID string, recipie
 	}
 
 	// Call ITX proxy
-	err := s.proxyClient.BulkResendPoll(ctx, voteID, proxyReq)
+	err = s.proxyClient.BulkResendPoll(ctx, voteID, proxyReq)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to bulk resend poll emails in ITX", "error", err)
 		return err // Return domain error as-is
@@ -370,11 +382,10 @@ func (s *VoteService) BulkResendVote(ctx context.Context, voteID string, recipie
 
 // GetVoteResults retrieves aggregated poll results (proxies to ITX GET /voting/poll/{poll_id}/results)
 func (s *VoteService) GetVoteResults(ctx context.Context, voteID string) (*itx.VoteResults, error) {
-	// Extract principal from context
-	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
-	if !ok {
+	principal, err := requirePrincipal(ctx)
+	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
-		return nil, domain.NewValidationError("authentication required")
+		return nil, err
 	}
 
 	s.logger.InfoContext(ctx, "Getting vote results", "principal", principal, "vote_id", voteID)
@@ -459,6 +470,17 @@ func (s *VoteService) mapRequestIDsV2ToV1(ctx context.Context, projectUID, commi
 	}
 
 	return projectID, committeeID, committeeIDs, nil
+}
+
+// requirePrincipal extracts the principal string from a context and returns a
+// validation error if it is absent or empty. Centralises the auth guard that
+// every service method must perform before calling ITX.
+func requirePrincipal(ctx context.Context) (string, error) {
+	principal, ok := ctx.Value(constants.PrincipalContextID).(string)
+	if !ok || strings.TrimSpace(principal) == "" {
+		return "", domain.NewValidationError("authentication required")
+	}
+	return principal, nil
 }
 
 // creatorFromPrincipal builds the ITX created_by payload from the JWT principal claim.

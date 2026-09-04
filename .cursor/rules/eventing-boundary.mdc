@@ -1,0 +1,32 @@
+---
+description: Architectural guidance for the eventing package
+globs: cmd/voting-api/eventing/**
+alwaysApply: false
+---
+
+# Eventing Package — Architecture Boundary
+
+`cmd/voting-api/eventing/` contains **known technical debt**: business logic that belongs in `internal/service/` has accumulated here instead.
+
+## Do not make it worse
+
+- **Do not add new business logic here.** If you are adding substantive transformation or decision-making, place it in `internal/service/` and call it from the handler.
+- **Do not add new infrastructure wiring here.** Wire dependencies in `cmd/voting-api/main.go`.
+- The correct long-term location for event handler business logic is `internal/service/`. The KV subscription plumbing stays in `cmd/voting-api/eventing/`; move decision-making and data transformation out to the service layer.
+
+## Patterns you must follow when touching this package
+
+**ACK/NAK semantics** — every handler returns `bool`:
+- `true` → NAK (retry with exponential backoff)
+- `false` → ACK (done, even on permanent errors)
+
+**Tombstone before delete** — `handleXxxDelete` must check `isTombstonedMapping` before publishing. Skipping this causes duplicate delete events on redelivery.
+
+**Transient vs permanent errors** — call `isTransientError(err)` on ID-mapping and publish errors. Return `true` (NAK) for transient, `false` (ACK) for permanent.
+
+**KV prefix routing** — new entity types are added to the `switch prefix` in `handleKVPut` and `handleResourceDelete` in `kv_handler.go`.
+
+## Further reading
+
+- `docs/event-processing.md` — full pipeline, ACK/NAK, tombstone, backoff
+- `.claude/skills/add-kv-event-type/SKILL.md` — step-by-step workflow for new entity types
