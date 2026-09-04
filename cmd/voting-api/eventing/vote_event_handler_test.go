@@ -62,6 +62,7 @@ func TestConvertMapToVoteData(t *testing.T) {
 			"creation_time":                    "2024-01-01T00:00:00Z",
 			"last_modified_time":               "2024-01-02T00:00:00Z",
 			"end_time":                         "2024-12-31T23:59:59Z",
+			"end_time_timezone":                "America/New_York",
 			"early_end_time":                   "2024-12-30T10:00:00Z",
 			"status":                           "ended",
 			"project_id":                       "project-sfid",
@@ -108,6 +109,7 @@ func TestConvertMapToVoteData(t *testing.T) {
 		assert.Equal(t, 1, result.NumWinners)
 		assert.True(t, result.AllowAbstain)
 		assert.Equal(t, "2024-12-30T10:00:00Z", result.EarlyEndTime)
+		assert.Equal(t, "America/New_York", result.EndTimeTimezone)
 
 		require.Len(t, result.PollCommentPrompts, 1)
 		assert.Equal(t, "prompt-1", result.PollCommentPrompts[0].PromptID)
@@ -135,6 +137,7 @@ func TestConvertMapToVoteData(t *testing.T) {
 		assert.Equal(t, 0, result.TotalVotingRequestInvitations)
 		assert.Equal(t, 0, result.NumResponseReceived)
 		assert.Empty(t, result.EarlyEndTime)
+		assert.Empty(t, result.EndTimeTimezone)
 	})
 
 	t.Run("drops zero-value early_end_time from raw DynamoDB", func(t *testing.T) {
@@ -216,6 +219,32 @@ func TestHandleVoteUpdate(t *testing.T) {
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVotes, 1)
 		assert.Equal(t, "poll-123", mockPublisher.publishedVotes[0].VoteUID)
+	})
+
+	t.Run("forwards end_time_timezone from raw DynamoDB record to published VoteData", func(t *testing.T) {
+		mappingsKV, cleanup := setupTestKV(t)
+		defer cleanup()
+
+		v1Data := map[string]interface{}{
+			"poll_id":           "poll-tz",
+			"name":              "Timezone Vote",
+			"status":            "active",
+			"project_id":        "project-sfid",
+			"end_time":          "2026-02-15T23:59:59Z",
+			"end_time_timezone": "America/New_York",
+			"poll_questions":    []interface{}{},
+		}
+
+		mockPublisher := &mockEventPublisher{}
+		idMapper := idmapper.NewNoOpMapper()
+		ctx := context.Background()
+
+		logger := slog.Default()
+		shouldRetry := handleVoteUpdate(ctx, "itx-poll.poll-tz", v1Data, mockPublisher, idMapper, mappingsKV, logger)
+
+		assert.False(t, shouldRetry)
+		require.Len(t, mockPublisher.publishedVotes, 1)
+		assert.Equal(t, "America/New_York", mockPublisher.publishedVotes[0].EndTimeTimezone)
 	})
 
 	t.Run("returns false for conversion error", func(t *testing.T) {

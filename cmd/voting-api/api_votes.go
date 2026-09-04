@@ -118,7 +118,11 @@ func (s *VotingAPI) ExtendVote(ctx context.Context, payload *votesvc.ExtendVoteP
 	)
 
 	// Call service layer
-	pollResp, err := s.voteService.ExtendVote(ctx, payload.UID, payload.EndTime)
+	endTimeTimezone := ""
+	if payload.EndTimeTimezone != nil {
+		endTimeTimezone = *payload.EndTimeTimezone
+	}
+	pollResp, err := s.voteService.ExtendVote(ctx, payload.UID, payload.EndTime, endTimeTimezone)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to extend vote", "error", err)
 		return nil, handleError(err)

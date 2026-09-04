@@ -28,6 +28,11 @@ func ConvertCreateVotePayloadToDomain(payload *votesvc.CreateVotePayload) *servi
 		WinningThresholdPercentage: payload.WinningThresholdPercentage,
 	}
 
+	// Add optional fields if present
+	if payload.EndTimeTimezone != nil {
+		req.EndTimeTimezone = *payload.EndTimeTimezone
+	}
+
 	// Convert poll questions
 	if len(payload.PollQuestions) > 0 {
 		req.PollQuestions = make([]service.PollQuestionRequest, len(payload.PollQuestions))
@@ -81,6 +86,9 @@ func ConvertUpdateVotePayloadToDomain(payload *votesvc.UpdateVotePayload) *servi
 	}
 	if payload.CommitteeUID != nil {
 		req.CommitteeUID = *payload.CommitteeUID
+	}
+	if payload.EndTimeTimezone != nil {
+		req.EndTimeTimezone = *payload.EndTimeTimezone
 	}
 
 	// Convert poll questions
@@ -141,6 +149,9 @@ func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *votesvc.VoteResult
 	if v := utils.NormalizeTimestamp(poll.EarlyEndTime); v != "" {
 		result.EarlyEndTime = utils.StringPtr(v)
 	}
+	if poll.EndTimeTimezone != "" {
+		result.EndTimeTimezone = utils.StringPtr(poll.EndTimeTimezone)
+	}
 
 	// Convert poll questions
 	if len(poll.PollQuestions) > 0 {
@@ -186,6 +197,9 @@ func ConvertVoteResultsToResult(results *itx.VoteResults) *votesvc.VoteResultsRe
 		NumVotesCast:  results.NumVotesCast,
 		NumAbstained:  results.NumAbstained,
 		PollEndTime:   &results.PollEndTime,
+	}
+	if results.PollEndTimeTimezone != "" {
+		result.PollEndTimeTimezone = utils.StringPtr(results.PollEndTimeTimezone)
 	}
 
 	// Convert poll results

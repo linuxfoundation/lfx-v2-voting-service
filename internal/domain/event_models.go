@@ -20,6 +20,7 @@ type PollDBRaw struct {
 	CreationTime                  string                        `json:"creation_time"`
 	LastModifiedTime              string                        `json:"last_modified_time"`
 	EndTime                       string                        `json:"end_time"`
+	EndTimeTimezone               string                        `json:"end_time_timezone,omitempty"`
 	EarlyEndTime                  string                        `json:"early_end_time,omitempty"`
 	Status                        string                        `json:"status"`
 	ProjectID                     string                        `json:"project_id"`
@@ -48,6 +49,7 @@ func (p *PollDBRaw) UnmarshalJSON(data []byte) error {
 		CreationTime                  string                        `json:"creation_time"`
 		LastModifiedTime              string                        `json:"last_modified_time"`
 		EndTime                       string                        `json:"end_time"`
+		EndTimeTimezone               string                        `json:"end_time_timezone,omitempty"`
 		EarlyEndTime                  string                        `json:"early_end_time,omitempty"`
 		Status                        string                        `json:"status"`
 		ProjectID                     string                        `json:"project_id"`
@@ -138,6 +140,7 @@ func (p *PollDBRaw) UnmarshalJSON(data []byte) error {
 	p.CreationTime = tmp.CreationTime
 	p.LastModifiedTime = tmp.LastModifiedTime
 	p.EndTime = tmp.EndTime
+	p.EndTimeTimezone = tmp.EndTimeTimezone
 	p.EarlyEndTime = tmp.EarlyEndTime
 	p.Status = tmp.Status
 	p.ProjectID = tmp.ProjectID
@@ -440,6 +443,7 @@ type VoteData struct {
 	CreationTime                  string                        `json:"creation_time"`
 	LastModifiedTime              string                        `json:"last_modified_time"`
 	EndTime                       string                        `json:"end_time"`
+	EndTimeTimezone               string                        `json:"end_time_timezone,omitempty"`
 	EarlyEndTime                  string                        `json:"early_end_time,omitempty"`
 	Status                        string                        `json:"status"`
 	ProjectID                     string                        `json:"project_id"`  // v1 project ID (SFID)

@@ -15,17 +15,31 @@ import (
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 )
 
-// capturePollClient records the last CreatePoll request so tests can assert on the
-// fields the proxy forwards to ITX. Only CreatePoll is exercised here.
+// capturePollClient records the last CreatePoll/UpdatePoll/ExtendPoll request so tests
+// can assert on the fields the proxy forwards to ITX. Only those methods are exercised here.
 type capturePollClient struct {
 	domain.PollClient
 	lastCreate *itx.CreatePollRequest
+	lastUpdate *itx.UpdatePollRequest
+	lastExtend *itx.ExtendPollRequest
 }
 
 func (c *capturePollClient) CreatePoll(_ context.Context, req *itx.CreatePollRequest) (*itx.PollResponse, error) {
 	c.lastCreate = req
 	// Return a response with no IDs so mapPollResponseV1ToV2 is a no-op.
 	return &itx.PollResponse{PollID: "poll-1", Status: "disabled"}, nil
+}
+
+func (c *capturePollClient) UpdatePoll(_ context.Context, _ string, req *itx.UpdatePollRequest) (*itx.PollResponse, error) {
+	c.lastUpdate = req
+	// Return a response with no IDs so mapPollResponseV1ToV2 is a no-op.
+	return &itx.PollResponse{PollID: "poll-1", Status: "disabled"}, nil
+}
+
+func (c *capturePollClient) ExtendPoll(_ context.Context, _ string, req *itx.ExtendPollRequest) (*itx.PollResponse, error) {
+	c.lastExtend = req
+	// Return a response with no IDs so mapPollResponseV1ToV2 is a no-op.
+	return &itx.PollResponse{PollID: "poll-1", Status: "active"}, nil
 }
 
 // identityIDMapper maps v2 UIDs to v1 SFIDs by echoing the input, which is all CreateVote
@@ -62,6 +76,84 @@ func TestCreateVoteForwardsSelfServeSource(t *testing.T) {
 	}
 	if client.lastCreate.Source != itx.PollSourceSelfServe {
 		t.Fatalf("expected Source %q, got %q", itx.PollSourceSelfServe, client.lastCreate.Source)
+	}
+}
+
+// TestCreateVoteForwardsEndTimeTimezone mirrors TestCreateVoteForwardsSelfServeSource:
+// the optional timezone must reach the ITX create request untouched.
+func TestCreateVoteForwardsEndTimeTimezone(t *testing.T) {
+	client := &capturePollClient{}
+	svc := NewVoteService(nil, client, identityIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	ctx := context.WithValue(context.Background(), constants.PrincipalContextID, "test-user")
+	req := &CreateVoteRequest{Name: "poll", ProjectUID: "project-uid", EndTimeTimezone: "America/New_York"}
+	if _, err := svc.CreateVote(ctx, req); err != nil {
+		t.Fatalf("CreateVote returned error: %v", err)
+	}
+
+	if client.lastCreate == nil {
+		t.Fatal("expected CreatePoll to be called")
+	}
+	if client.lastCreate.EndTimeTimezone != "America/New_York" {
+		t.Fatalf("expected EndTimeTimezone %q, got %q", "America/New_York", client.lastCreate.EndTimeTimezone)
+	}
+}
+
+// TestUpdateVoteForwardsEndTimeTimezone guards the update hop: update is full-replacement,
+// so dropping the field here would silently clear the timezone on edits.
+func TestUpdateVoteForwardsEndTimeTimezone(t *testing.T) {
+	client := &capturePollClient{}
+	svc := NewVoteService(nil, client, identityIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	ctx := context.WithValue(context.Background(), constants.PrincipalContextID, "test-user")
+	req := &UpdateVoteRequest{Name: "poll", ProjectUID: "project-uid", EndTimeTimezone: "America/New_York"}
+	if _, err := svc.UpdateVote(ctx, "poll-1", req); err != nil {
+		t.Fatalf("UpdateVote returned error: %v", err)
+	}
+
+	if client.lastUpdate == nil {
+		t.Fatal("expected UpdatePoll to be called")
+	}
+	if client.lastUpdate.EndTimeTimezone != "America/New_York" {
+		t.Fatalf("expected EndTimeTimezone %q, got %q", "America/New_York", client.lastUpdate.EndTimeTimezone)
+	}
+}
+
+// TestExtendVoteForwardsEndTimeTimezone guards the extend hop's scalar parameter.
+func TestExtendVoteForwardsEndTimeTimezone(t *testing.T) {
+	client := &capturePollClient{}
+	svc := NewVoteService(nil, client, identityIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	ctx := context.WithValue(context.Background(), constants.PrincipalContextID, "test-user")
+	if _, err := svc.ExtendVote(ctx, "poll-1", "2026-03-01T23:59:59Z", "America/New_York"); err != nil {
+		t.Fatalf("ExtendVote returned error: %v", err)
+	}
+
+	if client.lastExtend == nil {
+		t.Fatal("expected ExtendPoll to be called")
+	}
+	if client.lastExtend.EndTimeTimezone != "America/New_York" {
+		t.Fatalf("expected EndTimeTimezone %q, got %q", "America/New_York", client.lastExtend.EndTimeTimezone)
+	}
+}
+
+// TestCreateVoteOmitsEndTimeTimezone asserts the omitted field stays empty on the wire
+// ("" + `,omitempty` => key absent), preserving legacy ITX behavior for clients that
+// don't send a timezone.
+func TestCreateVoteOmitsEndTimeTimezone(t *testing.T) {
+	client := &capturePollClient{}
+	svc := NewVoteService(nil, client, identityIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	ctx := context.WithValue(context.Background(), constants.PrincipalContextID, "test-user")
+	if _, err := svc.CreateVote(ctx, &CreateVoteRequest{Name: "poll", ProjectUID: "project-uid"}); err != nil {
+		t.Fatalf("CreateVote returned error: %v", err)
+	}
+
+	if client.lastCreate == nil {
+		t.Fatal("expected CreatePoll to be called")
+	}
+	if client.lastCreate.EndTimeTimezone != "" {
+		t.Fatalf("expected empty EndTimeTimezone when omitted, got %q", client.lastCreate.EndTimeTimezone)
 	}
 }
 

@@ -54,6 +54,7 @@ var _ = Service("vote", func() {
 			VoteNameAttribute()
 			VoteDescriptionAttribute()
 			EndTimeAttribute()
+			EndTimeTimezoneAttribute()
 			ProjectUIDAttribute()
 			CommitteeUIDAttribute()
 			CommitteeUIDsAttribute()
@@ -129,6 +130,7 @@ var _ = Service("vote", func() {
 			VoteNameAttribute()
 			VoteDescriptionAttribute()
 			EndTimeAttribute()
+			EndTimeTimezoneAttribute()
 			ProjectUIDAttribute()
 			CommitteeUIDAttribute()
 			CommitteeUIDsAttribute()
@@ -198,6 +200,7 @@ var _ = Service("vote", func() {
 			BearerTokenAttribute()
 			VoteIDAttribute()
 			EndTimeAttribute()
+			EndTimeTimezoneAttribute()
 
 			Required("uid", "end_time")
 		})

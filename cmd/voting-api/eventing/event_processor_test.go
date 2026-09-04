@@ -199,10 +199,6 @@ func TestEventProcessor_Start(t *testing.T) {
 		// Give it time to start
 		time.Sleep(100 * time.Millisecond)
 
-		// Verify consumer was created
-		assert.NotNil(t, ep.consumer)
-		assert.NotNil(t, ep.consumeCtx)
-
 		// Cancel context to stop
 		cancel()
 
@@ -213,6 +209,12 @@ func TestEventProcessor_Start(t *testing.T) {
 		case <-time.After(2 * time.Second):
 			t.Fatal("Start did not return after context cancellation")
 		}
+
+		// Verify consumer was created. Reads happen after the errChan receive, whose
+		// send establishes happens-before with Start's writes to these fields — the
+		// previous sleep-based ordering raced with Start under -race.
+		assert.NotNil(t, ep.consumer)
+		assert.NotNil(t, ep.consumeCtx)
 	})
 
 	t.Run("returns error when consumer creation fails", func(t *testing.T) {

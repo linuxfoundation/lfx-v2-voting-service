@@ -15,6 +15,7 @@ type CreatePollRequest struct {
 	Name                       string              `json:"name"`
 	Description                string              `json:"description"`
 	EndTime                    string              `json:"end_time"`
+	EndTimeTimezone            string              `json:"end_time_timezone,omitempty"`
 	ProjectID                  string              `json:"project_id"`
 	CommitteeID                string              `json:"committee_id"`
 	CommitteeIDs               []string            `json:"committee_ids,omitempty"`
@@ -46,6 +47,7 @@ type UpdatePollRequest struct {
 	Name                       string              `json:"name"`
 	Description                string              `json:"description"`
 	EndTime                    string              `json:"end_time"`
+	EndTimeTimezone            string              `json:"end_time_timezone,omitempty"`
 	ProjectID                  string              `json:"project_id"`
 	CommitteeID                string              `json:"committee_id"`
 	CommitteeIDs               []string            `json:"committee_ids,omitempty"`
@@ -62,7 +64,8 @@ type UpdatePollRequest struct {
 
 // ExtendPollRequest represents the request to extend a poll's end time in ITX
 type ExtendPollRequest struct {
-	EndTime string `json:"end_time"`
+	EndTime         string `json:"end_time"`
+	EndTimeTimezone string `json:"end_time_timezone,omitempty"`
 }
 
 // BulkResendRequest represents the request to bulk resend poll emails in ITX
@@ -96,6 +99,7 @@ type PollResponse struct {
 	CreationTime                  string                    `json:"creation_time"`
 	LastModifiedTime              string                    `json:"last_modified_time"`
 	EndTime                       string                    `json:"end_time"`
+	EndTimeTimezone               string                    `json:"end_time_timezone,omitempty"`
 	EarlyEndTime                  string                    `json:"early_end_time,omitempty"`
 	Status                        string                    `json:"status"`
 	ProjectID                     string                    `json:"project_id"`
@@ -225,12 +229,13 @@ type RankedPollChoiceAnswer struct {
 
 // VoteResults represents the aggregated results of a poll/vote from ITX
 type VoteResults struct {
-	PollResults    []PollResult    `json:"poll_results"`
-	CommentResults []CommentResult `json:"comment_results"`
-	NumRecipients  int             `json:"num_recipients"`
-	NumVotesCast   int             `json:"num_votes_cast"`
-	NumAbstained   int             `json:"num_abstained"`
-	PollEndTime    string          `json:"poll_end_time"`
+	PollResults         []PollResult    `json:"poll_results"`
+	CommentResults      []CommentResult `json:"comment_results"`
+	NumRecipients       int             `json:"num_recipients"`
+	NumVotesCast        int             `json:"num_votes_cast"`
+	NumAbstained        int             `json:"num_abstained"`
+	PollEndTime         string          `json:"poll_end_time"`
+	PollEndTimeTimezone string          `json:"poll_end_time_timezone,omitempty"`
 }
 
 // PollResult represents the results for a single poll question

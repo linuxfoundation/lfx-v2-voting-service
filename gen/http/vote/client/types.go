@@ -22,6 +22,10 @@ type CreateVoteRequestBody struct {
 	Description string `form:"description" json:"description" xml:"description"`
 	// End time in RFC3339 format
 	EndTime string `form:"end_time" json:"end_time" xml:"end_time"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Optional. When omitted, the poll closes at end of day in the legacy default
+	// timezone.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 	// LFX Project UID
 	ProjectUID string `form:"project_uid" json:"project_uid" xml:"project_uid"`
 	// LFX Committee UID
@@ -57,6 +61,10 @@ type UpdateVoteRequestBody struct {
 	Description string `form:"description" json:"description" xml:"description"`
 	// End time in RFC3339 format
 	EndTime string `form:"end_time" json:"end_time" xml:"end_time"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Optional. When omitted, the poll closes at end of day in the legacy default
+	// timezone.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 	// LFX Project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// LFX Committee UID
@@ -88,6 +96,10 @@ type UpdateVoteRequestBody struct {
 type ExtendVoteRequestBody struct {
 	// End time in RFC3339 format
 	EndTime string `form:"end_time" json:"end_time" xml:"end_time"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Optional. When omitted, the poll closes at end of day in the legacy default
+	// timezone.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 }
 
 // BulkResendVoteRequestBody is the type of the "vote" service
@@ -150,6 +162,10 @@ type CreateVoteResponseBody struct {
 	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Optional. When omitted, the poll closes at end of day in the legacy default
+	// timezone.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 	// Actual close time when the poll auto-ended early because all voters
 	// responded before end_time. Absent when the poll closed on schedule or is
 	// still active. RFC3339.
@@ -203,6 +219,10 @@ type GetVoteResponseBody struct {
 	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Optional. When omitted, the poll closes at end of day in the legacy default
+	// timezone.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 	// Actual close time when the poll auto-ended early because all voters
 	// responded before end_time. Absent when the poll closed on schedule or is
 	// still active. RFC3339.
@@ -256,6 +276,10 @@ type UpdateVoteResponseBody struct {
 	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Optional. When omitted, the poll closes at end of day in the legacy default
+	// timezone.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 	// Actual close time when the poll auto-ended early because all voters
 	// responded before end_time. Absent when the poll closed on schedule or is
 	// still active. RFC3339.
@@ -309,6 +333,10 @@ type ExtendVoteResponseBody struct {
 	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Optional. When omitted, the poll closes at end of day in the legacy default
+	// timezone.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 	// Actual close time when the poll auto-ended early because all voters
 	// responded before end_time. Absent when the poll closed on schedule or is
 	// still active. RFC3339.
@@ -362,6 +390,9 @@ type GetVoteResultsResponseBody struct {
 	NumAbstained *int `form:"num_abstained,omitempty" json:"num_abstained,omitempty" xml:"num_abstained,omitempty"`
 	// Poll end time
 	PollEndTime *string `form:"poll_end_time,omitempty" json:"poll_end_time,omitempty" xml:"poll_end_time,omitempty"`
+	// IANA timezone name used to interpret poll_end_time (e.g.
+	// "America/New_York"). Absent when the poll has no stored timezone.
+	PollEndTimeTimezone *string `form:"poll_end_time_timezone,omitempty" json:"poll_end_time_timezone,omitempty" xml:"poll_end_time_timezone,omitempty"`
 }
 
 // GetVoteResponseResponseBody is the type of the "vote" service
@@ -1428,6 +1459,7 @@ func NewCreateVoteRequestBody(p *vote.CreateVotePayload) *CreateVoteRequestBody 
 		Name:                       p.Name,
 		Description:                p.Description,
 		EndTime:                    p.EndTime,
+		EndTimeTimezone:            p.EndTimeTimezone,
 		ProjectUID:                 p.ProjectUID,
 		CommitteeUID:               p.CommitteeUID,
 		PseudoAnonymity:            p.PseudoAnonymity,
@@ -1505,6 +1537,7 @@ func NewUpdateVoteRequestBody(p *vote.UpdateVotePayload) *UpdateVoteRequestBody 
 		Name:                       p.Name,
 		Description:                p.Description,
 		EndTime:                    p.EndTime,
+		EndTimeTimezone:            p.EndTimeTimezone,
 		ProjectUID:                 p.ProjectUID,
 		CommitteeUID:               p.CommitteeUID,
 		PseudoAnonymity:            p.PseudoAnonymity,
@@ -1579,7 +1612,8 @@ func NewUpdateVoteRequestBody(p *vote.UpdateVotePayload) *UpdateVoteRequestBody 
 // the "extend_vote" endpoint of the "vote" service.
 func NewExtendVoteRequestBody(p *vote.ExtendVotePayload) *ExtendVoteRequestBody {
 	body := &ExtendVoteRequestBody{
-		EndTime: p.EndTime,
+		EndTime:         p.EndTime,
+		EndTimeTimezone: p.EndTimeTimezone,
 	}
 	return body
 }
@@ -1669,6 +1703,7 @@ func NewCreateVoteVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResu
 		CreationTime:                  body.CreationTime,
 		LastModifiedTime:              body.LastModifiedTime,
 		EndTime:                       body.EndTime,
+		EndTimeTimezone:               body.EndTimeTimezone,
 		EarlyEndTime:                  body.EarlyEndTime,
 		Status:                        *body.Status,
 		ProjectUID:                    *body.ProjectUID,
@@ -1806,6 +1841,7 @@ func NewGetVoteVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
 		CreationTime:                  body.CreationTime,
 		LastModifiedTime:              body.LastModifiedTime,
 		EndTime:                       body.EndTime,
+		EndTimeTimezone:               body.EndTimeTimezone,
 		EarlyEndTime:                  body.EarlyEndTime,
 		Status:                        *body.Status,
 		ProjectUID:                    *body.ProjectUID,
@@ -1930,6 +1966,7 @@ func NewUpdateVoteVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
 		CreationTime:                  body.CreationTime,
 		LastModifiedTime:              body.LastModifiedTime,
 		EndTime:                       body.EndTime,
+		EndTimeTimezone:               body.EndTimeTimezone,
 		EarlyEndTime:                  body.EarlyEndTime,
 		Status:                        *body.Status,
 		ProjectUID:                    *body.ProjectUID,
@@ -2122,6 +2159,7 @@ func NewExtendVoteVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
 		CreationTime:                  body.CreationTime,
 		LastModifiedTime:              body.LastModifiedTime,
 		EndTime:                       body.EndTime,
+		EndTimeTimezone:               body.EndTimeTimezone,
 		EarlyEndTime:                  body.EarlyEndTime,
 		Status:                        *body.Status,
 		ProjectUID:                    *body.ProjectUID,
@@ -2374,10 +2412,11 @@ func NewBulkResendVoteUnauthorized(body *BulkResendVoteUnauthorizedResponseBody)
 // "get_vote_results" endpoint result from a HTTP "OK" response.
 func NewGetVoteResultsVoteResultsResultOK(body *GetVoteResultsResponseBody) *vote.VoteResultsResult {
 	v := &vote.VoteResultsResult{
-		NumRecipients: *body.NumRecipients,
-		NumVotesCast:  *body.NumVotesCast,
-		NumAbstained:  *body.NumAbstained,
-		PollEndTime:   body.PollEndTime,
+		NumRecipients:       *body.NumRecipients,
+		NumVotesCast:        *body.NumVotesCast,
+		NumAbstained:        *body.NumAbstained,
+		PollEndTime:         body.PollEndTime,
+		PollEndTimeTimezone: body.PollEndTimeTimezone,
 	}
 	v.PollResults = make([]*vote.PollResultItem, len(body.PollResults))
 	for i, val := range body.PollResults {
