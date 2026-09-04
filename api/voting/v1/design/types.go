@@ -51,11 +51,11 @@ func EndTimeAttribute() {
 }
 
 // EndTimeTimezoneAttribute is the DSL attribute for the end time timezone.
-// omissionNote describes what happens when the field is omitted; it differs per
-// endpoint (create: legacy default timezone; update/extend: previously stored
-// timezone preserved; responses: absent when none is stored).
-func EndTimeTimezoneAttribute(omissionNote string) {
-	Attribute("end_time_timezone", String, "IANA timezone name used to interpret end_time (e.g. \"America/New_York\"). Optional. "+omissionNote, func() {
+// behaviorNote describes the field's semantics per call site; it differs per
+// endpoint (requests: required, ITX honors end_time exactly as sent in this
+// timezone; responses: absent when none is stored).
+func EndTimeTimezoneAttribute(behaviorNote string) {
+	Attribute("end_time_timezone", String, "IANA timezone name used to interpret end_time (e.g. \"America/New_York\"). "+behaviorNote, func() {
 		Example("America/New_York")
 		MinLength(1)
 	})

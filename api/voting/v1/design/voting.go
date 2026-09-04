@@ -61,7 +61,7 @@ var _ = Service("vote", func() {
 			VoteNameAttribute()
 			VoteDescriptionAttribute()
 			EndTimeAttribute()
-			EndTimeTimezoneAttribute("When omitted, the poll closes at end of day in the legacy default timezone.")
+			EndTimeTimezoneAttribute("Required. ITX honors `end_time` exactly as sent in this timezone.")
 			ProjectUIDAttribute()
 			CommitteeUIDAttribute()
 			CommitteeUIDsAttribute()
@@ -75,7 +75,7 @@ var _ = Service("vote", func() {
 			QuorumPercentageAttribute()
 			WinningThresholdPercentageAttribute()
 
-			Required("name", "description", "end_time", "project_uid", "committee_uid", "poll_questions")
+			Required("name", "description", "end_time", "end_time_timezone", "project_uid", "committee_uid", "poll_questions")
 		})
 
 		Result(VoteResult)
@@ -137,7 +137,7 @@ var _ = Service("vote", func() {
 			VoteNameAttribute()
 			VoteDescriptionAttribute()
 			EndTimeAttribute()
-			EndTimeTimezoneAttribute("When omitted, the previously stored timezone is preserved.")
+			EndTimeTimezoneAttribute("Required. ITX honors `end_time` exactly as sent in this timezone.")
 			ProjectUIDAttribute()
 			CommitteeUIDAttribute()
 			CommitteeUIDsAttribute()
@@ -151,7 +151,7 @@ var _ = Service("vote", func() {
 			QuorumPercentageAttribute()
 			WinningThresholdPercentageAttribute()
 
-			Required("uid", "name", "description", "end_time", "poll_questions")
+			Required("uid", "name", "description", "end_time", "end_time_timezone", "poll_questions")
 		})
 
 		Result(VoteResult)
@@ -207,9 +207,9 @@ var _ = Service("vote", func() {
 			BearerTokenAttribute()
 			VoteIDAttribute()
 			EndTimeAttribute()
-			EndTimeTimezoneAttribute("When omitted, the previously stored timezone is preserved.")
+			EndTimeTimezoneAttribute("Required. ITX honors `end_time` exactly as sent in this timezone.")
 
-			Required("uid", "end_time")
+			Required("uid", "end_time", "end_time_timezone")
 		})
 
 		Result(VoteResult)

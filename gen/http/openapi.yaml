@@ -349,6 +349,7 @@ paths:
                         - name
                         - description
                         - end_time
+                        - end_time_timezone
                         - project_uid
                         - committee_uid
                         - poll_questions
@@ -531,6 +532,7 @@ paths:
                         - name
                         - description
                         - end_time
+                        - end_time_timezone
                         - poll_questions
             responses:
                 "200":
@@ -846,6 +848,7 @@ paths:
                     $ref: '#/definitions/VoteExtendVoteRequestBody'
                     required:
                         - end_time
+                        - end_time_timezone
             responses:
                 "200":
                     description: OK response.
@@ -2838,7 +2841,7 @@ definitions:
                 format: date-time
             end_time_timezone:
                 type: string
-                description: IANA timezone name used to interpret end_time (e.g. "America/New_York"). Optional. When omitted, the poll closes at end of day in the legacy default timezone.
+                description: IANA timezone name used to interpret end_time (e.g. "America/New_York"). Required. ITX honors `end_time` exactly as sent in this timezone.
                 example: America/New_York
                 minLength: 1
             name:
@@ -2970,6 +2973,7 @@ definitions:
             - name
             - description
             - end_time
+            - end_time_timezone
             - project_uid
             - committee_uid
             - poll_questions
@@ -3035,7 +3039,7 @@ definitions:
                 format: date-time
             end_time_timezone:
                 type: string
-                description: IANA timezone name used to interpret end_time (e.g. "America/New_York"). Optional. When omitted, the previously stored timezone is preserved.
+                description: IANA timezone name used to interpret end_time (e.g. "America/New_York"). Required. ITX honors `end_time` exactly as sent in this timezone.
                 example: America/New_York
                 minLength: 1
         example:
@@ -3043,6 +3047,7 @@ definitions:
             end_time_timezone: America/New_York
         required:
             - end_time
+            - end_time_timezone
     VoteResponseResult:
         title: VoteResponseResult
         type: object
@@ -3432,7 +3437,7 @@ definitions:
                 format: date-time
             end_time_timezone:
                 type: string
-                description: IANA timezone name used to interpret end_time (e.g. "America/New_York"). Optional. Absent when no timezone is stored.
+                description: IANA timezone name used to interpret end_time (e.g. "America/New_York"). Absent when no timezone is stored.
                 example: America/New_York
                 minLength: 1
             last_modified_time:
@@ -5783,7 +5788,7 @@ definitions:
                 format: date-time
             end_time_timezone:
                 type: string
-                description: IANA timezone name used to interpret end_time (e.g. "America/New_York"). Optional. When omitted, the previously stored timezone is preserved.
+                description: IANA timezone name used to interpret end_time (e.g. "America/New_York"). Required. ITX honors `end_time` exactly as sent in this timezone.
                 example: America/New_York
                 minLength: 1
             name:
@@ -5940,6 +5945,7 @@ definitions:
             - name
             - description
             - end_time
+            - end_time_timezone
             - poll_questions
     VoteUpdateVoteResponseRequestBody:
         title: VoteUpdateVoteResponseRequestBody

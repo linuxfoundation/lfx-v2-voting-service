@@ -25,9 +25,8 @@ type CreateVoteRequestBody struct {
 	// End time in RFC3339 format
 	EndTime string `form:"end_time" json:"end_time" xml:"end_time"`
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
-	// Optional. When omitted, the poll closes at end of day in the legacy default
-	// timezone.
-	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
+	// Required. ITX honors `end_time` exactly as sent in this timezone.
+	EndTimeTimezone string `form:"end_time_timezone" json:"end_time_timezone" xml:"end_time_timezone"`
 	// LFX Project UID
 	ProjectUID string `form:"project_uid" json:"project_uid" xml:"project_uid"`
 	// LFX Committee UID
@@ -64,8 +63,8 @@ type UpdateVoteRequestBody struct {
 	// End time in RFC3339 format
 	EndTime string `form:"end_time" json:"end_time" xml:"end_time"`
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
-	// Optional. When omitted, the previously stored timezone is preserved.
-	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
+	// Required. ITX honors `end_time` exactly as sent in this timezone.
+	EndTimeTimezone string `form:"end_time_timezone" json:"end_time_timezone" xml:"end_time_timezone"`
 	// LFX Project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// LFX Committee UID
@@ -98,8 +97,8 @@ type ExtendVoteRequestBody struct {
 	// End time in RFC3339 format
 	EndTime string `form:"end_time" json:"end_time" xml:"end_time"`
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
-	// Optional. When omitted, the previously stored timezone is preserved.
-	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
+	// Required. ITX honors `end_time` exactly as sent in this timezone.
+	EndTimeTimezone string `form:"end_time_timezone" json:"end_time_timezone" xml:"end_time_timezone"`
 }
 
 // BulkResendVoteRequestBody is the type of the "vote" service
@@ -163,7 +162,7 @@ type CreateVoteResponseBody struct {
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
-	// Optional. Absent when no timezone is stored.
+	// Absent when no timezone is stored.
 	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 	// Actual close time when the poll auto-ended early because all voters
 	// responded before end_time. Absent when the poll closed on schedule or is
@@ -219,7 +218,7 @@ type GetVoteResponseBody struct {
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
-	// Optional. Absent when no timezone is stored.
+	// Absent when no timezone is stored.
 	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 	// Actual close time when the poll auto-ended early because all voters
 	// responded before end_time. Absent when the poll closed on schedule or is
@@ -275,7 +274,7 @@ type UpdateVoteResponseBody struct {
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
-	// Optional. Absent when no timezone is stored.
+	// Absent when no timezone is stored.
 	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 	// Actual close time when the poll auto-ended early because all voters
 	// responded before end_time. Absent when the poll closed on schedule or is
@@ -331,7 +330,7 @@ type ExtendVoteResponseBody struct {
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
-	// Optional. Absent when no timezone is stored.
+	// Absent when no timezone is stored.
 	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 	// Actual close time when the poll auto-ended early because all voters
 	// responded before end_time. Absent when the poll closed on schedule or is

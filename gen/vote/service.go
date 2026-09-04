@@ -158,9 +158,8 @@ type CreateVotePayload struct {
 	// End time in RFC3339 format
 	EndTime string
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
-	// Optional. When omitted, the poll closes at end of day in the legacy default
-	// timezone.
-	EndTimeTimezone *string
+	// Required. ITX honors `end_time` exactly as sent in this timezone.
+	EndTimeTimezone string
 	// LFX Project UID
 	ProjectUID string
 	// LFX Committee UID
@@ -234,8 +233,8 @@ type ExtendVotePayload struct {
 	// End time in RFC3339 format
 	EndTime string
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
-	// Optional. When omitted, the previously stored timezone is preserved.
-	EndTimeTimezone *string
+	// Required. ITX honors `end_time` exactly as sent in this timezone.
+	EndTimeTimezone string
 }
 
 // Forbidden error response
@@ -506,8 +505,8 @@ type UpdateVotePayload struct {
 	// End time in RFC3339 format
 	EndTime string
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
-	// Optional. When omitted, the previously stored timezone is preserved.
-	EndTimeTimezone *string
+	// Required. ITX honors `end_time` exactly as sent in this timezone.
+	EndTimeTimezone string
 	// LFX Project UID
 	ProjectUID *string
 	// LFX Committee UID
@@ -677,7 +676,7 @@ type VoteResult struct {
 	// End time
 	EndTime *string
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
-	// Optional. Absent when no timezone is stored.
+	// Absent when no timezone is stored.
 	EndTimeTimezone *string
 	// Actual close time when the poll auto-ended early because all voters
 	// responded before end_time. Absent when the poll closed on schedule or is
