@@ -3,7 +3,7 @@
 
 module github.com/linuxfoundation/lfx-v2-voting-service
 
-go 1.25.4
+go 1.26.0
 
 require (
 	github.com/auth0/go-auth0 v1.32.1
@@ -92,7 +92,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
+	golang.org/x/crypto v0.56.0 // indirect
 	golang.org/x/mod v0.40.0 // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
