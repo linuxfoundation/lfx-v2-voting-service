@@ -35,9 +35,9 @@ func TestConvertCreateVotePayloadToDomainEndTimeTimezone(t *testing.T) {
 	})
 }
 
-// TestConvertUpdateVotePayloadToDomainEndTimeTimezone guards the update hop: update
-// is full-replacement, so a dropped field here would silently clear the stored
-// timezone on edits that don't resend it.
+// TestConvertUpdateVotePayloadToDomainEndTimeTimezone guards the update hop: a field
+// dropped here would silently ignore a requested timezone change — omission preserves
+// the previously stored timezone, so the change would be lost without any error.
 func TestConvertUpdateVotePayloadToDomainEndTimeTimezone(t *testing.T) {
 	t.Run("forwards end_time_timezone when set", func(t *testing.T) {
 		payload := &votesvc.UpdateVotePayload{

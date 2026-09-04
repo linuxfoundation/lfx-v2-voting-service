@@ -5,6 +5,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
@@ -99,8 +100,9 @@ func TestCreateVoteForwardsEndTimeTimezone(t *testing.T) {
 	}
 }
 
-// TestUpdateVoteForwardsEndTimeTimezone guards the update hop: update is full-replacement,
-// so dropping the field here would silently clear the timezone on edits.
+// TestUpdateVoteForwardsEndTimeTimezone guards the update hop: dropping a supplied
+// field here would silently ignore the requested timezone change — omission preserves
+// the previously stored timezone, it does not clear it.
 func TestUpdateVoteForwardsEndTimeTimezone(t *testing.T) {
 	client := &capturePollClient{}
 	svc := NewVoteService(nil, client, identityIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
@@ -137,6 +139,25 @@ func TestExtendVoteForwardsEndTimeTimezone(t *testing.T) {
 	}
 }
 
+// assertKeyAbsent marshals a captured ITX request and fails if key is present on
+// the wire — the `,omitempty` tags must drop empty timezone fields so ITX applies
+// its endpoint-specific omission semantics. A struct-field check alone cannot guard
+// this: removing `omitempty` would send `"key":""` while the struct test still passes.
+func assertKeyAbsent(t *testing.T, req any, key string) {
+	t.Helper()
+	payload, err := json.Marshal(req)
+	if err != nil {
+		t.Fatalf("marshal request: %v", err)
+	}
+	var wire map[string]any
+	if err := json.Unmarshal(payload, &wire); err != nil {
+		t.Fatalf("unmarshal request: %v", err)
+	}
+	if _, ok := wire[key]; ok {
+		t.Fatalf("expected key %q to be absent from the wire, got %s", key, payload)
+	}
+}
+
 // TestCreateVoteOmitsEndTimeTimezone asserts the omitted field stays empty on the wire
 // ("" + `,omitempty` => key absent), preserving legacy ITX behavior for clients that
 // don't send a timezone.
@@ -155,6 +176,47 @@ func TestCreateVoteOmitsEndTimeTimezone(t *testing.T) {
 	if client.lastCreate.EndTimeTimezone != "" {
 		t.Fatalf("expected empty EndTimeTimezone when omitted, got %q", client.lastCreate.EndTimeTimezone)
 	}
+	assertKeyAbsent(t, client.lastCreate, "end_time_timezone")
+}
+
+// TestUpdateVoteOmitsEndTimeTimezone asserts the omitted field stays off the wire on
+// update, so ITX preserves the previously stored timezone rather than receiving "".
+func TestUpdateVoteOmitsEndTimeTimezone(t *testing.T) {
+	client := &capturePollClient{}
+	svc := NewVoteService(nil, client, identityIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	ctx := context.WithValue(context.Background(), constants.PrincipalContextID, "test-user")
+	if _, err := svc.UpdateVote(ctx, "poll-1", &UpdateVoteRequest{Name: "poll", ProjectUID: "project-uid"}); err != nil {
+		t.Fatalf("UpdateVote returned error: %v", err)
+	}
+
+	if client.lastUpdate == nil {
+		t.Fatal("expected UpdatePoll to be called")
+	}
+	if client.lastUpdate.EndTimeTimezone != "" {
+		t.Fatalf("expected empty EndTimeTimezone when omitted, got %q", client.lastUpdate.EndTimeTimezone)
+	}
+	assertKeyAbsent(t, client.lastUpdate, "end_time_timezone")
+}
+
+// TestExtendVoteOmitsEndTimeTimezone asserts an empty timezone stays off the wire on
+// extend, so ITX preserves the previously stored timezone rather than receiving "".
+func TestExtendVoteOmitsEndTimeTimezone(t *testing.T) {
+	client := &capturePollClient{}
+	svc := NewVoteService(nil, client, identityIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	ctx := context.WithValue(context.Background(), constants.PrincipalContextID, "test-user")
+	if _, err := svc.ExtendVote(ctx, "poll-1", "2026-03-01T23:59:59Z", ""); err != nil {
+		t.Fatalf("ExtendVote returned error: %v", err)
+	}
+
+	if client.lastExtend == nil {
+		t.Fatal("expected ExtendPoll to be called")
+	}
+	if client.lastExtend.EndTimeTimezone != "" {
+		t.Fatalf("expected empty EndTimeTimezone when omitted, got %q", client.lastExtend.EndTimeTimezone)
+	}
+	assertKeyAbsent(t, client.lastExtend, "end_time_timezone")
 }
 
 // Guards the CreateVote authentication check at the service layer so a future

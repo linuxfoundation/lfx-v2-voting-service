@@ -51,9 +51,13 @@ func EndTimeAttribute() {
 }
 
 // EndTimeTimezoneAttribute is the DSL attribute for the end time timezone.
-func EndTimeTimezoneAttribute() {
-	Attribute("end_time_timezone", String, "IANA timezone name used to interpret end_time (e.g. \"America/New_York\"). Optional. When omitted, the poll closes at end of day in the legacy default timezone.", func() {
+// omissionNote describes what happens when the field is omitted; it differs per
+// endpoint (create: legacy default timezone; update/extend: previously stored
+// timezone preserved; responses: absent when none is stored).
+func EndTimeTimezoneAttribute(omissionNote string) {
+	Attribute("end_time_timezone", String, "IANA timezone name used to interpret end_time (e.g. \"America/New_York\"). Optional. "+omissionNote, func() {
 		Example("America/New_York")
+		MinLength(1)
 	})
 }
 
@@ -177,7 +181,7 @@ var VoteResult = Type("VoteResult", func() {
 		Example("2026-02-15T23:59:59Z")
 	})
 
-	EndTimeTimezoneAttribute()
+	EndTimeTimezoneAttribute("Absent when no timezone is stored.")
 
 	Attribute("early_end_time", String, "Actual close time when the poll auto-ended early because all voters responded before end_time. Absent when the poll closed on schedule or is still active. RFC3339.", func() {
 		Format(FormatDateTime)

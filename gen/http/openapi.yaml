@@ -2840,6 +2840,7 @@ definitions:
                 type: string
                 description: IANA timezone name used to interpret end_time (e.g. "America/New_York"). Optional. When omitted, the poll closes at end of day in the legacy default timezone.
                 example: America/New_York
+                minLength: 1
             name:
                 type: string
                 description: Vote name
@@ -3034,8 +3035,9 @@ definitions:
                 format: date-time
             end_time_timezone:
                 type: string
-                description: IANA timezone name used to interpret end_time (e.g. "America/New_York"). Optional. When omitted, the poll closes at end of day in the legacy default timezone.
+                description: IANA timezone name used to interpret end_time (e.g. "America/New_York"). Optional. When omitted, the previously stored timezone is preserved.
                 example: America/New_York
+                minLength: 1
         example:
             end_time: "2026-02-15T23:59:59Z"
             end_time_timezone: America/New_York
@@ -3430,8 +3432,9 @@ definitions:
                 format: date-time
             end_time_timezone:
                 type: string
-                description: IANA timezone name used to interpret end_time (e.g. "America/New_York"). Optional. When omitted, the poll closes at end of day in the legacy default timezone.
+                description: IANA timezone name used to interpret end_time (e.g. "America/New_York"). Optional. Absent when no timezone is stored.
                 example: America/New_York
+                minLength: 1
             last_modified_time:
                 type: string
                 description: Last modified time
@@ -5780,8 +5783,9 @@ definitions:
                 format: date-time
             end_time_timezone:
                 type: string
-                description: IANA timezone name used to interpret end_time (e.g. "America/New_York"). Optional. When omitted, the poll closes at end of day in the legacy default timezone.
+                description: IANA timezone name used to interpret end_time (e.g. "America/New_York"). Optional. When omitted, the previously stored timezone is preserved.
                 example: America/New_York
+                minLength: 1
             name:
                 type: string
                 description: Vote name

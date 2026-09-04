@@ -37,6 +37,11 @@ func BuildCreateVotePayload(voteCreateVoteBody string, voteCreateVoteToken strin
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", body.Name, utf8.RuneCountInString(body.Name), 200, false))
 		}
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", body.EndTime, goa.FormatDateTime))
+		if body.EndTimeTimezone != nil {
+			if utf8.RuneCountInString(*body.EndTimeTimezone) < 1 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.end_time_timezone", *body.EndTimeTimezone, utf8.RuneCountInString(*body.EndTimeTimezone), 1, true))
+			}
+		}
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", body.CommitteeUID, goa.FormatUUID))
 		for _, e := range body.CommitteeFilters {
 			if !(e == "Voting Rep" || e == "Alternate Voting Rep" || e == "Observer" || e == "Emeritus") {
@@ -211,6 +216,11 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteUID string,
 			err = goa.MergeErrors(err, goa.InvalidLengthError("body.name", body.Name, utf8.RuneCountInString(body.Name), 200, false))
 		}
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", body.EndTime, goa.FormatDateTime))
+		if body.EndTimeTimezone != nil {
+			if utf8.RuneCountInString(*body.EndTimeTimezone) < 1 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.end_time_timezone", *body.EndTimeTimezone, utf8.RuneCountInString(*body.EndTimeTimezone), 1, true))
+			}
+		}
 		if body.CommitteeUID != nil {
 			err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
 		}
@@ -387,6 +397,11 @@ func BuildExtendVotePayload(voteExtendVoteBody string, voteExtendVoteUID string,
 			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"end_time_timezone\": \"America/New_York\"\n   }'")
 		}
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", body.EndTime, goa.FormatDateTime))
+		if body.EndTimeTimezone != nil {
+			if utf8.RuneCountInString(*body.EndTimeTimezone) < 1 {
+				err = goa.MergeErrors(err, goa.InvalidLengthError("body.end_time_timezone", *body.EndTimeTimezone, utf8.RuneCountInString(*body.EndTimeTimezone), 1, true))
+			}
+		}
 		if err != nil {
 			return nil, err
 		}
