@@ -104,7 +104,7 @@ Content-Type: application/json
 }
 ```
 
-`end_time_timezone` is optional: an IANA timezone name (e.g., `America/New_York`) that ITX uses to interpret `end_time`. When omitted, ITX applies its legacy behavior — closing the poll at end of day in the default (Pacific) timezone. The proxy passes the value through untouched and performs no validation of its own; ITX rejects invalid timezone names with a 400.
+`end_time_timezone` is required: an IANA timezone name (e.g., `America/New_York`) that ITX uses to interpret `end_time` exactly as sent. Omitting it fails contract validation with a 400 before ITX is called. The proxy passes the value through untouched and performs no validation of its own; ITX rejects invalid timezone names with a 400, which the proxy surfaces as a 400.
 
 **Response** (201 Created):
 
@@ -397,7 +397,7 @@ Content-Type: application/json
 }
 ```
 
-`end_time_timezone` is optional, as on create. When omitted, ITX preserves the previously stored timezone — it is not reset to the legacy default — so clients only need to send it when changing it.
+`end_time_timezone` is required, as on create. Omitting it fails contract validation with a 400 before ITX is called. This is deliberate: ITX rebuilds the whole poll record on update, so an omitted timezone would silently clear the stored one. As on create, ITX rejects invalid timezone names with a 400, surfaced as a 400.
 
 **Response** (200 OK):
 
@@ -677,7 +677,7 @@ Content-Type: application/json
 }
 ```
 
-`end_time_timezone` is optional, as on create. When omitted, ITX preserves the previously stored timezone.
+`end_time_timezone` is required, as on create and update. Omitting it fails contract validation with a 400 before ITX is called; ITX rejects invalid timezone names with a 400, surfaced as a 400.
 
 **Response** (200 OK):
 

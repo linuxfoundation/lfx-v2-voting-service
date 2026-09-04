@@ -16,6 +16,7 @@ func ConvertCreateVotePayloadToDomain(payload *votesvc.CreateVotePayload) *servi
 		Name:                       payload.Name,
 		Description:                payload.Description,
 		EndTime:                    payload.EndTime,
+		EndTimeTimezone:            payload.EndTimeTimezone,
 		ProjectUID:                 payload.ProjectUID,
 		CommitteeUID:               payload.CommitteeUID,
 		CommitteeUIDs:              payload.CommitteeUids,
@@ -26,11 +27,6 @@ func ConvertCreateVotePayloadToDomain(payload *votesvc.CreateVotePayload) *servi
 		AllowAbstain:               payload.AllowAbstain,
 		QuorumPercentage:           payload.QuorumPercentage,
 		WinningThresholdPercentage: payload.WinningThresholdPercentage,
-	}
-
-	// Add optional fields if present
-	if payload.EndTimeTimezone != nil {
-		req.EndTimeTimezone = *payload.EndTimeTimezone
 	}
 
 	// Convert poll questions
@@ -70,6 +66,7 @@ func ConvertUpdateVotePayloadToDomain(payload *votesvc.UpdateVotePayload) *servi
 		Name:                       payload.Name,
 		Description:                payload.Description,
 		EndTime:                    payload.EndTime,
+		EndTimeTimezone:            payload.EndTimeTimezone,
 		CommitteeUIDs:              payload.CommitteeUids,
 		CommitteeFilters:           payload.CommitteeFilters,
 		PseudoAnonymity:            payload.PseudoAnonymity,
@@ -86,9 +83,6 @@ func ConvertUpdateVotePayloadToDomain(payload *votesvc.UpdateVotePayload) *servi
 	}
 	if payload.CommitteeUID != nil {
 		req.CommitteeUID = *payload.CommitteeUID
-	}
-	if payload.EndTimeTimezone != nil {
-		req.EndTimeTimezone = *payload.EndTimeTimezone
 	}
 
 	// Convert poll questions

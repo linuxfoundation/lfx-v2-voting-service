@@ -11,48 +11,35 @@ import (
 
 	votesvc "github.com/linuxfoundation/lfx-v2-voting-service/gen/vote"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
-	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/utils"
 )
 
 // TestConvertCreateVotePayloadToDomainEndTimeTimezone guards the request-side hop:
-// the optional timezone must reach the domain request when set, and stay empty
-// (so `,omitempty` keeps it off the ITX wire) when the client omits it.
+// the required timezone must reach the domain request — a field dropped here would
+// silently strip the client's timezone before ITX ever sees it.
 func TestConvertCreateVotePayloadToDomainEndTimeTimezone(t *testing.T) {
 	t.Run("forwards end_time_timezone when set", func(t *testing.T) {
 		payload := &votesvc.CreateVotePayload{
-			EndTimeTimezone: utils.StringPtr("America/New_York"),
+			EndTimeTimezone: "America/New_York",
 		}
 
 		req := ConvertCreateVotePayloadToDomain(payload)
 
 		assert.Equal(t, "America/New_York", req.EndTimeTimezone)
 	})
-
-	t.Run("leaves end_time_timezone empty when omitted", func(t *testing.T) {
-		req := ConvertCreateVotePayloadToDomain(&votesvc.CreateVotePayload{})
-
-		assert.Empty(t, req.EndTimeTimezone)
-	})
 }
 
 // TestConvertUpdateVotePayloadToDomainEndTimeTimezone guards the update hop: a field
-// dropped here would silently ignore a requested timezone change — omission preserves
-// the previously stored timezone, so the change would be lost without any error.
+// dropped here would send "" which `,omitempty` keeps off the wire — ITX rebuilds the
+// record on update, so the previously stored timezone would be cleared with no error.
 func TestConvertUpdateVotePayloadToDomainEndTimeTimezone(t *testing.T) {
 	t.Run("forwards end_time_timezone when set", func(t *testing.T) {
 		payload := &votesvc.UpdateVotePayload{
-			EndTimeTimezone: utils.StringPtr("America/New_York"),
+			EndTimeTimezone: "America/New_York",
 		}
 
 		req := ConvertUpdateVotePayloadToDomain(payload)
 
 		assert.Equal(t, "America/New_York", req.EndTimeTimezone)
-	})
-
-	t.Run("leaves end_time_timezone empty when omitted", func(t *testing.T) {
-		req := ConvertUpdateVotePayloadToDomain(&votesvc.UpdateVotePayload{})
-
-		assert.Empty(t, req.EndTimeTimezone)
 	})
 }
 

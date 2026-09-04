@@ -140,8 +140,8 @@ func TestExtendVoteForwardsEndTimeTimezone(t *testing.T) {
 }
 
 // assertKeyAbsent marshals a captured ITX request and fails if key is present on
-// the wire — the `,omitempty` tags must drop empty timezone fields so ITX applies
-// its endpoint-specific omission semantics. A struct-field check alone cannot guard
+// the wire — the `,omitempty` tags must drop empty timezone fields so an empty
+// `end_time_timezone` key never reaches ITX. A struct-field check alone cannot guard
 // this: removing `omitempty` would send `"key":""` while the struct test still passes.
 func assertKeyAbsent(t *testing.T, req any, key string) {
 	t.Helper()
@@ -158,9 +158,10 @@ func assertKeyAbsent(t *testing.T, req any, key string) {
 	}
 }
 
-// TestCreateVoteOmitsEndTimeTimezone asserts the omitted field stays empty on the wire
-// ("" + `,omitempty` => key absent), preserving legacy ITX behavior for clients that
-// don't send a timezone.
+// TestCreateVoteOmitsEndTimeTimezone is a defensive wire invariant: an empty
+// end_time_timezone key must never hit the ITX wire ("" + `,omitempty` => key
+// absent). The empty string is unreachable via HTTP — the field is required at the
+// v2 boundary — but this guards the `,omitempty` tag against accidental removal.
 func TestCreateVoteOmitsEndTimeTimezone(t *testing.T) {
 	client := &capturePollClient{}
 	svc := NewVoteService(nil, client, identityIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
@@ -179,8 +180,9 @@ func TestCreateVoteOmitsEndTimeTimezone(t *testing.T) {
 	assertKeyAbsent(t, client.lastCreate, "end_time_timezone")
 }
 
-// TestUpdateVoteOmitsEndTimeTimezone asserts the omitted field stays off the wire on
-// update, so ITX preserves the previously stored timezone rather than receiving "".
+// TestUpdateVoteOmitsEndTimeTimezone is a defensive wire invariant: an empty
+// end_time_timezone key must never hit the ITX wire on update. Unreachable via HTTP
+// (the field is required at the v2 boundary); guards the `,omitempty` tag.
 func TestUpdateVoteOmitsEndTimeTimezone(t *testing.T) {
 	client := &capturePollClient{}
 	svc := NewVoteService(nil, client, identityIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
@@ -199,8 +201,9 @@ func TestUpdateVoteOmitsEndTimeTimezone(t *testing.T) {
 	assertKeyAbsent(t, client.lastUpdate, "end_time_timezone")
 }
 
-// TestExtendVoteOmitsEndTimeTimezone asserts an empty timezone stays off the wire on
-// extend, so ITX preserves the previously stored timezone rather than receiving "".
+// TestExtendVoteOmitsEndTimeTimezone is a defensive wire invariant: an empty
+// end_time_timezone key must never hit the ITX wire on extend. Unreachable via HTTP
+// (the field is required at the v2 boundary); guards the `,omitempty` tag.
 func TestExtendVoteOmitsEndTimeTimezone(t *testing.T) {
 	client := &capturePollClient{}
 	svc := NewVoteService(nil, client, identityIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
