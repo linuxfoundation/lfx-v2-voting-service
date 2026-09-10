@@ -24,6 +24,9 @@ type CreateVoteRequestBody struct {
 	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
 	// End time in RFC3339 format
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Required. ITX honors `end_time` exactly as sent in this timezone.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 	// LFX Project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// LFX Committee UID
@@ -59,6 +62,9 @@ type UpdateVoteRequestBody struct {
 	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
 	// End time in RFC3339 format
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Required. ITX honors `end_time` exactly as sent in this timezone.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 	// LFX Project UID
 	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
 	// LFX Committee UID
@@ -90,6 +96,9 @@ type UpdateVoteRequestBody struct {
 type ExtendVoteRequestBody struct {
 	// End time in RFC3339 format
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Required. ITX honors `end_time` exactly as sent in this timezone.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 }
 
 // BulkResendVoteRequestBody is the type of the "vote" service
@@ -152,6 +161,9 @@ type CreateVoteResponseBody struct {
 	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Absent when no timezone is stored.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 	// Actual close time when the poll auto-ended early because all voters
 	// responded before end_time. Absent when the poll closed on schedule or is
 	// still active. RFC3339.
@@ -205,6 +217,9 @@ type GetVoteResponseBody struct {
 	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Absent when no timezone is stored.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 	// Actual close time when the poll auto-ended early because all voters
 	// responded before end_time. Absent when the poll closed on schedule or is
 	// still active. RFC3339.
@@ -258,6 +273,9 @@ type UpdateVoteResponseBody struct {
 	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Absent when no timezone is stored.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 	// Actual close time when the poll auto-ended early because all voters
 	// responded before end_time. Absent when the poll closed on schedule or is
 	// still active. RFC3339.
@@ -311,6 +329,9 @@ type ExtendVoteResponseBody struct {
 	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
 	// End time
 	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Absent when no timezone is stored.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
 	// Actual close time when the poll auto-ended early because all voters
 	// responded before end_time. Absent when the poll closed on schedule or is
 	// still active. RFC3339.
@@ -364,6 +385,9 @@ type GetVoteResultsResponseBody struct {
 	NumAbstained int `form:"num_abstained" json:"num_abstained" xml:"num_abstained"`
 	// Poll end time
 	PollEndTime *string `form:"poll_end_time,omitempty" json:"poll_end_time,omitempty" xml:"poll_end_time,omitempty"`
+	// IANA timezone name used to interpret poll_end_time (e.g.
+	// "America/New_York"). Absent when the poll has no stored timezone.
+	PollEndTimeTimezone *string `form:"poll_end_time_timezone,omitempty" json:"poll_end_time_timezone,omitempty" xml:"poll_end_time_timezone,omitempty"`
 }
 
 // GetVoteResponseResponseBody is the type of the "vote" service
@@ -1433,6 +1457,7 @@ func NewCreateVoteResponseBody(res *vote.VoteResult) *CreateVoteResponseBody {
 		CreationTime:                  res.CreationTime,
 		LastModifiedTime:              res.LastModifiedTime,
 		EndTime:                       res.EndTime,
+		EndTimeTimezone:               res.EndTimeTimezone,
 		EarlyEndTime:                  res.EarlyEndTime,
 		Status:                        res.Status,
 		ProjectUID:                    res.ProjectUID,
@@ -1493,6 +1518,7 @@ func NewGetVoteResponseBody(res *vote.VoteResult) *GetVoteResponseBody {
 		CreationTime:                  res.CreationTime,
 		LastModifiedTime:              res.LastModifiedTime,
 		EndTime:                       res.EndTime,
+		EndTimeTimezone:               res.EndTimeTimezone,
 		EarlyEndTime:                  res.EarlyEndTime,
 		Status:                        res.Status,
 		ProjectUID:                    res.ProjectUID,
@@ -1553,6 +1579,7 @@ func NewUpdateVoteResponseBody(res *vote.VoteResult) *UpdateVoteResponseBody {
 		CreationTime:                  res.CreationTime,
 		LastModifiedTime:              res.LastModifiedTime,
 		EndTime:                       res.EndTime,
+		EndTimeTimezone:               res.EndTimeTimezone,
 		EarlyEndTime:                  res.EarlyEndTime,
 		Status:                        res.Status,
 		ProjectUID:                    res.ProjectUID,
@@ -1613,6 +1640,7 @@ func NewExtendVoteResponseBody(res *vote.VoteResult) *ExtendVoteResponseBody {
 		CreationTime:                  res.CreationTime,
 		LastModifiedTime:              res.LastModifiedTime,
 		EndTime:                       res.EndTime,
+		EndTimeTimezone:               res.EndTimeTimezone,
 		EarlyEndTime:                  res.EarlyEndTime,
 		Status:                        res.Status,
 		ProjectUID:                    res.ProjectUID,
@@ -1667,10 +1695,11 @@ func NewExtendVoteResponseBody(res *vote.VoteResult) *ExtendVoteResponseBody {
 // of the "get_vote_results" endpoint of the "vote" service.
 func NewGetVoteResultsResponseBody(res *vote.VoteResultsResult) *GetVoteResultsResponseBody {
 	body := &GetVoteResultsResponseBody{
-		NumRecipients: res.NumRecipients,
-		NumVotesCast:  res.NumVotesCast,
-		NumAbstained:  res.NumAbstained,
-		PollEndTime:   res.PollEndTime,
+		NumRecipients:       res.NumRecipients,
+		NumVotesCast:        res.NumVotesCast,
+		NumAbstained:        res.NumAbstained,
+		PollEndTime:         res.PollEndTime,
+		PollEndTimeTimezone: res.PollEndTimeTimezone,
 	}
 	if res.PollResults != nil {
 		body.PollResults = make([]*PollResultItemResponseBody, len(res.PollResults))
@@ -2502,6 +2531,7 @@ func NewCreateVotePayload(body *CreateVoteRequestBody, token *string) *vote.Crea
 		Name:                       *body.Name,
 		Description:                *body.Description,
 		EndTime:                    *body.EndTime,
+		EndTimeTimezone:            *body.EndTimeTimezone,
 		ProjectUID:                 *body.ProjectUID,
 		CommitteeUID:               *body.CommitteeUID,
 		QuorumPercentage:           body.QuorumPercentage,
@@ -2581,6 +2611,7 @@ func NewUpdateVotePayload(body *UpdateVoteRequestBody, uid string, token *string
 		Name:                       *body.Name,
 		Description:                *body.Description,
 		EndTime:                    *body.EndTime,
+		EndTimeTimezone:            *body.EndTimeTimezone,
 		ProjectUID:                 body.ProjectUID,
 		CommitteeUID:               body.CommitteeUID,
 		QuorumPercentage:           body.QuorumPercentage,
@@ -2658,7 +2689,8 @@ func NewDeleteVotePayload(uid string, token *string) *vote.DeleteVotePayload {
 // NewExtendVotePayload builds a vote service extend_vote endpoint payload.
 func NewExtendVotePayload(body *ExtendVoteRequestBody, uid string, token *string) *vote.ExtendVotePayload {
 	v := &vote.ExtendVotePayload{
-		EndTime: *body.EndTime,
+		EndTime:         *body.EndTime,
+		EndTimeTimezone: *body.EndTimeTimezone,
 	}
 	v.UID = uid
 	v.Token = token
@@ -2796,6 +2828,9 @@ func ValidateCreateVoteRequestBody(body *CreateVoteRequestBody) (err error) {
 	if body.EndTime == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("end_time", "body"))
 	}
+	if body.EndTimeTimezone == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("end_time_timezone", "body"))
+	}
 	if body.ProjectUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("project_uid", "body"))
 	}
@@ -2817,6 +2852,11 @@ func ValidateCreateVoteRequestBody(body *CreateVoteRequestBody) (err error) {
 	}
 	if body.EndTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", *body.EndTime, goa.FormatDateTime))
+	}
+	if body.EndTimeTimezone != nil {
+		if utf8.RuneCountInString(*body.EndTimeTimezone) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.end_time_timezone", *body.EndTimeTimezone, utf8.RuneCountInString(*body.EndTimeTimezone), 1, true))
+		}
 	}
 	if body.CommitteeUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
@@ -2890,6 +2930,9 @@ func ValidateUpdateVoteRequestBody(body *UpdateVoteRequestBody) (err error) {
 	if body.EndTime == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("end_time", "body"))
 	}
+	if body.EndTimeTimezone == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("end_time_timezone", "body"))
+	}
 	if body.PollQuestions == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("poll_questions", "body"))
 	}
@@ -2905,6 +2948,11 @@ func ValidateUpdateVoteRequestBody(body *UpdateVoteRequestBody) (err error) {
 	}
 	if body.EndTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", *body.EndTime, goa.FormatDateTime))
+	}
+	if body.EndTimeTimezone != nil {
+		if utf8.RuneCountInString(*body.EndTimeTimezone) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.end_time_timezone", *body.EndTimeTimezone, utf8.RuneCountInString(*body.EndTimeTimezone), 1, true))
+		}
 	}
 	if body.CommitteeUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.committee_uid", *body.CommitteeUID, goa.FormatUUID))
@@ -2972,8 +3020,16 @@ func ValidateExtendVoteRequestBody(body *ExtendVoteRequestBody) (err error) {
 	if body.EndTime == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("end_time", "body"))
 	}
+	if body.EndTimeTimezone == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("end_time_timezone", "body"))
+	}
 	if body.EndTime != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", *body.EndTime, goa.FormatDateTime))
+	}
+	if body.EndTimeTimezone != nil {
+		if utf8.RuneCountInString(*body.EndTimeTimezone) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.end_time_timezone", *body.EndTimeTimezone, utf8.RuneCountInString(*body.EndTimeTimezone), 1, true))
+		}
 	}
 	return
 }

@@ -118,6 +118,7 @@ func convertMapToVoteData(
 		CreationTime:                  pollDB.CreationTime,
 		LastModifiedTime:              pollDB.LastModifiedTime,
 		EndTime:                       pollDB.EndTime,
+		EndTimeTimezone:               pollDB.EndTimeTimezone,
 		EarlyEndTime:                  utils.NormalizeTimestamp(pollDB.EarlyEndTime),
 		Status:                        pollDB.Status,
 		ProjectID:                     pollDB.ProjectID,

@@ -91,6 +91,7 @@ func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*
 		Name:                       req.Name,
 		Description:                req.Description,
 		EndTime:                    req.EndTime,
+		EndTimeTimezone:            req.EndTimeTimezone,
 		ProjectID:                  projectSFID,
 		CommitteeID:                committeeSFID,
 		CommitteeIDs:               committeeIDs,
@@ -214,6 +215,7 @@ func (s *VoteService) UpdateVote(ctx context.Context, voteID string, req *Update
 		Name:                       req.Name,
 		Description:                req.Description,
 		EndTime:                    req.EndTime,
+		EndTimeTimezone:            req.EndTimeTimezone,
 		ProjectID:                  projectID,
 		CommitteeID:                committeeID,
 		CommitteeIDs:               committeeIDs,
@@ -289,7 +291,7 @@ func (s *VoteService) DeleteVote(ctx context.Context, voteID string) error {
 }
 
 // ExtendVote extends a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)
-func (s *VoteService) ExtendVote(ctx context.Context, voteID string, endTime string) (*itx.PollResponse, error) {
+func (s *VoteService) ExtendVote(ctx context.Context, voteID string, endTime string, endTimeTimezone string) (*itx.PollResponse, error) {
 	principal, err := requirePrincipal(ctx)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
@@ -300,7 +302,8 @@ func (s *VoteService) ExtendVote(ctx context.Context, voteID string, endTime str
 
 	// Build proxy request
 	proxyReq := &itx.ExtendPollRequest{
-		EndTime: endTime,
+		EndTime:         endTime,
+		EndTimeTimezone: endTimeTimezone,
 	}
 
 	// Call ITX proxy
@@ -497,6 +500,7 @@ type CreateVoteRequest struct {
 	Name                       string
 	Description                string
 	EndTime                    string
+	EndTimeTimezone            string
 	ProjectUID                 string
 	CommitteeUID               string
 	CommitteeUIDs              []string
@@ -533,6 +537,7 @@ type UpdateVoteRequest struct {
 	Name                       string
 	Description                string
 	EndTime                    string
+	EndTimeTimezone            string
 	ProjectUID                 string
 	CommitteeUID               string
 	CommitteeUIDs              []string
