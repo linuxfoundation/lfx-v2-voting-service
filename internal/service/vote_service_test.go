@@ -81,7 +81,7 @@ func TestCreateVoteForwardsSelfServeSource(t *testing.T) {
 }
 
 // TestCreateVoteForwardsEndTimeTimezone mirrors TestCreateVoteForwardsSelfServeSource:
-// the optional timezone must reach the ITX create request untouched.
+// the required timezone must reach the ITX create request untouched.
 func TestCreateVoteForwardsEndTimeTimezone(t *testing.T) {
 	client := &capturePollClient{}
 	svc := NewVoteService(nil, client, identityIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))

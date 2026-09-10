@@ -397,7 +397,7 @@ Content-Type: application/json
 }
 ```
 
-`end_time_timezone` is required, as on create. Omitting it fails contract validation with a 400 before ITX is called. This is deliberate: ITX rebuilds the whole poll record on update, so an omitted timezone would silently clear the stored one. As on create, ITX rejects invalid timezone names with a 400, surfaced as a 400.
+`end_time_timezone` is required, as on create. Omitting it fails contract validation with a 400 before ITX is called, so ITX always receives an explicit timezone on every update. As on create, ITX rejects invalid timezone names with a 400, surfaced as a 400.
 
 **Response** (200 OK):
 
