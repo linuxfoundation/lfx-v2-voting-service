@@ -29,8 +29,9 @@ func TestConvertCreateVotePayloadToDomainEndTimeTimezone(t *testing.T) {
 }
 
 // TestConvertUpdateVotePayloadToDomainEndTimeTimezone guards the update hop: a field
-// dropped here would send "" which `,omitempty` keeps off the wire — ITX rebuilds the
-// record on update, so the previously stored timezone would be cleared with no error.
+// dropped here would send "" which `,omitempty` keeps off the wire — on update, ITX
+// preserves the previously stored timezone rather than clearing it, so the client's
+// requested timezone change would be silently ignored.
 func TestConvertUpdateVotePayloadToDomainEndTimeTimezone(t *testing.T) {
 	t.Run("forwards end_time_timezone when set", func(t *testing.T) {
 		payload := &votesvc.UpdateVotePayload{
