@@ -2736,7 +2736,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Est omnis illum ut.
+                    example: Illum ut.
                 description: List of recipient IDs to resend vote email to
                 example:
                     - cba14f40-1636-11ec-9621-0242ac130002
@@ -2854,10 +2854,15 @@ definitions:
                 type: integer
                 description: Number of winners (meek_stv only)
                 default: 2
-                example: 6
+                example: 3
                 format: int64
                 minimum: 2
                 maximum: 10
+            open_on_create:
+                type: boolean
+                description: Open the vote immediately upon creation, skipping the separate enable call
+                default: false
+                example: true
             poll_comment_prompts:
                 type: array
                 items:
@@ -2931,7 +2936,7 @@ definitions:
                 minimum: 0
                 maximum: 100
         example:
-            allow_abstain: false
+            allow_abstain: true
             committee_filters:
                 - Voting Rep
                 - Alternate Voting Rep
@@ -2943,8 +2948,11 @@ definitions:
             end_time: "2026-02-15T23:59:59Z"
             end_time_timezone: America/New_York
             name: Q1 2026 Technical Steering Committee Election
-            num_winners: 4
+            num_winners: 7
+            open_on_create: true
             poll_comment_prompts:
+                - prompt: Please provide any additional feedback
+                - prompt: Please provide any additional feedback
                 - prompt: Please provide any additional feedback
                 - prompt: Please provide any additional feedback
             poll_questions:
@@ -2964,9 +2972,9 @@ definitions:
                   prompt: Who should be elected to the TSC?
                   question_id: cbc6e09f-295f-48a6-8e85-ede8e90afa13
                   type: single_choice
-            poll_type: generic
+            poll_type: instant_runoff_vote
             project_uid: a09P000000DsCBuIRT
-            pseudo_anonymity: false
+            pseudo_anonymity: true
             quorum_percentage: 50
             winning_threshold_percentage: 51
         required:
@@ -5753,7 +5761,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Observer
+                    example: Emeritus
                     enum:
                         - Voting Rep
                         - Alternate Voting Rep
@@ -5772,7 +5780,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Corrupti rerum.
+                    example: Aspernatur eum.
                 description: Multiple committee UIDs
                 example:
                     - a02bdbaf-53b1-4d47-bc04-dd7e459dd308
@@ -5801,7 +5809,7 @@ definitions:
                 type: integer
                 description: Number of winners (meek_stv only)
                 default: 2
-                example: 8
+                example: 6
                 format: int64
                 minimum: 2
                 maximum: 10
@@ -5811,7 +5819,6 @@ definitions:
                     $ref: '#/definitions/PollCommentPromptInput'
                 description: Comment prompts for the vote
                 example:
-                    - prompt: Please provide any additional feedback
                     - prompt: Please provide any additional feedback
                     - prompt: Please provide any additional feedback
             poll_questions:
@@ -5836,27 +5843,11 @@ definitions:
                       prompt: Who should be elected to the TSC?
                       question_id: cbc6e09f-295f-48a6-8e85-ede8e90afa13
                       type: single_choice
-                    - choices:
-                        - choice_id: 1619e435-d30b-4596-9e77-ca8c6669506c
-                          choice_text: John Doe
-                        - choice_id: 1619e435-d30b-4596-9e77-ca8c6669506c
-                          choice_text: John Doe
-                      prompt: Who should be elected to the TSC?
-                      question_id: cbc6e09f-295f-48a6-8e85-ede8e90afa13
-                      type: single_choice
-                    - choices:
-                        - choice_id: 1619e435-d30b-4596-9e77-ca8c6669506c
-                          choice_text: John Doe
-                        - choice_id: 1619e435-d30b-4596-9e77-ca8c6669506c
-                          choice_text: John Doe
-                      prompt: Who should be elected to the TSC?
-                      question_id: cbc6e09f-295f-48a6-8e85-ede8e90afa13
-                      type: single_choice
             poll_type:
                 type: string
                 description: Type of poll
                 default: generic
-                example: generic
+                example: meek_stv
                 enum:
                     - generic
                     - condorcet_irv
@@ -5870,7 +5861,7 @@ definitions:
                 type: boolean
                 description: Enable pseudo-anonymity
                 default: false
-                example: false
+                example: true
             quorum_percentage:
                 type: integer
                 description: Quorum percentage required
@@ -5898,9 +5889,8 @@ definitions:
             end_time: "2026-02-15T23:59:59Z"
             end_time_timezone: America/New_York
             name: Q1 2026 Technical Steering Committee Election
-            num_winners: 4
+            num_winners: 8
             poll_comment_prompts:
-                - prompt: Please provide any additional feedback
                 - prompt: Please provide any additional feedback
                 - prompt: Please provide any additional feedback
             poll_questions:
@@ -5936,7 +5926,7 @@ definitions:
                   prompt: Who should be elected to the TSC?
                   question_id: cbc6e09f-295f-48a6-8e85-ede8e90afa13
                   type: single_choice
-            poll_type: condorcet_irv
+            poll_type: generic
             project_uid: a09P000000DsCBuIRT
             pseudo_anonymity: true
             quorum_percentage: 50

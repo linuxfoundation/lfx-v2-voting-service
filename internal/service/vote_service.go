@@ -113,6 +113,10 @@ func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*
 	// is the sole self-serve entry point, so every poll it creates is self-serve.
 	proxyReq.Source = itx.PollSourceSelfServe
 
+	// Forward the caller's create-and-open intent: when set, ITX runs its enable
+	// logic inline and the poll comes back active, skipping the FGA-gated enable call.
+	proxyReq.OpenOnCreate = req.OpenOnCreate
+
 	// Convert poll questions
 	proxyReq.PollQuestions = make([]itx.PollQuestionInput, len(req.PollQuestions))
 	for i, q := range req.PollQuestions {
@@ -513,6 +517,7 @@ type CreateVoteRequest struct {
 	AllowAbstain               bool
 	QuorumPercentage           *int
 	WinningThresholdPercentage *int
+	OpenOnCreate               bool
 }
 
 // PollQuestionRequest represents a question in the request

@@ -174,6 +174,8 @@ type CreateVotePayload struct {
 	PollCommentPrompts []*PollCommentPromptInput
 	// Enable pseudo-anonymity
 	PseudoAnonymity bool
+	// Open the vote immediately upon creation, skipping the separate enable call
+	OpenOnCreate bool
 	// Type of poll
 	PollType string
 	// Number of winners (meek_stv only)

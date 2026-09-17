@@ -97,6 +97,13 @@ func PseudoAnonymityAttribute() {
 	})
 }
 
+// OpenOnCreateAttribute is the DSL attribute for opening the vote on creation.
+func OpenOnCreateAttribute() {
+	Attribute("open_on_create", Boolean, "Open the vote immediately upon creation, skipping the separate enable call", func() {
+		Default(false)
+	})
+}
+
 // PollTypeAttribute is the DSL attribute for poll type.
 func PollTypeAttribute() {
 	Attribute("poll_type", String, "Type of poll", func() {

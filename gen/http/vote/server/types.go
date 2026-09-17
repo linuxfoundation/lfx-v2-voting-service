@@ -41,6 +41,8 @@ type CreateVoteRequestBody struct {
 	PollCommentPrompts []*PollCommentPromptInputRequestBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
 	// Enable pseudo-anonymity
 	PseudoAnonymity *bool `form:"pseudo_anonymity,omitempty" json:"pseudo_anonymity,omitempty" xml:"pseudo_anonymity,omitempty"`
+	// Open the vote immediately upon creation, skipping the separate enable call
+	OpenOnCreate *bool `form:"open_on_create,omitempty" json:"open_on_create,omitempty" xml:"open_on_create,omitempty"`
 	// Type of poll
 	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
 	// Number of winners (meek_stv only)
@@ -2540,6 +2542,9 @@ func NewCreateVotePayload(body *CreateVoteRequestBody, token *string) *vote.Crea
 	if body.PseudoAnonymity != nil {
 		v.PseudoAnonymity = *body.PseudoAnonymity
 	}
+	if body.OpenOnCreate != nil {
+		v.OpenOnCreate = *body.OpenOnCreate
+	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
 	}
@@ -2581,6 +2586,9 @@ func NewCreateVotePayload(body *CreateVoteRequestBody, token *string) *vote.Crea
 	}
 	if body.PseudoAnonymity == nil {
 		v.PseudoAnonymity = false
+	}
+	if body.OpenOnCreate == nil {
+		v.OpenOnCreate = false
 	}
 	if body.PollType == nil {
 		v.PollType = "generic"

@@ -100,11 +100,18 @@ Content-Type: application/json
   "num_winners": 5,
   "allow_abstain": false,
   "quorum_percentage": 50,
-  "winning_threshold_percentage": 50
+  "winning_threshold_percentage": 50,
+  "open_on_create": true
 }
 ```
 
 `end_time_timezone` is required: an IANA timezone name (e.g., `America/New_York`) that ITX uses to interpret `end_time` exactly as sent. Omitting it fails contract validation with a 400 before ITX is called. The proxy passes the value through untouched and performs no validation of its own; ITX rejects invalid timezone names with a 400, which the proxy surfaces as a 400.
+
+`open_on_create` is optional (default `false`): when `true`, ITX opens the poll in the same write that creates it and the response comes back with `status: "active"`, skipping the separate `PUT /votes/{vote_uid}/enable` call. When the flag is omitted the outbound ITX create request is byte-identical to before the flag existed.
+
+Create-and-open needs no new authorization surface: `POST /votes` is already authorized by `writer` on the parent `project:{project_uid}` OR `committee:{committee_uid}` (the `openfga_or_check` in `ruleset.yaml`), which is exactly the permission that confers vote-writer. The enable route's `writer`-on-`vote:{uid}` check cannot serve a freshly created vote, because the `vote:{uid}` FGA tuple is only written by this service's KV consumer after the async replication round trip — folding the open into create is what removes that wait.
+
+This service does not honor an `X-Sync` request header; callers must not send one expecting a synchronous indexer/FGA acknowledgement. Create-and-open is the supported way to avoid waiting across the replication gap.
 
 **Response** (201 Created):
 
@@ -195,7 +202,8 @@ x-scope: manage:voting
   "num_winners": 5,
   "allow_abstain": false,
   "quorum_percentage": 50,
-  "winning_threshold_percentage": 50
+  "winning_threshold_percentage": 50,
+  "open_on_create": true
 }
 ```
 

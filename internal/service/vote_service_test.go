@@ -100,6 +100,26 @@ func TestCreateVoteForwardsEndTimeTimezone(t *testing.T) {
 	}
 }
 
+// TestCreateVoteForwardsOpenOnCreate mirrors TestCreateVoteForwardsSelfServeSource:
+// the caller's create-and-open intent must reach the ITX create request untouched.
+func TestCreateVoteForwardsOpenOnCreate(t *testing.T) {
+	client := &capturePollClient{}
+	svc := NewVoteService(nil, client, identityIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	ctx := context.WithValue(context.Background(), constants.PrincipalContextID, "test-user")
+	req := &CreateVoteRequest{Name: "poll", ProjectUID: "project-uid", OpenOnCreate: true}
+	if _, err := svc.CreateVote(ctx, req); err != nil {
+		t.Fatalf("CreateVote returned error: %v", err)
+	}
+
+	if client.lastCreate == nil {
+		t.Fatal("expected CreatePoll to be called")
+	}
+	if !client.lastCreate.OpenOnCreate {
+		t.Fatal("expected OpenOnCreate to be forwarded as true")
+	}
+}
+
 // TestUpdateVoteForwardsEndTimeTimezone guards the update hop: dropping a supplied
 // field here would silently ignore the requested timezone change — omission preserves
 // the previously stored timezone, it does not clear it.
@@ -178,6 +198,28 @@ func TestCreateVoteOmitsEndTimeTimezone(t *testing.T) {
 		t.Fatalf("expected empty EndTimeTimezone when omitted, got %q", client.lastCreate.EndTimeTimezone)
 	}
 	assertKeyAbsent(t, client.lastCreate, "end_time_timezone")
+}
+
+// TestCreateVoteOmitsOpenOnCreate is a defensive wire invariant: an unset
+// open_on_create key must never hit the ITX wire (false + `,omitempty` => key
+// absent), keeping the outbound create body byte-identical to before the flag
+// existed (AC-2). Guards the `,omitempty` tag against accidental removal.
+func TestCreateVoteOmitsOpenOnCreate(t *testing.T) {
+	client := &capturePollClient{}
+	svc := NewVoteService(nil, client, identityIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	ctx := context.WithValue(context.Background(), constants.PrincipalContextID, "test-user")
+	if _, err := svc.CreateVote(ctx, &CreateVoteRequest{Name: "poll", ProjectUID: "project-uid"}); err != nil {
+		t.Fatalf("CreateVote returned error: %v", err)
+	}
+
+	if client.lastCreate == nil {
+		t.Fatal("expected CreatePoll to be called")
+	}
+	if client.lastCreate.OpenOnCreate {
+		t.Fatal("expected OpenOnCreate to be false when omitted")
+	}
+	assertKeyAbsent(t, client.lastCreate, "open_on_create")
 }
 
 // TestUpdateVoteOmitsEndTimeTimezone is a defensive wire invariant: an empty

@@ -30,6 +30,10 @@ type CreatePollRequest struct {
 	AllowAbstain               bool                `json:"allow_abstain"`
 	QuorumPercentage           *int                `json:"quorum_percentage,omitempty"`
 	WinningThresholdPercentage *int                `json:"winning_threshold_percentage,omitempty"`
+	// OpenOnCreate asks ITX to open the poll in the same write that creates it
+	// (ITX CreatePollPost.open_on_create). omitempty keeps the wire body
+	// byte-identical to before when the flag is unset.
+	OpenOnCreate bool `json:"open_on_create,omitempty"`
 }
 
 // CreatedByInput identifies the poll creator so ITX can enrich the record from LFX

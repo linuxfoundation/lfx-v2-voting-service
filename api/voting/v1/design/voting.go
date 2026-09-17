@@ -69,6 +69,7 @@ var _ = Service("vote", func() {
 			PollQuestionsAttribute()
 			PollCommentPromptsAttribute()
 			PseudoAnonymityAttribute()
+			OpenOnCreateAttribute()
 			PollTypeAttribute()
 			NumWinnersAttribute()
 			AllowAbstainAttribute()

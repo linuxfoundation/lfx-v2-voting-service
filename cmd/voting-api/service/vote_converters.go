@@ -22,6 +22,7 @@ func ConvertCreateVotePayloadToDomain(payload *votesvc.CreateVotePayload) *servi
 		CommitteeUIDs:              payload.CommitteeUids,
 		CommitteeFilters:           payload.CommitteeFilters,
 		PseudoAnonymity:            payload.PseudoAnonymity,
+		OpenOnCreate:               payload.OpenOnCreate,
 		PollType:                   payload.PollType,
 		NumWinners:                 utils.IntPtr(payload.NumWinners),
 		AllowAbstain:               payload.AllowAbstain,

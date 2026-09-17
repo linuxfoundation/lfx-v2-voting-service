@@ -41,6 +41,8 @@ type CreateVoteRequestBody struct {
 	PollCommentPrompts []*PollCommentPromptInputRequestBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
 	// Enable pseudo-anonymity
 	PseudoAnonymity bool `form:"pseudo_anonymity" json:"pseudo_anonymity" xml:"pseudo_anonymity"`
+	// Open the vote immediately upon creation, skipping the separate enable call
+	OpenOnCreate bool `form:"open_on_create" json:"open_on_create" xml:"open_on_create"`
 	// Type of poll
 	PollType string `form:"poll_type" json:"poll_type" xml:"poll_type"`
 	// Number of winners (meek_stv only)
@@ -1458,6 +1460,7 @@ func NewCreateVoteRequestBody(p *vote.CreateVotePayload) *CreateVoteRequestBody 
 		ProjectUID:                 p.ProjectUID,
 		CommitteeUID:               p.CommitteeUID,
 		PseudoAnonymity:            p.PseudoAnonymity,
+		OpenOnCreate:               p.OpenOnCreate,
 		PollType:                   p.PollType,
 		NumWinners:                 p.NumWinners,
 		AllowAbstain:               p.AllowAbstain,
@@ -1502,6 +1505,12 @@ func NewCreateVoteRequestBody(p *vote.CreateVotePayload) *CreateVoteRequestBody 
 		var zero bool
 		if body.PseudoAnonymity == zero {
 			body.PseudoAnonymity = false
+		}
+	}
+	{
+		var zero bool
+		if body.OpenOnCreate == zero {
+			body.OpenOnCreate = false
 		}
 	}
 	{

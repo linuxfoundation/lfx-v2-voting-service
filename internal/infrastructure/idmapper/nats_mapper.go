@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
@@ -19,18 +20,45 @@ const (
 
 	// Default request timeout
 	defaultTimeout = 5 * time.Second
+
+	// defaultCacheTTL bounds how long a resolved mapping is served from the
+	// in-process cache. Mappings are never reassigned once written (the
+	// v1-sync-helper only creates them or tombstones them on delete), so the
+	// TTL only bounds the post-delete staleness window.
+	defaultCacheTTL = 15 * time.Minute
+
+	// defaultMaxCacheEntries bounds cache growth in a long-lived process.
+	defaultMaxCacheEntries = 10000
 )
 
 // Config holds the configuration for the NATS-based ID mapper
 type Config struct {
 	URL     string
 	Timeout time.Duration
+	// CacheTTL overrides how long successful lookups are cached; zero uses defaultCacheTTL.
+	CacheTTL time.Duration
+	// MaxCacheEntries overrides the cache size cap; zero uses defaultMaxCacheEntries.
+	MaxCacheEntries int
+}
+
+// cacheEntry is a single cached lookup result with its expiry.
+type cacheEntry struct {
+	value     string
+	expiresAt time.Time
 }
 
 // NATSMapper implements IDMapper using NATS messaging to the v1-sync-helper service
 type NATSMapper struct {
 	conn    *nats.Conn
 	timeout time.Duration
+
+	// mu guards cache. The cache is read-through: successful lookups are
+	// stored under the lookup key; errors and not-found (empty) responses are
+	// never cached, so a create->event race cannot pin a false miss.
+	mu              sync.Mutex
+	cache           map[string]cacheEntry
+	cacheTTL        time.Duration
+	maxCacheEntries int
 }
 
 // NewNATSMapper creates a new NATS-based ID mapper
@@ -44,6 +72,16 @@ func NewNATSMapper(cfg Config) (*NATSMapper, error) {
 		timeout = defaultTimeout
 	}
 
+	cacheTTL := cfg.CacheTTL
+	if cacheTTL == 0 {
+		cacheTTL = defaultCacheTTL
+	}
+
+	maxCacheEntries := cfg.MaxCacheEntries
+	if maxCacheEntries == 0 {
+		maxCacheEntries = defaultMaxCacheEntries
+	}
+
 	// Connect to NATS server
 	conn, err := nats.Connect(cfg.URL)
 	if err != nil {
@@ -51,8 +89,11 @@ func NewNATSMapper(cfg Config) (*NATSMapper, error) {
 	}
 
 	return &NATSMapper{
-		conn:    conn,
-		timeout: timeout,
+		conn:            conn,
+		timeout:         timeout,
+		cache:           make(map[string]cacheEntry),
+		cacheTTL:        cacheTTL,
+		maxCacheEntries: maxCacheEntries,
 	}, nil
 }
 
@@ -130,8 +171,13 @@ func (m *NATSMapper) MapCommitteeV1ToV2(ctx context.Context, v1SFID string) (str
 	return m.lookup(ctx, key)
 }
 
-// lookup performs the NATS request/reply lookup
+// lookup performs the NATS request/reply lookup, serving repeated lookups for
+// the same key from the in-process cache instead of re-issuing a NATS request.
 func (m *NATSMapper) lookup(ctx context.Context, key string) (string, error) {
+	if value, ok := m.cachedLookup(key); ok {
+		return value, nil
+	}
+
 	// Send request with timeout
 	msg, err := m.conn.RequestWithContext(ctx, lookupSubject, []byte(key))
 	if err != nil {
@@ -154,5 +200,44 @@ func (m *NATSMapper) lookup(ctx context.Context, key string) (string, error) {
 		return "", domain.NewValidationError(fmt.Sprintf("invalid ID: mapping not found for %s", key))
 	}
 
+	m.storeCachedLookup(key, response)
 	return response, nil
+}
+
+// cachedLookup returns the cached value for key when present and unexpired.
+func (m *NATSMapper) cachedLookup(key string) (string, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	entry, ok := m.cache[key]
+	if !ok {
+		return "", false
+	}
+	if time.Now().After(entry.expiresAt) {
+		delete(m.cache, key)
+		return "", false
+	}
+	return entry.value, true
+}
+
+// storeCachedLookup caches a successful lookup. Once the cache reaches its cap,
+// expired entries are swept first; if nothing is expired, an arbitrary entry is
+// evicted so the cache stays bounded.
+func (m *NATSMapper) storeCachedLookup(key, value string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if len(m.cache) >= m.maxCacheEntries {
+		now := time.Now()
+		for k, e := range m.cache {
+			if now.After(e.expiresAt) {
+				delete(m.cache, k)
+			}
+		}
+		if len(m.cache) >= m.maxCacheEntries {
+			for k := range m.cache {
+				delete(m.cache, k)
+				break
+			}
+		}
+	}
+	m.cache[key] = cacheEntry{value: value, expiresAt: time.Now().Add(m.cacheTTL)}
 }
