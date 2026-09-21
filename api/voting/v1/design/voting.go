@@ -1,6 +1,13 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
+// Run `make generate` (or `go generate ./api/...`) after editing any file in this
+// package to regenerate the code in gen/. Before the first run, execute
+// `make deps` to install the goa CLI at the exact version pinned in go.mod —
+// the //go:generate directive below does NOT install goa automatically.
+//
+//go:generate make -C ../../../.. generate
+
 package design
 
 import (
@@ -54,6 +61,7 @@ var _ = Service("vote", func() {
 			VoteNameAttribute()
 			VoteDescriptionAttribute()
 			EndTimeAttribute()
+			EndTimeTimezoneAttribute("Required. ITX honors `end_time` exactly as sent in this timezone.")
 			ProjectUIDAttribute()
 			CommitteeUIDAttribute()
 			CommitteeUIDsAttribute()
@@ -67,7 +75,7 @@ var _ = Service("vote", func() {
 			QuorumPercentageAttribute()
 			WinningThresholdPercentageAttribute()
 
-			Required("name", "description", "end_time", "project_uid", "committee_uid", "poll_questions")
+			Required("name", "description", "end_time", "end_time_timezone", "project_uid", "committee_uid", "poll_questions")
 		})
 
 		Result(VoteResult)
@@ -129,6 +137,7 @@ var _ = Service("vote", func() {
 			VoteNameAttribute()
 			VoteDescriptionAttribute()
 			EndTimeAttribute()
+			EndTimeTimezoneAttribute("Required. ITX honors `end_time` exactly as sent in this timezone.")
 			ProjectUIDAttribute()
 			CommitteeUIDAttribute()
 			CommitteeUIDsAttribute()
@@ -142,7 +151,7 @@ var _ = Service("vote", func() {
 			QuorumPercentageAttribute()
 			WinningThresholdPercentageAttribute()
 
-			Required("uid", "name", "description", "end_time", "poll_questions")
+			Required("uid", "name", "description", "end_time", "end_time_timezone", "poll_questions")
 		})
 
 		Result(VoteResult)
@@ -198,8 +207,9 @@ var _ = Service("vote", func() {
 			BearerTokenAttribute()
 			VoteIDAttribute()
 			EndTimeAttribute()
+			EndTimeTimezoneAttribute("Required. ITX honors `end_time` exactly as sent in this timezone.")
 
-			Required("uid", "end_time")
+			Required("uid", "end_time", "end_time_timezone")
 		})
 
 		Result(VoteResult)

@@ -34,6 +34,15 @@ By participating in this project, you agree to abide by the [Linux Foundation Co
 
 See [README.md — Getting Started](README.md#getting-started) for full setup instructions: prerequisites, installation, environment variables, running locally, and optional NATS + Heimdall infrastructure via the lfx-platform Helm chart.
 
+Quick start for first-time contributors:
+
+```bash
+make setup   # creates .env from .env.example
+make deps    # installs goa CLI, golangci-lint, downloads modules
+make generate
+make build
+```
+
 ## Getting Dev Credentials
 
 The service requires ITX OAuth2 credentials (`ITX_CLIENT_ID` and `ITX_CLIENT_PRIVATE_KEY`). Find them in:
@@ -109,7 +118,7 @@ make lint
 make check
 ```
 
-The linter config is in [revive.toml](revive.toml) and `.golangci.yml`.
+The linter config is in [revive.toml](revive.toml).
 
 ## Architecture Guidelines
 
@@ -202,9 +211,9 @@ Use the format `<type>/<ticket-or-description>`, for example:
 
 1. **Update Documentation**: Update README or docs/ for any new features or configuration changes
 2. **Add Tests**: Include unit tests for new functionality
-3. **Pass All Checks**: Ensure `make check` and `make test` pass locally
+3. **Pass All Checks**: Run `make ci` — this validates formatting, lint, generated code freshness, build, and tests
 4. **License Headers**: Verify all new files have the correct license header
-5. **API Generation**: If you modified Goa design files, run `make apigen` and commit the regenerated files
+5. **API Generation**: If you modified Goa design files, run `make generate` and commit the regenerated files in `gen/`
 6. **Clear Description**: Provide a clear description of changes and link any related issues or Jira tickets
 
 ### PR Title Format
@@ -220,8 +229,11 @@ feat(votes): add bulk resend endpoint
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (with -race and -timeout 5m)
 make test
+
+# Run tests with coverage report
+make test-cover
 ```
 
 ### Test Requirements

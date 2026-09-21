@@ -31,7 +31,7 @@ func VoteNameAttribute() {
 	Attribute("name", String, "Vote name", func() {
 		Example("Q1 2026 Technical Steering Committee Election")
 		MinLength(1)
-		MaxLength(255)
+		MaxLength(200) // matches the 200-rune service-level guard in vote_service.go
 	})
 }
 
@@ -47,6 +47,17 @@ func EndTimeAttribute() {
 	Attribute("end_time", String, "End time in RFC3339 format", func() {
 		Format(FormatDateTime)
 		Example("2026-02-15T23:59:59Z")
+	})
+}
+
+// EndTimeTimezoneAttribute is the DSL attribute for the end time timezone.
+// behaviorNote describes the field's semantics per call site; it differs per
+// endpoint (requests: required, ITX honors end_time exactly as sent in this
+// timezone; responses: absent when none is stored).
+func EndTimeTimezoneAttribute(behaviorNote string) {
+	Attribute("end_time_timezone", String, "IANA timezone name used to interpret end_time (e.g. \"America/New_York\"). "+behaviorNote, func() {
+		Example("America/New_York")
+		MinLength(1)
 	})
 }
 
@@ -169,6 +180,8 @@ var VoteResult = Type("VoteResult", func() {
 		Format(FormatDateTime)
 		Example("2026-02-15T23:59:59Z")
 	})
+
+	EndTimeTimezoneAttribute("Absent when no timezone is stored.")
 
 	Attribute("early_end_time", String, "Actual close time when the poll auto-ended early because all voters responded before end_time. Absent when the poll closed on schedule or is still active. RFC3339.", func() {
 		Format(FormatDateTime)
@@ -474,6 +487,10 @@ var VoteResultsResult = Type("VoteResultsResult", func() {
 	Attribute("num_abstained", Int, "Number who abstained")
 	Attribute("poll_end_time", String, "Poll end time", func() {
 		Format(FormatDateTime)
+	})
+
+	Attribute("poll_end_time_timezone", String, "IANA timezone name used to interpret poll_end_time (e.g. \"America/New_York\"). Absent when the poll has no stored timezone.", func() {
+		Example("America/New_York")
 	})
 
 	Required("poll_results", "num_recipients", "num_votes_cast", "num_abstained")

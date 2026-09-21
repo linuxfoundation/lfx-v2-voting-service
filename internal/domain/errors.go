@@ -14,6 +14,15 @@ const (
 	ErrorTypeConflict                     // 409 Conflict
 	ErrorTypeInternal                     // 500 Internal Server Error
 	ErrorTypeUnavailable                  // 503 Service Unavailable
+
+	// Note: there is intentionally no ErrorTypeForbidden (403) or
+	// ErrorTypeUnauthorized (401). When the ITX proxy receives a 401 or 403
+	// from ITX it means our service-to-service M2M token is invalid or the
+	// proxy is misconfigured — an infrastructure problem, not a client auth
+	// failure. Surfacing it as Internal (500) signals to operators that the
+	// service credentials need attention rather than suggesting the caller
+	// lacks permission. The caller's own JWT is validated earlier, in the
+	// auth middleware, before any ITX call is made.
 )
 
 // DomainError represents a domain-level error with semantic type

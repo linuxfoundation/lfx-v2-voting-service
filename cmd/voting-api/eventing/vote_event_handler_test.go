@@ -5,6 +5,7 @@ package eventing
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"testing"
@@ -62,6 +63,7 @@ func TestConvertMapToVoteData(t *testing.T) {
 			"creation_time":                    "2024-01-01T00:00:00Z",
 			"last_modified_time":               "2024-01-02T00:00:00Z",
 			"end_time":                         "2024-12-31T23:59:59Z",
+			"end_time_timezone":                "America/New_York",
 			"early_end_time":                   "2024-12-30T10:00:00Z",
 			"status":                           "ended",
 			"project_id":                       "project-sfid",
@@ -108,6 +110,7 @@ func TestConvertMapToVoteData(t *testing.T) {
 		assert.Equal(t, 1, result.NumWinners)
 		assert.True(t, result.AllowAbstain)
 		assert.Equal(t, "2024-12-30T10:00:00Z", result.EarlyEndTime)
+		assert.Equal(t, "America/New_York", result.EndTimeTimezone)
 
 		require.Len(t, result.PollCommentPrompts, 1)
 		assert.Equal(t, "prompt-1", result.PollCommentPrompts[0].PromptID)
@@ -135,6 +138,7 @@ func TestConvertMapToVoteData(t *testing.T) {
 		assert.Equal(t, 0, result.TotalVotingRequestInvitations)
 		assert.Equal(t, 0, result.NumResponseReceived)
 		assert.Empty(t, result.EarlyEndTime)
+		assert.Empty(t, result.EndTimeTimezone)
 	})
 
 	t.Run("drops zero-value early_end_time from raw DynamoDB", func(t *testing.T) {
@@ -191,6 +195,19 @@ func TestConvertMapToVoteData(t *testing.T) {
 	})
 }
 
+// marshalVoteData marshals a published VoteData back to its wire map so tests can
+// assert on the exact JSON keys downstream indexer consumers see. Struct-field
+// assertions alone cannot guard the indexer contract: a tag rename or a dropped
+// `,omitempty` would silently change the wire format while field checks still pass.
+func marshalVoteData(t *testing.T, vote *domain.VoteData) map[string]interface{} {
+	t.Helper()
+	payload, err := json.Marshal(vote)
+	require.NoError(t, err)
+	var wire map[string]interface{}
+	require.NoError(t, json.Unmarshal(payload, &wire))
+	return wire
+}
+
 func TestHandleVoteUpdate(t *testing.T) {
 	logging.InitStructureLogConfig()
 
@@ -216,6 +233,88 @@ func TestHandleVoteUpdate(t *testing.T) {
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVotes, 1)
 		assert.Equal(t, "poll-123", mockPublisher.publishedVotes[0].VoteUID)
+	})
+
+	t.Run("forwards end_time_timezone from raw DynamoDB record to published VoteData", func(t *testing.T) {
+		mappingsKV, cleanup := setupTestKV(t)
+		defer cleanup()
+
+		v1Data := map[string]interface{}{
+			"poll_id":           "poll-tz",
+			"name":              "Timezone Vote",
+			"status":            "active",
+			"project_id":        "project-sfid",
+			"end_time":          "2026-02-15T23:59:59Z",
+			"end_time_timezone": "America/New_York",
+			"poll_questions":    []interface{}{},
+		}
+
+		mockPublisher := &mockEventPublisher{}
+		idMapper := idmapper.NewNoOpMapper()
+		ctx := context.Background()
+
+		logger := slog.Default()
+		shouldRetry := handleVoteUpdate(ctx, "itx-poll.poll-tz", v1Data, mockPublisher, idMapper, mappingsKV, logger)
+
+		assert.False(t, shouldRetry)
+		require.Len(t, mockPublisher.publishedVotes, 1)
+		assert.Equal(t, "America/New_York", mockPublisher.publishedVotes[0].EndTimeTimezone)
+	})
+
+	t.Run("wire format: end_time_timezone key present with value when set", func(t *testing.T) {
+		mappingsKV, cleanup := setupTestKV(t)
+		defer cleanup()
+
+		v1Data := map[string]interface{}{
+			"poll_id":           "poll-tz-wire",
+			"name":              "Timezone Wire Vote",
+			"status":            "active",
+			"project_id":        "project-sfid",
+			"end_time":          "2026-02-15T23:59:59Z",
+			"end_time_timezone": "America/New_York",
+			"poll_questions":    []interface{}{},
+		}
+
+		mockPublisher := &mockEventPublisher{}
+		idMapper := idmapper.NewNoOpMapper()
+		ctx := context.Background()
+
+		logger := slog.Default()
+		shouldRetry := handleVoteUpdate(ctx, "itx-poll.poll-tz-wire", v1Data, mockPublisher, idMapper, mappingsKV, logger)
+
+		assert.False(t, shouldRetry)
+		require.Len(t, mockPublisher.publishedVotes, 1)
+		wire := marshalVoteData(t, mockPublisher.publishedVotes[0])
+		assert.Equal(t, "America/New_York", wire["end_time_timezone"],
+			"indexer contract: end_time_timezone must marshal under exactly this key")
+	})
+
+	t.Run("wire format: end_time_timezone key absent when empty", func(t *testing.T) {
+		mappingsKV, cleanup := setupTestKV(t)
+		defer cleanup()
+
+		v1Data := map[string]interface{}{
+			"poll_id":        "poll-no-tz-wire",
+			"name":           "No Timezone Wire Vote",
+			"status":         "active",
+			"project_id":     "project-sfid",
+			"end_time":       "2026-02-15T23:59:59Z",
+			"poll_questions": []interface{}{},
+		}
+
+		mockPublisher := &mockEventPublisher{}
+		idMapper := idmapper.NewNoOpMapper()
+		ctx := context.Background()
+
+		logger := slog.Default()
+		shouldRetry := handleVoteUpdate(ctx, "itx-poll.poll-no-tz-wire", v1Data, mockPublisher, idMapper, mappingsKV, logger)
+
+		assert.False(t, shouldRetry)
+		require.Len(t, mockPublisher.publishedVotes, 1)
+		wire := marshalVoteData(t, mockPublisher.publishedVotes[0])
+		_, ok := wire["end_time_timezone"]
+		assert.False(t, ok,
+			"indexer contract: empty end_time_timezone must be omitted from the wire (`json:\",omitempty\"`)")
 	})
 
 	t.Run("returns false for conversion error", func(t *testing.T) {

@@ -1,0 +1,27 @@
+---
+description: Guidance for editing Goa API design files
+globs: api/voting/v1/design/**
+alwaysApply: false
+---
+
+# Editing Goa Design Files
+
+These files are the **source of truth for the API contract**. Changes here must be followed by code generation.
+
+## After every change to this directory
+
+```bash
+make generate
+```
+
+Commit the resulting `gen/` changes in the same PR as the design change. CI runs `make verify` which will fail if `gen/` is stale.
+
+## Rules for this layer
+
+- **No business logic here** — DSL only (method definitions, types, security, HTTP mappings).
+- **Declare all error responses** — every error the handler can return must be declared in the DSL (e.g., `Response("NotFound", StatusNotFound)`). Error names are **PascalCase** — they must match the `Error()` declarations at the service level exactly. Wrong casing causes a Goa generation error. Missing declarations prevent Goa from generating the error helper function, also causing a compile error.
+- **Follow existing naming** — use snake_case for Goa attribute names; they map to JSON fields automatically.
+
+## After generating, continue with
+
+The `add-api-endpoint` skill covers the full workflow from design → generate → proxy → service → handler.

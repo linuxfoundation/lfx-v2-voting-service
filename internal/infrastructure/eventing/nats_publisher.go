@@ -102,6 +102,16 @@ func (p *NATSPublisher) PublishVoteResultEvent(ctx context.Context, action strin
 
 // sendVoteResultIndexerMessage builds and publishes an indexer envelope for a poll result.
 func (p *NATSPublisher) sendVoteResultIndexerMessage(ctx context.Context, subject string, action indexerConstants.MessageAction, data *domain.PollResultData) error {
+	indexingConfig := buildVoteResultIndexingConfig(data)
+	if action == indexerConstants.ActionDeleted {
+		return p.sendIndexerDeleteMessage(ctx, subject, action, data.VoteUID, indexingConfig)
+	}
+	return p.sendIndexerCreateUpdateMessage(ctx, subject, action, data, indexingConfig)
+}
+
+// buildVoteResultIndexingConfig constructs the IndexingConfig for a poll result indexer message.
+// Values must match the access-control table in docs/indexer-contract.md § Vote Result.
+func buildVoteResultIndexingConfig(data *domain.PollResultData) *indexerTypes.IndexingConfig {
 	parentRefs := []string{fmt.Sprintf("vote:%s", data.VoteUID)}
 	if data.ProjectUID != "" {
 		parentRefs = append(parentRefs, fmt.Sprintf("project:%s", data.ProjectUID))
@@ -118,7 +128,7 @@ func (p *NATSPublisher) sendVoteResultIndexerMessage(ctx context.Context, subjec
 		tags = append(tags, fmt.Sprintf("project_uid:%s", data.ProjectUID))
 	}
 
-	indexingConfig := &indexerTypes.IndexingConfig{
+	return &indexerTypes.IndexingConfig{
 		ObjectID:             data.VoteUID,
 		AccessCheckObject:    fmt.Sprintf("vote:%s", data.VoteUID),
 		AccessCheckRelation:  "results_viewer",
@@ -127,11 +137,6 @@ func (p *NATSPublisher) sendVoteResultIndexerMessage(ctx context.Context, subjec
 		ParentRefs:           parentRefs,
 		Tags:                 tags,
 	}
-
-	if action == indexerConstants.ActionDeleted {
-		return p.sendIndexerDeleteMessage(ctx, subject, action, data.VoteUID, indexingConfig)
-	}
-	return p.sendIndexerCreateUpdateMessage(ctx, subject, action, data, indexingConfig)
 }
 
 // Close closes the publisher connection
@@ -142,7 +147,16 @@ func (p *NATSPublisher) Close() error {
 
 // sendVoteIndexerMessage routes to the appropriate indexer message handler based on action
 func (p *NATSPublisher) sendVoteIndexerMessage(ctx context.Context, subject string, action indexerConstants.MessageAction, data *domain.VoteData) error {
-	// Build IndexingConfig (needed for both create/update and delete)
+	indexingConfig := buildVoteIndexingConfig(data)
+	if action == indexerConstants.ActionDeleted {
+		return p.sendIndexerDeleteMessage(ctx, subject, action, data.VoteUID, indexingConfig)
+	}
+	return p.sendIndexerCreateUpdateMessage(ctx, subject, action, data, indexingConfig)
+}
+
+// buildVoteIndexingConfig constructs the IndexingConfig for a vote indexer message.
+// Values must match the access-control table in docs/indexer-contract.md § Vote (Poll).
+func buildVoteIndexingConfig(data *domain.VoteData) *indexerTypes.IndexingConfig {
 	nameAndAliases := []string{}
 	parentRefs := []string{}
 
@@ -164,7 +178,7 @@ func (p *NATSPublisher) sendVoteIndexerMessage(ctx context.Context, subject stri
 		tags = append(tags, fmt.Sprintf("project_uid:%s", data.ProjectUID))
 	}
 
-	indexingConfig := &indexerTypes.IndexingConfig{
+	return &indexerTypes.IndexingConfig{
 		ObjectID:             data.VoteUID,
 		AccessCheckObject:    fmt.Sprintf("vote:%s", data.VoteUID),
 		AccessCheckRelation:  "viewer",
@@ -176,12 +190,6 @@ func (p *NATSPublisher) sendVoteIndexerMessage(ctx context.Context, subject stri
 		Fulltext:             fmt.Sprintf("%s %s", data.Name, data.Description),
 		Tags:                 tags,
 	}
-
-	if action == indexerConstants.ActionDeleted {
-		return p.sendIndexerDeleteMessage(ctx, subject, action, data.VoteUID, indexingConfig)
-	}
-
-	return p.sendIndexerCreateUpdateMessage(ctx, subject, action, data, indexingConfig)
 }
 
 // sendVoteAccessMessage sends the message to the NATS server for the vote access control
@@ -225,7 +233,16 @@ func (p *NATSPublisher) sendVoteAccessMessage(ctx context.Context, vote *domain.
 
 // sendVoteResponseIndexerMessage routes to the appropriate indexer message handler based on action
 func (p *NATSPublisher) sendVoteResponseIndexerMessage(ctx context.Context, subject string, action indexerConstants.MessageAction, data *domain.VoteResponseData) error {
-	// Build IndexingConfig (needed for both create/update and delete)
+	indexingConfig := buildVoteResponseIndexingConfig(data)
+	if action == indexerConstants.ActionDeleted {
+		return p.sendIndexerDeleteMessage(ctx, subject, action, data.UID, indexingConfig)
+	}
+	return p.sendIndexerCreateUpdateMessage(ctx, subject, action, data, indexingConfig)
+}
+
+// buildVoteResponseIndexingConfig constructs the IndexingConfig for a vote response indexer message.
+// Values must match the access-control table in docs/indexer-contract.md § Vote Response.
+func buildVoteResponseIndexingConfig(data *domain.VoteResponseData) *indexerTypes.IndexingConfig {
 	nameAndAliases := []string{}
 	parentRefs := []string{}
 
@@ -247,7 +264,7 @@ func (p *NATSPublisher) sendVoteResponseIndexerMessage(ctx context.Context, subj
 		tags = append(tags, fmt.Sprintf("project_uid:%s", data.ProjectUID))
 	}
 
-	indexingConfig := &indexerTypes.IndexingConfig{
+	return &indexerTypes.IndexingConfig{
 		ObjectID:             data.UID,
 		AccessCheckObject:    fmt.Sprintf("vote:%s", data.VoteUID),
 		AccessCheckRelation:  "viewer",
@@ -259,12 +276,6 @@ func (p *NATSPublisher) sendVoteResponseIndexerMessage(ctx context.Context, subj
 		Fulltext:             data.Username,
 		Tags:                 tags,
 	}
-
-	if action == indexerConstants.ActionDeleted {
-		return p.sendIndexerDeleteMessage(ctx, subject, action, data.UID, indexingConfig)
-	}
-
-	return p.sendIndexerCreateUpdateMessage(ctx, subject, action, data, indexingConfig)
 }
 
 // sendVoteResponseAccessMessage sends the message to the NATS server for the vote response access control
