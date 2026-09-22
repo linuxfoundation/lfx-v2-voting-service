@@ -14,16 +14,22 @@ DISABLE_LINTERS:
   # Repository-wide link checking returns mostly false positives (like internal
   # service URLs in templates).
   - SPELL_LYCHEE
-  - SPELL_CSPELL
   # yamllint is sufficient for us.
   - YAML_PRETTIER
 DISABLE_ERRORS_LINTERS:
+  # There's no easy local feedback loop for spelling issues before
+  # pushing, so keep them non-blocking to avoid unnecessary PR cycles
+  # for words that just need adding to the dictionary.
+  - SPELL_CSPELL
   # This may be informative but doesn't need to break the build.
   - COPYPASTE_JSCPD
   # TBD! Need to work through these.
   - REPOSITORY_TRIVY
   - REPOSITORY_CHECKOV
   - REPOSITORY_DEVSKIM
+  # Markdown formatting issues are informational.
+  - MARKDOWN_MARKDOWNLINT
+  - MARKDOWN_MARKDOWN_TABLE_FORMATTER
 YAML_YAMLLINT_CONFIG_FILE: .yamllint
 # yamllint disable-line rule:line-length
 REPOSITORY_KICS_ARGUMENTS: scan --no-progress --exclude-severities="medium,low,info,trace" --exclude-paths="./gen/*" --exclude-paths="./cmd/voting-api/kodata/*"
