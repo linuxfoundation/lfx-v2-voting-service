@@ -38,9 +38,9 @@ jobs:
           REF_NAME: "${{ github.ref_name }}"
         run: |
           set -euo pipefail
-          APP_VERSION="${REF_NAME//v/}"
+          APP_VERSION="${REF_NAME#v}"
           CHART_NAME="$(yq '.name' charts/*/Chart.yaml)"
-          CHART_VERSION="${REF_NAME//v/}"
+          CHART_VERSION="${REF_NAME#v}"
           {
             echo "app_version=$APP_VERSION"
             echo "chart_name=$CHART_NAME"

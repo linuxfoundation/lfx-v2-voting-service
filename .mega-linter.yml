@@ -27,6 +27,9 @@ DISABLE_ERRORS_LINTERS:
   - REPOSITORY_TRIVY
   - REPOSITORY_CHECKOV
   - REPOSITORY_DEVSKIM
+  # Markdown formatting issues are informational.
+  - MARKDOWN_MARKDOWNLINT
+  - MARKDOWN_MARKDOWN_TABLE_FORMATTER
 YAML_YAMLLINT_CONFIG_FILE: .yamllint
 # yamllint disable-line rule:line-length
 REPOSITORY_KICS_ARGUMENTS: scan --no-progress --exclude-severities="medium,low,info,trace" --exclude-paths="./gen/*" --exclude-paths="./cmd/voting-api/kodata/*"
