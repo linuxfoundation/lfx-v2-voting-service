@@ -43,8 +43,9 @@ type CreateVoteRequestBody struct {
 	PseudoAnonymity bool `form:"pseudo_anonymity" json:"pseudo_anonymity" xml:"pseudo_anonymity"`
 	// Type of poll
 	PollType string `form:"poll_type" json:"poll_type" xml:"poll_type"`
-	// Number of winners (meek_stv only)
-	NumWinners int `form:"num_winners" json:"num_winners" xml:"num_winners"`
+	// Number of winners. Sent upstream only when explicitly provided; meek_stv
+	// polls default to 2 when omitted.
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow voters to abstain
 	AllowAbstain bool `form:"allow_abstain" json:"allow_abstain" xml:"allow_abstain"`
 	// Quorum percentage required
@@ -81,8 +82,9 @@ type UpdateVoteRequestBody struct {
 	PseudoAnonymity bool `form:"pseudo_anonymity" json:"pseudo_anonymity" xml:"pseudo_anonymity"`
 	// Type of poll
 	PollType string `form:"poll_type" json:"poll_type" xml:"poll_type"`
-	// Number of winners (meek_stv only)
-	NumWinners int `form:"num_winners" json:"num_winners" xml:"num_winners"`
+	// Number of winners. Sent upstream only when explicitly provided; meek_stv
+	// polls default to 2 when omitted.
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow voters to abstain
 	AllowAbstain bool `form:"allow_abstain" json:"allow_abstain" xml:"allow_abstain"`
 	// Quorum percentage required
@@ -1511,12 +1513,6 @@ func NewCreateVoteRequestBody(p *vote.CreateVotePayload) *CreateVoteRequestBody 
 		}
 	}
 	{
-		var zero int
-		if body.NumWinners == zero {
-			body.NumWinners = 2
-		}
-	}
-	{
 		var zero bool
 		if body.AllowAbstain == zero {
 			body.AllowAbstain = false
@@ -1586,12 +1582,6 @@ func NewUpdateVoteRequestBody(p *vote.UpdateVotePayload) *UpdateVoteRequestBody 
 		var zero string
 		if body.PollType == zero {
 			body.PollType = "generic"
-		}
-	}
-	{
-		var zero int
-		if body.NumWinners == zero {
-			body.NumWinners = 2
 		}
 	}
 	{

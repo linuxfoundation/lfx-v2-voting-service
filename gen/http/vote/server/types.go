@@ -43,7 +43,8 @@ type CreateVoteRequestBody struct {
 	PseudoAnonymity *bool `form:"pseudo_anonymity,omitempty" json:"pseudo_anonymity,omitempty" xml:"pseudo_anonymity,omitempty"`
 	// Type of poll
 	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
-	// Number of winners (meek_stv only)
+	// Number of winners. Sent upstream only when explicitly provided; meek_stv
+	// polls default to 2 when omitted.
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow voters to abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
@@ -81,7 +82,8 @@ type UpdateVoteRequestBody struct {
 	PseudoAnonymity *bool `form:"pseudo_anonymity,omitempty" json:"pseudo_anonymity,omitempty" xml:"pseudo_anonymity,omitempty"`
 	// Type of poll
 	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
-	// Number of winners (meek_stv only)
+	// Number of winners. Sent upstream only when explicitly provided; meek_stv
+	// polls default to 2 when omitted.
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow voters to abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
@@ -2534,6 +2536,7 @@ func NewCreateVotePayload(body *CreateVoteRequestBody, token *string) *vote.Crea
 		EndTimeTimezone:            *body.EndTimeTimezone,
 		ProjectUID:                 *body.ProjectUID,
 		CommitteeUID:               *body.CommitteeUID,
+		NumWinners:                 body.NumWinners,
 		QuorumPercentage:           body.QuorumPercentage,
 		WinningThresholdPercentage: body.WinningThresholdPercentage,
 	}
@@ -2542,9 +2545,6 @@ func NewCreateVotePayload(body *CreateVoteRequestBody, token *string) *vote.Crea
 	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
-	}
-	if body.NumWinners != nil {
-		v.NumWinners = *body.NumWinners
 	}
 	if body.AllowAbstain != nil {
 		v.AllowAbstain = *body.AllowAbstain
@@ -2584,9 +2584,6 @@ func NewCreateVotePayload(body *CreateVoteRequestBody, token *string) *vote.Crea
 	}
 	if body.PollType == nil {
 		v.PollType = "generic"
-	}
-	if body.NumWinners == nil {
-		v.NumWinners = 2
 	}
 	if body.AllowAbstain == nil {
 		v.AllowAbstain = false
@@ -2614,6 +2611,7 @@ func NewUpdateVotePayload(body *UpdateVoteRequestBody, uid string, token *string
 		EndTimeTimezone:            *body.EndTimeTimezone,
 		ProjectUID:                 body.ProjectUID,
 		CommitteeUID:               body.CommitteeUID,
+		NumWinners:                 body.NumWinners,
 		QuorumPercentage:           body.QuorumPercentage,
 		WinningThresholdPercentage: body.WinningThresholdPercentage,
 	}
@@ -2622,9 +2620,6 @@ func NewUpdateVotePayload(body *UpdateVoteRequestBody, uid string, token *string
 	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
-	}
-	if body.NumWinners != nil {
-		v.NumWinners = *body.NumWinners
 	}
 	if body.AllowAbstain != nil {
 		v.AllowAbstain = *body.AllowAbstain
@@ -2664,9 +2659,6 @@ func NewUpdateVotePayload(body *UpdateVoteRequestBody, uid string, token *string
 	}
 	if body.PollType == nil {
 		v.PollType = "generic"
-	}
-	if body.NumWinners == nil {
-		v.NumWinners = 2
 	}
 	if body.AllowAbstain == nil {
 		v.AllowAbstain = false

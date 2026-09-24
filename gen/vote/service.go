@@ -176,8 +176,9 @@ type CreateVotePayload struct {
 	PseudoAnonymity bool
 	// Type of poll
 	PollType string
-	// Number of winners (meek_stv only)
-	NumWinners int
+	// Number of winners. Sent upstream only when explicitly provided; meek_stv
+	// polls default to 2 when omitted.
+	NumWinners *int
 	// Allow voters to abstain
 	AllowAbstain bool
 	// Quorum percentage required
@@ -523,8 +524,9 @@ type UpdateVotePayload struct {
 	PseudoAnonymity bool
 	// Type of poll
 	PollType string
-	// Number of winners (meek_stv only)
-	NumWinners int
+	// Number of winners. Sent upstream only when explicitly provided; meek_stv
+	// polls default to 2 when omitted.
+	NumWinners *int
 	// Allow voters to abstain
 	AllowAbstain bool
 	// Quorum percentage required

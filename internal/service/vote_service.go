@@ -12,6 +12,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/utils"
 	"goa.design/goa/v3/security"
 )
 
@@ -41,6 +42,17 @@ func NewVoteService(
 		idMapper:    idMapper,
 		logger:      logger,
 	}
+}
+
+// resolveNumWinners returns the winner count to send upstream to ITX. Only an
+// explicitly provided value is forwarded — except meek_stv, which defaults to
+// 2 winners when the client omitted num_winners. The Goa schema deliberately
+// carries no Default so other poll types cannot leak a fabricated count (#2922).
+func resolveNumWinners(pollType string, numWinners *int) *int {
+	if numWinners == nil && pollType == "meek_stv" {
+		return utils.IntPtr(2)
+	}
+	return numWinners
 }
 
 // JWTAuth implements the authorization logic for JWT tokens
@@ -98,7 +110,7 @@ func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*
 		CommitteeFilters:           req.CommitteeFilters,
 		PseudoAnonymity:            req.PseudoAnonymity,
 		PollType:                   req.PollType,
-		NumWinners:                 req.NumWinners,
+		NumWinners:                 resolveNumWinners(req.PollType, req.NumWinners),
 		AllowAbstain:               req.AllowAbstain,
 		QuorumPercentage:           req.QuorumPercentage,
 		WinningThresholdPercentage: req.WinningThresholdPercentage,
@@ -222,7 +234,7 @@ func (s *VoteService) UpdateVote(ctx context.Context, voteID string, req *Update
 		CommitteeFilters:           req.CommitteeFilters,
 		PseudoAnonymity:            req.PseudoAnonymity,
 		PollType:                   req.PollType,
-		NumWinners:                 req.NumWinners,
+		NumWinners:                 resolveNumWinners(req.PollType, req.NumWinners),
 		AllowAbstain:               req.AllowAbstain,
 		QuorumPercentage:           req.QuorumPercentage,
 		WinningThresholdPercentage: req.WinningThresholdPercentage,

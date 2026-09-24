@@ -2852,8 +2852,7 @@ definitions:
                 maxLength: 200
             num_winners:
                 type: integer
-                description: Number of winners (meek_stv only)
-                default: 2
+                description: Number of winners. Sent upstream only when explicitly provided; meek_stv polls default to 2 when omitted.
                 example: 6
                 format: int64
                 minimum: 2
@@ -5799,8 +5798,7 @@ definitions:
                 maxLength: 200
             num_winners:
                 type: integer
-                description: Number of winners (meek_stv only)
-                default: 2
+                description: Number of winners. Sent upstream only when explicitly provided; meek_stv polls default to 2 when omitted.
                 example: 8
                 format: int64
                 minimum: 2

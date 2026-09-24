@@ -97,7 +97,6 @@ Content-Type: application/json
   ],
   "pseudo_anonymity": false,
   "poll_type": "generic",
-  "num_winners": 5,
   "allow_abstain": false,
   "quorum_percentage": 50,
   "winning_threshold_percentage": 50
@@ -192,7 +191,6 @@ x-scope: manage:voting
   ],
   "pseudo_anonymity": false,
   "poll_type": "generic",
-  "num_winners": 5,
   "allow_abstain": false,
   "quorum_percentage": 50,
   "winning_threshold_percentage": 50
@@ -390,7 +388,6 @@ Content-Type: application/json
   ],
   "pseudo_anonymity": true,
   "poll_type": "generic",
-  "num_winners": 1,
   "allow_abstain": true,
   "quorum_percentage": 60,
   "winning_threshold_percentage": 60
@@ -459,7 +456,6 @@ x-scope: manage:voting
   ],
   "pseudo_anonymity": true,
   "poll_type": "generic",
-  "num_winners": 1,
   "allow_abstain": true,
   "quorum_percentage": 60,
   "winning_threshold_percentage": 60
@@ -641,11 +637,14 @@ x-scope: manage:voting
 
 ### Poll Types
 
-| Type | Description | `num_winners` Required? |
-|------|-------------|------------------------|
-| `generic` | Simple poll | No |
-| `condorcet_irv` | Condorcet IRV voting | No |
-| `meek_stv` | Meek STV (Single Transferable Vote) | Yes (must be ≥ 2) |
+| Type | Description | `num_winners` |
+|------|-------------|---------------|
+| `generic` | Simple poll | Not used; forwarded only if explicitly provided |
+| `condorcet_irv` | Condorcet IRV voting | Not used; forwarded only if explicitly provided |
+| `instant_runoff_vote` | Instant runoff voting | Not used; forwarded only if explicitly provided |
+| `meek_stv` | Meek STV (Single Transferable Vote) | Optional; defaults to 2 when omitted, must be 2–10 when provided |
+
+`num_winners` is sent upstream only when explicitly provided in the request — the one exception is `meek_stv`, which defaults to 2 winners when omitted. Responses omit `num_winners` entirely when no winner count is stored upstream.
 
 ---
 

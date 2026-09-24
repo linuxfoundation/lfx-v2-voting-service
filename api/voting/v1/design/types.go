@@ -106,11 +106,13 @@ func PollTypeAttribute() {
 }
 
 // NumWinnersAttribute is the DSL attribute for number of winners.
+// Deliberately no Default: an omitted num_winners must stay omitted so
+// non-STV poll types do not leak a fabricated winner count upstream to ITX.
+// The service layer applies the meek_stv default (2) itself.
 func NumWinnersAttribute() {
-	Attribute("num_winners", Int, "Number of winners (meek_stv only)", func() {
+	Attribute("num_winners", Int, "Number of winners. Sent upstream only when explicitly provided; meek_stv polls default to 2 when omitted.", func() {
 		Minimum(2)
 		Maximum(10)
-		Default(2)
 	})
 }
 

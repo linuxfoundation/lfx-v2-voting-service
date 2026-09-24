@@ -23,7 +23,7 @@ func ConvertCreateVotePayloadToDomain(payload *votesvc.CreateVotePayload) *servi
 		CommitteeFilters:           payload.CommitteeFilters,
 		PseudoAnonymity:            payload.PseudoAnonymity,
 		PollType:                   payload.PollType,
-		NumWinners:                 utils.IntPtr(payload.NumWinners),
+		NumWinners:                 payload.NumWinners,
 		AllowAbstain:               payload.AllowAbstain,
 		QuorumPercentage:           payload.QuorumPercentage,
 		WinningThresholdPercentage: payload.WinningThresholdPercentage,
@@ -71,7 +71,7 @@ func ConvertUpdateVotePayloadToDomain(payload *votesvc.UpdateVotePayload) *servi
 		CommitteeFilters:           payload.CommitteeFilters,
 		PseudoAnonymity:            payload.PseudoAnonymity,
 		PollType:                   payload.PollType,
-		NumWinners:                 utils.IntPtr(payload.NumWinners),
+		NumWinners:                 payload.NumWinners,
 		AllowAbstain:               payload.AllowAbstain,
 		QuorumPercentage:           payload.QuorumPercentage,
 		WinningThresholdPercentage: payload.WinningThresholdPercentage,
@@ -137,8 +137,12 @@ func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *votesvc.VoteResult
 		TotalVotingRequestInvitations: utils.IntPtr(poll.TotalVotingRequestInvitations),
 		NumResponseReceived:           utils.IntPtr(poll.NumResponseReceived),
 		PollType:                      poll.PollType,
-		NumWinners:                    utils.IntPtr(poll.NumWinners),
 		AllowAbstain:                  utils.BoolPtr(poll.AllowAbstain),
+	}
+	// num_winners is omitted when ITX stores none (it deserializes as 0) rather
+	// than surfacing a fabricated 0 to API clients; explicit values pass through.
+	if poll.NumWinners != 0 {
+		result.NumWinners = utils.IntPtr(poll.NumWinners)
 	}
 	if v := utils.NormalizeTimestamp(poll.EarlyEndTime); v != "" {
 		result.EarlyEndTime = utils.StringPtr(v)
