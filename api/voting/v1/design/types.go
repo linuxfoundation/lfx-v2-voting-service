@@ -213,7 +213,7 @@ var VoteResult = Type("VoteResult", func() {
 		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
 		Default("generic")
 	})
-	Attribute("num_winners", Int, "Number of winners (meek_stv only)")
+	Attribute("num_winners", Int, "Number of winners. Absent when no winner count is stored upstream.")
 	Attribute("allow_abstain", Boolean, "Allow abstain")
 
 	Required("uid", "name", "description", "status", "project_uid", "committee_uid")

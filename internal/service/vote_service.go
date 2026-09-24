@@ -44,17 +44,6 @@ func NewVoteService(
 	}
 }
 
-// resolveNumWinners returns the winner count to send upstream to ITX. Only an
-// explicitly provided value is forwarded — except meek_stv, which defaults to
-// 2 winners when the client omitted num_winners. The Goa schema deliberately
-// carries no Default so other poll types cannot leak a fabricated count (#2922).
-func resolveNumWinners(pollType string, numWinners *int) *int {
-	if numWinners == nil && pollType == "meek_stv" {
-		return utils.IntPtr(2)
-	}
-	return numWinners
-}
-
 // JWTAuth implements the authorization logic for JWT tokens
 func (s *VoteService) JWTAuth(ctx context.Context, token string, scheme *security.JWTScheme) (context.Context, error) {
 	principal, err := s.jwtAuth.ParsePrincipal(ctx, token, s.logger)
@@ -482,6 +471,17 @@ func (s *VoteService) mapRequestIDsV2ToV1(ctx context.Context, projectUID, commi
 	}
 
 	return projectID, committeeID, committeeIDs, nil
+}
+
+// resolveNumWinners returns the winner count to send upstream to ITX. Only an
+// explicitly provided value is forwarded — except meek_stv, which defaults to
+// 2 winners when the client omitted num_winners. The Goa schema deliberately
+// carries no Default so other poll types cannot leak a fabricated count (#2922).
+func resolveNumWinners(pollType string, numWinners *int) *int {
+	if numWinners == nil && pollType == "meek_stv" {
+		return utils.IntPtr(2)
+	}
+	return numWinners
 }
 
 // requirePrincipal extracts the principal string from a context and returns a

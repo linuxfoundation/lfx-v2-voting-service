@@ -3455,7 +3455,7 @@ definitions:
                 format: int64
             num_winners:
                 type: integer
-                description: Number of winners (meek_stv only)
+                description: Number of winners. Absent when no winner count is stored upstream.
                 example: 8087447647599042246
                 format: int64
             poll_comment_prompts:

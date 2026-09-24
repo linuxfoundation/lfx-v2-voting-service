@@ -4672,7 +4672,7 @@ components:
                     format: int64
                 num_winners:
                     type: integer
-                    description: Number of winners (meek_stv only)
+                    description: Number of winners. Absent when no winner count is stored upstream.
                     example: 3014061300091985279
                     format: int64
                 poll_comment_prompts:

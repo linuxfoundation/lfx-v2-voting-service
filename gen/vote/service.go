@@ -712,7 +712,7 @@ type VoteResult struct {
 	PollCommentPrompts []*PollCommentPrompt
 	// Poll type
 	PollType string
-	// Number of winners (meek_stv only)
+	// Number of winners. Absent when no winner count is stored upstream.
 	NumWinners *int
 	// Allow abstain
 	AllowAbstain *bool
