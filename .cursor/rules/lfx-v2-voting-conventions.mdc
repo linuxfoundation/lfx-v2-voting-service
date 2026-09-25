@@ -1,0 +1,49 @@
+---
+description: Core conventions for the LFX V2 Voting Service
+alwaysApply: true
+---
+
+# LFX V2 Voting Service — Core Conventions
+
+## Before making changes
+
+Read `AGENTS.md` — it contains the layer rules, canonical commands, coding conventions, and dangerous operations list.
+
+## After making changes
+
+```bash
+make ci   # verify + check + build + test — must pass before PR
+```
+
+## License header
+
+Every new source file must begin with:
+
+```
+// Copyright The Linux Foundation and each contributor to LFX.
+// SPDX-License-Identifier: MIT
+```
+
+Use `#` for YAML, Makefile, and shell files. CI enforces this.
+
+## Layer rule (enforced by architecture, not tooling)
+
+```
+api/design → gen/ → cmd/voting-api/ → internal/service/ → internal/domain/ ← internal/infrastructure/
+```
+
+Infrastructure must never be imported by service or domain. If you find yourself importing `internal/infrastructure/` from `internal/service/`, use a domain interface instead.
+
+## Terminology
+
+In this repo: **"vote"** = poll/election (what ITX calls a "poll"); **"vote response"** = ballot submission. See `docs/glossary.md`.
+
+## Available skills
+
+For complex repeated workflows, use the skills in `.claude/skills/`:
+
+- `add-api-endpoint` — new HTTP endpoint (DSL → generate → proxy → service → handler)
+- `add-kv-event-type` — new NATS KV entity type in the event pipeline
+- `add-domain-interface` — new external dependency with no-op for local dev
+- `add-configuration-variable` — new env var wired through all required locations
+- `write-proxy-service-tests` — tests for the currently untested proxy/service path

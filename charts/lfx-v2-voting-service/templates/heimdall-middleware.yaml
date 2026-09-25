@@ -1,0 +1,35 @@
+# Copyright The Linux Foundation and each contributor to LFX.
+# SPDX-License-Identifier: MIT
+{{ if .Values.heimdall.add_middleware }}
+---
+# Heimdall middleware with body forwarding capability
+# This is the default middleware that should be used in most cases, particularly
+# when parentRef requiring authentication is in the request body.
+# Note: For routes handling very large payloads (like file uploads), consider using
+# the lighter-weight middleware below to reduce overhead.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: heimdall-forward-body
+  namespace: {{ .Values.lfx.namespace }}
+spec:
+  forwardAuth:
+    address: "{{ .Values.heimdall.url }}"
+    authResponseHeaders:
+      - Authorization
+    forwardBody: true
+---
+# Alternative Heimdall middleware without body forwarding
+# Use this middleware only for routes where body inspection isn't required for authentication
+# and when dealing with large payloads where forwarding the entire body would be inefficient.
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: heimdall
+  namespace: {{ .Values.lfx.namespace }}
+spec:
+  forwardAuth:
+    address: "{{ .Values.heimdall.url }}"
+    authResponseHeaders:
+      - Authorization
+{{- end }}
