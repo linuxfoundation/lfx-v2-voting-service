@@ -310,8 +310,11 @@ func TestVoteNumWinnersResolution(t *testing.T) {
 			assertKeyAbsent(t, req, "num_winners")
 			return
 		}
-		if got == nil || *got != *want {
-			t.Fatalf("expected NumWinners %d, got %+v", *want, got)
+		if got == nil {
+			t.Fatalf("expected NumWinners %d, got nil", *want)
+		}
+		if *got != *want {
+			t.Fatalf("expected NumWinners %d, got %d", *want, *got)
 		}
 	}
 
