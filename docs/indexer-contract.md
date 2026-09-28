@@ -142,7 +142,7 @@ Each element in `poll_comment_prompts` has:
 | `project_uid` | string | LFX project UID (v2) |
 | `vote_creation_time` | string | Time the vote response was created |
 | `user_id` | string | Auth0 user identifier |
-| `user_email` | string | User's email address |
+| `user_email` | string | User's email address (lowercased at index time, GH #3063) |
 | `user_role` | string | User's role at time of voting |
 | `user_name` | string | User's display name |
 | `username` | string | User's LFX username |
