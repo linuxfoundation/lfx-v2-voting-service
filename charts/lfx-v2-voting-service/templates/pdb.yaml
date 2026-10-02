@@ -15,6 +15,8 @@ kind: PodDisruptionBudget
 metadata:
   name: {{ .Chart.Name }}
   namespace: {{ .Values.lfx.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
 spec:
   selector:
     matchLabels:
