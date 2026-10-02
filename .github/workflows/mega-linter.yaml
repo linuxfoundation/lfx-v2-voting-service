@@ -28,12 +28,13 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       # MegaLinter
       - name: MegaLinter
         id: ml
         # Use the Go flavor.
-        uses: oxsecurity/megalinter/flavors/go@8fbdead70d1409964ab3d5afa885e18ee85388bb  # 9.4.0
+        uses: oxsecurity/megalinter/flavors/go@ef3e84b8b836d76db562d0f3ed7da61e8fd538bc  # v9.6.0
         env:
           # All available variables are described in documentation
           # https://megalinter.io/configuration/
@@ -42,3 +43,5 @@ jobs:
           REPOSITORY_TRIVY_UNSECURED_ENV_VARIABLES: GITHUB_TOKEN
           # Set the Go toolchain to auto so that megalinter uses the correct go version for the service.
           GOTOOLCHAIN: auto
+          # Allow zizmor to use GITHUB_TOKEN for checking ref-version-mismatch findings.
+          ACTION_ZIZMOR_UNSECURED_ENV_VARIABLES: GITHUB_TOKEN
