@@ -128,6 +128,7 @@ jobs:
       actions: read
       id-token: write
       packages: write
+    # yamllint disable-line rule:line-length
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0  # zizmor: ignore[unpinned-uses] must be tag-pinned per upstream slsa-verifier requirements
     with:
       image: ${{ needs.release-helm-chart.outputs.image_name }}

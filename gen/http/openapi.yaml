@@ -2946,10 +2946,7 @@ definitions:
             comment_responses:
                 - comment_text: Because the incumbent has done great work this term.
                   prompt_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
-            user_vote_content:
-                - choice_ids:
-                    - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
-                  question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+            user_vote_content: []
             vote_response_uid: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
             vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
         required:
@@ -6551,10 +6548,7 @@ definitions:
             comment_responses:
                 - comment_text: Because the incumbent has done great work this term.
                   prompt_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
-            user_vote_content:
-                - choice_ids:
-                    - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
-                  question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+            user_vote_content: []
         required:
             - abstain
 securityDefinitions:

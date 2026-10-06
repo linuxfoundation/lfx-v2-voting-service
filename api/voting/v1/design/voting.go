@@ -364,6 +364,19 @@ var _ = Service("vote", func() {
 			})
 
 			Required("vote_response_uid", "vote_uid", "abstain")
+
+			Example(map[string]any{
+				"vote_response_uid": "b03cdbaf-53b1-4d47-bc04-dd7e459dd309",
+				"vote_uid":          "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+				"user_vote_content": []any{},
+				"abstain":           true,
+				"comment_responses": []any{
+					map[string]any{
+						"prompt_id":    "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+						"comment_text": "Because the incumbent has done great work this term.",
+					},
+				},
+			})
 		})
 
 		HTTP(func() {
@@ -457,6 +470,18 @@ var _ = Service("vote", func() {
 			})
 
 			Required("vote_response_uid", "abstain")
+
+			Example(map[string]any{
+				"vote_response_uid": "b03cdbaf-53b1-4d47-bc04-dd7e459dd309",
+				"user_vote_content": []any{},
+				"abstain":           true,
+				"comment_responses": []any{
+					map[string]any{
+						"prompt_id":    "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+						"comment_text": "Because the incumbent has done great work this term.",
+					},
+				},
+			})
 		})
 
 		HTTP(func() {
