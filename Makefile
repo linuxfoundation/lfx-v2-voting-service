@@ -85,9 +85,7 @@ apigen:
 	$(shell go env GOPATH)/bin/goa gen github.com/linuxfoundation/lfx-v2-voting-service/api/voting/v1/design
 	@# Goa v3.30.0 emits invalid Swagger 2 "security" requirements.
 	@# Patch null security requirement values to empty arrays until upstream fixes this.
-	@jq 'walk(if type == "object" and has("security") and (.security | type) == "array" \
-		then .security |= map(with_entries(.value = (.value // []))) else . end)' \
-		gen/http/openapi.json > /tmp/openapi.json.fixed \
+	@jq 'walk(if type == "object" and has("security") and (.security | type) == "array" then .security |= map(with_entries(.value = (.value // []))) else . end)' gen/http/openapi.json > /tmp/openapi.json.fixed \
 		&& mv /tmp/openapi.json.fixed gen/http/openapi.json
 	@echo "==> API generation complete"
 
