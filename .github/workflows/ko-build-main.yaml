@@ -21,16 +21,20 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
       - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6.2.0
         with:
           go-version-file: go.mod
       - uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d  # v0.9
         with:
           version: v0.17.1
-      - run: |
+      - env:
+          GIT_SHA: "${{ github.sha }}"
+        run: |
           ko build github.com/linuxfoundation/lfx-v2-voting-service/cmd/voting-api \
             -B \
             --platform linux/amd64,linux/arm64 \
-            -t ${{ github.sha }} \
+            -t "$GIT_SHA" \
             -t development \
             --sbom spdx

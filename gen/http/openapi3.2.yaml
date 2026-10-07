@@ -1,10 +1,11 @@
-openapi: 3.0.3
+openapi: 3.2.0
 info:
     title: LFX V2 - Voting Service
     description: Proxy service for ITX voting system
     version: "1.0"
 servers:
     - url: http://localhost:8080
+      name: voting-api
 paths:
     /vote_responses:
         post:
