@@ -2614,17 +2614,13 @@ func NewUpdateVotePayload(body *UpdateVoteRequestBody, uid string, token *string
 		EndTimeTimezone:            *body.EndTimeTimezone,
 		ProjectUID:                 body.ProjectUID,
 		CommitteeUID:               body.CommitteeUID,
+		PollType:                   body.PollType,
+		NumWinners:                 body.NumWinners,
 		QuorumPercentage:           body.QuorumPercentage,
 		WinningThresholdPercentage: body.WinningThresholdPercentage,
 	}
 	if body.PseudoAnonymity != nil {
 		v.PseudoAnonymity = *body.PseudoAnonymity
-	}
-	if body.PollType != nil {
-		v.PollType = *body.PollType
-	}
-	if body.NumWinners != nil {
-		v.NumWinners = *body.NumWinners
 	}
 	if body.AllowAbstain != nil {
 		v.AllowAbstain = *body.AllowAbstain
@@ -2661,12 +2657,6 @@ func NewUpdateVotePayload(body *UpdateVoteRequestBody, uid string, token *string
 	}
 	if body.PseudoAnonymity == nil {
 		v.PseudoAnonymity = false
-	}
-	if body.PollType == nil {
-		v.PollType = "generic"
-	}
-	if body.NumWinners == nil {
-		v.NumWinners = 2
 	}
 	if body.AllowAbstain == nil {
 		v.AllowAbstain = false

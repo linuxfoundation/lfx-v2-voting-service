@@ -3996,7 +3996,6 @@ components:
                 num_winners:
                     type: integer
                     description: Number of winners (meek_stv only)
-                    default: 2
                     example: 4
                     format: int64
                     minimum: 2
@@ -4052,7 +4051,6 @@ components:
                 poll_type:
                     type: string
                     description: Type of poll
-                    default: generic
                     example: condorcet_irv
                     enum:
                         - generic

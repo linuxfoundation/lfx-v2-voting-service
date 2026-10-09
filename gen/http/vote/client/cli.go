@@ -232,14 +232,20 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteUID string,
 				}
 			}
 		}
-		if !(body.PollType == "generic" || body.PollType == "condorcet_irv" || body.PollType == "meek_stv" || body.PollType == "instant_runoff_vote") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
+		if body.PollType != nil {
+			if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
+			}
 		}
-		if body.NumWinners < 2 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.num_winners", body.NumWinners, 2, true))
+		if body.NumWinners != nil {
+			if *body.NumWinners < 2 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.num_winners", *body.NumWinners, 2, true))
+			}
 		}
-		if body.NumWinners > 10 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.num_winners", body.NumWinners, 10, false))
+		if body.NumWinners != nil {
+			if *body.NumWinners > 10 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.num_winners", *body.NumWinners, 10, false))
+			}
 		}
 		if body.QuorumPercentage != nil {
 			if *body.QuorumPercentage < 0 {
@@ -331,18 +337,6 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteUID string,
 		var zero bool
 		if v.PseudoAnonymity == zero {
 			v.PseudoAnonymity = false
-		}
-	}
-	{
-		var zero string
-		if v.PollType == zero {
-			v.PollType = "generic"
-		}
-	}
-	{
-		var zero int
-		if v.NumWinners == zero {
-			v.NumWinners = 2
 		}
 	}
 	{

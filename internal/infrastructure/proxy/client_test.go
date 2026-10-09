@@ -5,6 +5,7 @@ package proxy
 
 import (
 	"errors"
+	"net/http"
 	"testing"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
@@ -121,4 +122,10 @@ func TestMapHTTPError(t *testing.T) {
 			}
 		})
 	}
+}
+
+// NewContractTestClient constructs a client for external contract tests without M2M auth.
+// It is compiled only into the test binary, not the production package.
+func NewContractTestClient(httpClient *http.Client, baseURL string) *Client {
+	return &Client{httpClient: httpClient, config: Config{BaseURL: baseURL}}
 }
