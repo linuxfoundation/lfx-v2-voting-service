@@ -70,8 +70,7 @@ func ConvertUpdateVotePayloadToDomain(payload *votesvc.UpdateVotePayload) *servi
 		CommitteeUIDs:              payload.CommitteeUids,
 		CommitteeFilters:           payload.CommitteeFilters,
 		PseudoAnonymity:            payload.PseudoAnonymity,
-		PollType:                   payload.PollType,
-		NumWinners:                 utils.IntPtr(payload.NumWinners),
+		NumWinners:                 payload.NumWinners,
 		AllowAbstain:               payload.AllowAbstain,
 		QuorumPercentage:           payload.QuorumPercentage,
 		WinningThresholdPercentage: payload.WinningThresholdPercentage,
@@ -83,6 +82,9 @@ func ConvertUpdateVotePayloadToDomain(payload *votesvc.UpdateVotePayload) *servi
 	}
 	if payload.CommitteeUID != nil {
 		req.CommitteeUID = *payload.CommitteeUID
+	}
+	if payload.PollType != nil {
+		req.PollType = *payload.PollType
 	}
 
 	// Convert poll questions

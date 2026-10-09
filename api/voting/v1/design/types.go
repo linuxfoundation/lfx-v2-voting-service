@@ -98,19 +98,25 @@ func PseudoAnonymityAttribute() {
 }
 
 // PollTypeAttribute is the DSL attribute for poll type.
-func PollTypeAttribute() {
+// withDefault enables the create-only default.
+func PollTypeAttribute(withDefault bool) {
 	Attribute("poll_type", String, "Type of poll", func() {
 		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
-		Default("generic")
+		if withDefault {
+			Default("generic")
+		}
 	})
 }
 
 // NumWinnersAttribute is the DSL attribute for number of winners.
-func NumWinnersAttribute() {
+// withDefault enables the create-only default.
+func NumWinnersAttribute(withDefault bool) {
 	Attribute("num_winners", Int, "Number of winners (meek_stv only)", func() {
 		Minimum(2)
 		Maximum(10)
-		Default(2)
+		if withDefault {
+			Default(2)
+		}
 	})
 }
 

@@ -522,9 +522,9 @@ type UpdateVotePayload struct {
 	// Enable pseudo-anonymity
 	PseudoAnonymity bool
 	// Type of poll
-	PollType string
+	PollType *string
 	// Number of winners (meek_stv only)
-	NumWinners int
+	NumWinners *int
 	// Allow voters to abstain
 	AllowAbstain bool
 	// Quorum percentage required

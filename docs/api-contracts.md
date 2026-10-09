@@ -106,6 +106,8 @@ Content-Type: application/json
 
 `end_time_timezone` is required: an IANA timezone name (e.g., `America/New_York`) that ITX uses to interpret `end_time` exactly as sent. Omitting it fails contract validation with a 400 before ITX is called. The proxy passes the value through untouched and performs no validation of its own; ITX rejects invalid timezone names with a 400, which the proxy surfaces as a 400.
 
+**Create defaults:** `POST /votes` deliberately defaults an omitted `poll_type` to `generic` and an omitted `num_winners` to two. Explicit values retain the enum and count range (2–10) constraints. These voting-service request defaults are unchanged, including the current non-STV winner-count leakage tracked separately in [#2922](https://github.com/linuxfoundation/lfx-self-serve/issues/2922). ITX [PR #285](https://github.com/linuxfoundation-it/itx-service-voting/pull/285) additionally validates Meek STV winner counts on creation: the count must not exceed the choices in any question; an incompatible count returns 400, not a silently reduced count.
+
 **Response** (201 Created):
 
 ```json
@@ -389,8 +391,6 @@ Content-Type: application/json
     {"prompt": "Comments?"}
   ],
   "pseudo_anonymity": true,
-  "poll_type": "generic",
-  "num_winners": 1,
   "allow_abstain": true,
   "quorum_percentage": 60,
   "winning_threshold_percentage": 60
@@ -398,6 +398,25 @@ Content-Type: application/json
 ```
 
 `end_time_timezone` is required, as on create. Omitting it fails contract validation with a 400 before ITX is called, so ITX always receives an explicit timezone on every update. As on create, ITX rejects invalid timezone names with a 400, surfaced as a 400.
+
+**Update method/count contract:** `PUT /votes/{uid}` keeps `poll_type` and `num_winners` optional. Omitted or JSON `null` values remain absent from the upstream ITX request; neither the HTTP decoder, generated client/CLI nor converter supplies create defaults. Explicit valid values are intentional replacements, including an explicit `generic` type. Empty/unknown types and counts outside 2–10 fail voting-service validation with 400 before ITX is called. This is not a general PATCH/merge API: the other required replacement fields remain required.
+
+Stored-value preservation is owned by ITX [#3428](https://github.com/linuxfoundation/lfx-self-serve/issues/3428), with the following update precedence:
+
+| Effective method/count input | ITX #3428 behavior |
+|---|---|
+| Type omitted/null | Retain the stored type |
+| Explicit valid type | Replace the stored type |
+| Existing Meek STV, count omitted/null | Retain the stored count, including four; applies when type is omitted or explicitly repeats `meek_stv` |
+| Effective Meek STV, explicit count | Use the supplied valid count |
+| Explicit non-STV → Meek STV transition, count omitted/null | Use two winners |
+| Effective non-STV | Do not retain a previous STV count |
+
+The voting converter does not choose a winner default based on the request's decoded type; ITX resolves the effective type against storage. This revisits the update interaction with #2922 without changing its separate create-side behavior.
+
+Merged ITX PR #285 also validates the resolved Meek STV winner count against **every replacement question's choice count**. An edit that preserves four winners but reduces a question to three choices returns 400 before persistence; it does not reset the stored count. The same bound applies to explicit winner counts and creation. Keep enough choices or explicitly select a valid smaller count.
+
+**Frontend compatibility and release gate:** Self Serve's draft/publish updates omit both fields; PCC's disabled type control is included by `getRawValue`, so its explicit type remains supported. Neither frontend needs changes. Implement, verify with persisted readback, and release ITX #3428 **before** voting-service [#2974](https://github.com/linuxfoundation/lfx-self-serve/issues/2974). Old ITX still defaults an omitted type to `generic`; wire-omission tests alone do not prove preservation. Until the changed ITX version is available and paired smoke passes, this voting change is not release-ready. ITX's existing read-then-replace persistence is unchanged; no atomicity guarantee is added.
 
 **Response** (200 OK):
 
