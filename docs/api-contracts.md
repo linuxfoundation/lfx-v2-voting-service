@@ -399,17 +399,17 @@ Content-Type: application/json
 
 `end_time_timezone` is required, as on create. Omitting it fails contract validation with a 400 before ITX is called, so ITX always receives an explicit timezone on every update. As on create, ITX rejects invalid timezone names with a 400, surfaced as a 400.
 
-**Update method/count contract:** `PUT /votes/{uid}` keeps `poll_type` and `num_winners` optional. Omitted or JSON `null` values remain absent from the upstream ITX request; neither the HTTP decoder, generated client/CLI nor converter supplies create defaults. Explicit valid values are intentional replacements, including an explicit `generic` type. Empty/unknown types and counts outside 2–10 fail voting-service validation with 400 before ITX is called. This is not a general PATCH/merge API: the other required replacement fields remain required.
+**Update method/count contract:** `PUT /votes/{uid}` keeps `poll_type` and `num_winners` optional. Omitted values remain absent from the upstream ITX request; neither the HTTP decoder, generated client/CLI nor converter supplies create defaults. The public OpenAPI contract permits omission, not JSON `null`; callers must omit these fields to retain existing settings. The current decoder also treats `null` as omission, but spec-validating clients or gateways may reject it. Explicit valid values are intentional replacements, including an explicit `generic` type. Empty/unknown types and counts outside 2–10 fail voting-service validation with 400 before ITX is called. This is not a general PATCH/merge API: the other required replacement fields remain required.
 
 Stored-value preservation is owned by ITX [#3428](https://github.com/linuxfoundation/lfx-self-serve/issues/3428), with the following update precedence:
 
 | Effective method/count input | ITX #3428 behavior |
 |---|---|
-| Type omitted/null | Retain the stored type |
+| Type omitted | Retain the stored type |
 | Explicit valid type | Replace the stored type |
-| Existing Meek STV, count omitted/null | Retain the stored count, including four; applies when type is omitted or explicitly repeats `meek_stv` |
+| Existing Meek STV, count omitted | Retain the stored count, including four; applies when type is omitted or explicitly repeats `meek_stv` |
 | Effective Meek STV, explicit count | Use the supplied valid count |
-| Explicit non-STV → Meek STV transition, count omitted/null | Use two winners |
+| Explicit non-STV → Meek STV transition, count omitted | Use two winners |
 | Effective non-STV | Do not retain a previous STV count |
 
 The voting converter does not choose a winner default based on the request's decoded type; ITX resolves the effective type against storage. This revisits the update interaction with #2922 without changing its separate create-side behavior.
