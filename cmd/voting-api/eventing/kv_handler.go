@@ -281,7 +281,12 @@ func handleResourceDelete(ctx context.Context,
 	case "itx-poll":
 		return handleVoteDelete(ctx, uid, publisher, mappingsKV, logger)
 	case "itx-poll-vote":
-		return handleVoteResponseDelete(ctx, uid, publisher, mappingsKV, logger)
+		// A soft delete still carries the record (voter and vote); a hard delete or purge does not.
+		var record *voteResponseRecord
+		if rec, err := decodeVoteResponseRecord(entry.Value()); err == nil {
+			record = &rec
+		}
+		return handleVoteResponseDelete(ctx, uid, record, publisher, mappingsKV, logger)
 	case "itx-poll-results":
 		return handleVoteResultDelete(ctx, uid, publisher, mappingsKV, logger)
 	default:

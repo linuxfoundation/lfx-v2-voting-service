@@ -51,7 +51,9 @@ Each message carries `object_type`, `operation`, and a `data` map. The sections 
 
 ### Relations
 
-_(none set by this service)_
+_(none set by the vote message itself)_
+
+`participant` tuples on the vote are written per vote response with `member_put` / `member_remove` (see [Vote Participant](#vote-participant)). The vote `update_access` message therefore sends `exclude_relations: ["participant"]`: `update_access` is a full sync, and without the exclusion every vote update would delete the participants.
 
 ### References
 
@@ -61,6 +63,28 @@ _(none set by this service)_
 | `committee` | `CommitteeUID` | Only when `CommitteeUID` is non-empty |
 
 > The update message is skipped entirely if both `ProjectUID` and `CommitteeUID` are empty.
+
+### Vote Participant
+
+`vote#viewer` is `[user:*] or auditor or participant`, and both `GET /votes/{uid}` and the indexed `vote_response` rows (`AccessCheckObject: vote:{uid}`, `AccessCheckRelation: viewer`) are gated on it. An invitee's `owner` tuple on their own `vote_response` does not grant `viewer` on the vote, so every invitee with a username is made a `participant` of the vote.
+
+| Field | Value |
+|---|---|
+| Subject | `lfx.fga-sync.member_put` (`member_remove` when `VoterRemoved` is true) |
+| `object_type` | `vote` |
+| `uid` | `VoteUID` |
+| `username` | LFX username (from v1 `username` field) |
+| `relations` | `["participant"]` |
+
+Sent on create and update of a vote response, only when both `Username` and `VoteUID` are non-empty. Because every recipient of a vote has a vote response, this covers recipients present when the vote is created as well as recipients added later. A voter whose `Username` is backfilled after accepting an LFID invite becomes a participant on that update.
+
+#### Backfilling existing votes
+
+`member_put` is only sent when a vote response event is processed, so votes whose responses were consumed before this behaviour shipped have no participant tuples. Run `scripts/reindex-vote-responses` (see `indexer-contract.md` § Reindexing vote responses): it replays each response record through the live handler, which writes the participant tuple along with the indexer message and the owner tuple.
+
+Run it before, or together with, enabling participants: responses indexed with the old `vote#viewer` access check must be reindexed to `vote_response#auditor`, or every participant could read other voters' ballots until they are.
+
+On delete of a vote response, `delete_access` removes only `vote_response:{uid}`, so the participant tuple is removed separately with `member_remove` on the vote. A **soft delete** (`_sdc_deleted_at`) still carries the record, so the voter and vote are known and the participant is removed. A **hard delete or purge** carries no value, so the voter is unknown and the participant tuple is not removed. That tuple is then cleared only through `VoterRemoved`, or when the vote itself is deleted (`delete_access` removes all tuples for `vote:{uid}`).
 
 ### Delete
 
@@ -110,4 +134,6 @@ On delete, only `uid` is sent — all FGA tuples for `vote_response:{uid}` are r
 | Delete vote | `vote` | `lfx.fga-sync.delete_access` | Always sent |
 | Create vote response | `vote_response` | `lfx.fga-sync.update_access` | Skipped if `Username` and `VoteUID` are both empty |
 | Update vote response | `vote_response` | `lfx.fga-sync.update_access` | Skipped if `Username` and `VoteUID` are both empty |
+| Create / update vote response | `vote` | `lfx.fga-sync.member_put` | `participant` for the response's user; `member_remove` if `VoterRemoved`; skipped if `Username` or `VoteUID` is empty |
+| Delete vote response | `vote` | `lfx.fga-sync.member_remove` | `participant` for the response's user; only on a soft delete, which still carries the record |
 | Delete vote response | `vote_response` | `lfx.fga-sync.delete_access` | Always sent |

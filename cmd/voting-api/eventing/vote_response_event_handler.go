@@ -200,11 +200,15 @@ func convertMapToVoteResponseData(
 	return voteResponseData, nil
 }
 
-// handleVoteResponseDelete processes a vote response delete from itx-poll-vote records
+// handleVoteResponseDelete processes a vote response delete from itx-poll-vote records.
+// record is the deleted record when the event still carries it (a soft delete, `_sdc_deleted_at`);
+// it is nil for a hard delete or purge, whose value is empty. It lets the delete also remove the
+// voter's participant tuple on the parent vote, which delete_access on the response does not touch.
 // Returns true if the message should be retried (NAK), false if it should be acknowledged (ACK)
 func handleVoteResponseDelete(
 	ctx context.Context,
 	uid string,
+	record *voteResponseRecord,
 	publisher domain.EventPublisher,
 	mappingsKV jetstream.KeyValue,
 	logger *slog.Logger,
@@ -224,6 +228,13 @@ func handleVoteResponseDelete(
 	voteResponseData := &domain.VoteResponseData{
 		UID:    uid,
 		VoteID: uid,
+	}
+	if record != nil {
+		voteResponseData.VoteUID = record.pollID
+		voteResponseData.PollID = record.pollID
+		voteResponseData.Username = record.username
+	} else {
+		funcLogger.DebugContext(ctx, "delete event carries no record, cannot remove the vote participant tuple")
 	}
 
 	// Publish delete event to indexer and FGA-sync

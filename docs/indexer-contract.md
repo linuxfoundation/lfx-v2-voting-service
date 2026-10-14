@@ -204,12 +204,34 @@ Each element in `comment_responses` has:
 
 | Field | Value |
 | --- | --- |
-| `access_check_object` | `vote:{vote_uid}` |
-| `access_check_relation` | `viewer` |
+| `access_check_object` | `vote_response:{uid}` |
+| `access_check_relation` | `auditor` |
 | `history_check_object` | `vote_response:{uid}` |
 | `history_check_relation` | `auditor` |
 
-> Note: access checks are scoped to the parent vote object, not the response itself.
+> Note: access checks are scoped to the response itself. `vote_response#auditor` is `owner or auditor from vote`, so a response is visible to the voter who cast it and to the vote's project/committee auditors. It must not be gated on `vote#viewer`: invitees are `participant`s of the vote (see `fga-contract.md`), which grants `viewer`, and that would expose every voter's `poll_answers` to every other participant.
+>
+> Documents indexed before this change still carry `access_check_object: vote:{vote_uid}` until they are re-indexed. Run `reindex-vote-responses` (below) to re-emit them.
+
+#### Reindexing vote responses
+
+`scripts/reindex-vote-responses` reindexes responses by re-putting each `itx-poll-vote.*` record in the `v1-objects` KV bucket with its existing bytes. That lands as a new revision on `$KV.v1-objects.itx-poll-vote.>`, which the voting consumer already watches, so every record goes through the live handler: the indexer message with the current `IndexingConfig`, the `vote_response` owner tuple, and the vote participant tuple (`fga-contract.md`).
+
+```bash
+make build-reindex
+export NATS_URL=nats://localhost:4222        # e.g. via kubectl port-forward
+
+bin/reindex-vote-responses -list                       # dry run: print every record it would replay
+bin/reindex-vote-responses -vote-uid <uid> -apply      # one vote first; check the indexed doc and read_tuples
+bin/reindex-vote-responses -apply                      # everything
+```
+
+- It is a **dry run unless `-apply` is passed**, and reports a count for every category it skips.
+- The re-put is a **compare-and-swap on the revision it read**. The bucket is written by the upstream sync, so a record that changed in between is never overwritten with stale bytes; it is counted as a conflict (the newer write already went through the consumer).
+- It replays only records the consumer has **already processed** (they have a `vote_response.{uid}` mapping and a mapped parent vote), so the handler treats them as updates and the LFID invite path, which fires only on a first create, does not run. Soft-deleted and tombstoned records are skipped.
+- It is paced at `-rate` (default 50/s) because each record fans out to the indexer and fga-sync. Watch consumer lag on `KV_v1-objects` during a full run.
+- If a replay is applied while the consumer is down, nothing is lost: the messages queue and are consumed when it returns.
+- `v1-objects` must be writable from where you run it. If it is a mirror of another cluster's bucket, the re-put will fail (counted as `failed`) and the replay has to run at the source.
 
 ### Search Behavior
 
