@@ -14,4 +14,6 @@ type Config struct {
 	MaxDeliver     int
 	AckWait        time.Duration
 	MaxAckPending  int
+	// ParticipantGrantsEnabled turns on writing vote `participant` tuples (see WithParticipantGrants).
+	ParticipantGrantsEnabled bool
 }

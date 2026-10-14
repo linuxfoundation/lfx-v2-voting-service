@@ -355,7 +355,7 @@ func TestHandleVoteResponseDelete(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleVoteResponseDelete(ctx, "vote-123", mockPublisher, mappingsKV, logger)
+		shouldRetry := handleVoteResponseDelete(ctx, "vote-123", nil, mockPublisher, mappingsKV, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
@@ -379,7 +379,7 @@ func TestHandleVoteResponseDelete(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleVoteResponseDelete(ctx, "vote-123", mockPublisher, mappingsKV, logger)
+		shouldRetry := handleVoteResponseDelete(ctx, "vote-123", nil, mockPublisher, mappingsKV, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVoteResponses, 0) // No duplicate event published
@@ -395,7 +395,7 @@ func TestHandleVoteResponseDelete(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleVoteResponseDelete(ctx, "vote-123", mockPublisher, mappingsKV, logger)
+		shouldRetry := handleVoteResponseDelete(ctx, "vote-123", nil, mockPublisher, mappingsKV, logger)
 
 		assert.True(t, shouldRetry) // Transient error, NAK for retry
 	})

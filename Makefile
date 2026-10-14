@@ -1,7 +1,7 @@
 # Copyright The Linux Foundation and each contributor to LFX.
 # SPDX-License-Identifier: MIT
 
-.PHONY: all help setup deps apigen generate verify build run debug test test-cover lint fmt check tidy ci clean clean-bin docker-build helm-install helm-install-local helm-templates helm-templates-local helm-uninstall
+.PHONY: all help setup deps apigen generate verify build build-reindex run debug test test-cover lint fmt check tidy ci clean clean-bin docker-build helm-install helm-install-local helm-templates helm-templates-local helm-uninstall
 
 # Default target
 all: clean deps apigen fmt lint test build
@@ -30,6 +30,7 @@ help:
 	@echo "Core workflow:"
 	@echo "  generate       - Regenerate API code from Goa design files (alias: apigen)"
 	@echo "  build          - Build binary to bin/voting-api"
+	@echo "  build-reindex  - Build bin/reindex-vote-responses (reindex vote responses)"
 	@echo "  run            - Build and run the service (requires env vars)"
 	@echo "  debug          - Build and run with LOG_LEVEL=debug"
 	@echo ""
@@ -91,6 +92,10 @@ generate: apigen
 build:
 	@echo "==> Building voting service..."
 	go build -o bin/voting-api ./cmd/voting-api
+
+build-reindex:
+	@echo "==> Building vote response replay..."
+	go build -o bin/reindex-vote-responses ./scripts/reindex-vote-responses
 
 test:
 	@echo "==> Running tests..."
