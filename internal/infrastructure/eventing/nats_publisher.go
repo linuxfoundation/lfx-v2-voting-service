@@ -36,16 +36,33 @@ const (
 
 // NATSPublisher implements the EventPublisher interface
 type NATSPublisher struct {
-	conn   *nats.Conn
-	logger *slog.Logger
+	conn                     *nats.Conn
+	logger                   *slog.Logger
+	participantGrantsEnabled bool
+}
+
+// PublisherOption configures a NATSPublisher.
+type PublisherOption func(*NATSPublisher)
+
+// WithParticipantGrants enables writing `participant` tuples on votes (member_put) for vote
+// response create/update. It is off by default so a deploy cannot grant `vote#viewer` while
+// already-indexed responses are still gated on it (which would let participants read each
+// other's ballots): reindex the responses to `vote_response#auditor` first, then enable it.
+// Revocations (member_remove on a removed voter or a soft delete) are never gated.
+func WithParticipantGrants(enabled bool) PublisherOption {
+	return func(p *NATSPublisher) { p.participantGrantsEnabled = enabled }
 }
 
 // NewNATSPublisher creates a new NATS publisher
-func NewNATSPublisher(conn *nats.Conn, logger *slog.Logger) *NATSPublisher {
-	return &NATSPublisher{
+func NewNATSPublisher(conn *nats.Conn, logger *slog.Logger, opts ...PublisherOption) *NATSPublisher {
+	p := &NATSPublisher{
 		conn:   conn,
 		logger: logger,
 	}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
 }
 
 // voteParticipantRelation is the vote relation that grants an invited voter viewer access
@@ -94,8 +111,11 @@ func (p *NATSPublisher) PublishVoteResponseEvent(ctx context.Context, action str
 		if err := p.sendVoteResponseAccessMessage(ctx, voteResponse); err != nil {
 			return fmt.Errorf("failed to send vote response access message: %w", err)
 		}
-		if err := p.sendVoteParticipantMessage(ctx, voteResponse, voteResponse.VoterRemoved); err != nil {
-			return fmt.Errorf("failed to send vote participant access message: %w", err)
+		// Grants wait for the rollout flag; revoking a removed voter never does.
+		if voteResponse.VoterRemoved || p.participantGrantsEnabled {
+			if err := p.sendVoteParticipantMessage(ctx, voteResponse, voteResponse.VoterRemoved); err != nil {
+				return fmt.Errorf("failed to send vote participant access message: %w", err)
+			}
 		}
 	}
 

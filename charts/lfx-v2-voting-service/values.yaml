@@ -105,6 +105,12 @@ app:
     # and the invite_accepted enrichment subscriber.
     INVITES_ENABLED:
       value: false
+    # VOTE_PARTICIPANT_GRANTS_ENABLED gates writing the vote `participant` FGA tuple for each
+    # voter. Keep it false until every indexed vote_response has been reindexed to the
+    # vote_response#auditor access check (scripts/reindex-vote-responses); enabling it earlier
+    # lets participants read other voters' not-yet-reindexed ballots. Revocations are never gated.
+    VOTE_PARTICIPANT_GRANTS_ENABLED:
+      value: false
     # LFX_SELF_SERVE_BASE_URL overrides the base URL embedded in invite emails.
     # Defaults to the environment-appropriate app URL derived from LFX_ENVIRONMENT.
     LFX_SELF_SERVE_BASE_URL:

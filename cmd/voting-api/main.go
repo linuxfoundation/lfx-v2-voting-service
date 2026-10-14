@@ -156,7 +156,8 @@ func run() int {
 	var eventProcessorCtx context.Context
 	var eventProcessorCancel context.CancelFunc
 	if cfg.EventProcessingEnabled {
-		logger.Info("Event processing is ENABLED - initializing event processor")
+		participantGrants := parseBoolEnv("VOTE_PARTICIPANT_GRANTS_ENABLED", logger)
+		logger.Info("Event processing is ENABLED - initializing event processor", "vote_participant_grants_enabled", participantGrants)
 		ep, err := apieventing.NewEventProcessor(eventing.Config{
 			NATSURL:      cfg.NATSURL,
 			ConsumerName: cfg.EventConsumerName,
@@ -166,9 +167,10 @@ func run() int {
 				"$KV.v1-objects.itx-poll-vote.>",
 				"$KV.v1-objects.itx-poll-results.>",
 			},
-			MaxDeliver:    3,
-			AckWait:       30 * time.Second,
-			MaxAckPending: 1000,
+			MaxDeliver:               3,
+			AckWait:                  30 * time.Second,
+			MaxAckPending:            1000,
+			ParticipantGrantsEnabled: participantGrants,
 		}, idMapper, logger, inviteCfg)
 		if err != nil {
 			logger.Error("Failed to initialize event processor", "error", err)
@@ -398,6 +400,24 @@ func getEnv(key, defaultVal string) string {
 		return val
 	}
 	return defaultVal
+}
+
+// parseBoolEnv reads a boolean feature flag from the environment. Unset or unrecognised values
+// are false, so a typo can never switch a gated behaviour on.
+func parseBoolEnv(key string, logger *slog.Logger) bool {
+	raw := os.Getenv(key)
+	if raw == "" {
+		return false
+	}
+	enabled, err := strconv.ParseBool(raw)
+	if err != nil {
+		if strings.EqualFold(raw, "yes") {
+			return true
+		}
+		logger.Warn("unrecognised boolean value; treating as disabled", "key", key, "value", raw)
+		return false
+	}
+	return enabled
 }
 
 func parseInviteConfig(logger *slog.Logger) apieventing.InviteFeatureConfig {

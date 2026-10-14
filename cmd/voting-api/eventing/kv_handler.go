@@ -22,6 +22,9 @@ const (
 	// tombstoneMarker is written to a mapping key after successful deletion,
 	// preventing duplicate delete events if the same KV delete is redelivered.
 	tombstoneMarker = "!del"
+
+	// TombstoneMarker is the exported form of tombstoneMarker for tools that read v1-mappings.
+	TombstoneMarker = tombstoneMarker
 )
 
 // isTombstonedMapping reports whether a mapping value is a tombstone marker.

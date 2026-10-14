@@ -28,7 +28,7 @@ type fgaMessage struct {
 
 // newCapturingPublisher starts an embedded NATS server and returns a publisher plus a
 // function that drains the fga-sync messages published so far.
-func newCapturingPublisher(t *testing.T) (*NATSPublisher, func() []fgaMessage) {
+func newCapturingPublisher(t *testing.T, opts ...PublisherOption) (*NATSPublisher, func() []fgaMessage) {
 	t.Helper()
 
 	srv, err := server.NewServer(&server.Options{Port: -1})
@@ -72,7 +72,7 @@ func newCapturingPublisher(t *testing.T) (*NATSPublisher, func() []fgaMessage) {
 			}
 		}
 	}
-	return NewNATSPublisher(conn, slog.Default()), drain
+	return NewNATSPublisher(conn, slog.Default(), opts...), drain
 }
 
 func TestSendVoteParticipantMessage(t *testing.T) {
@@ -134,7 +134,7 @@ func TestPublishVoteResponseEvent_MaintainsParticipant(t *testing.T) {
 
 	for _, action := range []string{"created", "updated"} {
 		t.Run(action+" writes owner on the response and participant on the vote", func(t *testing.T) {
-			publisher, drain := newCapturingPublisher(t)
+			publisher, drain := newCapturingPublisher(t, WithParticipantGrants(true))
 			require.NoError(t, publisher.PublishVoteResponseEvent(context.Background(), action, data))
 
 			var subjects []string
@@ -146,7 +146,7 @@ func TestPublishVoteResponseEvent_MaintainsParticipant(t *testing.T) {
 	}
 
 	t.Run("deleted removes the response and, when the voter is known, the participant", func(t *testing.T) {
-		publisher, drain := newCapturingPublisher(t)
+		publisher, drain := newCapturingPublisher(t, WithParticipantGrants(true))
 		require.NoError(t, publisher.PublishVoteResponseEvent(context.Background(), "deleted", data))
 
 		var subjects []string
@@ -185,4 +185,47 @@ func TestSendVoteAccessMessage_PreservesParticipantTuples(t *testing.T) {
 	assert.Equal(t, fgaconstants.GenericUpdateAccessSubject, got[0].Subject)
 	// update_access is a full sync: without this, every vote update would delete the participants.
 	assert.Equal(t, []interface{}{"participant"}, got[0].Data["exclude_relations"])
+}
+
+// Until responses are reindexed to vote_response#auditor, granting vote#viewer would let
+// participants read other voters' ballots, so grants are off by default; revocations never are.
+func TestPublishVoteResponseEvent_ParticipantGrantsAreGated(t *testing.T) {
+	data := &domain.VoteResponseData{UID: "resp-1", VoteUID: "vote-1", Username: "nickcoai"}
+
+	subjectsOf := func(msgs []fgaMessage) []string {
+		var out []string
+		for _, m := range msgs {
+			out = append(out, m.Subject)
+		}
+		return out
+	}
+
+	for _, action := range []string{"created", "updated"} {
+		t.Run(action+" with grants off writes the owner tuple but no participant", func(t *testing.T) {
+			publisher, drain := newCapturingPublisher(t) // default: off
+			require.NoError(t, publisher.PublishVoteResponseEvent(context.Background(), action, data))
+
+			assert.Equal(t, []string{fgaconstants.GenericUpdateAccessSubject}, subjectsOf(drain()))
+		})
+	}
+
+	t.Run("a removed voter is revoked even with grants off", func(t *testing.T) {
+		publisher, drain := newCapturingPublisher(t)
+		removed := *data
+		removed.VoterRemoved = true
+		require.NoError(t, publisher.PublishVoteResponseEvent(context.Background(), "updated", &removed))
+
+		assert.ElementsMatch(t,
+			[]string{fgaconstants.GenericUpdateAccessSubject, fgaconstants.GenericMemberRemoveSubject},
+			subjectsOf(drain()))
+	})
+
+	t.Run("a deleted response is revoked even with grants off", func(t *testing.T) {
+		publisher, drain := newCapturingPublisher(t)
+		require.NoError(t, publisher.PublishVoteResponseEvent(context.Background(), "deleted", data))
+
+		assert.ElementsMatch(t,
+			[]string{fgaconstants.GenericDeleteAccessSubject, fgaconstants.GenericMemberRemoveSubject},
+			subjectsOf(drain()))
+	})
 }

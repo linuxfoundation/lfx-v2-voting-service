@@ -22,7 +22,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/linuxfoundation/lfx-v2-voting-service/cmd/voting-api/eventing"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -39,7 +38,7 @@ func run() error {
 	osURL := flag.String("opensearch-url", getEnv("OPENSEARCH_URL", "http://localhost:9200"), "OpenSearch base URL (env OPENSEARCH_URL)")
 	apply := flag.Bool("apply", false, "re-put the records; without it nothing is written")
 	voteUID := flag.String("vote-uid", "", "limit the replay to one vote's responses (v2 UID)")
-	rate := flag.Int("rate", eventing.DefaultReindexRatePerSecond, "max records re-put per second")
+	rate := flag.Int("rate", defaultRatePerSecond, "max records re-put per second")
 	list := flag.Bool("list", false, "print the key of every record that would be replayed")
 	flag.Parse()
 
@@ -59,38 +58,39 @@ func run() error {
 		return fmt.Errorf("failed to create JetStream context: %w", err)
 	}
 
-	result, err := eventing.ReplayVoteResponses(ctx, js, eventing.ReplayVoteResponsesOptions{
+	opts := options{
 		OpenSearchURL: *osURL,
 		Apply:         *apply,
 		VoteUID:       *voteUID,
 		RatePerSecond: *rate,
-	}, logger)
+	}
+	if *list {
+		opts.OnEligible = func(key string) { fmt.Println(key) }
+	}
 
-	if result != nil {
-		if *list {
-			for _, k := range result.Keys {
-				fmt.Println(k)
-			}
-		}
+	res, err := reindex(ctx, js, opts, logger)
+
+	if res != nil {
 		mode := "DRY RUN (pass -apply to write)"
 		if *apply {
 			mode = "APPLIED"
 		}
 		fmt.Printf("\n%s\n", mode)
-		fmt.Printf("  indexed responses scanned:     %d\n", result.Scanned)
-		fmt.Printf("  duplicate object_id:           %d\n", result.Duplicates)
-		fmt.Printf("  skipped, no object_id:         %d\n", result.SkippedNoID)
-		fmt.Printf("  indexed but not in v1-objects: %d\n", result.NotFound)
-		fmt.Printf("  skipped, soft-deleted:         %d\n", result.SkippedDeleted)
-		fmt.Printf("  skipped, other vote:           %d\n", result.SkippedOther)
-		fmt.Printf("  skipped, never processed:      %d\n", result.SkippedNoMap)
-		fmt.Printf("  skipped, response tombstoned:  %d\n", result.SkippedTomb)
-		fmt.Printf("  skipped, parent not mapped:    %d\n", result.SkippedNoParent)
-		fmt.Printf("  records to replay:             %d\n", result.Eligible)
+		fmt.Printf("  indexed responses scanned:     %d\n", res.Scanned)
+		fmt.Printf("  duplicate object_id:           %d\n", res.Duplicates)
+		fmt.Printf("  skipped, no object_id:         %d\n", res.SkippedNoID)
+		fmt.Printf("  skipped, other vote:           %d\n", res.SkippedOther)
+		fmt.Printf("  indexed but not in v1-objects: %d\n", res.NotFound)
+		fmt.Printf("  skipped, undecodable record:   %d\n", res.Undecodable)
+		fmt.Printf("  skipped, soft-deleted:         %d\n", res.SkippedDeleted)
+		fmt.Printf("  skipped, never processed:      %d\n", res.SkippedNoMap)
+		fmt.Printf("  skipped, response tombstoned:  %d\n", res.SkippedTomb)
+		fmt.Printf("  skipped, parent not mapped:    %d\n", res.SkippedNoParent)
+		fmt.Printf("  records to replay:             %d\n", res.Eligible)
 		if *apply {
-			fmt.Printf("  re-put:                        %d\n", result.Replayed)
-			fmt.Printf("  conflicts (changed upstream):  %d\n", result.Conflicts)
-			fmt.Printf("  failed:                        %d\n", result.Failed)
+			fmt.Printf("  re-put:                        %d\n", res.Replayed)
+			fmt.Printf("  conflicts (changed upstream):  %d\n", res.Conflicts)
+			fmt.Printf("  failed:                        %d\n", res.Failed)
 		}
 	}
 	return err
