@@ -234,7 +234,8 @@ bin/reindex-vote-responses -apply                      # everything
 - It is a **dry run unless `-apply` is passed**, and reports a count for every category it skips.
 - The re-put is a **compare-and-swap on the revision it read**. The bucket is written by the upstream sync, so a record that changed in between is never overwritten with stale bytes; it is counted as a conflict (the newer write already went through the consumer).
 - It **fails instead of skipping** when a read is incomplete: any KV read error other than "not found", an OpenSearch error, or a partial OpenSearch result (`timed_out` or failed shards) aborts the run with a non-zero exit, so a partial run is never mistaken for a complete one.
-- It processes records as it reads them, so memory does not grow with the number of responses.
+- It processes records as it reads them, so record payloads are never accumulated. It does keep the set of response IDs seen so far (to drop duplicates) and one entry per parent vote, so memory still grows with the number of responses, but only by those IDs.
+- The OpenSearch scroll is kept alive for the time one page takes at the configured `-rate` (doubled, plus 2 minutes), so a low rate does not outlive it.
 - It only touches responses that are indexed; a response with no document in OpenSearch is left alone, and an indexed response with no `v1-objects` record is counted as `indexed but not in v1-objects`.
 - It replays only records the consumer has **already processed** (they have a `vote_response.{uid}` mapping and a mapped parent vote), so the handler treats them as updates and the LFID invite path, which fires only on a first create, does not run. Soft-deleted and tombstoned records are skipped.
 - It is paced at `-rate` (default 50/s) because each record fans out to the indexer and fga-sync. Watch consumer lag on `KV_v1-objects` during a full run.

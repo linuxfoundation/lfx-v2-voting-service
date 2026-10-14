@@ -28,12 +28,25 @@ const (
 
 	openSearchIndex    = "resources"
 	openSearchPageSize = 200
-	openSearchScroll   = "2m"
+	// minScrollKeepAlive is the floor for how long OpenSearch holds the scroll between page requests.
+	minScrollKeepAlive = 2 * time.Minute
 
 	// defaultRatePerSecond keeps a full reindex from outrunning the consumer; each record fans
 	// out to the indexer and to fga-sync, which applies mutations one at a time.
 	defaultRatePerSecond = 50
 )
+
+// scrollKeepAlive is how long OpenSearch must hold the scroll between page requests. The next page
+// is requested only after every eligible record of the current one has been re-put, which takes
+// pageSize / rate seconds at the configured rate. It doubles that to leave room for the KV reads
+// per record and adds the floor, so a slow rate cannot outlive its own scroll.
+func scrollKeepAlive(ratePerSecond int) string {
+	if ratePerSecond <= 0 {
+		ratePerSecond = defaultRatePerSecond
+	}
+	pageSeconds := (openSearchPageSize + ratePerSecond - 1) / ratePerSecond
+	return fmt.Sprintf("%ds", 2*pageSeconds+int(minScrollKeepAlive.Seconds()))
+}
 
 // options configures reindex.
 type options struct {
@@ -81,7 +94,9 @@ type result struct {
 // indexer message with the current IndexingConfig, the vote_response owner tuple, and (when
 // participant grants are enabled on the service) the vote participant tuple.
 //
-// Each record is processed as it is read, so memory does not grow with the number of responses.
+// Each record is processed as it is read, so record payloads are never accumulated. The run does
+// keep the set of object IDs seen so far (to drop duplicates) and one entry per parent vote, so
+// memory grows with the number of distinct responses, but only by those IDs.
 //
 // The write is a compare-and-swap on the revision that was read. The bucket is written by the
 // upstream sync, so a record that changed in between is never overwritten with stale bytes; it is
@@ -128,7 +143,8 @@ func reindex(ctx context.Context, js jetstream.JetStream, opts options, logger *
 		r.tick = ticker.C
 	}
 
-	scrollID, page, err := openScroll(ctx, client, opts.OpenSearchURL)
+	keepAlive := scrollKeepAlive(opts.RatePerSecond)
+	scrollID, page, err := openScroll(ctx, client, opts.OpenSearchURL, keepAlive)
 	if err != nil {
 		return res, fmt.Errorf("open OpenSearch scroll: %w", err)
 	}
@@ -149,7 +165,7 @@ func reindex(ctx context.Context, js jetstream.JetStream, opts options, logger *
 		}
 		logger.InfoContext(ctx, "scanned indexed vote responses", "scanned", res.Scanned, "eligible", res.Eligible)
 
-		nextHits, nextID, err := nextScrollPage(ctx, client, opts.OpenSearchURL, lastScrollID)
+		nextHits, nextID, err := nextScrollPage(ctx, client, opts.OpenSearchURL, lastScrollID, keepAlive)
 		if err != nil {
 			return res, fmt.Errorf("OpenSearch scroll page: %w", err)
 		}
@@ -368,7 +384,7 @@ type openSearchScrollResponse struct {
 }
 
 // openScroll opens a scroll over every indexed vote_response document.
-func openScroll(ctx context.Context, client *http.Client, osURL string) (string, []openSearchHit, error) {
+func openScroll(ctx context.Context, client *http.Client, osURL, keepAlive string) (string, []openSearchHit, error) {
 	body, err := json.Marshal(map[string]any{
 		"query":   map[string]any{"term": map[string]any{"object_type": "vote_response"}},
 		"_source": []string{"object_id", "data.vote_uid", "data.poll_id"},
@@ -378,12 +394,12 @@ func openScroll(ctx context.Context, client *http.Client, osURL string) (string,
 		return "", nil, err
 	}
 	return doScroll(ctx, client, http.MethodPost,
-		fmt.Sprintf("%s/%s/_search?scroll=%s", strings.TrimRight(osURL, "/"), openSearchIndex, openSearchScroll), body)
+		fmt.Sprintf("%s/%s/_search?scroll=%s", strings.TrimRight(osURL, "/"), openSearchIndex, keepAlive), body)
 }
 
 // nextScrollPage fetches the next page; an empty page means the scroll is exhausted.
-func nextScrollPage(ctx context.Context, client *http.Client, osURL, scrollID string) ([]openSearchHit, string, error) {
-	body, err := json.Marshal(map[string]string{"scroll": openSearchScroll, "scroll_id": scrollID})
+func nextScrollPage(ctx context.Context, client *http.Client, osURL, scrollID, keepAlive string) ([]openSearchHit, string, error) {
+	body, err := json.Marshal(map[string]string{"scroll": keepAlive, "scroll_id": scrollID})
 	if err != nil {
 		return nil, "", err
 	}

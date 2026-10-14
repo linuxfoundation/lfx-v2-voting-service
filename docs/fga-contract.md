@@ -89,7 +89,7 @@ Granting `participant` gives `vote#viewer`, and responses indexed before this ch
 
 Turning the flag off again stops new grants; it does not remove existing ones.
 
-On delete of a vote response, `delete_access` removes only `vote_response:{uid}`, so the participant tuple is removed separately with `member_remove` on the vote. A **soft delete** (`_sdc_deleted_at`) still carries the record, so the voter and vote are known and the participant is removed. A **hard delete or purge** carries no value, so the voter is unknown and the participant tuple is not removed there; it is then cleared only through `VoterRemoved`, or when the vote itself is deleted (`delete_access` removes all tuples for `vote:{uid}`). Handling hard deletes is deliberately left out of this change.
+On delete of a vote response, `delete_access` removes only `vote_response:{uid}`, so the participant tuple is removed separately with `member_remove` on the vote. A **soft delete** (`_sdc_deleted_at`) still carries the record, so the voter and vote are known and the participant is removed. A **hard delete or purge** carries no value, so the voter is unknown and the participant tuple is not removed there; it is then cleared only through `VoterRemoved`, or when the vote itself is deleted (`delete_access` removes all tuples for `vote:{uid}`). Handling hard deletes is deliberately left out of this change and is tracked, with the stale-retry case below, in [lfx-self-serve#3669](https://github.com/linuxfoundation/lfx-self-serve/issues/3669).
 
 ### Delete
 

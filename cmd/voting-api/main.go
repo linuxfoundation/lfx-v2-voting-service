@@ -421,15 +421,7 @@ func parseBoolEnv(key string, logger *slog.Logger) bool {
 }
 
 func parseInviteConfig(logger *slog.Logger) apieventing.InviteFeatureConfig {
-	raw := os.Getenv("INVITES_ENABLED")
-	enabled, err := strconv.ParseBool(raw)
-	if err != nil {
-		if strings.EqualFold(raw, "yes") {
-			enabled = true
-		} else if raw != "" {
-			logger.Warn("unrecognised INVITES_ENABLED value; feature disabled", "value", raw)
-		}
-	}
+	enabled := parseBoolEnv("INVITES_ENABLED", logger)
 
 	selfServeBaseURL := os.Getenv("LFX_SELF_SERVE_BASE_URL")
 	if selfServeBaseURL == "" {

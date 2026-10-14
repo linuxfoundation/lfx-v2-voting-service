@@ -38,3 +38,15 @@ func TestParseBoolEnv(t *testing.T) {
 		})
 	}
 }
+
+// parseInviteConfig shares parseBoolEnv, so it accepts the same values and a typo is off.
+func TestParseInviteConfig_UsesTheSharedBoolParsing(t *testing.T) {
+	tests := map[string]bool{"true": true, "1": true, "yes": true, "false": false, "": false, "enabled-please": false}
+	for value, want := range tests {
+		t.Run("INVITES_ENABLED="+value, func(t *testing.T) {
+			t.Setenv("INVITES_ENABLED", value)
+			t.Setenv("LFX_SELF_SERVE_BASE_URL", "https://app.example.test")
+			assert.Equal(t, want, parseInviteConfig(slog.Default()).Enabled)
+		})
+	}
+}

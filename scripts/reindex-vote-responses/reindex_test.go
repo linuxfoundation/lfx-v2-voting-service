@@ -116,6 +116,13 @@ type osStub struct {
 
 	mu           sync.Mutex
 	deleteScroll []string // scroll_id of each DELETE /_search/scroll
+	keepAlives   []string // the scroll keep-alive sent with the search and every scroll request
+}
+
+func (s *osStub) scrollKeepAlives() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return append([]string(nil), s.keepAlives...)
 }
 
 func (s *osStub) deletedScrollIDs() []string {
@@ -156,8 +163,13 @@ func newOpenSearchStub(t *testing.T, failPageAt int, extra map[string]any, pages
 		defer stub.mu.Unlock()
 		switch {
 		case r.Method == http.MethodPost && r.URL.Path == "/resources/_search":
+			stub.keepAlives = append(stub.keepAlives, r.URL.Query().Get("scroll"))
 			respond(w)
 		case r.Method == http.MethodPost && r.URL.Path == "/_search/scroll":
+			raw, _ := io.ReadAll(r.Body)
+			var body map[string]string
+			_ = json.Unmarshal(raw, &body)
+			stub.keepAlives = append(stub.keepAlives, body["scroll"])
 			respond(w)
 		case r.Method == http.MethodDelete && r.URL.Path == "/_search/scroll":
 			raw, _ := io.ReadAll(r.Body)
@@ -417,4 +429,46 @@ func TestReplayRecord_DoesNotOverwriteARecordChangedSinceItWasRead(t *testing.T)
 	current, err := f.objectsKV.Get(ctx, "itx-poll-vote.r1")
 	require.NoError(t, err)
 	assert.Equal(t, newer, current.Value(), "the newer upstream write must survive")
+}
+
+// The next page is requested only after the current page's records are re-put, which takes
+// pageSize / rate seconds. The scroll must outlive that, or a throttled run dies before page two.
+func TestScrollKeepAlive_OutlivesAPageAtTheConfiguredRate(t *testing.T) {
+	tests := []struct {
+		rate int
+		want string
+	}{
+		{rate: 1, want: "520s"},    // 200s per page, doubled, plus the 2m floor
+		{rate: 50, want: "128s"},   // the default: 4s per page
+		{rate: 0, want: "128s"},    // unset falls back to the default rate
+		{rate: 1000, want: "122s"}, // a page takes under a second
+	}
+	for _, tt := range tests {
+		got := scrollKeepAlive(tt.rate)
+		assert.Equal(t, tt.want, got, "rate %d", tt.rate)
+
+		d, err := time.ParseDuration(got)
+		require.NoError(t, err)
+		rate := tt.rate
+		if rate <= 0 {
+			rate = defaultRatePerSecond
+		}
+		pageTime := time.Duration((openSearchPageSize+rate-1)/rate) * time.Second
+		assert.Greater(t, d, pageTime, "rate %d: the scroll must outlive a full page", tt.rate)
+	}
+}
+
+func TestReindex_SendsTheRateDerivedKeepAliveOnEveryScrollRequest(t *testing.T) {
+	f := newFixture(t)
+	f.seedRecords(t)
+	stub := newOpenSearchStub(t, -1, nil, indexedPages()...)
+
+	_, err := reindex(context.Background(), f.js, options{OpenSearchURL: stub.URL, RatePerSecond: 1}, slog.Default())
+	require.NoError(t, err)
+
+	got := stub.scrollKeepAlives()
+	require.GreaterOrEqual(t, len(got), 3, "the search plus one scroll request per further page")
+	for _, k := range got {
+		assert.Equal(t, "520s", k)
+	}
 }
