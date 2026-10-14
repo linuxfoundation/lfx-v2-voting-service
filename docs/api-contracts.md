@@ -892,22 +892,38 @@ Authorization: Bearer <heimdall-jwt-token>
         {"choice_id": "c1-uuid", "vote_count": 14, "percentage": 77.8},
         {"choice_id": "c2-uuid", "vote_count": 10, "percentage": 55.6}
       ],
-      "ranked_choice_votes": [],
-      "ranked_choice_winner_info": null,
-      "irv_round_summary": [],
-      "meek_stv_round_summary": []
+      "ranked_choice_winner_info": {"poll_choices": null, "condorcet_irv_used_for_eliminations": false}
     }
   ],
   "comment_results": [
     {
-      "prompt": "Any additional comments?",
-      "comments": ["Great candidates this year.", "No objections."]
+      "prompt": {"prompt_id": "p1-uuid", "prompt": "Any additional comments?"},
+      "responses": [
+        {
+          "vote_id": "v1-uuid",
+          "user_id": "example-user-id",
+          "comment_text": "Great candidates this year.",
+          "user_name": "Example User",
+          "profile_picture": "https://example.org/avatar.png",
+          "vote_creation_time": "2026-02-10T15:04:05Z",
+          "abstained": false
+        },
+        {
+          "vote_id": "v2-uuid",
+          "user_id": "example-user-id-2",
+          "comment_text": "No objections.",
+          "user_name": "Example Voter",
+          "profile_picture": "https://example.org/avatar2.png",
+          "vote_creation_time": "2026-02-11T09:30:00Z",
+          "abstained": false
+        }
+      ]
     }
   ]
 }
 ```
 
-**Note**: `ranked_choice_votes`, `irv_round_summary`, and `meek_stv_round_summary` are populated only for the corresponding `poll_type` values (`condorcet_irv`, `instant_runoff_vote`, `meek_stv`). For `generic` polls, only `generic_choice_votes` is populated.
+**Note**: `ranked_choice_votes`, `irv_round_summary`, and `meek_stv_round_summary` are populated only for the corresponding `poll_type` values (`condorcet_irv`, `instant_runoff_vote`, `meek_stv`). For `generic` polls, only `generic_choice_votes` is populated. Unpopulated optional keys are omitted from the response entirely (never serialized as `null` or `[]`), which is why the example above has no `ranked_choice_votes` / `irv_round_summary` / `meek_stv_round_summary` keys. `ranked_choice_winner_info` is always present (ITX emits it for every poll type), with `poll_choices: null` when no winner has been determined. On comment responses, `user_id`, `user_name`, and `profile_picture` are absent entirely when the poll has `pseudo_anonymity` enabled.
 
 ---
 
