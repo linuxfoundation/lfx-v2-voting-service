@@ -215,11 +215,15 @@ Each element in `comment_responses` has:
 
 #### Reindexing vote responses
 
-`scripts/reindex-vote-responses` reindexes responses by re-putting each `itx-poll-vote.*` record in the `v1-objects` KV bucket with its existing bytes. That lands as a new revision on `$KV.v1-objects.itx-poll-vote.>`, which the voting consumer already watches, so every record goes through the live handler: the indexer message with the current `IndexingConfig`, the `vote_response` owner tuple, and the vote participant tuple (`fga-contract.md`).
+`scripts/reindex-vote-responses` reindexes responses the same way `reindex_meetings` does in lfx-v2-meeting-service. It scrolls OpenSearch for the indexed `vote_response` documents, then re-puts each one's `itx-poll-vote.{object_id}` record in the `v1-objects` KV bucket with its existing bytes. That lands as a new revision on `$KV.v1-objects.itx-poll-vote.>`, which the voting consumer already watches, so every record goes through the live handler: the indexer message with the current `IndexingConfig`, the `vote_response` owner tuple, and the vote participant tuple (`fga-contract.md`).
+
+OpenSearch drives the run because `v1-objects` holds every v1 object type and is far too large to list; the key for each response is built from its indexed `object_id` instead.
 
 ```bash
 make build-reindex
-export NATS_URL=nats://localhost:4222        # e.g. via kubectl port-forward
+# NATS and OpenSearch, e.g. via kubectl port-forward (svc/lfx-platform-nats 4222, svc/opensearch-cluster-master 9200, namespace lfx)
+export NATS_URL=nats://localhost:4222
+export OPENSEARCH_URL=http://localhost:9200
 
 bin/reindex-vote-responses -list                       # dry run: print every record it would replay
 bin/reindex-vote-responses -vote-uid <uid> -apply      # one vote first; check the indexed doc and read_tuples
@@ -228,10 +232,10 @@ bin/reindex-vote-responses -apply                      # everything
 
 - It is a **dry run unless `-apply` is passed**, and reports a count for every category it skips.
 - The re-put is a **compare-and-swap on the revision it read**. The bucket is written by the upstream sync, so a record that changed in between is never overwritten with stale bytes; it is counted as a conflict (the newer write already went through the consumer).
+- It only touches responses that are indexed; a response with no document in OpenSearch is left alone, and an indexed response with no `v1-objects` record is counted as `indexed but not in v1-objects`.
 - It replays only records the consumer has **already processed** (they have a `vote_response.{uid}` mapping and a mapped parent vote), so the handler treats them as updates and the LFID invite path, which fires only on a first create, does not run. Soft-deleted and tombstoned records are skipped.
 - It is paced at `-rate` (default 50/s) because each record fans out to the indexer and fga-sync. Watch consumer lag on `KV_v1-objects` during a full run.
 - If a replay is applied while the consumer is down, nothing is lost: the messages queue and are consumed when it returns.
-- `v1-objects` must be writable from where you run it. If it is a mirror of another cluster's bucket, the re-put will fail (counted as `failed`) and the replay has to run at the source.
 
 ### Search Behavior
 

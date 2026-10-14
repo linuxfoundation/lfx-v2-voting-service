@@ -4,11 +4,14 @@
 package eventing
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
+	"net/http"
 	"strings"
 	"time"
 
@@ -21,6 +24,10 @@ const (
 	voteMappingKeyPrefix         = "vote."
 	voteResponseMappingKeyPrefix = "vote_response."
 
+	openSearchIndex    = "resources"
+	openSearchPageSize = 200
+	openSearchScroll   = "2m"
+
 	// DefaultReindexRatePerSecond keeps a full reindex from outrunning the consumer; each record
 	// fans out to the indexer and to fga-sync, which serializes mutations per object.
 	DefaultReindexRatePerSecond = 50
@@ -28,6 +35,13 @@ const (
 
 // ReplayVoteResponsesOptions configures ReplayVoteResponses.
 type ReplayVoteResponsesOptions struct {
+	// OpenSearchURL is the OpenSearch base URL used to find which vote responses are indexed.
+	// Driving the replay from the index (as lfx-v2-meeting-service's reindex_meetings does) avoids
+	// listing every key of the v1-objects bucket, which holds all v1 object types and is far too
+	// large to scan.
+	OpenSearchURL string
+	// HTTPClient is used for OpenSearch requests; defaults to a client with a 30s timeout.
+	HTTPClient *http.Client
 	// Apply re-puts the records. When false (the default) nothing is written and the result
 	// reports what would be replayed.
 	Apply bool
@@ -40,7 +54,10 @@ type ReplayVoteResponsesOptions struct {
 
 // ReplayVoteResponsesResult summarizes a replay run.
 type ReplayVoteResponsesResult struct {
-	Scanned         int // itx-poll-vote records read
+	Scanned         int // indexed vote_response documents read from OpenSearch
+	SkippedNoID     int // indexed document without an object_id
+	Duplicates      int // object_id seen more than once in the index
+	NotFound        int // indexed, but no itx-poll-vote record in v1-objects
 	SkippedDeleted  int // soft-deleted records (a replay would re-run the delete path)
 	SkippedOther    int // outside the VoteUID filter
 	SkippedNoMap    int // never processed by the consumer: a replay would be a first create, not a reindex
@@ -53,8 +70,9 @@ type ReplayVoteResponsesResult struct {
 	Keys            []string
 }
 
-// ReplayVoteResponses reindexes vote responses by re-putting each `itx-poll-vote.*` record in
-// the v1-objects bucket with its existing bytes. The put lands as a new revision on the
+// ReplayVoteResponses reindexes vote responses. It scrolls OpenSearch for the indexed
+// `vote_response` documents, then re-puts each one's `itx-poll-vote.{object_id}` record in the
+// v1-objects bucket with its existing bytes. The put lands as a new revision on the
 // `$KV.v1-objects.itx-poll-vote.>` subject the voting consumer already watches, so each record
 // goes through the live handler (handleVoteResponseUpdate): the indexer message with the current
 // IndexingConfig, the vote_response owner tuple, and the vote participant tuple. Use it after
@@ -138,65 +156,199 @@ func collectReplayEntries(
 	result *ReplayVoteResponsesResult,
 	logger *slog.Logger,
 ) ([]jetstream.KeyValueEntry, error) {
-	keys, err := objectsKV.ListKeys(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list %s keys: %w", V1ObjectsBucket, err)
+	client := opts.HTTPClient
+	if client == nil {
+		client = &http.Client{Timeout: 30 * time.Second}
 	}
 
+	scrollID, page, err := openScroll(ctx, client, opts.OpenSearchURL)
+	if err != nil {
+		return nil, fmt.Errorf("open OpenSearch scroll: %w", err)
+	}
+	defer func() {
+		if err := deleteScroll(ctx, client, opts.OpenSearchURL, scrollID); err != nil {
+			logger.WarnContext(ctx, "failed to delete OpenSearch scroll context", "err", err)
+		}
+	}()
+
+	seen := map[string]bool{}
 	parentOK := map[string]bool{}
 	var entries []jetstream.KeyValueEntry
 
-	for key := range keys.Keys() {
-		if !strings.HasPrefix(key, voteResponseKeyPrefix) {
-			continue
+	for len(page) > 0 {
+		for _, hit := range page {
+			result.Scanned++
+			id := hit.Source.ObjectID
+			if id == "" {
+				result.SkippedNoID++
+				continue
+			}
+			if seen[id] {
+				result.Duplicates++
+				continue
+			}
+			seen[id] = true
+
+			// Filter on the indexed vote so a single-vote run does not read every record.
+			if opts.VoteUID != "" && hit.Source.voteUID() != opts.VoteUID {
+				result.SkippedOther++
+				continue
+			}
+
+			key := voteResponseKeyPrefix + id
+			entry, err := objectsKV.Get(ctx, key)
+			if err != nil {
+				if errors.Is(err, jetstream.ErrKeyNotFound) {
+					result.NotFound++
+				} else {
+					logger.WarnContext(ctx, "skipping unreadable vote response record", "key", key, "err", err)
+				}
+				continue
+			}
+
+			rec, err := decodeVoteResponseRecord(entry.Value())
+			if err != nil {
+				logger.WarnContext(ctx, "skipping undecodable vote response record", "key", key, "err", err)
+				continue
+			}
+			if rec.softDeleted {
+				result.SkippedDeleted++
+				continue
+			}
+
+			respMapping, err := mappingsKV.Get(ctx, voteResponseMappingKeyPrefix+id)
+			if err != nil {
+				result.SkippedNoMap++
+				continue
+			}
+			if isTombstonedMapping(respMapping.Value()) {
+				result.SkippedTomb++
+				continue
+			}
+
+			ok, cached := parentOK[rec.pollID]
+			if !cached {
+				mapping, err := mappingsKV.Get(ctx, voteMappingKeyPrefix+rec.pollID)
+				ok = rec.pollID != "" && err == nil && !isTombstonedMapping(mapping.Value())
+				parentOK[rec.pollID] = ok
+			}
+			if !ok {
+				result.SkippedNoParent++
+				continue
+			}
+
+			entries = append(entries, entry)
+			result.Keys = append(result.Keys, key)
 		}
-		entry, err := objectsKV.Get(ctx, key)
+
+		logger.InfoContext(ctx, "scanned indexed vote responses", "scanned", result.Scanned, "eligible", len(entries))
+
+		page, scrollID, err = nextScrollPage(ctx, client, opts.OpenSearchURL, scrollID)
 		if err != nil {
-			logger.WarnContext(ctx, "skipping unreadable vote response record", "key", key, "err", err)
-			continue
+			return nil, fmt.Errorf("OpenSearch scroll page: %w", err)
 		}
-		result.Scanned++
-
-		rec, err := decodeVoteResponseRecord(entry.Value())
-		if err != nil {
-			logger.WarnContext(ctx, "skipping undecodable vote response record", "key", key, "err", err)
-			continue
-		}
-
-		switch {
-		case rec.softDeleted:
-			result.SkippedDeleted++
-			continue
-		case opts.VoteUID != "" && rec.pollID != opts.VoteUID:
-			result.SkippedOther++
-			continue
-		}
-
-		respMapping, err := mappingsKV.Get(ctx, voteResponseMappingKeyPrefix+strings.TrimPrefix(key, voteResponseKeyPrefix))
-		if err != nil {
-			result.SkippedNoMap++
-			continue
-		}
-		if isTombstonedMapping(respMapping.Value()) {
-			result.SkippedTomb++
-			continue
-		}
-
-		ok, cached := parentOK[rec.pollID]
-		if !cached {
-			mapping, err := mappingsKV.Get(ctx, voteMappingKeyPrefix+rec.pollID)
-			ok = rec.pollID != "" && err == nil && !isTombstonedMapping(mapping.Value())
-			parentOK[rec.pollID] = ok
-		}
-		if !ok {
-			result.SkippedNoParent++
-			continue
-		}
-
-		entries = append(entries, entry)
-		result.Keys = append(result.Keys, key)
 	}
 	return entries, nil
+}
+
+// openSearchSource is the part of an indexed vote_response document the reindex reads.
+type openSearchSource struct {
+	ObjectID string `json:"object_id"`
+	Data     struct {
+		VoteUID string `json:"vote_uid"`
+		PollID  string `json:"poll_id"`
+	} `json:"data"`
+}
+
+// voteUID is the indexed vote's UID; legacy documents may only carry the v1 poll_id.
+func (s openSearchSource) voteUID() string {
+	if s.Data.VoteUID != "" {
+		return s.Data.VoteUID
+	}
+	return s.Data.PollID
+}
+
+type openSearchHit struct {
+	Source openSearchSource `json:"_source"`
+}
+
+type openSearchScrollResponse struct {
+	ScrollID string `json:"_scroll_id"`
+	Hits     struct {
+		Hits []openSearchHit `json:"hits"`
+	} `json:"hits"`
+}
+
+// openScroll opens a scroll over every indexed vote_response document.
+func openScroll(ctx context.Context, client *http.Client, osURL string) (string, []openSearchHit, error) {
+	body, err := json.Marshal(map[string]any{
+		"query":   map[string]any{"term": map[string]any{"object_type": "vote_response"}},
+		"_source": []string{"object_id", "data.vote_uid", "data.poll_id"},
+		"size":    openSearchPageSize,
+	})
+	if err != nil {
+		return "", nil, err
+	}
+	return doScroll(ctx, client, http.MethodPost,
+		fmt.Sprintf("%s/%s/_search?scroll=%s", strings.TrimRight(osURL, "/"), openSearchIndex, openSearchScroll), body)
+}
+
+// nextScrollPage fetches the next page; an empty page means the scroll is exhausted.
+func nextScrollPage(ctx context.Context, client *http.Client, osURL, scrollID string) ([]openSearchHit, string, error) {
+	body, err := json.Marshal(map[string]string{"scroll": openSearchScroll, "scroll_id": scrollID})
+	if err != nil {
+		return nil, "", err
+	}
+	id, hits, err := doScroll(ctx, client, http.MethodPost, strings.TrimRight(osURL, "/")+"/_search/scroll", body)
+	if err != nil {
+		return nil, "", err
+	}
+	return hits, id, nil
+}
+
+// deleteScroll releases the scroll context held open on the OpenSearch cluster.
+func deleteScroll(ctx context.Context, client *http.Client, osURL, scrollID string) error {
+	body, err := json.Marshal(map[string]string{"scroll_id": scrollID})
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodDelete, strings.TrimRight(osURL, "/")+"/_search/scroll", bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	return resp.Body.Close()
+}
+
+func doScroll(ctx context.Context, client *http.Client, method, url string, body []byte) (string, []openSearchHit, error) {
+	req, err := http.NewRequestWithContext(ctx, method, url, bytes.NewReader(body))
+	if err != nil {
+		return "", nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", nil, err
+	}
+	defer resp.Body.Close() //nolint:errcheck
+
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", nil, fmt.Errorf("read OpenSearch response: %w", err)
+	}
+	if resp.StatusCode >= 400 {
+		return "", nil, fmt.Errorf("OpenSearch returned status %d: %s", resp.StatusCode, string(raw))
+	}
+	var out openSearchScrollResponse
+	if err := json.Unmarshal(raw, &out); err != nil {
+		return "", nil, fmt.Errorf("unmarshal OpenSearch response: %w", err)
+	}
+	return out.ScrollID, out.Hits.Hits, nil
 }
 
 // voteResponseRecord is the subset of an itx-poll-vote record the reindex and the soft-delete path read.

@@ -1,15 +1,16 @@
 // Copyright The Linux Foundation and each contributor to LFX.
 // SPDX-License-Identifier: MIT
 
-// Command reindex-vote-responses reindexes vote responses by re-putting each itx-poll-vote record
-// in the v1-objects KV bucket, so the voting consumer reprocesses it through the live handler
-// (indexer message, vote_response owner tuple, vote participant tuple).
+// Command reindex-vote-responses reindexes vote responses. It asks OpenSearch which vote_response
+// documents are indexed, then re-puts each one's itx-poll-vote record in the v1-objects KV bucket,
+// so the voting consumer reprocesses it through the live handler (indexer message, vote_response
+// owner tuple, vote participant tuple). Same approach as reindex_meetings in lfx-v2-meeting-service.
 //
 // It is a dry run unless -apply is passed:
 //
-//	NATS_URL=nats://localhost:4222 reindex-vote-responses                # report only
-//	NATS_URL=nats://localhost:4222 reindex-vote-responses -vote-uid <u>  # one vote, report only
-//	NATS_URL=nats://localhost:4222 reindex-vote-responses -apply         # replay everything
+//	NATS_URL=nats://localhost:4222 OPENSEARCH_URL=http://localhost:9200 reindex-vote-responses                # report only
+//	NATS_URL=nats://localhost:4222 OPENSEARCH_URL=http://localhost:9200 reindex-vote-responses -vote-uid <u>  # one vote, report only
+//	NATS_URL=nats://localhost:4222 OPENSEARCH_URL=http://localhost:9200 reindex-vote-responses -apply         # replay everything
 package main
 
 import (
@@ -34,7 +35,8 @@ func main() {
 }
 
 func run() error {
-	natsURL := flag.String("nats-url", getEnv("NATS_URL", "nats://nats:4222"), "NATS server URL (env NATS_URL)")
+	natsURL := flag.String("nats-url", getEnv("NATS_URL", "nats://127.0.0.1:4222"), "NATS server URL (env NATS_URL)")
+	osURL := flag.String("opensearch-url", getEnv("OPENSEARCH_URL", "http://localhost:9200"), "OpenSearch base URL (env OPENSEARCH_URL)")
 	apply := flag.Bool("apply", false, "re-put the records; without it nothing is written")
 	voteUID := flag.String("vote-uid", "", "limit the replay to one vote's responses (v2 UID)")
 	rate := flag.Int("rate", eventing.DefaultReindexRatePerSecond, "max records re-put per second")
@@ -58,6 +60,7 @@ func run() error {
 	}
 
 	result, err := eventing.ReplayVoteResponses(ctx, js, eventing.ReplayVoteResponsesOptions{
+		OpenSearchURL: *osURL,
 		Apply:         *apply,
 		VoteUID:       *voteUID,
 		RatePerSecond: *rate,
@@ -74,7 +77,10 @@ func run() error {
 			mode = "APPLIED"
 		}
 		fmt.Printf("\n%s\n", mode)
-		fmt.Printf("  records scanned:               %d\n", result.Scanned)
+		fmt.Printf("  indexed responses scanned:     %d\n", result.Scanned)
+		fmt.Printf("  duplicate object_id:           %d\n", result.Duplicates)
+		fmt.Printf("  skipped, no object_id:         %d\n", result.SkippedNoID)
+		fmt.Printf("  indexed but not in v1-objects: %d\n", result.NotFound)
 		fmt.Printf("  skipped, soft-deleted:         %d\n", result.SkippedDeleted)
 		fmt.Printf("  skipped, other vote:           %d\n", result.SkippedOther)
 		fmt.Printf("  skipped, never processed:      %d\n", result.SkippedNoMap)
