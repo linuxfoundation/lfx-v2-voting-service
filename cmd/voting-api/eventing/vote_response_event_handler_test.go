@@ -73,6 +73,24 @@ func TestConvertMapToVoteResponseData(t *testing.T) {
 		assert.Equal(t, "Because the incumbent earned it.", result.CommentResponses[0].CommentText)
 	})
 
+	t.Run("lowercases mixed-case user_email for indexing (GH #3063)", func(t *testing.T) {
+		v1Data := map[string]interface{}{
+			"vote_id":    "vote-123",
+			"poll_id":    "poll-456",
+			"project_id": "project-sfid",
+			"user_email": "Jane.Doe@Example.org",
+		}
+
+		idMapper := idmapper.NewNoOpMapper()
+		ctx := context.Background()
+
+		logger := slog.Default()
+		result, err := convertMapToVoteResponseData(ctx, v1Data, idMapper, logger)
+		require.NoError(t, err)
+		assert.NotNil(t, result)
+		assert.Equal(t, "jane.doe@example.org", result.UserEmail)
+	})
+
 	t.Run("converts ranked choice answers from string to int", func(t *testing.T) {
 		v1Data := map[string]interface{}{
 			"vote_id":    "vote-123",

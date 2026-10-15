@@ -44,7 +44,8 @@ type CreateVoteRequestBody struct {
 	// Type of poll
 	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
 	// Number of winners. Sent upstream only when explicitly provided; meek_stv
-	// polls default to 2 when omitted.
+	// creates default to 2 when omitted. Updates leave omitted counts for ITX to
+	// resolve.
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow voters to abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
@@ -83,7 +84,8 @@ type UpdateVoteRequestBody struct {
 	// Type of poll
 	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
 	// Number of winners. Sent upstream only when explicitly provided; meek_stv
-	// polls default to 2 when omitted.
+	// creates default to 2 when omitted. Updates leave omitted counts for ITX to
+	// resolve.
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow voters to abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
@@ -2611,15 +2613,13 @@ func NewUpdateVotePayload(body *UpdateVoteRequestBody, uid string, token *string
 		EndTimeTimezone:            *body.EndTimeTimezone,
 		ProjectUID:                 body.ProjectUID,
 		CommitteeUID:               body.CommitteeUID,
+		PollType:                   body.PollType,
 		NumWinners:                 body.NumWinners,
 		QuorumPercentage:           body.QuorumPercentage,
 		WinningThresholdPercentage: body.WinningThresholdPercentage,
 	}
 	if body.PseudoAnonymity != nil {
 		v.PseudoAnonymity = *body.PseudoAnonymity
-	}
-	if body.PollType != nil {
-		v.PollType = *body.PollType
 	}
 	if body.AllowAbstain != nil {
 		v.AllowAbstain = *body.AllowAbstain
@@ -2656,9 +2656,6 @@ func NewUpdateVotePayload(body *UpdateVoteRequestBody, uid string, token *string
 	}
 	if body.PseudoAnonymity == nil {
 		v.PseudoAnonymity = false
-	}
-	if body.PollType == nil {
-		v.PollType = "generic"
 	}
 	if body.AllowAbstain == nil {
 		v.AllowAbstain = false

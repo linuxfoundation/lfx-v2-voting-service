@@ -53,7 +53,7 @@ spec:
         - authorizer: openfga_or_check
           config:
             values:
-              relation: writer
+              relation: writer_guard
               object: "project:{{ "{{- .Request.Body.project_uid -}}" }}"
               or_relation: "{{ "{{- if .Request.Body.committee_uid -}}writer{{- end -}}" }}"
               or_object: "{{ "{{- if .Request.Body.committee_uid -}}committee:{{- .Request.Body.committee_uid -}}{{- end -}}" }}"

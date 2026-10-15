@@ -98,19 +98,22 @@ func PseudoAnonymityAttribute() {
 }
 
 // PollTypeAttribute is the DSL attribute for poll type.
-func PollTypeAttribute() {
+// withDefault enables the create-only default.
+func PollTypeAttribute(withDefault bool) {
 	Attribute("poll_type", String, "Type of poll", func() {
 		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
-		Default("generic")
+		if withDefault {
+			Default("generic")
+		}
 	})
 }
 
 // NumWinnersAttribute is the DSL attribute for number of winners.
 // Deliberately no Default: an omitted num_winners must stay omitted so
 // non-STV poll types do not leak a fabricated winner count upstream to ITX.
-// The service layer applies the meek_stv default (2) itself.
+// The service layer applies the meek_stv default (2) on create only.
 func NumWinnersAttribute() {
-	Attribute("num_winners", Int, "Number of winners. Sent upstream only when explicitly provided; meek_stv polls default to 2 when omitted.", func() {
+	Attribute("num_winners", Int, "Number of winners. Sent upstream only when explicitly provided; meek_stv creates default to 2 when omitted. Updates leave omitted counts for ITX to resolve.", func() {
 		Minimum(2)
 		Maximum(10)
 	})

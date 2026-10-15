@@ -31,8 +31,10 @@ jobs:
         id: container_tag
         env:
           HEAD_REF: "${{ github.head_ref }}"
+          PR_NUMBER: "${{ github.event.pull_request.number }}"
         run: |
-          container_tag=$(echo "$HEAD_REF" | sed 's/[^_0-9a-zA-Z]/-/g' | cut -c -127)
+          sanitized_ref=$(echo "$HEAD_REF" | sed 's/[^_0-9a-zA-Z]/-/g' | cut -c -$((124 - ${#PR_NUMBER})))
+          container_tag="pr-${PR_NUMBER}-${sanitized_ref}"
           echo tag="$container_tag" >> "$GITHUB_OUTPUT"
       - name: Build voting-api for PR
         run: |

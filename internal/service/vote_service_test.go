@@ -283,22 +283,26 @@ func TestCreatorFromPrincipal(t *testing.T) {
 }
 
 // TestVoteNumWinnersResolution pins the #2922 rule on both write hops: num_winners
-// reaches ITX only when the client explicitly provided it — except meek_stv, which
-// defaults to 2 winners when omitted. The wire-level assertKeyAbsent guards the
+// reaches ITX only when the client explicitly provided it — except meek_stv creates,
+// which default to 2 winners when omitted. Updates leave resolution to ITX.
+// The wire-level assertKeyAbsent guards the
 // `,omitempty` tag so a nil pointer can never leak onto the wire as a value.
 func TestVoteNumWinnersResolution(t *testing.T) {
 	tests := []struct {
 		name       string
 		pollType   string
 		numWinners *int
-		want       *int
+		wantCreate *int
+		wantUpdate *int
 	}{
 		{name: "generic omitted stays omitted", pollType: "generic"},
 		{name: "condorcet_irv omitted stays omitted", pollType: "condorcet_irv"},
 		{name: "instant_runoff_vote omitted stays omitted", pollType: "instant_runoff_vote"},
-		{name: "meek_stv omitted defaults to 2", pollType: "meek_stv", want: utils.IntPtr(2)},
-		{name: "meek_stv explicit passes through", pollType: "meek_stv", numWinners: utils.IntPtr(5), want: utils.IntPtr(5)},
-		{name: "generic explicit passes through", pollType: "generic", numWinners: utils.IntPtr(4), want: utils.IntPtr(4)},
+		{name: "meek_stv omitted defaults only on create", pollType: "meek_stv", wantCreate: utils.IntPtr(2)},
+		{name: "meek_stv explicit passes through", pollType: "meek_stv", numWinners: utils.IntPtr(5), wantCreate: utils.IntPtr(5), wantUpdate: utils.IntPtr(5)},
+		{name: "generic explicit passes through", pollType: "generic", numWinners: utils.IntPtr(4), wantCreate: utils.IntPtr(4), wantUpdate: utils.IntPtr(4)},
+		{name: "omitted type and count stay omitted"},
+		{name: "omitted type explicit count passes through", numWinners: utils.IntPtr(4), wantCreate: utils.IntPtr(4), wantUpdate: utils.IntPtr(4)},
 	}
 
 	assertNumWinners := func(t *testing.T, got, want *int, req any) {
@@ -331,7 +335,7 @@ func TestVoteNumWinnersResolution(t *testing.T) {
 			if client.lastCreate == nil {
 				t.Fatal("expected CreatePoll to be called")
 			}
-			assertNumWinners(t, client.lastCreate.NumWinners, tt.want, client.lastCreate)
+			assertNumWinners(t, client.lastCreate.NumWinners, tt.wantCreate, client.lastCreate)
 		})
 
 		t.Run("update/"+tt.name, func(t *testing.T) {
@@ -346,7 +350,10 @@ func TestVoteNumWinnersResolution(t *testing.T) {
 			if client.lastUpdate == nil {
 				t.Fatal("expected UpdatePoll to be called")
 			}
-			assertNumWinners(t, client.lastUpdate.NumWinners, tt.want, client.lastUpdate)
+			assertNumWinners(t, client.lastUpdate.NumWinners, tt.wantUpdate, client.lastUpdate)
+			if tt.pollType == "" {
+				assertKeyAbsent(t, client.lastUpdate, "poll_type")
+			}
 		})
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	indexerConstants "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
@@ -155,7 +156,7 @@ func convertMapToVoteResponseData(
 		VoteCreationTime:        voteDB.VoteCreationTime,
 		LastModifiedTime:        voteDB.LastModifiedTime,
 		UserID:                  voteDB.UserID,
-		UserEmail:               voteDB.UserEmail,
+		UserEmail:               strings.ToLower(voteDB.UserEmail), // GH #3063: normalize case — query-service term clauses are case-sensitive; also used for invite lookup/send
 		UserRole:                voteDB.UserRole,
 		UserName:                voteDB.UserName,
 		Username:                voteDB.Username,
