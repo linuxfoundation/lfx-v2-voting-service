@@ -31,6 +31,11 @@ type fixture struct {
 
 func newFixture(t *testing.T) *fixture {
 	t.Helper()
+	// Keep retried reads fast; the production delays are seconds.
+	orig := readRetryDelays
+	readRetryDelays = []time.Duration{time.Millisecond, time.Millisecond, time.Millisecond}
+	t.Cleanup(func() { readRetryDelays = orig })
+
 	ns, err := server.NewServer(&server.Options{Host: "127.0.0.1", Port: -1, JetStream: true, StoreDir: t.TempDir()})
 	require.NoError(t, err)
 	go ns.Start()
@@ -109,6 +114,13 @@ func osHit(objectID, voteUID string) map[string]any {
 		"object_id": objectID,
 		"data":      map[string]any{"vote_uid": voteUID, "poll_id": voteUID},
 	}}
+}
+
+// osHitChecked is osHit with the document's indexed access check.
+func osHitChecked(objectID, voteUID, check string) map[string]any {
+	h := osHit(objectID, voteUID)
+	h["_source"].(map[string]any)["access_check_query"] = check
+	return h
 }
 
 type osStub struct {
@@ -373,9 +385,10 @@ func (k failingKV) Get(ctx context.Context, key string) (jetstream.KeyValueEntry
 	return k.KeyValue.Get(ctx, key)
 }
 
-// A transient read error must abort the run, not be counted as "never processed" (and, for the
-// parent vote, cached as unmapped so every later response of that vote is silently skipped).
-func TestReindex_ATransientMappingReadErrorAbortsTheRun(t *testing.T) {
+// A read that keeps failing (after retries) must abort the run, not be counted as "never
+// processed" (and, for the parent vote, cached as unmapped so every later response of that vote is
+// silently skipped).
+func TestReindex_APersistentReadErrorAbortsTheRun(t *testing.T) {
 	tests := map[string]string{
 		"response mapping": "vote_response.r1",
 		"parent mapping":   "vote.vote-1",
@@ -402,6 +415,7 @@ func TestReindex_ATransientMappingReadErrorAbortsTheRun(t *testing.T) {
 
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), "nats: timeout")
+			assert.Contains(t, err.Error(), "after 4 attempts")
 			assert.Zero(t, res.SkippedNoMap)
 			assert.Zero(t, res.SkippedNoParent)
 			assert.Zero(t, res.NotFound)
@@ -471,4 +485,96 @@ func TestReindex_SendsTheRateDerivedKeepAliveOnEveryScrollRequest(t *testing.T) 
 	for _, k := range got {
 		assert.Equal(t, "520s", k)
 	}
+}
+
+// flakyKV fails the first n Gets of one key with a transient error, then reads normally.
+type flakyKV struct {
+	jetstream.KeyValue
+	key   string
+	n     int
+	calls int
+}
+
+func (k *flakyKV) Get(ctx context.Context, key string) (jetstream.KeyValueEntry, error) {
+	if key == k.key {
+		k.calls++
+		if k.calls <= k.n {
+			return nil, errors.New("nats: timeout")
+		}
+	}
+	return k.KeyValue.Get(ctx, key)
+}
+
+// One timeout in a long run must not abort it: the read is retried and the run carries on.
+func TestReindex_ATransientReadErrorIsRetried(t *testing.T) {
+	f := newFixture(t)
+	f.mapVote(t, "vote-1", "1")
+	f.putResponse(t, "r1", map[string]any{"poll_id": "vote-1", "username": "alice"})
+	f.mapResponse(t, "r1", "1")
+
+	flaky := &flakyKV{KeyValue: f.mappingsKV, key: "vote_response.r1", n: 2}
+	res := &result{}
+	r := &runner{
+		objectsKV: f.objectsKV, mappingsKV: flaky, res: res, logger: slog.Default(),
+		seen: map[string]bool{}, parentOK: map[string]bool{},
+	}
+
+	err := r.process(context.Background(), openSearchHit{Source: openSearchSource{ObjectID: "r1"}})
+
+	require.NoError(t, err)
+	assert.Equal(t, 3, flaky.calls, "two failures, then the successful read")
+	assert.Equal(t, 1, res.Eligible)
+	assert.Zero(t, res.SkippedNoMap, "a retried read that then succeeds is a normal record, not a skip")
+}
+
+// "Not found" is an answer, not an error: it is never retried.
+func TestGetEntry_DoesNotRetryAMissingKey(t *testing.T) {
+	f := newFixture(t)
+	counting := &flakyKV{KeyValue: f.mappingsKV, key: "vote.missing", n: 0}
+
+	_, found, err := getEntry(context.Background(), counting, "vote.missing", slog.Default())
+
+	require.NoError(t, err)
+	assert.False(t, found)
+	assert.Equal(t, 1, counting.calls, "a missing key is read once")
+}
+
+// An interrupted run is resumed by skipping what is already on the new check; documents still on
+// the old check, and those with no access check at all, are processed.
+func TestReindex_SkipReindexedSkipsOnlyDocumentsOnTheNewCheck(t *testing.T) {
+	f := newFixture(t)
+	f.mapVote(t, "vote-1", "1")
+	for _, id := range []string{"r1", "r2", "r3"} {
+		f.putResponse(t, id, map[string]any{"poll_id": "vote-1", "username": "u-" + id})
+		f.mapResponse(t, id, "1")
+	}
+	pages := []map[string]any{
+		osHitChecked("r1", "vote-1", "vote_response:r1#auditor"), // done
+		osHitChecked("r2", "vote-1", "vote:vote-1#viewer"),       // old
+		osHit("r3", "vote-1"), // no access check indexed
+	}
+
+	t.Run("on", func(t *testing.T) {
+		stub := newOpenSearchStub(t, -1, nil, pages)
+		var keys []string
+		res, err := reindex(context.Background(), f.js,
+			options{OpenSearchURL: stub.URL, SkipReindexed: true, OnEligible: collect(&keys)}, slog.Default())
+		require.NoError(t, err)
+
+		assert.ElementsMatch(t, []string{"itx-poll-vote.r2", "itx-poll-vote.r3"}, keys)
+		assert.Equal(t, 1, res.SkippedReindexed)
+	})
+
+	// The pass after enabling participant grants must re-put everything, including what is already
+	// on the new check, so the flag is off by default.
+	t.Run("off by default", func(t *testing.T) {
+		stub := newOpenSearchStub(t, -1, nil, pages)
+		var keys []string
+		res, err := reindex(context.Background(), f.js,
+			options{OpenSearchURL: stub.URL, OnEligible: collect(&keys)}, slog.Default())
+		require.NoError(t, err)
+
+		assert.ElementsMatch(t, []string{"itx-poll-vote.r1", "itx-poll-vote.r2", "itx-poll-vote.r3"}, keys)
+		assert.Zero(t, res.SkippedReindexed)
+	})
 }
