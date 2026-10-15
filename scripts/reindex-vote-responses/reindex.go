@@ -64,6 +64,11 @@ type options struct {
 	VoteUID string
 	// RatePerSecond caps how many records are re-put per second.
 	RatePerSecond int
+	// SkipReindexed skips documents whose indexed access check is already the new
+	// vote_response#auditor, so an interrupted run can be resumed without re-putting what was done.
+	// Do not use it for the second pass after enabling participant grants: those documents are
+	// already on the new check but still need their participant tuple.
+	SkipReindexed bool
 	// OnEligible is called with the key of every record that is (or, in a dry run, would be)
 	// re-put, as it is found.
 	OnEligible func(key string)
@@ -71,20 +76,21 @@ type options struct {
 
 // result summarizes a run.
 type result struct {
-	Scanned         int // indexed vote_response documents read from OpenSearch
-	SkippedNoID     int // indexed document without an object_id
-	Duplicates      int // object_id seen more than once in the index
-	SkippedOther    int // outside the VoteUID filter
-	NotFound        int // indexed, but no itx-poll-vote record in v1-objects
-	Undecodable     int // record present but not decodable
-	SkippedDeleted  int // soft-deleted records (a replay would re-run the delete path)
-	SkippedNoMap    int // never processed by the consumer: a replay would be a first create, not a reindex
-	SkippedTomb     int // response mapping tombstoned (already deleted)
-	SkippedNoParent int // parent vote missing or tombstoned in v1-mappings
-	Eligible        int // records that will be / were re-put
-	Replayed        int // re-put succeeded
-	Conflicts       int // record changed since it was read; the newer write already triggered the consumer
-	Failed          int // re-put failed
+	Scanned          int // indexed vote_response documents read from OpenSearch
+	SkippedNoID      int // indexed document without an object_id
+	Duplicates       int // object_id seen more than once in the index
+	SkippedOther     int // outside the VoteUID filter
+	SkippedReindexed int // already on the new access check (SkipReindexed)
+	NotFound         int // indexed, but no itx-poll-vote record in v1-objects
+	Undecodable      int // record present but not decodable
+	SkippedDeleted   int // soft-deleted records (a replay would re-run the delete path)
+	SkippedNoMap     int // never processed by the consumer: a replay would be a first create, not a reindex
+	SkippedTomb      int // response mapping tombstoned (already deleted)
+	SkippedNoParent  int // parent vote missing or tombstoned in v1-mappings
+	Eligible         int // records that will be / were re-put
+	Replayed         int // re-put succeeded
+	Conflicts        int // record changed since it was read; the newer write already triggered the consumer
+	Failed           int // re-put failed
 }
 
 // reindex reindexes vote responses. It scrolls OpenSearch for the indexed `vote_response`
@@ -203,6 +209,11 @@ func (r *runner) process(ctx context.Context, hit openSearchHit) error {
 	}
 	r.seen[id] = true
 
+	if r.opts.SkipReindexed && hit.Source.AccessCheckQuery == "vote_response:"+id+"#auditor" {
+		r.res.SkippedReindexed++
+		return nil
+	}
+
 	// Filter on the indexed vote so a single-vote run does not read every record.
 	if r.opts.VoteUID != "" && hit.Source.voteUID() != r.opts.VoteUID {
 		r.res.SkippedOther++
@@ -210,7 +221,7 @@ func (r *runner) process(ctx context.Context, hit openSearchHit) error {
 	}
 
 	key := voteResponseKeyPrefix + id
-	entry, found, err := getEntry(ctx, r.objectsKV, key)
+	entry, found, err := getEntry(ctx, r.objectsKV, key, r.logger)
 	if err != nil {
 		return fmt.Errorf("read %s: %w", key, err)
 	}
@@ -230,7 +241,7 @@ func (r *runner) process(ctx context.Context, hit openSearchHit) error {
 		return nil
 	}
 
-	respMapping, found, err := getEntry(ctx, r.mappingsKV, voteResponseMappingKeyPrefix+id)
+	respMapping, found, err := getEntry(ctx, r.mappingsKV, voteResponseMappingKeyPrefix+id, r.logger)
 	if err != nil {
 		return fmt.Errorf("read mapping %s%s: %w", voteResponseMappingKeyPrefix, id, err)
 	}
@@ -288,7 +299,7 @@ func (r *runner) parentMapped(ctx context.Context, pollID string) (bool, error) 
 	if ok, cached := r.parentOK[pollID]; cached {
 		return ok, nil
 	}
-	mapping, found, err := getEntry(ctx, r.mappingsKV, voteMappingKeyPrefix+pollID)
+	mapping, found, err := getEntry(ctx, r.mappingsKV, voteMappingKeyPrefix+pollID, r.logger)
 	if err != nil {
 		return false, fmt.Errorf("read mapping %s%s: %w", voteMappingKeyPrefix, pollID, err)
 	}
@@ -303,16 +314,33 @@ func replayRecord(ctx context.Context, kv jetstream.KeyValue, entry jetstream.Ke
 	return err
 }
 
-// getEntry reads a key, reporting a missing key as found=false and any other failure as an error.
-func getEntry(ctx context.Context, kv jetstream.KeyValue, key string) (jetstream.KeyValueEntry, bool, error) {
-	entry, err := kv.Get(ctx, key)
-	if err != nil {
+// readRetryDelays are the waits between attempts at a KV read that fails with anything other than
+// "not found". A long run against a loaded cluster sees the occasional timeout; retrying a few
+// times keeps one blip from aborting it, while a read that keeps failing still aborts the run
+// instead of being counted as a skip.
+var readRetryDelays = []time.Duration{250 * time.Millisecond, time.Second, 3 * time.Second}
+
+// getEntry reads a key, reporting a missing key as found=false. Any other failure is retried
+// (see readRetryDelays) and, if it persists, returned as an error.
+func getEntry(ctx context.Context, kv jetstream.KeyValue, key string, logger *slog.Logger) (jetstream.KeyValueEntry, bool, error) {
+	for attempt := 0; ; attempt++ {
+		entry, err := kv.Get(ctx, key)
+		if err == nil {
+			return entry, true, nil
+		}
 		if errors.Is(err, jetstream.ErrKeyNotFound) {
 			return nil, false, nil
 		}
-		return nil, false, err
+		if attempt >= len(readRetryDelays) {
+			return nil, false, fmt.Errorf("%w (after %d attempts)", err, attempt+1)
+		}
+		logger.WarnContext(ctx, "KV read failed, retrying", "key", key, "attempt", attempt+1, "err", err)
+		select {
+		case <-ctx.Done():
+			return nil, false, ctx.Err()
+		case <-time.After(readRetryDelays[attempt]):
+		}
 	}
-	return entry, true, nil
 }
 
 func isTombstoned(entry jetstream.KeyValueEntry) bool {
@@ -353,8 +381,9 @@ func decodeRecord(value []byte) (record, error) {
 
 // openSearchSource is the part of an indexed vote_response document the reindex reads.
 type openSearchSource struct {
-	ObjectID string `json:"object_id"`
-	Data     struct {
+	ObjectID         string `json:"object_id"`
+	AccessCheckQuery string `json:"access_check_query"`
+	Data             struct {
 		VoteUID string `json:"vote_uid"`
 		PollID  string `json:"poll_id"`
 	} `json:"data"`
@@ -387,7 +416,7 @@ type openSearchScrollResponse struct {
 func openScroll(ctx context.Context, client *http.Client, osURL, keepAlive string) (string, []openSearchHit, error) {
 	body, err := json.Marshal(map[string]any{
 		"query":   map[string]any{"term": map[string]any{"object_type": "vote_response"}},
-		"_source": []string{"object_id", "data.vote_uid", "data.poll_id"},
+		"_source": []string{"object_id", "access_check_query", "data.vote_uid", "data.poll_id"},
 		"size":    openSearchPageSize,
 	})
 	if err != nil {

@@ -39,6 +39,7 @@ func run() error {
 	apply := flag.Bool("apply", false, "re-put the records; without it nothing is written")
 	voteUID := flag.String("vote-uid", "", "limit the replay to one vote's responses (v2 UID)")
 	rate := flag.Int("rate", defaultRatePerSecond, "max records re-put per second")
+	skipReindexed := flag.Bool("skip-reindexed", false, "skip responses already on the new access check, to resume an interrupted run (not for the pass after enabling participant grants)")
 	list := flag.Bool("list", false, "print the key of every record that would be replayed")
 	flag.Parse()
 
@@ -63,6 +64,7 @@ func run() error {
 		Apply:         *apply,
 		VoteUID:       *voteUID,
 		RatePerSecond: *rate,
+		SkipReindexed: *skipReindexed,
 	}
 	if *list {
 		opts.OnEligible = func(key string) { fmt.Println(key) }
@@ -80,6 +82,7 @@ func run() error {
 		fmt.Printf("  duplicate object_id:           %d\n", res.Duplicates)
 		fmt.Printf("  skipped, no object_id:         %d\n", res.SkippedNoID)
 		fmt.Printf("  skipped, other vote:           %d\n", res.SkippedOther)
+		fmt.Printf("  skipped, already reindexed:    %d\n", res.SkippedReindexed)
 		fmt.Printf("  indexed but not in v1-objects: %d\n", res.NotFound)
 		fmt.Printf("  skipped, undecodable record:   %d\n", res.Undecodable)
 		fmt.Printf("  skipped, soft-deleted:         %d\n", res.SkippedDeleted)
