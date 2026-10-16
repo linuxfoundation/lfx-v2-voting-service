@@ -912,7 +912,7 @@ Authorization: Bearer <heimdall-jwt-token>
         {"choice_id": "c1-uuid", "vote_count": 14, "percentage": 77.8},
         {"choice_id": "c2-uuid", "vote_count": 10, "percentage": 55.6}
       ],
-      "ranked_choice_winner_info": {"poll_choices": null, "condorcet_irv_used_for_eliminations": false}
+      "ranked_choice_winner_info": {"poll_choices": [], "condorcet_irv_used_for_eliminations": false}
     }
   ],
   "comment_results": [
@@ -943,7 +943,7 @@ Authorization: Bearer <heimdall-jwt-token>
 }
 ```
 
-**Note**: `ranked_choice_votes`, `irv_round_summary`, and `meek_stv_round_summary` are populated only for the corresponding `poll_type` values (`condorcet_irv`, `instant_runoff_vote`, `meek_stv`). For `generic` polls, only `generic_choice_votes` is populated. Unpopulated optional keys are omitted from the response entirely (never serialized as `null` or `[]`), which is why the example above has no `ranked_choice_votes` / `irv_round_summary` / `meek_stv_round_summary` keys. `ranked_choice_winner_info` is always present (ITX emits it for every poll type), with `poll_choices: null` when no winner has been determined. On comment responses, `user_id`, `user_name`, and `profile_picture` are absent entirely when the poll has `pseudo_anonymity` enabled.
+**Note**: `ranked_choice_votes`, `irv_round_summary`, and `meek_stv_round_summary` are populated only for the corresponding `poll_type` values (`condorcet_irv`, `instant_runoff_vote`, `meek_stv`). For `generic` polls, only `generic_choice_votes` is populated. Unpopulated optional keys are omitted from the response entirely (never serialized as `null` or `[]`), which is why the example above has no `ranked_choice_votes` / `irv_round_summary` / `meek_stv_round_summary` keys. `ranked_choice_winner_info` is always present (ITX emits it for every poll type), with `poll_choices: []` when no winner has been determined (the HTTP encoder normalizes nil choices to an empty array). On comment responses, `user_id`, `user_name`, and `profile_picture` are absent entirely when the poll has `pseudo_anonymity` enabled.
 
 ---
 
