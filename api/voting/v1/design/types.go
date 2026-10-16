@@ -109,14 +109,13 @@ func PollTypeAttribute(withDefault bool) {
 }
 
 // NumWinnersAttribute is the DSL attribute for number of winners.
-// withDefault enables the create-only default.
-func NumWinnersAttribute(withDefault bool) {
-	Attribute("num_winners", Int, "Number of winners (meek_stv only)", func() {
+// Deliberately no Default: an omitted num_winners must stay omitted so
+// non-STV poll types do not leak a fabricated winner count upstream to ITX.
+// The service layer applies the meek_stv default (2) on create only.
+func NumWinnersAttribute() {
+	Attribute("num_winners", Int, "Number of winners. Sent upstream only when explicitly provided; meek_stv creates default to 2 when omitted. Updates leave omitted counts for ITX to resolve.", func() {
 		Minimum(2)
 		Maximum(10)
-		if withDefault {
-			Default(2)
-		}
 	})
 }
 
@@ -217,7 +216,7 @@ var VoteResult = Type("VoteResult", func() {
 		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
 		Default("generic")
 	})
-	Attribute("num_winners", Int, "Number of winners (meek_stv only)")
+	Attribute("num_winners", Int, "Number of winners. Absent when no winner count is stored upstream.")
 	Attribute("allow_abstain", Boolean, "Allow abstain")
 
 	Required("uid", "name", "description", "status", "project_uid", "committee_uid")

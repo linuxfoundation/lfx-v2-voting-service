@@ -18,6 +18,7 @@ import (
 	votesvc "github.com/linuxfoundation/lfx-v2-voting-service/gen/vote"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/utils"
 )
 
 // ---- ConvertPollResponseToVoteResult ----------------------------------------
@@ -100,17 +101,17 @@ func TestConvertPollResponseToVoteResult_PollQuestionsPassThrough(t *testing.T) 
 // ---- ConvertCreateVotePayloadToDomain ---------------------------------------
 
 // TestConvertCreateVotePayloadToDomain_FieldMapping verifies that the Goa payload
-// field names are correctly mapped to the service request. The two highest-risk
-// renames here are CommitteeUids→CommitteeUIDs (plural, casing) and the
-// NumWinners int→*int wrapping via utils.IntPtr.
+// field names are correctly mapped to the service request. The highest-risk
+// rename here is CommitteeUids→CommitteeUIDs (plural, casing); NumWinners is a
+// *int passthrough — only explicitly provided values may reach ITX (#2922).
 func TestConvertCreateVotePayloadToDomain_FieldMapping(t *testing.T) {
 	payload := &votesvc.CreateVotePayload{
 		Name:          "Board Election",
 		ProjectUID:    "proj-uid-123",
 		CommitteeUID:  "comm-uid-456",
 		CommitteeUids: []string{"a", "b"},
-		NumWinners:    3,
-		PollType:      "single_choice",
+		NumWinners:    utils.IntPtr(3),
+		PollType:      "generic",
 	}
 
 	req := ConvertCreateVotePayloadToDomain(payload)
@@ -127,12 +128,13 @@ func TestConvertCreateVotePayloadToDomain_FieldMapping(t *testing.T) {
 	if len(req.CommitteeUIDs) != len(payload.CommitteeUids) {
 		t.Errorf("CommitteeUIDs length: want %d, got %d", len(payload.CommitteeUids), len(req.CommitteeUIDs))
 	}
-	// NumWinners must be wrapped as a non-nil pointer so it can be sent as-is to ITX.
+	// NumWinners is a pointer passthrough: an explicitly provided value must
+	// arrive non-nil and unchanged so it can be sent as-is to ITX.
 	if req.NumWinners == nil {
 		t.Fatal("NumWinners: expected non-nil pointer, got nil")
 	}
-	if *req.NumWinners != payload.NumWinners {
-		t.Errorf("NumWinners: want %d, got %d", payload.NumWinners, *req.NumWinners)
+	if *req.NumWinners != *payload.NumWinners {
+		t.Errorf("NumWinners: want %d, got %d", *payload.NumWinners, *req.NumWinners)
 	}
 	if req.PollType != payload.PollType {
 		t.Errorf("PollType: want %q, got %q", payload.PollType, req.PollType)
