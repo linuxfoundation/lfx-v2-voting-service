@@ -201,6 +201,15 @@ x-scope: manage:voting
 }
 ```
 
+**Poll origin and email routing**: The proxy automatically adds `source: "self_serve"`
+to the ITX create request; clients do not supply it through the V2 API. ITX stores
+this origin and uses it for both the creator's poll-ended results link and voter
+email destinations. For `self_serve`, invitation, extension, resend, and reminder
+emails open `/votes/{poll_id}` on the environment's Self Serve app. The poll ID is
+the same identifier exposed as the V2 vote UID; no ID translation is required.
+Other stored origins (`pcc`, `unknown`, or an empty legacy value) retain the
+configured MyProfile/OpenProfile voter link and the PCC results link for creators.
+
 **Response** (200 OK):
 
 ```json

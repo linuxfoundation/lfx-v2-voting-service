@@ -109,8 +109,9 @@ func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*
 	// username/email, so the principal must be sent as the username, not a bare ID.
 	proxyReq.CreatedBy = creatorFromPrincipal(principal)
 
-	// Mark the origin so ITX links the poll-ended email to the self-serve app: the proxy
-	// is the sole self-serve entry point, so every poll it creates is self-serve.
+	// Mark the origin so ITX links the creator's poll-ended results to Self Serve
+	// and voter invitation, extension, resend, and reminder emails to /votes/{poll_id}.
+	// The proxy is the sole self-serve entry point, so every poll it creates is self-serve.
 	proxyReq.Source = itx.PollSourceSelfServe
 
 	// Convert poll questions
