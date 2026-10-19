@@ -3,8 +3,11 @@
 
 package itx
 
-// PollSource marks polls created through the LFX self-serve proxy, so ITX links
-// the poll-ended email back to the self-serve app instead of PCC.
+// PollSource marks the poll's origin so ITX routes the creator's poll-ended results
+// link back to the creating surface and selects the destination for voter emails.
+// For self_serve, invitation, extension, resend, and reminder emails open the
+// Self Serve vote page at /votes/{poll_id}. Other stored origins, including pcc,
+// unknown, and empty legacy values, retain the configured MyProfile/OpenProfile link.
 type PollSource string
 
 // PollSourceSelfServe is the source value for polls created via the self-serve proxy.
