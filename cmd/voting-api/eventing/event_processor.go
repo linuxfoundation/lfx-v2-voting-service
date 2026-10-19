@@ -69,7 +69,7 @@ func NewEventProcessor(
 	}
 
 	// Initialize publisher
-	publisher := eventing.NewNATSPublisher(conn, logger)
+	publisher := eventing.NewNATSPublisher(conn, logger, eventing.WithParticipantGrants(cfg.ParticipantGrantsEnabled))
 
 	// Access the V1 mappings KV bucket
 	mappingsKV, err := jsContext.KeyValue(context.Background(), V1MappingsBucket)

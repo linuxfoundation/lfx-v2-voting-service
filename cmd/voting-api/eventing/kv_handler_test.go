@@ -385,6 +385,46 @@ func TestHandleKVPut(t *testing.T) {
 		assert.Len(t, mockPublisher.publishedVotes, 0)
 	})
 
+	t.Run("soft delete of a vote response carries the voter so the participant can be removed", func(t *testing.T) {
+		mappingsKV, cleanup := setupTestKV(t)
+		defer cleanup()
+
+		entry := &kvEntry{
+			key:       "itx-poll-vote.vote-123",
+			value:     []byte(`{"vote_id":"vote-123","poll_id":"poll-456","username":"nickcoai","_sdc_deleted_at":"2024-01-01T00:00:00Z"}`),
+			operation: jetstream.KeyValuePut,
+		}
+
+		mockPublisher := &mockEventPublisher{}
+		shouldRetry := kvHandler(context.Background(), entry, mockPublisher, idmapper.NewNoOpMapper(), mappingsKV, nil, slog.Default())
+
+		assert.False(t, shouldRetry)
+		require.Len(t, mockPublisher.publishedVoteResponses, 1)
+		assert.Equal(t, "deleted", mockPublisher.publishedVoteResponseActions[0])
+		assert.Equal(t, "vote-123", mockPublisher.publishedVoteResponses[0].UID)
+		assert.Equal(t, "poll-456", mockPublisher.publishedVoteResponses[0].VoteUID)
+		assert.Equal(t, "nickcoai", mockPublisher.publishedVoteResponses[0].Username)
+	})
+
+	t.Run("hard delete of a vote response has no record, so no voter is known", func(t *testing.T) {
+		mappingsKV, cleanup := setupTestKV(t)
+		defer cleanup()
+
+		entry := &kvEntry{
+			key:       "itx-poll-vote.vote-123",
+			value:     nil, // a KV delete/purge marker has no value
+			operation: jetstream.KeyValueDelete,
+		}
+
+		mockPublisher := &mockEventPublisher{}
+		shouldRetry := kvHandler(context.Background(), entry, mockPublisher, idmapper.NewNoOpMapper(), mappingsKV, nil, slog.Default())
+
+		assert.False(t, shouldRetry)
+		require.Len(t, mockPublisher.publishedVoteResponses, 1)
+		assert.Empty(t, mockPublisher.publishedVoteResponses[0].Username)
+		assert.Empty(t, mockPublisher.publishedVoteResponses[0].VoteUID)
+	})
+
 	t.Run("soft delete: null _sdc_deleted_at does not trigger delete path", func(t *testing.T) {
 		mappingsKV, cleanup := setupTestKV(t)
 		defer cleanup()

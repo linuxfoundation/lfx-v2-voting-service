@@ -91,9 +91,10 @@ func TestBuildVoteResponseIndexingConfig_Contract(t *testing.T) {
 	cfg := buildVoteResponseIndexingConfig(data)
 
 	// docs/indexer-contract.md § Vote Response — Access Control
-	// Note: access is scoped to the parent vote, not the response itself.
-	assertField(t, "AccessCheckObject", cfg.AccessCheckObject, fmt.Sprintf("vote:%s", voteUID))
-	assertField(t, "AccessCheckRelation", cfg.AccessCheckRelation, "viewer")
+	// Note: access is scoped to the response itself (owner or vote auditor), not vote#viewer,
+	// so vote participants cannot read each other's ballots.
+	assertField(t, "AccessCheckObject", cfg.AccessCheckObject, fmt.Sprintf("vote_response:%s", uid))
+	assertField(t, "AccessCheckRelation", cfg.AccessCheckRelation, "auditor")
 	assertField(t, "HistoryCheckObject", cfg.HistoryCheckObject, fmt.Sprintf("vote_response:%s", uid))
 	assertField(t, "HistoryCheckRelation", cfg.HistoryCheckRelation, "auditor")
 	assertField(t, "ObjectID", cfg.ObjectID, uid)

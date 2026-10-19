@@ -200,11 +200,15 @@ func convertMapToVoteResponseData(
 	return voteResponseData, nil
 }
 
-// handleVoteResponseDelete processes a vote response delete from itx-poll-vote records
+// handleVoteResponseDelete processes a vote response delete from itx-poll-vote records.
+// record is the deleted record when the event still carries it (a soft delete, `_sdc_deleted_at`);
+// it is nil for a hard delete or purge, whose value is empty. It lets the delete also remove the
+// voter's participant tuple on the parent vote, which delete_access on the response does not touch.
 // Returns true if the message should be retried (NAK), false if it should be acknowledged (ACK)
 func handleVoteResponseDelete(
 	ctx context.Context,
 	uid string,
+	record *voteResponseRecord,
 	publisher domain.EventPublisher,
 	mappingsKV jetstream.KeyValue,
 	logger *slog.Logger,
@@ -225,6 +229,13 @@ func handleVoteResponseDelete(
 		UID:    uid,
 		VoteID: uid,
 	}
+	if record != nil {
+		voteResponseData.VoteUID = record.pollID
+		voteResponseData.PollID = record.pollID
+		voteResponseData.Username = record.username
+	} else {
+		funcLogger.DebugContext(ctx, "delete event carries no record, cannot remove the vote participant tuple")
+	}
 
 	// Publish delete event to indexer and FGA-sync
 	if err := publisher.PublishVoteResponseEvent(ctx, string(indexerConstants.ActionDeleted), voteResponseData); err != nil {
@@ -244,4 +255,29 @@ func handleVoteResponseDelete(
 
 	funcLogger.InfoContext(ctx, "successfully sent vote response delete indexer and access messages")
 	return false // Success, ACK the message
+}
+
+// voteResponseRecord is the voter identity the delete path reads from an itx-poll-vote record.
+type voteResponseRecord struct {
+	pollID   string
+	username string
+}
+
+// decodeVoteResponseRecord decodes a KV value (JSON or msgpack) with the same string/bool
+// coercion as the live handler, since Meltano sends some fields as strings. A hard delete or
+// purge has an empty value and returns an error.
+func decodeVoteResponseRecord(value []byte) (voteResponseRecord, error) {
+	v1Data, err := decodeKVEntryData(value)
+	if err != nil {
+		return voteResponseRecord{}, err
+	}
+	raw, err := json.Marshal(v1Data)
+	if err != nil {
+		return voteResponseRecord{}, err
+	}
+	var rec domain.VoteDBRaw
+	if err := json.Unmarshal(raw, &rec); err != nil {
+		return voteResponseRecord{}, err
+	}
+	return voteResponseRecord{pollID: rec.PollID, username: rec.Username}, nil
 }

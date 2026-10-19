@@ -204,12 +204,43 @@ Each element in `comment_responses` has:
 
 | Field | Value |
 | --- | --- |
-| `access_check_object` | `vote:{vote_uid}` |
-| `access_check_relation` | `viewer` |
+| `access_check_object` | `vote_response:{uid}` |
+| `access_check_relation` | `auditor` |
 | `history_check_object` | `vote_response:{uid}` |
 | `history_check_relation` | `auditor` |
 
-> Note: access checks are scoped to the parent vote object, not the response itself.
+> Note: access checks are scoped to the response itself. `vote_response#auditor` is `owner or auditor from vote`, so a response is visible to the voter who cast it and to the vote's project/committee auditors. It must not be gated on `vote#viewer`: invitees are `participant`s of the vote (see `fga-contract.md`), which grants `viewer`, and that would expose every voter's `poll_answers` to every other participant.
+>
+> Documents indexed before this change still carry `access_check_object: vote:{vote_uid}` until they are re-indexed. Run `reindex-vote-responses` (below) to re-emit them.
+
+#### Reindexing vote responses
+
+`scripts/reindex-vote-responses` reindexes responses the same way `reindex_meetings` does in lfx-v2-meeting-service. It scrolls OpenSearch for the indexed `vote_response` documents, then re-puts each one's `itx-poll-vote.{object_id}` record in the `v1-objects` KV bucket with its existing bytes. That lands as a new revision on `$KV.v1-objects.itx-poll-vote.>`, which the voting consumer already watches, so every record goes through the live handler: the indexer message with the current `IndexingConfig`, the `vote_response` owner tuple, and the vote participant tuple (`fga-contract.md`).
+
+OpenSearch drives the run because `v1-objects` holds every v1 object type and is far too large to list; the key for each response is built from its indexed `object_id` instead.
+
+```bash
+make build-reindex
+# NATS and OpenSearch, e.g. via kubectl port-forward (svc/lfx-platform-nats 4222, svc/opensearch-cluster-master 9200, namespace lfx)
+export NATS_URL=nats://localhost:4222
+export OPENSEARCH_URL=http://localhost:9200
+
+bin/reindex-vote-responses -list                       # dry run: print every record it would replay
+bin/reindex-vote-responses -vote-uid <uid> -apply      # one vote first; check the indexed doc and read_tuples
+bin/reindex-vote-responses -apply                      # everything
+```
+
+- Run it **before** enabling `VOTE_PARTICIPANT_GRANTS_ENABLED`, then again after (see `fga-contract.md` § Rollout). It is what moves existing responses to `vote_response#auditor`, and the second run writes the participant tuples.
+- It is a **dry run unless `-apply` is passed**, and reports a count for every category it skips.
+- The re-put is a **compare-and-swap on the revision it read**. The bucket is written by the upstream sync, so a record that changed in between is never overwritten with stale bytes; it is counted as a conflict (the newer write already went through the consumer).
+- **Transient KV read errors are retried** (3 retries over about 4 seconds) before the run aborts, so a single timeout does not kill a long run. If the run still aborts, re-run it with `-skip-reindexed`: it skips responses already on `vote_response#auditor`, so it resumes where the last run stopped instead of re-putting everything. Do **not** use `-skip-reindexed` for the pass after enabling `VOTE_PARTICIPANT_GRANTS_ENABLED`: those responses are already on the new check but still need their participant tuple.
+- It **fails instead of skipping** when a read is incomplete: any KV read error other than "not found", an OpenSearch error, or a partial OpenSearch result (`timed_out` or failed shards) aborts the run with a non-zero exit, so a partial run is never mistaken for a complete one.
+- It processes records as it reads them, so record payloads are never accumulated. It does keep the set of response IDs seen so far (to drop duplicates) and one entry per parent vote, so memory still grows with the number of responses, but only by those IDs.
+- The OpenSearch scroll is kept alive for the time one page takes at the configured `-rate` (doubled, plus 2 minutes), so a low rate does not outlive it.
+- It only touches responses that are indexed; a response with no document in OpenSearch is left alone, and an indexed response with no `v1-objects` record is counted as `indexed but not in v1-objects`.
+- It replays only records the consumer has **already processed** (they have a `vote_response.{uid}` mapping and a mapped parent vote), so the handler treats them as updates and the LFID invite path, which fires only on a first create, does not run. Soft-deleted and tombstoned records are skipped.
+- It is paced at `-rate` (default 50/s) because each record fans out to the indexer and fga-sync. Watch consumer lag on `KV_v1-objects` during a full run.
+- If a replay is applied while the consumer is down, nothing is lost: the messages queue and are consumed when it returns.
 
 ### Search Behavior
 
