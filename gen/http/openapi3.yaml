@@ -2426,8 +2426,7 @@ components:
                     maxLength: 200
                 num_winners:
                     type: integer
-                    description: Number of winners (meek_stv only)
-                    default: 2
+                    description: Number of winners. Sent upstream only when explicitly provided; meek_stv creates default to 2 when omitted. Updates leave omitted counts for ITX to resolve.
                     example: 2
                     format: int64
                     minimum: 2
@@ -3995,7 +3994,7 @@ components:
                     maxLength: 200
                 num_winners:
                     type: integer
-                    description: Number of winners (meek_stv only)
+                    description: Number of winners. Sent upstream only when explicitly provided; meek_stv creates default to 2 when omitted. Updates leave omitted counts for ITX to resolve.
                     example: 4
                     format: int64
                     minimum: 2
@@ -4672,7 +4671,7 @@ components:
                     format: int64
                 num_winners:
                     type: integer
-                    description: Number of winners (meek_stv only)
+                    description: Number of winners. Absent when no winner count is stored upstream.
                     example: 3014061300091985279
                     format: int64
                 poll_comment_prompts:

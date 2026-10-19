@@ -51,8 +51,13 @@ func TestVoteMethodContract(t *testing.T) {
 		{name: "update zero count", method: http.MethodPut, extra: `,"poll_type":"meek_stv","num_winners":0`, invalid: "num_winners"},
 		{name: "update one count", method: http.MethodPut, extra: `,"poll_type":"meek_stv","num_winners":1`, invalid: "num_winners"},
 		{name: "update count above maximum", method: http.MethodPut, extra: `,"num_winners":11`, invalid: "num_winners"},
-		{name: "create omitted", method: http.MethodPost, wantType: `"generic"`, wantWinners: "2"},
+		{name: "create omitted", method: http.MethodPost, wantType: `"generic"`},
+		{name: "create generic omitted count", method: http.MethodPost, extra: `,"poll_type":"generic"`, wantType: `"generic"`},
+		{name: "create condorcet omitted count", method: http.MethodPost, extra: `,"poll_type":"condorcet_irv"`, wantType: `"condorcet_irv"`},
+		{name: "create instant runoff omitted count", method: http.MethodPost, extra: `,"poll_type":"instant_runoff_vote"`, wantType: `"instant_runoff_vote"`},
+		{name: "create generic explicit count", method: http.MethodPost, extra: `,"poll_type":"generic","num_winners":4`, wantType: `"generic"`, wantWinners: "4"},
 		{name: "create STV omitted count", method: http.MethodPost, extra: `,"poll_type":"meek_stv"`, wantType: `"meek_stv"`, wantWinners: "2"},
+		{name: "create STV explicit count", method: http.MethodPost, extra: `,"poll_type":"meek_stv","num_winners":4`, wantType: `"meek_stv"`, wantWinners: "4"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -97,7 +97,6 @@ Content-Type: application/json
   ],
   "pseudo_anonymity": false,
   "poll_type": "generic",
-  "num_winners": 5,
   "allow_abstain": false,
   "quorum_percentage": 50,
   "winning_threshold_percentage": 50
@@ -106,7 +105,7 @@ Content-Type: application/json
 
 `end_time_timezone` is required: an IANA timezone name (e.g., `America/New_York`) that ITX uses to interpret `end_time` exactly as sent. Omitting it fails contract validation with a 400 before ITX is called. The proxy passes the value through untouched and performs no validation of its own; ITX rejects invalid timezone names with a 400, which the proxy surfaces as a 400.
 
-**Create defaults:** `POST /votes` deliberately defaults an omitted `poll_type` to `generic` and an omitted `num_winners` to two. Explicit values retain the enum and count range (2–10) constraints. These voting-service request defaults are unchanged, including the current non-STV winner-count leakage tracked separately in [#2922](https://github.com/linuxfoundation/lfx-self-serve/issues/2922). ITX [PR #285](https://github.com/linuxfoundation-it/itx-service-voting/pull/285) additionally validates Meek STV winner counts on creation: the count must not exceed the choices in any question; an incompatible count returns 400, not a silently reduced count.
+**Create defaults:** `POST /votes` defaults an omitted `poll_type` to `generic`. An omitted `num_winners` defaults to two only for `meek_stv` creates; other poll types forward a winner count only when explicitly provided ([#2922](https://github.com/linuxfoundation/lfx-self-serve/issues/2922)). Explicit values retain the enum and count range (2–10) constraints. ITX [PR #285](https://github.com/linuxfoundation-it/itx-service-voting/pull/285) additionally validates Meek STV winner counts on creation: the count must not exceed the choices in any question; an incompatible count returns 400, not a silently reduced count.
 
 **Response** (201 Created):
 
@@ -194,7 +193,6 @@ x-scope: manage:voting
   ],
   "pseudo_anonymity": false,
   "poll_type": "generic",
-  "num_winners": 5,
   "allow_abstain": false,
   "quorum_percentage": 50,
   "winning_threshold_percentage": 50
@@ -412,7 +410,7 @@ Stored-value preservation is owned by ITX [#3428](https://github.com/linuxfounda
 | Explicit non-STV → Meek STV transition, count omitted | Use two winners |
 | Effective non-STV | Do not retain a previous STV count |
 
-The voting converter does not choose a winner default based on the request's decoded type; ITX resolves the effective type against storage. This revisits the update interaction with #2922 without changing its separate create-side behavior.
+The voting service does not choose a winner default on updates based on the request's decoded type; ITX resolves the effective type against storage. The Meek STV default in #2922 applies only to creates.
 
 Merged ITX PR #285 also validates the resolved Meek STV winner count against **every replacement question's choice count**. An edit that preserves four winners but reduces a question to three choices returns 400 before persistence; it does not reset the stored count. The same bound applies to explicit winner counts and creation. Keep enough choices or explicitly select a valid smaller count.
 
@@ -478,7 +476,6 @@ x-scope: manage:voting
   ],
   "pseudo_anonymity": true,
   "poll_type": "generic",
-  "num_winners": 1,
   "allow_abstain": true,
   "quorum_percentage": 60,
   "winning_threshold_percentage": 60
@@ -660,11 +657,14 @@ x-scope: manage:voting
 
 ### Poll Types
 
-| Type | Description | `num_winners` Required? |
-|------|-------------|------------------------|
-| `generic` | Simple poll | No |
-| `condorcet_irv` | Condorcet IRV voting | No |
-| `meek_stv` | Meek STV (Single Transferable Vote) | Yes (must be ≥ 2) |
+| Type | Description | `num_winners` |
+|------|-------------|---------------|
+| `generic` | Simple poll | Not used; forwarded only if explicitly provided |
+| `condorcet_irv` | Condorcet IRV voting | Not used; forwarded only if explicitly provided |
+| `instant_runoff_vote` | Instant runoff voting | Not used; forwarded only if explicitly provided |
+| `meek_stv` | Meek STV (Single Transferable Vote) | Optional; defaults to 2 on create when omitted, must be 2–10 when provided; omitted update counts are resolved by ITX |
+
+`num_winners` is sent upstream only when explicitly provided in the request — the one exception is a `meek_stv` create, which defaults to 2 winners when omitted. All updates leave omitted counts absent from the ITX request, including explicit `meek_stv` updates, so ITX can preserve the stored count or resolve a method transition as described above. Responses omit `num_winners` entirely when no winner count is stored upstream.
 
 ---
 
@@ -912,22 +912,38 @@ Authorization: Bearer <heimdall-jwt-token>
         {"choice_id": "c1-uuid", "vote_count": 14, "percentage": 77.8},
         {"choice_id": "c2-uuid", "vote_count": 10, "percentage": 55.6}
       ],
-      "ranked_choice_votes": [],
-      "ranked_choice_winner_info": null,
-      "irv_round_summary": [],
-      "meek_stv_round_summary": []
+      "ranked_choice_winner_info": {"poll_choices": [], "condorcet_irv_used_for_eliminations": false}
     }
   ],
   "comment_results": [
     {
-      "prompt": "Any additional comments?",
-      "comments": ["Great candidates this year.", "No objections."]
+      "prompt": {"prompt_id": "p1-uuid", "prompt": "Any additional comments?"},
+      "responses": [
+        {
+          "vote_id": "v1-uuid",
+          "user_id": "example-user-id",
+          "comment_text": "Great candidates this year.",
+          "user_name": "Example User",
+          "profile_picture": "https://example.org/avatar.png",
+          "vote_creation_time": "2026-02-10T15:04:05Z",
+          "abstained": false
+        },
+        {
+          "vote_id": "v2-uuid",
+          "user_id": "example-user-id-2",
+          "comment_text": "No objections.",
+          "user_name": "Example Voter",
+          "profile_picture": "https://example.org/avatar2.png",
+          "vote_creation_time": "2026-02-11T09:30:00Z",
+          "abstained": false
+        }
+      ]
     }
   ]
 }
 ```
 
-**Note**: `ranked_choice_votes`, `irv_round_summary`, and `meek_stv_round_summary` are populated only for the corresponding `poll_type` values (`condorcet_irv`, `instant_runoff_vote`, `meek_stv`). For `generic` polls, only `generic_choice_votes` is populated.
+**Note**: `ranked_choice_votes`, `irv_round_summary`, and `meek_stv_round_summary` are populated only for the corresponding `poll_type` values (`condorcet_irv`, `instant_runoff_vote`, `meek_stv`). For `generic` polls, only `generic_choice_votes` is populated. Unpopulated optional keys are omitted from the response entirely (never serialized as `null` or `[]`), which is why the example above has no `ranked_choice_votes` / `irv_round_summary` / `meek_stv_round_summary` keys. `ranked_choice_winner_info` is always present (ITX emits it for every poll type), with `poll_choices: []` when no winner has been determined (the HTTP encoder normalizes nil choices to an empty array). On comment responses, `user_id`, `user_name`, and `profile_picture` are absent entirely when the poll has `pseudo_anonymity` enabled.
 
 ---
 
