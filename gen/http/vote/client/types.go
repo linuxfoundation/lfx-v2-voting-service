@@ -43,8 +43,10 @@ type CreateVoteRequestBody struct {
 	PseudoAnonymity bool `form:"pseudo_anonymity" json:"pseudo_anonymity" xml:"pseudo_anonymity"`
 	// Type of poll
 	PollType string `form:"poll_type" json:"poll_type" xml:"poll_type"`
-	// Number of winners (meek_stv only)
-	NumWinners int `form:"num_winners" json:"num_winners" xml:"num_winners"`
+	// Number of winners. Sent upstream only when explicitly provided; meek_stv
+	// creates default to 2 when omitted. Updates leave omitted counts for ITX to
+	// resolve.
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow voters to abstain
 	AllowAbstain bool `form:"allow_abstain" json:"allow_abstain" xml:"allow_abstain"`
 	// Quorum percentage required
@@ -81,7 +83,9 @@ type UpdateVoteRequestBody struct {
 	PseudoAnonymity bool `form:"pseudo_anonymity" json:"pseudo_anonymity" xml:"pseudo_anonymity"`
 	// Type of poll
 	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
-	// Number of winners (meek_stv only)
+	// Number of winners. Sent upstream only when explicitly provided; meek_stv
+	// creates default to 2 when omitted. Updates leave omitted counts for ITX to
+	// resolve.
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow voters to abstain
 	AllowAbstain bool `form:"allow_abstain" json:"allow_abstain" xml:"allow_abstain"`
@@ -196,7 +200,7 @@ type CreateVoteResponseBody struct {
 	PollCommentPrompts []*PollCommentPromptResponseBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
 	// Poll type
 	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
-	// Number of winners (meek_stv only)
+	// Number of winners. Absent when no winner count is stored upstream.
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
@@ -252,7 +256,7 @@ type GetVoteResponseBody struct {
 	PollCommentPrompts []*PollCommentPromptResponseBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
 	// Poll type
 	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
-	// Number of winners (meek_stv only)
+	// Number of winners. Absent when no winner count is stored upstream.
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
@@ -308,7 +312,7 @@ type UpdateVoteResponseBody struct {
 	PollCommentPrompts []*PollCommentPromptResponseBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
 	// Poll type
 	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
-	// Number of winners (meek_stv only)
+	// Number of winners. Absent when no winner count is stored upstream.
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
@@ -364,7 +368,7 @@ type ExtendVoteResponseBody struct {
 	PollCommentPrompts []*PollCommentPromptResponseBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
 	// Poll type
 	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
-	// Number of winners (meek_stv only)
+	// Number of winners. Absent when no winner count is stored upstream.
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
@@ -1508,12 +1512,6 @@ func NewCreateVoteRequestBody(p *vote.CreateVotePayload) *CreateVoteRequestBody 
 		var zero string
 		if body.PollType == zero {
 			body.PollType = "generic"
-		}
-	}
-	{
-		var zero int
-		if body.NumWinners == zero {
-			body.NumWinners = 2
 		}
 	}
 	{

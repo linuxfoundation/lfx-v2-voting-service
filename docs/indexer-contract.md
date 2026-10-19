@@ -57,9 +57,9 @@ These fields are indexed and queryable via `filters` or `cel_filter` in the quer
 | `poll_questions` | []object | Poll questions (see [Poll Question schema](#poll-question-schema)) |
 | `poll_comment_prompts` | []object | Free-text comment prompts (see [Poll Comment Prompt schema](#poll-comment-prompt-schema)). Separate from `poll_questions`; not counted toward poll results |
 | `num_response_received` | int | Number of responses received |
-| `poll_type` | string | Poll type (e.g., `election`, `general`) |
+| `poll_type` | string | Poll type (`generic`, `condorcet_irv`, `instant_runoff_vote`, `meek_stv`; ITX additionally accepts `majority`) |
 | `pseudo_anonymity` | bool | Whether responses are pseudo-anonymous |
-| `num_winners` | int | Number of winners for election-type polls |
+| `num_winners` | int | Number of winners — stored for `meek_stv` polls only; 0 for all other poll types |
 | `allow_abstain` | bool | Whether abstaining is allowed |
 
 #### Poll Question Schema

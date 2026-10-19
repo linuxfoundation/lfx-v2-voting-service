@@ -176,8 +176,10 @@ type CreateVotePayload struct {
 	PseudoAnonymity bool
 	// Type of poll
 	PollType string
-	// Number of winners (meek_stv only)
-	NumWinners int
+	// Number of winners. Sent upstream only when explicitly provided; meek_stv
+	// creates default to 2 when omitted. Updates leave omitted counts for ITX to
+	// resolve.
+	NumWinners *int
 	// Allow voters to abstain
 	AllowAbstain bool
 	// Quorum percentage required
@@ -523,7 +525,9 @@ type UpdateVotePayload struct {
 	PseudoAnonymity bool
 	// Type of poll
 	PollType *string
-	// Number of winners (meek_stv only)
+	// Number of winners. Sent upstream only when explicitly provided; meek_stv
+	// creates default to 2 when omitted. Updates leave omitted counts for ITX to
+	// resolve.
 	NumWinners *int
 	// Allow voters to abstain
 	AllowAbstain bool
@@ -710,7 +714,7 @@ type VoteResult struct {
 	PollCommentPrompts []*PollCommentPrompt
 	// Poll type
 	PollType string
-	// Number of winners (meek_stv only)
+	// Number of winners. Absent when no winner count is stored upstream.
 	NumWinners *int
 	// Allow abstain
 	AllowAbstain *bool
