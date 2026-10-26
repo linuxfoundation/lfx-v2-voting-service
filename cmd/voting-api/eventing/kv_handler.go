@@ -91,6 +91,7 @@ func kvMessageHandler(
 	publisher domain.EventPublisher,
 	idMapper domain.IDMapper,
 	mappingsKV jetstream.KeyValue,
+	objectsKV jetstream.KeyValue,
 	inviteHandler *VoteResponseInviteHandler,
 	logger *slog.Logger,
 ) {
@@ -123,7 +124,7 @@ func kvMessageHandler(
 	}
 
 	// Process the KV entry and check if retry is needed
-	shouldRetry := kvHandler(ctx, entry, publisher, idMapper, mappingsKV, inviteHandler, logger)
+	shouldRetry := kvHandler(ctx, entry, publisher, idMapper, mappingsKV, objectsKV, inviteHandler, logger)
 
 	// Handle message acknowledgment based on retry decision
 	if shouldRetry {
@@ -170,12 +171,13 @@ func kvHandler(
 	publisher domain.EventPublisher,
 	idMapper domain.IDMapper,
 	mappingsKV jetstream.KeyValue,
+	objectsKV jetstream.KeyValue,
 	inviteHandler *VoteResponseInviteHandler,
 	logger *slog.Logger,
 ) bool {
 	switch entry.Operation() {
 	case jetstream.KeyValuePut:
-		return handleKVPut(ctx, entry, publisher, idMapper, mappingsKV, inviteHandler, logger)
+		return handleKVPut(ctx, entry, publisher, idMapper, mappingsKV, objectsKV, inviteHandler, logger)
 	case jetstream.KeyValueDelete, jetstream.KeyValuePurge:
 		return handleKVDelete(ctx, entry, publisher, mappingsKV, logger)
 	default:
@@ -191,6 +193,7 @@ func handleKVPut(
 	publisher domain.EventPublisher,
 	idMapper domain.IDMapper,
 	mappingsKV jetstream.KeyValue,
+	objectsKV jetstream.KeyValue,
 	inviteHandler *VoteResponseInviteHandler,
 	logger *slog.Logger,
 ) bool {
@@ -220,7 +223,7 @@ func handleKVPut(
 	case "itx-poll":
 		return handleVoteUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, logger)
 	case "itx-poll-vote":
-		return handleVoteResponseUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, inviteHandler, logger)
+		return handleVoteResponseUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, objectsKV, inviteHandler, logger)
 	case "itx-poll-results":
 		return handleVoteResultUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, logger)
 	default:

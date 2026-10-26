@@ -69,6 +69,11 @@ type options struct {
 	// Do not use it for the second pass after enabling participant grants: those documents are
 	// already on the new check but still need their participant tuple.
 	SkipReindexed bool
+	// PseudoAnonymousOnly replays only responses whose parent vote is pseudo-anonymous, so the
+	// live handler re-indexes them without ballot data. It uses the handler's fail-closed rule: a
+	// parent itx-poll record that is missing, undecodable or lacks pseudo_anonymity counts as
+	// pseudo-anonymous and is replayed.
+	PseudoAnonymousOnly bool
 	// OnEligible is called with the key of every record that is (or, in a dry run, would be)
 	// re-put, as it is found.
 	OnEligible func(key string)
@@ -87,6 +92,7 @@ type result struct {
 	SkippedNoMap     int // never processed by the consumer: a replay would be a first create, not a reindex
 	SkippedTomb      int // response mapping tombstoned (already deleted)
 	SkippedNoParent  int // parent vote missing or tombstoned in v1-mappings
+	SkippedNamed     int // parent vote is not pseudo-anonymous (PseudoAnonymousOnly)
 	Eligible         int // records that will be / were re-put
 	Replayed         int // re-put succeeded
 	Conflicts        int // record changed since it was read; the newer write already triggered the consumer
@@ -115,6 +121,11 @@ type result struct {
 // A read that fails for any reason other than "not found" aborts the run with an error, so an
 // operator never mistakes a partial run for a complete one.
 func reindex(ctx context.Context, js jetstream.JetStream, opts options, logger *slog.Logger) (*result, error) {
+	// Documents already on vote_response#auditor still hold ballot data, so skipping them would
+	// leave the remediation pass incomplete while reporting success.
+	if opts.PseudoAnonymousOnly && opts.SkipReindexed {
+		return nil, errors.New("-pseudo-anonymous-only cannot be combined with -skip-reindexed: documents already on vote_response#auditor still hold ballot data")
+	}
 	if opts.RatePerSecond <= 0 {
 		opts.RatePerSecond = defaultRatePerSecond
 	}
@@ -142,6 +153,7 @@ func reindex(ctx context.Context, js jetstream.JetStream, opts options, logger *
 		logger:     logger,
 		seen:       map[string]bool{},
 		parentOK:   map[string]bool{},
+		pseudoOK:   map[string]bool{},
 	}
 	if opts.Apply {
 		ticker := time.NewTicker(time.Second / time.Duration(opts.RatePerSecond))
@@ -192,6 +204,7 @@ type runner struct {
 	tick                  <-chan time.Time
 	seen                  map[string]bool
 	parentOK              map[string]bool
+	pseudoOK              map[string]bool
 }
 
 // process handles one indexed document: it applies every skip rule and, for an eligible record,
@@ -263,6 +276,17 @@ func (r *runner) process(ctx context.Context, hit openSearchHit) error {
 		return nil
 	}
 
+	if r.opts.PseudoAnonymousOnly {
+		pseudo, err := r.parentPseudoAnonymous(ctx, rec.pollID)
+		if err != nil {
+			return err
+		}
+		if !pseudo {
+			r.res.SkippedNamed++
+			return nil
+		}
+	}
+
 	r.res.Eligible++
 	if r.opts.OnEligible != nil {
 		r.opts.OnEligible(key)
@@ -306,6 +330,31 @@ func (r *runner) parentMapped(ctx context.Context, pollID string) (bool, error) 
 	ok := found && !isTombstoned(mapping)
 	r.parentOK[pollID] = ok
 	return ok, nil
+}
+
+// parentPseudoAnonymous reports whether the parent vote's itx-poll record must be treated as
+// pseudo-anonymous, using the same fail-closed rule as the live handler: a missing or undecodable
+// record counts as pseudo-anonymous. Only a definitive answer is cached; a read error aborts the
+// run instead of being remembered.
+func (r *runner) parentPseudoAnonymous(ctx context.Context, pollID string) (bool, error) {
+	if pseudo, cached := r.pseudoOK[pollID]; cached {
+		return pseudo, nil
+	}
+	key := "itx-poll." + pollID
+	entry, found, err := getEntry(ctx, r.objectsKV, key, r.logger)
+	if err != nil {
+		return false, fmt.Errorf("read %s: %w", key, err)
+	}
+	pseudo := true
+	if found {
+		if data, decErr := decodeMap(entry.Value()); decErr == nil {
+			pseudo = domain.PollRecordIsPseudoAnonymous(data)
+		} else {
+			r.logger.WarnContext(ctx, "undecodable parent poll record, treating as pseudo-anonymous", "key", key, "err", decErr)
+		}
+	}
+	r.pseudoOK[pollID] = pseudo
+	return pseudo, nil
 }
 
 // replayRecord re-puts an entry's own bytes, guarded by the revision it was read at.
@@ -356,12 +405,9 @@ type record struct {
 // decodeRecord decodes a KV value (JSON, then msgpack) with the same string/bool coercion as the
 // live handler, since Meltano sends some fields as strings.
 func decodeRecord(value []byte) (record, error) {
-	var v1Data map[string]any
-	jsonErr := json.Unmarshal(value, &v1Data)
-	if jsonErr != nil {
-		if msgpackErr := msgpack.Unmarshal(value, &v1Data); msgpackErr != nil {
-			return record{}, fmt.Errorf("not JSON (%v) or msgpack (%v)", jsonErr, msgpackErr)
-		}
+	v1Data, err := decodeMap(value)
+	if err != nil {
+		return record{}, err
 	}
 	deletedAt, hasDeleted := v1Data["_sdc_deleted_at"]
 
@@ -377,6 +423,18 @@ func decodeRecord(value []byte) (record, error) {
 		pollID:      rec.PollID,
 		softDeleted: hasDeleted && deletedAt != nil && deletedAt != "",
 	}, nil
+}
+
+// decodeMap decodes a KV value as JSON, then msgpack, like the live consumer.
+func decodeMap(value []byte) (map[string]any, error) {
+	var v1Data map[string]any
+	jsonErr := json.Unmarshal(value, &v1Data)
+	if jsonErr != nil {
+		if msgpackErr := msgpack.Unmarshal(value, &v1Data); msgpackErr != nil {
+			return nil, fmt.Errorf("not JSON (%v) or msgpack (%v)", jsonErr, msgpackErr)
+		}
+	}
+	return v1Data, nil
 }
 
 // openSearchSource is the part of an indexed vote_response document the reindex reads.

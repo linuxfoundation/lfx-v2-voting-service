@@ -11,9 +11,21 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/idmapper"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
+
+// namedPollObjectsKV returns a v1-objects bucket whose parent poll records are all named
+// (pseudo_anonymity false), so vote responses are indexed with their ballot data.
+func namedPollObjectsKV() *mockKeyValue {
+	kv := &mockKeyValue{}
+	kv.On("Get", mock.Anything, mock.Anything).
+		Return(mockKeyValueEntry{value: []byte(`{"pseudo_anonymity":false}`)}, nil).
+		Maybe()
+	return kv
+}
 
 func TestConvertMapToVoteResponseData(t *testing.T) {
 	logging.InitStructureLogConfig()
@@ -205,7 +217,7 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, namedPollObjectsKV(), nil, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
@@ -235,7 +247,7 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, namedPollObjectsKV(), nil, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
@@ -255,7 +267,7 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, namedPollObjectsKV(), nil, logger)
 
 		assert.False(t, shouldRetry) // Permanent error, ACK
 		assert.Len(t, mockPublisher.publishedVoteResponses, 0)
@@ -282,7 +294,7 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-999", v1Data, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-999", v1Data, mockPublisher, idMapper, mappingsKV, namedPollObjectsKV(), nil, logger)
 
 		assert.True(t, shouldRetry) // Retry - parent vote not yet processed
 		assert.Len(t, mockPublisher.publishedVoteResponses, 0)
@@ -305,7 +317,7 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, namedPollObjectsKV(), nil, logger)
 
 		assert.False(t, shouldRetry) // Permanent error, ACK
 		assert.Len(t, mockPublisher.publishedVoteResponses, 0)
@@ -334,10 +346,124 @@ func TestHandleVoteResponseUpdate(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", v1Data, mockPublisher, idMapper, mappingsKV, namedPollObjectsKV(), nil, logger)
 
 		assert.True(t, shouldRetry) // Transient error, NAK for retry
 	})
+}
+
+func TestHandleVoteResponseUpdate_PseudoAnonymous(t *testing.T) {
+	logging.InitStructureLogConfig()
+
+	const pollKey = "itx-poll.poll-456"
+
+	pollRecord := func(value string) func(kv *mockKeyValue) {
+		return func(kv *mockKeyValue) {
+			kv.On("Get", mock.Anything, pollKey).
+				Return(mockKeyValueEntry{key: pollKey, value: []byte(value)}, nil)
+		}
+	}
+
+	ballot := func() map[string]interface{} {
+		return map[string]interface{}{
+			"vote_id":            "vote-123",
+			"poll_id":            "poll-456",
+			"project_id":         "project-sfid",
+			"user_id":            "user-123",
+			"user_email":         "voter@example.com",
+			"username":           "testuser",
+			"vote_status":        "responded",
+			"vote_creation_time": "2024-01-01T00:00:00Z",
+			"abstained":          true,
+			"poll_answers": []interface{}{
+				map[string]interface{}{
+					"question_id": "q1",
+					"prompt":      "Pick one",
+					"type":        "single_choice",
+					"user_choice": []interface{}{map[string]interface{}{"choice_id": "c1", "choice_text": "Alice"}},
+				},
+			},
+			"comment_responses": []interface{}{
+				map[string]interface{}{"prompt_id": "prompt-1", "comment_text": "secret"},
+			},
+		}
+	}
+
+	tests := []struct {
+		name            string
+		setupObjects    func(kv *mockKeyValue)
+		existingMapping bool
+		wantRetry       bool
+		wantPublished   bool
+		wantRedacted    bool
+	}{
+		{name: "pseudo-anonymous poll redacts ballot", setupObjects: pollRecord(`{"poll_id":"poll-456","pseudo_anonymity":true}`), wantPublished: true, wantRedacted: true},
+		{name: "missing pseudo_anonymity flag redacts ballot", setupObjects: pollRecord(`{"poll_id":"poll-456"}`), wantPublished: true, wantRedacted: true},
+		{
+			name: "missing poll record redacts ballot and acks",
+			setupObjects: func(kv *mockKeyValue) {
+				kv.On("Get", mock.Anything, pollKey).Return(nil, jetstream.ErrKeyNotFound)
+			},
+			wantPublished: true,
+			wantRedacted:  true,
+		},
+		{
+			name: "transient poll read error retries without publishing",
+			setupObjects: func(kv *mockKeyValue) {
+				kv.On("Get", mock.Anything, pollKey).Return(nil, errors.New("nats timeout"))
+			},
+			wantRetry: true,
+		},
+		{name: "named poll keeps ballot", setupObjects: pollRecord(`{"poll_id":"poll-456","pseudo_anonymity":false}`), wantPublished: true},
+		{name: "update of existing response on pseudo-anonymous poll stays redacted", setupObjects: pollRecord(`{"poll_id":"poll-456","pseudo_anonymity":true}`), existingMapping: true, wantPublished: true, wantRedacted: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mappingsKV, cleanup := setupTestKV(t)
+			defer cleanup()
+
+			ctx := context.Background()
+			_, err := mappingsKV.Put(ctx, "vote.poll-456", []byte("1"))
+			require.NoError(t, err)
+			if tt.existingMapping {
+				_, err = mappingsKV.Put(ctx, "vote_response.vote-123", []byte("1"))
+				require.NoError(t, err)
+			}
+
+			objectsKV := &mockKeyValue{}
+			tt.setupObjects(objectsKV)
+			mockPublisher := &mockEventPublisher{}
+
+			shouldRetry := handleVoteResponseUpdate(ctx, "itx-poll-vote.vote-123", ballot(), mockPublisher, idmapper.NewNoOpMapper(), mappingsKV, objectsKV, nil, slog.Default())
+
+			assert.Equal(t, tt.wantRetry, shouldRetry)
+			objectsKV.AssertExpectations(t)
+			if !tt.wantPublished {
+				assert.Empty(t, mockPublisher.publishedVoteResponses)
+				return
+			}
+			require.Len(t, mockPublisher.publishedVoteResponses, 1)
+			published := mockPublisher.publishedVoteResponses[0]
+
+			// Participation data is always kept.
+			assert.Equal(t, "testuser", published.Username)
+			assert.Equal(t, "voter@example.com", published.UserEmail)
+			assert.Equal(t, "responded", published.VoteStatus)
+			assert.Equal(t, "2024-01-01T00:00:00Z", published.VoteCreationTime)
+
+			assert.Equal(t, tt.wantRedacted, published.BallotRedacted)
+			if tt.wantRedacted {
+				assert.Nil(t, published.PollAnswers)
+				assert.Nil(t, published.CommentResponses)
+				assert.False(t, published.Abstained)
+				return
+			}
+			assert.Len(t, published.PollAnswers, 1)
+			assert.Len(t, published.CommentResponses, 1)
+			assert.True(t, published.Abstained)
+		})
+	}
 }
 
 func TestHandleVoteResponseDelete(t *testing.T) {

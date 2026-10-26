@@ -25,6 +25,7 @@ func handleVoteResponseUpdate(
 	publisher domain.EventPublisher,
 	idMapper domain.IDMapper,
 	mappingsKV jetstream.KeyValue,
+	objectsKV jetstream.KeyValue,
 	inviteHandler *VoteResponseInviteHandler,
 	logger *slog.Logger,
 ) bool {
@@ -56,6 +57,18 @@ func handleVoteResponseUpdate(
 	if _, err := mappingsKV.Get(ctx, voteMappingKey); err != nil {
 		funcLogger.With(errKey, err).InfoContext(ctx, "parent vote not found in mappings, will retry vote response sync")
 		return true // NAK for retry - parent vote hasn't been processed yet
+	}
+
+	// Pseudo-anonymous votes must not index the voter's choices next to their identity.
+	// pollIsPseudoAnonymous fails closed; only a transient read error is returned.
+	pseudoAnonymous, err := pollIsPseudoAnonymous(ctx, objectsKV, voteResponseData.PollID)
+	if err != nil {
+		funcLogger.With(errKey, err).ErrorContext(ctx, "failed to read parent poll privacy setting, will retry vote response sync")
+		return true // NAK for retry
+	}
+	if pseudoAnonymous {
+		voteResponseData.RedactBallot()
+		funcLogger.DebugContext(ctx, "redacted ballot for pseudo-anonymous vote response", "ballot_redacted", true)
 	}
 
 	// Determine action (created vs updated) by checking if mapping exists

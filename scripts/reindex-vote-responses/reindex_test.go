@@ -578,3 +578,69 @@ func TestReindex_SkipReindexedSkipsOnlyDocumentsOnTheNewCheck(t *testing.T) {
 		assert.Zero(t, res.SkippedReindexed)
 	})
 }
+
+// The remediation pass replays only pseudo-anonymous votes' responses so the live handler
+// re-indexes them without ballot data. It fails closed like the handler: a parent poll record
+// missing the flag, or missing entirely, counts as pseudo-anonymous and is replayed.
+func TestReindex_PseudoAnonymousOnlySkipsNamedVotes(t *testing.T) {
+	f := newFixture(t)
+	putPoll := func(pollID string, rec map[string]any) {
+		data, err := json.Marshal(rec)
+		require.NoError(t, err)
+		_, err = f.objectsKV.Put(context.Background(), "itx-poll."+pollID, data)
+		require.NoError(t, err)
+	}
+	putPoll("vote-pseudo", map[string]any{"poll_id": "vote-pseudo", "pseudo_anonymity": true})
+	putPoll("vote-named", map[string]any{"poll_id": "vote-named", "pseudo_anonymity": false})
+	putPoll("vote-noflag", map[string]any{"poll_id": "vote-noflag"})
+	// vote-norecord has no itx-poll record at all.
+
+	responses := map[string]string{
+		"r-pseudo":   "vote-pseudo",
+		"r-named-1":  "vote-named",
+		"r-named-2":  "vote-named", // second response on the same poll exercises the per-poll cache
+		"r-noflag":   "vote-noflag",
+		"r-norecord": "vote-norecord",
+	}
+	var pages []map[string]any
+	for _, pollID := range []string{"vote-pseudo", "vote-named", "vote-noflag", "vote-norecord"} {
+		f.mapVote(t, pollID, "1")
+	}
+	for id, pollID := range responses {
+		f.putResponse(t, id, map[string]any{"poll_id": pollID, "username": "u-" + id})
+		f.mapResponse(t, id, "1")
+		pages = append(pages, osHit(id, pollID))
+	}
+
+	t.Run("on", func(t *testing.T) {
+		stub := newOpenSearchStub(t, -1, nil, pages)
+		var keys []string
+		res, err := reindex(context.Background(), f.js,
+			options{OpenSearchURL: stub.URL, PseudoAnonymousOnly: true, OnEligible: collect(&keys)}, slog.Default())
+		require.NoError(t, err)
+
+		assert.ElementsMatch(t, []string{"itx-poll-vote.r-pseudo", "itx-poll-vote.r-noflag", "itx-poll-vote.r-norecord"}, keys)
+		assert.Equal(t, 2, res.SkippedNamed)
+		assert.Equal(t, 3, res.Eligible)
+	})
+
+	t.Run("off by default", func(t *testing.T) {
+		stub := newOpenSearchStub(t, -1, nil, pages)
+		var keys []string
+		res, err := reindex(context.Background(), f.js,
+			options{OpenSearchURL: stub.URL, OnEligible: collect(&keys)}, slog.Default())
+		require.NoError(t, err)
+
+		assert.Len(t, keys, len(responses))
+		assert.Zero(t, res.SkippedNamed)
+	})
+
+	// Skipping documents already on the new access check would leave their ballot data in place.
+	t.Run("rejects skip-reindexed", func(t *testing.T) {
+		stub := newOpenSearchStub(t, -1, nil, pages)
+		res, err := reindex(context.Background(), f.js,
+			options{OpenSearchURL: stub.URL, PseudoAnonymousOnly: true, SkipReindexed: true}, slog.Default())
+		require.ErrorContains(t, err, "-skip-reindexed")
+		assert.Nil(t, res)
+	})
+}

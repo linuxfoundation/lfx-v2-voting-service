@@ -519,7 +519,7 @@ func TestKvHandlerVoteResult(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 		logger := slog.Default()
 
-		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVoteResults, 1)
@@ -542,7 +542,7 @@ func TestKvHandlerVoteResult(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 		logger := slog.Default()
 
-		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVoteResults, 1)

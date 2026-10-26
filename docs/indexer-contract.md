@@ -150,10 +150,10 @@ Each element in `poll_comment_prompts` has:
 | `user_voting_status` | string | User's voting eligibility status |
 | `user_org_id` | string | User's organization identifier |
 | `user_org_name` | string | User's organization name |
-| `poll_answers` | []object | User's answers to poll questions (see [Poll Answer schema](#poll-answer-schema)) |
-| `comment_responses` | []object | User's free-text responses to comment prompts (see [Comment Response schema](#comment-response-schema)). May be present even when `abstained` is true |
+| `poll_answers` | []object | User's answers to poll questions (see [Poll Answer schema](#poll-answer-schema)). **Omitted for pseudo-anonymous votes** (see [Pseudo-anonymous votes](#pseudo-anonymous-votes)) |
+| `comment_responses` | []object | User's free-text responses to comment prompts (see [Comment Response schema](#comment-response-schema)). May be present even when `abstained` is true. **Omitted for pseudo-anonymous votes** |
 | `vote_status` | string | Vote response status |
-| `abstained` | bool | Whether the user abstained |
+| `abstained` | bool | Whether the user abstained. **Omitted for pseudo-anonymous votes** |
 | `voter_removed` | bool | Whether the voter was removed |
 | `ses_message_id` | string | AWS SES message identifier |
 | `ses_message_last_sent_time` | string | Timestamp of last SES email send |
@@ -190,6 +190,23 @@ Each element in `comment_responses` has:
 | --- | --- | --- |
 | `prompt_id` | string | Identifier of the poll's comment prompt being answered |
 | `comment_text` | string | Voter's free-text response (max 5000 characters) |
+
+### Pseudo-anonymous votes
+
+A response document must not reveal how a named person voted on a pseudo-anonymous vote. Before publishing, the handler (`handleVoteResponseUpdate`) reads the parent `itx-poll.{poll_id}` record from `v1-objects`. Unless that record's `pseudo_anonymity` is explicitly `false` (bool `false` or string `"false"`), the handler indexes the response **without** these keys:
+
+- `poll_answers`
+- `comment_responses`
+- `abstained`
+
+The keys are left out of the payload entirely, not sent as `[]` or `false`. The indexer replaces the whole document on every create or update, so a missing key removes the field from the stored document.
+
+- **Fails closed.** A missing or `null` flag, an unrecognised value, a missing `itx-poll` record or an undecodable record all count as pseudo-anonymous. Only a named vote whose flag is explicitly `false` is indexed with its ballot. If a legacy named poll has no flag, its `poll_answers` are absent; this is intended. A transient `v1-objects` read error NAKs the message for retry, and the previous document stays until the retry succeeds.
+- **Participation is kept.** Identity (`user_id`, `user_email`, `username`, `user_name`), `user_voting_status`, `voter_removed` and the `ses_*` fields stay, so managers can see who has responded and who needs a reminder.
+- **`vote_status` is always kept.** Its ITX values are `awaiting_response`, `responded`, `ended` and `awaiting_response_but_poll_ended`. None of them is abstain-specific: abstaining sets only the `abstained` flag. So `vote_status` shows participation, not the choice.
+- **`vote_creation_time` and `last_modified_time` are kept on purpose.** While live totals stay hidden (lfx-self-serve#3920), a submission time next to a name does not reveal a choice. Self Serve does not return these fields for pseudo-anonymous votes (lfx-self-serve#3916).
+- **One writer.** The live handler is the only writer of `vote_response` documents, and `reindex-vote-responses` works by replaying records through it. Updates and later re-indexes therefore cannot reintroduce the fields. Documents indexed before this rule existed are fixed with the `-pseudo-anonymous-only` pass below.
+- Named votes (`pseudo_anonymity: false`) are unchanged, including `"abstained": false` and an empty `"poll_answers": []`.
 
 ### Tags
 
@@ -229,6 +246,32 @@ bin/reindex-vote-responses -list                       # dry run: print every re
 bin/reindex-vote-responses -vote-uid <uid> -apply      # one vote first; check the indexed doc and read_tuples
 bin/reindex-vote-responses -apply                      # everything
 ```
+
+**Redacting existing pseudo-anonymous responses.** `-pseudo-anonymous-only` replays only the responses whose parent vote is pseudo-anonymous, so the handler re-indexes them without ballot data (see [Pseudo-anonymous votes](#pseudo-anonymous-votes)). It uses the handler's fail-closed rule. A parent `itx-poll` record that is missing, undecodable or has no `pseudo_anonymity` counts as pseudo-anonymous and is replayed. Responses of named votes are counted as `skipped, named vote`. The result is cached per vote. A persistent read error on a parent record aborts the run, like any other read.
+
+```bash
+bin/reindex-vote-responses -pseudo-anonymous-only -list                    # dry run: only pseudo-anonymous votes' responses
+bin/reindex-vote-responses -vote-uid <uid> -pseudo-anonymous-only -apply   # one pseudo-anonymous vote first, then verify (below)
+bin/reindex-vote-responses -pseudo-anonymous-only -apply                   # every pseudo-anonymous vote
+```
+
+Verify a vote after its replay has been consumed. The count must be `0`:
+
+```bash
+curl -s "$OPENSEARCH_URL/resources/_search?size=0" -H 'Content-Type: application/json' -d '{
+  "track_total_hits": true,
+  "query": {"bool": {"filter": [
+    {"term": {"object_type": "vote_response"}},
+    {"term": {"data.vote_uid": "<uid>"}},
+    {"exists": {"field": "data.poll_answers"}}
+  ]}}
+}' | jq '.hits.total.value'
+```
+
+Repeat it with `data.abstained` and `data.comment_responses`. Documents of that vote should still carry `data.vote_status`.
+
+- Do **not** combine `-pseudo-anonymous-only` with `-skip-reindexed`. Documents that already moved to `vote_response#auditor` still hold ballot data and must be replayed.
+- The pass is safe to repeat. Re-run it if a transient error outlasted the consumer's retries (`MaxDeliver`) and left an older, unredacted document in place.
 
 - Run it **before** enabling `VOTE_PARTICIPANT_GRANTS_ENABLED`, then again after (see `fga-contract.md` § Rollout). It is what moves existing responses to `vote_response#auditor`, and the second run writes the participant tuples.
 - It is a **dry run unless `-apply` is passed**, and reports a count for every category it skips.
