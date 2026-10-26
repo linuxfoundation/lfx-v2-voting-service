@@ -160,7 +160,7 @@ The service runs in the `lfx` Kubernetes namespace. Deployment manifests live in
 |---|---|
 | **Purpose** | Provisions `ITX_CLIENT_ID` and `ITX_CLIENT_PRIVATE_KEY` as Kubernetes secrets |
 | **Used by** | Deployment (`deployment.yaml` reads them as env vars via `secretKeyRef`) |
-| **Config** | `charts/.../externalsecret.yaml`, `secretstore.yaml` |
+| **Config** | `ExternalSecret.yaml` and `SecretStore.yaml` in `lfx-v2-argocd` (`custom-resources/lfx-v2-voting-service/`) |
 | **Architectural implication** | These secrets do not exist in the Helm chart values. They are pulled at deploy time. Without ESO running and the secrets present in AWS, the pod will not start. |
 
 ### ko (container image builder)
