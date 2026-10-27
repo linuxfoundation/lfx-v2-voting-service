@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Ensure a new environment variable is consistently wired across all the places the repository expects it: application loading, `.env.example`, README documentation, and (for secrets) the Helm chart ExternalSecret.
+Ensure a new environment variable is consistently wired across all the places the repository expects it: application loading, `.env.example`, README documentation, and (for secrets) the ExternalSecret in `lfx-v2-argocd`.
 
 ## When to use
 
@@ -90,13 +90,12 @@ Find the configuration table in `README.md` under `### Configuration`. Add a row
 
 Match the table's existing column order (Variable / Description / Default).
 
-### Step 4 — For secrets: update the Helm ExternalSecret
+### Step 4 — For secrets: update the ExternalSecret in lfx-v2-argocd
 
 If the variable holds a credential that should never appear in version control:
 
 1. **Do not** add it to `.env.example` with a real value. Use a placeholder: `MY_SECRET=<see 1Password: LFX V2 vault>`.
-2. Add it to `charts/lfx-v2-voting-service/templates/externalsecret.yaml` under `spec.data` following the existing entries.
-3. Add it to `charts/lfx-v2-voting-service/values.yaml` if it needs a configurable AWS Secrets Manager path.
+2. Add it to `custom-resources/lfx-v2-voting-service/ExternalSecret.yaml` in the `lfx-v2-argocd` repo under `spec.data`, following the existing entries.
 
 ### Step 5 — Validate
 
