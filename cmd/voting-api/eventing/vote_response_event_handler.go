@@ -61,7 +61,7 @@ func handleVoteResponseUpdate(
 
 	// Pseudo-anonymous votes must not index the voter's choices next to their identity.
 	// pollIsPseudoAnonymous fails closed; only a transient read error is returned.
-	pseudoAnonymous, err := pollIsPseudoAnonymous(ctx, objectsKV, voteResponseData.PollID)
+	pseudoAnonymous, err := pollIsPseudoAnonymous(ctx, objectsKV, voteResponseData.PollID, funcLogger)
 	if err != nil {
 		funcLogger.With(errKey, err).ErrorContext(ctx, "failed to read parent poll privacy setting, will retry vote response sync")
 		return true // NAK for retry

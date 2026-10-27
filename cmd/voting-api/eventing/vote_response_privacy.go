@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/nats-io/nats.go/jetstream"
@@ -16,7 +17,7 @@ import (
 // reports whether its vote responses must be indexed without ballot data. It fails closed:
 // a nil bucket, a missing record or an undecodable record all count as pseudo-anonymous.
 // Only a read error other than not-found is returned, so the caller can NAK for retry.
-func pollIsPseudoAnonymous(ctx context.Context, objectsKV jetstream.KeyValue, pollID string) (bool, error) {
+func pollIsPseudoAnonymous(ctx context.Context, objectsKV jetstream.KeyValue, pollID string, logger *slog.Logger) (bool, error) {
 	if objectsKV == nil {
 		return true, nil
 	}
@@ -32,6 +33,7 @@ func pollIsPseudoAnonymous(ctx context.Context, objectsKV jetstream.KeyValue, po
 
 	data, err := decodeKVEntryData(entry.Value())
 	if err != nil {
+		logger.WarnContext(ctx, "undecodable parent poll record, treating as pseudo-anonymous", "poll_key", pollKey, errKey, err)
 		return true, nil
 	}
 

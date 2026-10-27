@@ -4,13 +4,17 @@
 package eventing
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"log/slog"
 	"testing"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPollIsPseudoAnonymous(t *testing.T) {
@@ -25,11 +29,12 @@ func TestPollIsPseudoAnonymous(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		setup   func(kv *mockKeyValue)
-		nilKV   bool
-		want    bool
-		wantErr bool
+		name     string
+		setup    func(kv *mockKeyValue)
+		nilKV    bool
+		want     bool
+		wantErr  bool
+		wantWarn bool
 	}{
 		{name: "pseudo-anonymous poll", setup: pollEntry(`{"poll_id":"poll-1","pseudo_anonymity":true}`), want: true},
 		{name: "named poll", setup: pollEntry(`{"poll_id":"poll-1","pseudo_anonymity":false}`), want: false},
@@ -48,7 +53,7 @@ func TestPollIsPseudoAnonymous(t *testing.T) {
 			},
 			wantErr: true,
 		},
-		{name: "undecodable record fails closed", setup: pollEntry("\xc1not-json"), want: true},
+		{name: "undecodable record fails closed", setup: pollEntry("\xc1private-record-body"), want: true, wantWarn: true},
 		{name: "nil bucket fails closed", nilKV: true, want: true},
 	}
 
@@ -56,13 +61,28 @@ func TestPollIsPseudoAnonymous(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var got bool
 			var err error
+			var logs bytes.Buffer
+			logger := slog.New(slog.NewJSONHandler(&logs, nil)).With("vote_response_id", "response-1")
 			if tt.nilKV {
-				got, err = pollIsPseudoAnonymous(context.Background(), nil, pollID)
+				got, err = pollIsPseudoAnonymous(context.Background(), nil, pollID, logger)
 			} else {
 				kv := &mockKeyValue{}
 				tt.setup(kv)
-				got, err = pollIsPseudoAnonymous(context.Background(), kv, pollID)
+				got, err = pollIsPseudoAnonymous(context.Background(), kv, pollID, logger)
 				kv.AssertExpectations(t)
+			}
+
+			if tt.wantWarn {
+				var record map[string]any
+				require.NoError(t, json.Unmarshal(logs.Bytes(), &record))
+				assert.Equal(t, "WARN", record["level"])
+				assert.Equal(t, "undecodable parent poll record, treating as pseudo-anonymous", record["msg"])
+				assert.Equal(t, pollKey, record["poll_key"])
+				assert.Equal(t, "response-1", record["vote_response_id"])
+				assert.NotEmpty(t, record[errKey])
+				assert.NotContains(t, logs.String(), "private-record-body")
+			} else {
+				assert.Empty(t, logs.String())
 			}
 
 			if tt.wantErr {
