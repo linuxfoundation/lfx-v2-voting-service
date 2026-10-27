@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -110,10 +111,13 @@ func (f *fixture) seedRecords(t *testing.T) []string {
 
 // osHit is an indexed vote_response document as the OpenSearch scroll returns it.
 func osHit(objectID, voteUID string) map[string]any {
-	return map[string]any{"_source": map[string]any{
-		"object_id": objectID,
-		"data":      map[string]any{"vote_uid": voteUID, "poll_id": voteUID},
-	}}
+	return map[string]any{
+		"_id": "vote_response:" + objectID,
+		"_source": map[string]any{
+			"object_id": objectID,
+			"data":      map[string]any{"vote_uid": voteUID, "poll_id": voteUID},
+		},
+	}
 }
 
 // osHitChecked is osHit with the document's indexed access check.
@@ -643,4 +647,76 @@ func TestReindex_PseudoAnonymousOnlySkipsNamedVotes(t *testing.T) {
 		require.ErrorContains(t, err, "-skip-reindexed")
 		assert.Nil(t, res)
 	})
+}
+
+// A privacy replay cannot replace documents stored under historical IDs. Every hit must be
+// checked, even when its object_id was already replayed from an earlier hit or scroll page.
+func TestReindex_PseudoAnonymousOnlyRejectsNoncanonicalCopies(t *testing.T) {
+	for _, apply := range []bool{false, true} {
+		for _, shape := range []string{"legacy only", "duplicate same page", "duplicate later page", "missing document ID"} {
+			t.Run(fmt.Sprintf("apply=%t/%s", apply, shape), func(t *testing.T) {
+				f := newFixture(t)
+				f.mapVote(t, "vote-1", "1")
+				f.putResponse(t, "r1", map[string]any{"poll_id": "vote-1", "username": "alice"})
+				f.mapResponse(t, "r1", "1")
+				before := f.revision(t, "itx-poll-vote.r1")
+				legacy := osHit("r1", "vote-1")
+				legacy["_id"] = "historical-r1"
+				pages := [][]map[string]any{{legacy}}
+				switch shape {
+				case "duplicate same page":
+					pages = [][]map[string]any{{osHit("r1", "vote-1"), legacy}}
+				case "duplicate later page":
+					pages = [][]map[string]any{{osHit("r1", "vote-1")}, {legacy}}
+				case "missing document ID":
+					delete(legacy, "_id")
+				}
+				stub := newOpenSearchStub(t, -1, nil, pages...)
+
+				res, err := reindex(context.Background(), f.js, options{
+					OpenSearchURL: stub.URL, PseudoAnonymousOnly: true, Apply: apply, RatePerSecond: 1000,
+				}, slog.Default())
+
+				require.ErrorContains(t, err, "noncanonical OpenSearch document")
+				assert.Contains(t, err.Error(), `object_id="r1"`)
+				assert.Contains(t, err.Error(), "separately remove or redact")
+				assert.Zero(t, res.Duplicates, "the unsafe copy must not be hidden by deduplication")
+				if apply && (shape == "duplicate same page" || shape == "duplicate later page") {
+					assert.Equal(t, 1, res.Replayed, "an abort may follow earlier canonical replays")
+				} else {
+					assert.Zero(t, res.Replayed)
+					assert.Equal(t, before, f.revision(t, "itx-poll-vote.r1"))
+				}
+				assert.Equal(t, []string{"scroll-1"}, stub.deletedScrollIDs())
+			})
+		}
+	}
+}
+
+func TestReindex_NoncanonicalCopiesRespectModeAndVoteScope(t *testing.T) {
+	for _, privacy := range []bool{false, true} {
+		t.Run(fmt.Sprintf("privacy=%t", privacy), func(t *testing.T) {
+			f := newFixture(t)
+			f.mapVote(t, "vote-1", "1")
+			f.putResponse(t, "r1", map[string]any{"poll_id": "vote-1", "username": "alice"})
+			f.mapResponse(t, "r1", "1")
+			legacy := osHit("r1", "vote-1")
+			legacy["_id"] = "historical-r1"
+			stub := newOpenSearchStub(t, -1, nil, []map[string]any{legacy})
+			opts := options{OpenSearchURL: stub.URL, PseudoAnonymousOnly: privacy}
+			if privacy {
+				opts.VoteUID = "another-vote"
+			}
+
+			res, err := reindex(context.Background(), f.js, opts, slog.Default())
+
+			require.NoError(t, err)
+			if privacy {
+				assert.Equal(t, 1, res.SkippedOther)
+				assert.Zero(t, res.Eligible)
+			} else {
+				assert.Equal(t, 1, res.Eligible, "default replay retains its existing behavior")
+			}
+		})
+	}
 }

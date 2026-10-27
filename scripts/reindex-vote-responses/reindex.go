@@ -216,6 +216,12 @@ func (r *runner) process(ctx context.Context, hit openSearchHit) error {
 		r.res.SkippedNoID++
 		return nil
 	}
+	// Replay replaces only the canonical document. Check every hit before deduplication,
+	// including copies whose response was already replayed or would otherwise be skipped.
+	if r.opts.PseudoAnonymousOnly && (r.opts.VoteUID == "" || hit.Source.voteUID() == r.opts.VoteUID) && hit.ID != "vote_response:"+id {
+		return fmt.Errorf("noncanonical OpenSearch document _id=%q for object_id=%q: replay only replaces %q; separately remove or redact this copy in OpenSearch, verify participation is preserved, then rerun the privacy pass", hit.ID, id, "vote_response:"+id)
+	}
+
 	if r.seen[id] {
 		r.res.Duplicates++
 		return nil
@@ -456,6 +462,7 @@ func (s openSearchSource) voteUID() string {
 }
 
 type openSearchHit struct {
+	ID     string           `json:"_id"`
 	Source openSearchSource `json:"_source"`
 }
 

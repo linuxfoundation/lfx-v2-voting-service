@@ -249,29 +249,99 @@ bin/reindex-vote-responses -apply                      # everything
 
 **Redacting existing pseudo-anonymous responses.** `-pseudo-anonymous-only` replays only the responses whose parent vote is pseudo-anonymous, so the handler re-indexes them without ballot data (see [Pseudo-anonymous votes](#pseudo-anonymous-votes)). It uses the handler's fail-closed rule. A parent `itx-poll` record that is missing, undecodable or has no `pseudo_anonymity` counts as pseudo-anonymous and is replayed. Responses of named votes are counted as `skipped, named vote`. The result is cached per vote. A persistent read error on a parent record aborts the run, like any other read.
 
-```bash
-bin/reindex-vote-responses -pseudo-anonymous-only -list                    # dry run: only pseudo-anonymous votes' responses
-bin/reindex-vote-responses -vote-uid <uid> -pseudo-anonymous-only -apply   # one pseudo-anonymous vote first, then verify (below)
-bin/reindex-vote-responses -pseudo-anonymous-only -apply                   # every pseudo-anonymous vote
-```
-
-Verify a vote after its replay has been consumed. The count must be `0`:
+The privacy pass requires every indexed response hit in the selected vote scope to have the canonical OpenSearch `_id`, `vote_response:<object_id>`. It checks each hit **before** deduplicating by `object_id`, including named-vote hits and responses that would otherwise be skipped. A historical/noncanonical copy (or a missing `_id`) aborts the pass with its document and response IDs: replay cannot replace that copy. Investigate it separately, preserve the canonical response and its participation data, and remove or redact the noncanonical copy through an approved OpenSearch cleanup before rerunning. The tool never deletes or directly updates OpenSearch documents. An abort may follow earlier successful replays; it does not roll them back.
 
 ```bash
-curl -s "$OPENSEARCH_URL/resources/_search?size=0" -H 'Content-Type: application/json' -d '{
-  "track_total_hits": true,
-  "query": {"bool": {"filter": [
-    {"term": {"object_type": "vote_response"}},
-    {"term": {"data.vote_uid": "<uid>"}},
-    {"exists": {"field": "data.poll_answers"}}
-  ]}}
-}' | jq '.hits.total.value'
+bin/reindex-vote-responses -pseudo-anonymous-only -list # preview; investigate any noncanonical-document error
 ```
 
-Repeat it with `data.abstained` and `data.comment_responses`. Documents of that vote should still carry `data.vote_status`.
+**Capture a baseline before applying replay.** For the single-vote trial, use the function below to snapshot every matching document, including legacy responses with only `data.poll_id`. It scrolls all pages, fails on HTTP errors or partial results, and stores only verification metadata, never ballot contents. Keep the same baseline until verification is complete. These files contain response identifiers and participation status; keep them private.
+
+```bash
+VOTE_UID='<uid>' # replace with the actual pseudo-anonymous vote UID
+VERIFY_DIR=$(mktemp -d) # private directory for this vote's before/after snapshots
+
+snapshot_vote_responses() (
+  set -euo pipefail
+  : "${VOTE_UID:?Set the vote UID}"
+  scroll_id=''
+  trap 'if [ -n "$scroll_id" ]; then
+    curl -fsS -X DELETE "$OPENSEARCH_URL/_search/scroll" \
+      -H "Content-Type: application/json" \
+      --data "$(jq -nc --arg id "$scroll_id" '\''{scroll_id: [$id]}'\'')" >/dev/null ||
+      printf "Warning: failed to release verification scroll\n" >&2
+  fi' EXIT
+
+  query=$(jq -nc --arg uid "$VOTE_UID" '{
+    size: 200,
+    _source: ["object_id", "data.vote_status", "data.poll_answers", "data.comment_responses", "data.abstained"],
+    query: {bool: {filter: [
+      {term: {object_type: "vote_response"}},
+      {bool: {should: [
+        {term: {"data.vote_uid": $uid}},
+        {term: {"data.poll_id": $uid}}
+      ], minimum_should_match: 1}}
+    ]}}
+  }') || exit 1
+  page=$(curl -fsS "$OPENSEARCH_URL/resources/_search?scroll=2m" \
+    -H 'Content-Type: application/json' --data "$query") || exit 1
+
+  while :; do
+    scroll_id=$(jq -er '._scroll_id | select(type == "string" and length > 0)' <<< "$page") || exit 1
+    jq -e '.timed_out == false and ._shards.failed == 0 and (.hits.hits | type == "array")' \
+      <<< "$page" >/dev/null || exit 1
+    [ "$(jq '.hits.hits | length' <<< "$page")" -gt 0 ] || break
+    jq -c '.hits.hits[] | {
+      _id, object_id: ._source.object_id,
+      has_vote_status: (._source.data | has("vote_status")),
+      vote_status: ._source.data.vote_status,
+      ballot_keys: (._source.data | keys | map(select(
+        . == "poll_answers" or . == "comment_responses" or . == "abstained"
+      )))
+    }' <<< "$page" || exit 1
+    page=$(curl -fsS "$OPENSEARCH_URL/_search/scroll" \
+      -H 'Content-Type: application/json' \
+      --data "$(jq -nc --arg id "$scroll_id" '{scroll: "2m", scroll_id: $id}')") || exit 1
+  done
+)
+
+# Do not replay if this fails or the baseline is empty: check the UID and index.
+snapshot_vote_responses > "$VERIFY_DIR/before.jsonl" && \
+  jq -s -e 'length > 0' "$VERIFY_DIR/before.jsonl" >/dev/null
+```
+
+Only after the baseline succeeds, apply the trial and wait for its replay to be consumed:
+
+```bash
+bin/reindex-vote-responses -vote-uid "$VOTE_UID" -pseudo-anonymous-only -apply
+```
+
+Then capture the same scope again. Require nonempty results, an identical document-ID set (not just an equal count), a recognized and unchanged `vote_status` on every response, and no ballot keys in `_source`. Checking keys catches even `null` values and empty arrays that an OpenSearch `exists` query may not index. Treat **any failed command** as incomplete verification, not successful cleanup.
+
+```bash
+snapshot_vote_responses > "$VERIFY_DIR/after.jsonl" && \
+  jq -s -e 'length > 0 and all(.[]; .has_vote_status and
+    (.vote_status as $status | ["awaiting_response", "responded", "ended", "awaiting_response_but_poll_ended"] | index($status) != null) and
+    (.ballot_keys | length == 0))' \
+    "$VERIFY_DIR/after.jsonl" >/dev/null && \
+  jq -s -e --slurpfile before "$VERIFY_DIR/before.jsonl" \
+    '(map({_id, vote_status}) | sort_by(._id)) == ($before | map({_id, vote_status}) | sort_by(._id))' \
+    "$VERIFY_DIR/after.jsonl" >/dev/null && {
+    printf 'Before responses: '; jq -s 'length' "$VERIFY_DIR/before.jsonl"
+    printf 'After responses:  '; jq -s 'length' "$VERIFY_DIR/after.jsonl"
+  }
+```
+
+The counts alone are not proof: both validation commands must pass. If legitimate concurrent creates/deletes or status transitions changed the snapshot, reconcile each difference rather than silently accepting it. A zero baseline, missing documents, a skipped response, changed/invalid status or retained ballot key must be investigated. Inspect only the projected metadata files when diagnosing results; do not dump ballots to logs. Remove the private snapshot directory when verification is complete.
+
+After the single-vote trial succeeds, run the bulk pass, retaining a before/after baseline for **each** affected vote and repeating the checks above for all of them:
+
+```bash
+bin/reindex-vote-responses -pseudo-anonymous-only -apply
+```
 
 - Do **not** combine `-pseudo-anonymous-only` with `-skip-reindexed`. Documents that already moved to `vote_response#auditor` still hold ballot data and must be replayed.
-- The pass is safe to repeat. Re-run it if a transient error outlasted the consumer's retries (`MaxDeliver`) and left an older, unredacted document in place.
+- The pass is safe to repeat for canonical documents. Re-run it if a transient error outlasted the consumer's retries (`MaxDeliver`) and left an older, unredacted document in place. Noncanonical copies require the separate cleanup described above; replay alone never fixes them.
 
 - Run it **before** enabling `VOTE_PARTICIPANT_GRANTS_ENABLED`, then again after (see `fga-contract.md` § Rollout). It is what moves existing responses to `vote_response#auditor`, and the second run writes the participant tuples.
 - It is a **dry run unless `-apply` is passed**, and reports a count for every category it skips.
