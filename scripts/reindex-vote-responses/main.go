@@ -11,6 +11,7 @@
 //	NATS_URL=nats://localhost:4222 OPENSEARCH_URL=http://localhost:9200 reindex-vote-responses                # report only
 //	NATS_URL=nats://localhost:4222 OPENSEARCH_URL=http://localhost:9200 reindex-vote-responses -vote-uid <u>  # one vote, report only
 //	NATS_URL=nats://localhost:4222 OPENSEARCH_URL=http://localhost:9200 reindex-vote-responses -apply         # replay everything
+//	NATS_URL=nats://localhost:4222 OPENSEARCH_URL=http://localhost:9200 reindex-vote-responses -pseudo-anonymous-only -apply  # redact pseudo-anonymous ballots
 package main
 
 import (
@@ -40,6 +41,7 @@ func run() error {
 	voteUID := flag.String("vote-uid", "", "limit the replay to one vote's responses (v2 UID)")
 	rate := flag.Int("rate", defaultRatePerSecond, "max records re-put per second")
 	skipReindexed := flag.Bool("skip-reindexed", false, "skip responses already on the new access check, to resume an interrupted run (not for the pass after enabling participant grants)")
+	pseudoAnonymousOnly := flag.Bool("pseudo-anonymous-only", false, "replay only responses whose parent vote is pseudo-anonymous (missing flag counts as pseudo-anonymous)")
 	list := flag.Bool("list", false, "print the key of every record that would be replayed")
 	flag.Parse()
 
@@ -65,6 +67,8 @@ func run() error {
 		VoteUID:       *voteUID,
 		RatePerSecond: *rate,
 		SkipReindexed: *skipReindexed,
+
+		PseudoAnonymousOnly: *pseudoAnonymousOnly,
 	}
 	if *list {
 		opts.OnEligible = func(key string) { fmt.Println(key) }
@@ -89,6 +93,7 @@ func run() error {
 		fmt.Printf("  skipped, never processed:      %d\n", res.SkippedNoMap)
 		fmt.Printf("  skipped, response tombstoned:  %d\n", res.SkippedTomb)
 		fmt.Printf("  skipped, parent not mapped:    %d\n", res.SkippedNoParent)
+		fmt.Printf("  skipped, named vote:           %d\n", res.SkippedNamed)
 		fmt.Printf("  records to replay:             %d\n", res.Eligible)
 		if *apply {
 			fmt.Printf("  re-put:                        %d\n", res.Replayed)

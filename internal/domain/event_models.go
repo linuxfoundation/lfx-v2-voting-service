@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 )
@@ -503,4 +504,56 @@ type VoteResponseData struct {
 	SESLinkClicked          bool                  `json:"ses_link_clicked"`
 	SESLinkClickedFirstTime string                `json:"ses_link_clicked_first_time"`
 	SESLinkClickedLastTime  string                `json:"ses_link_clicked_last_time"`
+	// BallotRedacted drops the poll_answers, comment_responses and abstained
+	// keys from the indexer payload. It is set by RedactBallot for responses
+	// whose parent vote is pseudo-anonymous and is never serialized itself.
+	BallotRedacted bool `json:"-"`
+}
+
+// RedactBallot removes the voter's choices from a pseudo-anonymous vote
+// response so they are never indexed next to the voter's identity. Participation
+// fields (identity, vote_status, user_voting_status, timestamps) are kept.
+func (d *VoteResponseData) RedactBallot() {
+	d.PollAnswers = nil
+	d.CommentResponses = nil
+	d.Abstained = false
+	d.BallotRedacted = true
+}
+
+// voteResponseAlias has the fields of VoteResponseData without its methods, so
+// MarshalJSON can encode it without recursing.
+type voteResponseAlias VoteResponseData
+
+// MarshalJSON encodes the vote response. When BallotRedacted is false the output
+// is identical to the default struct encoding. When it is true the
+// poll_answers, comment_responses and abstained keys are omitted entirely, so
+// the indexer's full-document replace removes them from the stored document.
+func (d VoteResponseData) MarshalJSON() ([]byte, error) {
+	if !d.BallotRedacted {
+		return json.Marshal(voteResponseAlias(d))
+	}
+	// The shallower fields below shadow the embedded ones with the same JSON
+	// names (Go's dominance rule); being nil with omitempty, they are dropped.
+	return json.Marshal(struct {
+		voteResponseAlias
+		PollAnswers      *struct{} `json:"poll_answers,omitempty"`
+		CommentResponses *struct{} `json:"comment_responses,omitempty"`
+		Abstained        *struct{} `json:"abstained,omitempty"`
+	}{voteResponseAlias: voteResponseAlias(d)})
+}
+
+// PollRecordIsPseudoAnonymous reports whether a decoded itx-poll record must be
+// treated as pseudo-anonymous. It fails closed: it returns false only when
+// pseudo_anonymity is the bool false or the string "false" (trimmed,
+// case-insensitive). A nil record, a missing or null flag, true, "true" or any
+// unrecognised value all return true.
+func PollRecordIsPseudoAnonymous(record map[string]any) bool {
+	switch v := record["pseudo_anonymity"].(type) {
+	case bool:
+		return v
+	case string:
+		return !strings.EqualFold(strings.TrimSpace(v), "false")
+	default:
+		return true
+	}
 }

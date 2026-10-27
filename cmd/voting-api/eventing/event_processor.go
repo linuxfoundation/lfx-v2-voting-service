@@ -78,15 +78,17 @@ func NewEventProcessor(
 		return nil, fmt.Errorf("failed to access %s KV bucket: %w", V1MappingsBucket, err)
 	}
 
-	var v1ObjectsKV jetstream.KeyValue
+	// Access the V1 objects KV bucket. The vote response handler always reads parent
+	// itx-poll records from it to decide whether ballot data must be redacted.
+	v1ObjectsKV, err := jsContext.KeyValue(context.Background(), V1ObjectsBucket)
+	if err != nil {
+		conn.Close()
+		return nil, fmt.Errorf("failed to access %s KV bucket: %w", V1ObjectsBucket, err)
+	}
+
 	var inviteHandler *VoteResponseInviteHandler
 	if inviteCfg.Enabled &&
 		strings.TrimSpace(inviteCfg.SelfServeBaseURL) != "" {
-		v1ObjectsKV, err = jsContext.KeyValue(context.Background(), V1ObjectsBucket)
-		if err != nil {
-			conn.Close()
-			return nil, fmt.Errorf("failed to access %s KV bucket: %w", V1ObjectsBucket, err)
-		}
 		inviteHandler = &VoteResponseInviteHandler{
 			inviteSender:     infraNATS.NewInviteSender(conn, logger),
 			userReader:       infraNATS.NewUserReader(conn, logger),
@@ -132,7 +134,7 @@ func (ep *EventProcessor) Start(ctx context.Context) error {
 
 	// Start consuming messages
 	consumeCtx, err := consumer.Consume(func(msg jetstream.Msg) {
-		kvMessageHandler(ctx, msg, ep.publisher, ep.idMapper, ep.mappingsKV, ep.inviteHandler, ep.logger)
+		kvMessageHandler(ctx, msg, ep.publisher, ep.idMapper, ep.mappingsKV, ep.v1ObjectsKV, ep.inviteHandler, ep.logger)
 	}, jetstream.ConsumeErrHandler(func(_ jetstream.ConsumeContext, err error) {
 		ep.logger.With("error", err).Error("KV consumer error encountered")
 	}))

@@ -62,7 +62,7 @@ func TestKvHandler(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVotes, 1)
@@ -88,7 +88,7 @@ func TestKvHandler(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
@@ -109,7 +109,7 @@ func TestKvHandler(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVotes, 1)
@@ -130,7 +130,7 @@ func TestKvHandler(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
@@ -151,7 +151,7 @@ func TestKvHandler(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry) // ACK unsupported types
 		assert.Len(t, mockPublisher.publishedVotes, 0)
@@ -173,7 +173,7 @@ func TestKvHandler(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry) // ACK unknown operations
 		assert.Len(t, mockPublisher.publishedVotes, 0)
@@ -198,7 +198,7 @@ func TestHandleKVPut(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVotes, 1)
@@ -224,7 +224,7 @@ func TestHandleKVPut(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
@@ -258,7 +258,7 @@ func TestHandleKVPut(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVotes, 1)
@@ -293,7 +293,7 @@ func TestHandleKVPut(t *testing.T) {
 		idMapper := idmapper.NewNoOpMapper()
 
 		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
@@ -314,7 +314,7 @@ func TestHandleKVPut(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry) // Permanent error, ACK
 		assert.Len(t, mockPublisher.publishedVotes, 0)
@@ -335,7 +335,7 @@ func TestHandleKVPut(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry) // ACK unsupported types
 	})
@@ -355,7 +355,7 @@ func TestHandleKVPut(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry)
 		// Should publish a delete event, not an upsert
@@ -378,7 +378,7 @@ func TestHandleKVPut(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry)
 		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
@@ -396,7 +396,7 @@ func TestHandleKVPut(t *testing.T) {
 		}
 
 		mockPublisher := &mockEventPublisher{}
-		shouldRetry := kvHandler(context.Background(), entry, mockPublisher, idmapper.NewNoOpMapper(), mappingsKV, nil, slog.Default())
+		shouldRetry := kvHandler(context.Background(), entry, mockPublisher, idmapper.NewNoOpMapper(), mappingsKV, nil, nil, slog.Default())
 
 		assert.False(t, shouldRetry)
 		require.Len(t, mockPublisher.publishedVoteResponses, 1)
@@ -417,7 +417,7 @@ func TestHandleKVPut(t *testing.T) {
 		}
 
 		mockPublisher := &mockEventPublisher{}
-		shouldRetry := kvHandler(context.Background(), entry, mockPublisher, idmapper.NewNoOpMapper(), mappingsKV, nil, slog.Default())
+		shouldRetry := kvHandler(context.Background(), entry, mockPublisher, idmapper.NewNoOpMapper(), mappingsKV, nil, nil, slog.Default())
 
 		assert.False(t, shouldRetry)
 		require.Len(t, mockPublisher.publishedVoteResponses, 1)
@@ -440,7 +440,7 @@ func TestHandleKVPut(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry)
 		// Should be treated as a normal upsert, not a delete
@@ -462,7 +462,7 @@ func TestHandleKVPut(t *testing.T) {
 		ctx := context.Background()
 
 		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, logger)
+		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
 
 		assert.False(t, shouldRetry)
 		// Should be treated as a normal upsert, not a delete
