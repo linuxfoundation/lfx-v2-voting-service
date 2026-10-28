@@ -74,6 +74,10 @@ type ExtendPollRequest struct {
 // BulkResendRequest represents the request to bulk resend poll emails in ITX
 type BulkResendRequest struct {
 	RecipientIDs []string `json:"recipient_ids"`
+	// RecipientLinks maps a recipient (vote_id) to the personalized voting link ITX puts
+	// in that recipient's email instead of the standard link. Omitted when empty, so a
+	// request without personalized links is unchanged on the wire.
+	RecipientLinks map[string]string `json:"recipient_links,omitempty"`
 }
 
 // PollQuestionInput represents a question in the request

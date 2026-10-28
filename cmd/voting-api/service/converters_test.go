@@ -292,3 +292,40 @@ func TestConvertUpdateVoteResponsePayloadToDomain_EmptyCommentResponsesClearsCom
 		t.Errorf("expected empty CommentResponses, got len=%d", len(*req.CommentResponses))
 	}
 }
+
+// TestConvertVoteResponsePayloads_NullAnswerEntriesAreRejected covers null user_vote_content
+// and ranked_choices entries on every vote response converter, including the anonymous
+// vote-link ones, where a nil dereference would otherwise panic before token verification.
+func TestConvertVoteResponsePayloads_NullAnswerEntriesAreRejected(t *testing.T) {
+	nullAnswer := []*votesvc.VoteAnswerInput{nil}
+	nullRanked := []*votesvc.VoteAnswerInput{{QuestionID: "q1", RankedChoices: []*votesvc.RankedChoiceInput{nil}}}
+
+	for name, answers := range map[string][]*votesvc.VoteAnswerInput{"null answer": nullAnswer, "null ranked choice": nullRanked} {
+		converters := map[string]func() error{
+			"create": func() error {
+				_, err := ConvertCreateVoteResponsePayloadToDomain(&votesvc.CreateVoteResponsePayload{UserVoteContent: answers})
+				return err
+			},
+			"update": func() error {
+				_, err := ConvertUpdateVoteResponsePayloadToDomain(&votesvc.UpdateVoteResponsePayload{UserVoteContent: answers})
+				return err
+			},
+			"create by link": func() error {
+				_, err := ConvertCreateVoteResponseByLinkPayloadToDomain(&votesvc.CreateVoteResponseByLinkPayload{UserVoteContent: answers})
+				return err
+			},
+			"update by link": func() error {
+				_, err := ConvertUpdateVoteResponseByLinkPayloadToDomain(&votesvc.UpdateVoteResponseByLinkPayload{UserVoteContent: answers})
+				return err
+			},
+		}
+		for conv, run := range converters {
+			t.Run(name+"/"+conv, func(t *testing.T) {
+				var dErr *domain.DomainError
+				if err := run(); !errors.As(err, &dErr) || dErr.Type != domain.ErrorTypeValidation {
+					t.Errorf("expected validation error, got %v", err)
+				}
+			})
+		}
+	}
+}

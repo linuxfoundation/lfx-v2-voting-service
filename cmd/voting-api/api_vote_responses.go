@@ -106,3 +106,55 @@ func (s *VotingAPI) ResendVoteResponse(ctx context.Context, payload *votesvc.Res
 
 	return nil
 }
+
+// CreateVoteResponseByLink submits a vote response authorized by a personalized vote link
+// token (proxies to ITX POST /voting/vote). The token is never logged.
+func (s *VotingAPI) CreateVoteResponseByLink(ctx context.Context, payload *votesvc.CreateVoteResponseByLinkPayload) error {
+	logger := slog.With("component", "voting_api", "method", "CreateVoteResponseByLink")
+
+	logger.InfoContext(ctx, "Create vote response by link request received")
+
+	// Convert Goa payload to service request
+	req, err := apiservice.ConvertCreateVoteResponseByLinkPayloadToDomain(payload)
+	if err != nil {
+		logger.ErrorContext(ctx, "Invalid create vote response by link payload", "error", err)
+		return handleError(err)
+	}
+
+	// Call service layer
+	err = s.voteResponseService.CreateVoteResponseByLink(ctx, payload.VoteToken, req)
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to create vote response by link", "error", err)
+		return handleError(err)
+	}
+
+	logger.InfoContext(ctx, "Vote response created by link successfully")
+
+	return nil
+}
+
+// UpdateVoteResponseByLink updates a vote response authorized by a personalized vote link
+// token (proxies to ITX PUT /voting/vote/{vote_id}). The token is never logged.
+func (s *VotingAPI) UpdateVoteResponseByLink(ctx context.Context, payload *votesvc.UpdateVoteResponseByLinkPayload) error {
+	logger := slog.With("component", "voting_api", "method", "UpdateVoteResponseByLink")
+
+	logger.InfoContext(ctx, "Update vote response by link request received")
+
+	// Convert Goa payload to service request
+	req, err := apiservice.ConvertUpdateVoteResponseByLinkPayloadToDomain(payload)
+	if err != nil {
+		logger.ErrorContext(ctx, "Invalid update vote response by link payload", "error", err)
+		return handleError(err)
+	}
+
+	// Call service layer
+	err = s.voteResponseService.UpdateVoteResponseByLink(ctx, payload.VoteToken, req)
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to update vote response by link", "error", err)
+		return handleError(err)
+	}
+
+	logger.InfoContext(ctx, "Vote response updated by link successfully")
+
+	return nil
+}

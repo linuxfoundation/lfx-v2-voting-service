@@ -886,11 +886,15 @@ Content-Type: application/json
 ```json
 {
   "recipient_ids": [
-    "user-uuid-1",
-    "user-uuid-2"
-  ]
+    "cba14f40-1636-11ec-9621-0242ac130002",
+    "cba14f40-1636-11ec-9621-0242ac130003"
+  ],
+  "personalized_links": true
 }
 ```
+
+- `recipient_ids` (required): **vote response (ballot) UIDs** — the ITX `vote_id` of each recipient's ballot, not user IDs. ITX rejects the whole request with a 400 if any ID is not an active ballot of this vote whose voter is still a committee member.
+- `personalized_links` (optional, default `false`): when `true`, each recipient's email links to a personal HMAC-signed URL that lets them submit or update their vote response without logging in (see [Personalized Vote Links](vote-links.md)). Returns 503 if the service has no signing keys configured, and 400 if `recipient_ids` is empty.
 
 **Response** (204 No Content):
 
@@ -912,18 +916,26 @@ Content-Type: application/json
 x-scope: manage:voting
 ```
 
-**Request Body**:
+**Request Body** (`personalized_links` false or omitted — unchanged):
 
 ```json
 {
-  "recipient_ids": [
-    "user-uuid-1",
-    "user-uuid-2"
-  ]
+  "recipient_ids": ["cba14f40-1636-11ec-9621-0242ac130002"]
 }
 ```
 
-**Note**: `recipient_ids` are passed through to ITX without transformation.
+**Request Body** (`personalized_links: true`):
+
+```json
+{
+  "recipient_ids": ["cba14f40-1636-11ec-9621-0242ac130002"],
+  "recipient_links": {
+    "cba14f40-1636-11ec-9621-0242ac130002": "https://app.lfx.dev/votes/8f3c2a1e-4b5d-4e6f-9a7b-1c2d3e4f5a6b#vote_token=v1.k2026a.eyJ2Ijoi...fQ.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU"
+  }
+}
+```
+
+**Note**: `recipient_ids` are passed through to ITX without transformation. `recipient_links` is keyed by `vote_id`; ITX uses each value as that recipient's `VotingLink` in place of the standard Self Serve link. **`recipient_links` requires ITX support** — see [Personalized Vote Links](vote-links.md#itx-dependency).
 
 **Response** (200 OK or 204 No Content):
 
@@ -1322,6 +1334,70 @@ x-scope: manage:voting
 ```
 (empty body)
 ```
+
+---
+
+## POST /vote_links/responses (Submit Vote Response by Link)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `POST /vote_links/responses`
+
+**Required permission**: none — Heimdall admits the request anonymously. The `vote_token` from a personalized vote link is the only authorization; the service verifies its HMAC signature. See [Personalized Vote Links](vote-links.md).
+
+**Headers**:
+
+```http
+Content-Type: application/json
+```
+
+**Request Body**:
+
+```json
+{
+  "vote_token": "v1.k2026a.eyJ2Ijoi...fQ.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU",
+  "user_vote_content": [
+    {
+      "question_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+      "choice_ids": ["b03cdbaf-53b1-4d47-bc04-dd7e459dd309"]
+    }
+  ],
+  "abstain": false,
+  "comment_responses": []
+}
+```
+
+The ballot is identified **only** by the token. The body has no `vote_response_uid`, and any such field is ignored.
+
+**Response** (204 No Content). Errors:
+
+| Status | Cause |
+|---|---|
+| 400 | Payload validation, or ITX rejection (`poll has ended`, `vote is not awaiting response`, `vote cannot be submitted for a removed voter`, ...) |
+| 404 | `invalid voting link` — malformed, tampered, or unknown-key token |
+| 503 | Personalized vote links are not configured on this service |
+
+### ITX Service API (Underlying)
+
+`POST /v2/voting/vote` with `vote_id` set to the token's vote response UID — identical to [POST /vote_responses](#post-vote_responses-submit-vote-response).
+
+---
+
+## PUT /vote_links/responses (Update Vote Response by Link)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `PUT /vote_links/responses`
+
+**Required permission**: none — authorized by `vote_token`, as for `POST /vote_links/responses`.
+
+**Request Body**: same fields as `POST /vote_links/responses`. As with `PUT /vote_responses/{vote_response_uid}`, omitting `comment_responses` preserves existing comments; including it (even as `[]`) replaces them.
+
+**Response** (204 No Content). Errors are as for `POST /vote_links/responses`; ITX returns 400 when no ballot has been submitted yet (`vote_status != responded`).
+
+### ITX Service API (Underlying)
+
+`PUT /v2/voting/vote/{vote_id}` with `vote_id` from the token — identical to [PUT /vote_responses/{vote_response_uid}](#put-vote_responsesvote_response_uid-update-vote-response).
 
 ---
 

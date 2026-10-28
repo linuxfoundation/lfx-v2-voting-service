@@ -184,10 +184,11 @@ func (s *VotingAPI) BulkResendVote(ctx context.Context, payload *votesvc.BulkRes
 	logger.InfoContext(ctx, "Bulk resend vote request received",
 		"vote_uid", payload.UID,
 		"recipient_count", len(payload.RecipientIds),
+		"personalized_links", payload.PersonalizedLinks,
 	)
 
 	// Call service layer
-	err := s.voteService.BulkResendVote(ctx, payload.UID, payload.RecipientIds)
+	err := s.voteService.BulkResendVote(ctx, payload.UID, payload.RecipientIds, payload.PersonalizedLinks)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to bulk resend vote emails", "error", err)
 		return handleError(err)

@@ -19,20 +19,22 @@ import (
 
 // Server lists the vote service endpoint HTTP handlers.
 type Server struct {
-	Mounts             []*MountPoint
-	CreateVote         http.Handler
-	GetVote            http.Handler
-	UpdateVote         http.Handler
-	DeleteVote         http.Handler
-	ExtendVote         http.Handler
-	EndVote            http.Handler
-	EnableVote         http.Handler
-	BulkResendVote     http.Handler
-	GetVoteResults     http.Handler
-	CreateVoteResponse http.Handler
-	GetVoteResponse    http.Handler
-	UpdateVoteResponse http.Handler
-	ResendVoteResponse http.Handler
+	Mounts                   []*MountPoint
+	CreateVote               http.Handler
+	GetVote                  http.Handler
+	UpdateVote               http.Handler
+	DeleteVote               http.Handler
+	ExtendVote               http.Handler
+	EndVote                  http.Handler
+	EnableVote               http.Handler
+	BulkResendVote           http.Handler
+	GetVoteResults           http.Handler
+	CreateVoteResponse       http.Handler
+	GetVoteResponse          http.Handler
+	UpdateVoteResponse       http.Handler
+	CreateVoteResponseByLink http.Handler
+	UpdateVoteResponseByLink http.Handler
+	ResendVoteResponse       http.Handler
 }
 
 // MountPoint holds information about the mounted endpoints.
@@ -74,21 +76,25 @@ func New(
 			{"CreateVoteResponse", "POST", "/vote_responses"},
 			{"GetVoteResponse", "GET", "/vote_responses/{vote_response_uid}"},
 			{"UpdateVoteResponse", "PUT", "/vote_responses/{vote_response_uid}"},
+			{"CreateVoteResponseByLink", "POST", "/vote_links/responses"},
+			{"UpdateVoteResponseByLink", "PUT", "/vote_links/responses"},
 			{"ResendVoteResponse", "POST", "/vote_responses/{vote_response_uid}/resend"},
 		},
-		CreateVote:         NewCreateVoteHandler(e.CreateVote, mux, decoder, encoder, errhandler, formatter),
-		GetVote:            NewGetVoteHandler(e.GetVote, mux, decoder, encoder, errhandler, formatter),
-		UpdateVote:         NewUpdateVoteHandler(e.UpdateVote, mux, decoder, encoder, errhandler, formatter),
-		DeleteVote:         NewDeleteVoteHandler(e.DeleteVote, mux, decoder, encoder, errhandler, formatter),
-		ExtendVote:         NewExtendVoteHandler(e.ExtendVote, mux, decoder, encoder, errhandler, formatter),
-		EndVote:            NewEndVoteHandler(e.EndVote, mux, decoder, encoder, errhandler, formatter),
-		EnableVote:         NewEnableVoteHandler(e.EnableVote, mux, decoder, encoder, errhandler, formatter),
-		BulkResendVote:     NewBulkResendVoteHandler(e.BulkResendVote, mux, decoder, encoder, errhandler, formatter),
-		GetVoteResults:     NewGetVoteResultsHandler(e.GetVoteResults, mux, decoder, encoder, errhandler, formatter),
-		CreateVoteResponse: NewCreateVoteResponseHandler(e.CreateVoteResponse, mux, decoder, encoder, errhandler, formatter),
-		GetVoteResponse:    NewGetVoteResponseHandler(e.GetVoteResponse, mux, decoder, encoder, errhandler, formatter),
-		UpdateVoteResponse: NewUpdateVoteResponseHandler(e.UpdateVoteResponse, mux, decoder, encoder, errhandler, formatter),
-		ResendVoteResponse: NewResendVoteResponseHandler(e.ResendVoteResponse, mux, decoder, encoder, errhandler, formatter),
+		CreateVote:               NewCreateVoteHandler(e.CreateVote, mux, decoder, encoder, errhandler, formatter),
+		GetVote:                  NewGetVoteHandler(e.GetVote, mux, decoder, encoder, errhandler, formatter),
+		UpdateVote:               NewUpdateVoteHandler(e.UpdateVote, mux, decoder, encoder, errhandler, formatter),
+		DeleteVote:               NewDeleteVoteHandler(e.DeleteVote, mux, decoder, encoder, errhandler, formatter),
+		ExtendVote:               NewExtendVoteHandler(e.ExtendVote, mux, decoder, encoder, errhandler, formatter),
+		EndVote:                  NewEndVoteHandler(e.EndVote, mux, decoder, encoder, errhandler, formatter),
+		EnableVote:               NewEnableVoteHandler(e.EnableVote, mux, decoder, encoder, errhandler, formatter),
+		BulkResendVote:           NewBulkResendVoteHandler(e.BulkResendVote, mux, decoder, encoder, errhandler, formatter),
+		GetVoteResults:           NewGetVoteResultsHandler(e.GetVoteResults, mux, decoder, encoder, errhandler, formatter),
+		CreateVoteResponse:       NewCreateVoteResponseHandler(e.CreateVoteResponse, mux, decoder, encoder, errhandler, formatter),
+		GetVoteResponse:          NewGetVoteResponseHandler(e.GetVoteResponse, mux, decoder, encoder, errhandler, formatter),
+		UpdateVoteResponse:       NewUpdateVoteResponseHandler(e.UpdateVoteResponse, mux, decoder, encoder, errhandler, formatter),
+		CreateVoteResponseByLink: NewCreateVoteResponseByLinkHandler(e.CreateVoteResponseByLink, mux, decoder, encoder, errhandler, formatter),
+		UpdateVoteResponseByLink: NewUpdateVoteResponseByLinkHandler(e.UpdateVoteResponseByLink, mux, decoder, encoder, errhandler, formatter),
+		ResendVoteResponse:       NewResendVoteResponseHandler(e.ResendVoteResponse, mux, decoder, encoder, errhandler, formatter),
 	}
 }
 
@@ -109,6 +115,8 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.CreateVoteResponse = m(s.CreateVoteResponse)
 	s.GetVoteResponse = m(s.GetVoteResponse)
 	s.UpdateVoteResponse = m(s.UpdateVoteResponse)
+	s.CreateVoteResponseByLink = m(s.CreateVoteResponseByLink)
+	s.UpdateVoteResponseByLink = m(s.UpdateVoteResponseByLink)
 	s.ResendVoteResponse = m(s.ResendVoteResponse)
 }
 
@@ -129,6 +137,8 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountCreateVoteResponseHandler(mux, h.CreateVoteResponse)
 	MountGetVoteResponseHandler(mux, h.GetVoteResponse)
 	MountUpdateVoteResponseHandler(mux, h.UpdateVoteResponse)
+	MountCreateVoteResponseByLinkHandler(mux, h.CreateVoteResponseByLink)
+	MountUpdateVoteResponseByLinkHandler(mux, h.UpdateVoteResponseByLink)
 	MountResendVoteResponseHandler(mux, h.ResendVoteResponse)
 }
 
@@ -750,6 +760,114 @@ func NewUpdateVoteResponseHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "update_vote_response")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "vote")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountCreateVoteResponseByLinkHandler configures the mux to serve the "vote"
+// service "create_vote_response_by_link" endpoint.
+func MountCreateVoteResponseByLinkHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/vote_links/responses", f)
+}
+
+// NewCreateVoteResponseByLinkHandler creates a HTTP handler which loads the
+// HTTP request and calls the "vote" service "create_vote_response_by_link"
+// endpoint.
+func NewCreateVoteResponseByLinkHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeCreateVoteResponseByLinkRequest(mux, decoder)
+		encodeResponse = EncodeCreateVoteResponseByLinkResponse(encoder)
+		encodeError    = EncodeCreateVoteResponseByLinkError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "create_vote_response_by_link")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "vote")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountUpdateVoteResponseByLinkHandler configures the mux to serve the "vote"
+// service "update_vote_response_by_link" endpoint.
+func MountUpdateVoteResponseByLinkHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("PUT", "/vote_links/responses", f)
+}
+
+// NewUpdateVoteResponseByLinkHandler creates a HTTP handler which loads the
+// HTTP request and calls the "vote" service "update_vote_response_by_link"
+// endpoint.
+func NewUpdateVoteResponseByLinkHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeUpdateVoteResponseByLinkRequest(mux, decoder)
+		encodeResponse = EncodeUpdateVoteResponseByLinkResponse(encoder)
+		encodeError    = EncodeUpdateVoteResponseByLinkError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "update_vote_response_by_link")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "vote")
 		payload, err := decodeRequest(r)
 		if err != nil {

@@ -18,6 +18,54 @@ func BearerTokenAttribute() {
 	})
 }
 
+// VoteLinkTokenAttribute is the DSL attribute for the HMAC-signed token from a personalized vote link.
+func VoteLinkTokenAttribute() {
+	Attribute("vote_token", String, "Signed token from the personalized vote link (the vote_token in the "+
+		"emailed URL's fragment). Identifies the ballot; treat it as a credential and never log it.", func() {
+		MinLength(1)
+		MaxLength(1024)
+		Example("v1.k2026a.eyJ2IjoiOGYzYzJhMWUtNGI1ZC00ZTZmLTlhN2ItMWMyZDNlNGY1YTZiIiwiciI6ImNiYTE0ZjQwLTE2MzYtMTFlYy05NjIxLTAyNDJhYzEzMDAwMiIsImlhdCI6MTc5MzIzMjAwMH0.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU")
+	})
+}
+
+// VoteResponseBallotAttributes is the DSL for the ballot fields shared by every vote response
+// submit and update method. commentNote is appended to the comment_responses description to
+// state the method's omission semantics (create vs. update differ).
+func VoteResponseBallotAttributes(commentNote string) {
+	Attribute("user_vote_content", ArrayOf(VoteAnswerInput), "Vote answers", func() {
+		Example([]any{
+			map[string]any{
+				"question_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+				"choice_ids":  []string{"b03cdbaf-53b1-4d47-bc04-dd7e459dd309"},
+			},
+		})
+	})
+
+	Attribute("abstain", Boolean, "Whether to abstain from voting", func() {
+		Default(false)
+	})
+
+	Attribute("comment_responses", ArrayOf(CommentResponse), "The voter's free-text "+
+		"responses to the poll's comment prompts. Allowed regardless of whether abstain is true — an "+
+		"abstaining voter skips the ballot but may still comment. Each prompt_id must match one of the "+
+		"poll's comment prompts and must not repeat; each comment_text is required (cannot be empty "+
+		"after trimming) and is rejected with a 400 if longer than 5000 characters. "+commentNote, func() {
+		Example([]any{
+			map[string]any{
+				"prompt_id":    "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+				"comment_text": "Because the incumbent has done great work this term.",
+			},
+		})
+	})
+}
+
+// Comment-preservation notes passed to VoteResponseBallotAttributes.
+const (
+	createCommentNote = "Optional; only meaningful if the poll has poll_comment_prompts."
+	updateCommentNote = "Omitting this field entirely preserves the vote's existing comments untouched; " +
+		"including it (even as an empty array) validates and replaces them."
+)
+
 // VoteIDAttribute is the DSL attribute for vote ID (UUID).
 func VoteIDAttribute() {
 	Attribute("uid", String, "Vote UID", func() {

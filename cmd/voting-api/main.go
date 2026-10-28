@@ -32,6 +32,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/eventing"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/idmapper"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/proxy"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/votelink"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/middleware"
 
@@ -198,9 +199,34 @@ func run() int {
 		logger.Info("Event processing is DISABLED - skipping event processor initialization")
 	}
 
+	// Initialize personalized vote links (optional; disabled when no signing keys are set)
+	var voteOpts []service.VoteServiceOption
+	var voteResponseOpts []service.VoteResponseServiceOption
+	linkSigner, err := newVoteLinkSigner(cfg)
+	if err != nil {
+		logger.Error("Failed to initialize personalized vote links", "error", err)
+		return 1
+	}
+	if linkSigner != nil {
+		linkBaseURL := resolveSelfServeBaseURL()
+		// Links carry a voting credential, so they must only ever be served over HTTPS. The
+		// base must also be a plain origin/path: links append /votes/{uid}#vote_token=..., which
+		// a query string or fragment on the base would swallow.
+		if parsed, err := url.ParseRequestURI(linkBaseURL); err != nil || parsed.Scheme != "https" || parsed.Host == "" ||
+			parsed.RawQuery != "" || parsed.ForceQuery || strings.Contains(linkBaseURL, "#") {
+			logger.Error("LFX_SELF_SERVE_BASE_URL must be an https URL without a query string or fragment for personalized vote links", "url", linkBaseURL, "error", err)
+			return 1
+		}
+		voteOpts = append(voteOpts, service.WithVoteLinks(linkSigner, linkBaseURL))
+		voteResponseOpts = append(voteResponseOpts, service.WithVoteLinkVerifier(linkSigner))
+		logger.Info("Personalized vote links are ENABLED", "active_key_id", linkSigner.ActiveKeyID(), "base_url", linkBaseURL)
+	} else {
+		logger.Info("Personalized vote links are DISABLED - VOTE_LINK_SIGNING_KEYS is not set")
+	}
+
 	// Initialize service layer
-	voteService := service.NewVoteService(jwtAuth, proxyClient, idMapper, logger)
-	voteResponseService := service.NewVoteResponseService(jwtAuth, proxyClient, idMapper, logger)
+	voteService := service.NewVoteService(jwtAuth, proxyClient, idMapper, logger, voteOpts...)
+	voteResponseService := service.NewVoteResponseService(jwtAuth, proxyClient, idMapper, logger, voteResponseOpts...)
 
 	// Initialize API layer
 	votingAPI := NewVotingAPI(voteService, voteResponseService)
@@ -217,6 +243,9 @@ func run() int {
 		koDataPath = "../../gen/http"
 	}
 	koDataDir := http.Dir(koDataPath)
+
+	// Cap request bodies on the anonymous vote-link routes before Goa decodes them.
+	mux.Use(limitVoteLinkBody)
 
 	// Register route-tagging middleware inside chi's routing chain so that
 	// http.route is set on the OTel span after chi has matched the route pattern.
@@ -370,6 +399,8 @@ type config struct {
 	EventProcessingEnabled bool
 	EventConsumerName      string
 	EventStreamName        string
+	VoteLinkSigningKeys    string
+	VoteLinkActiveKID      string
 }
 
 // loadConfig loads configuration from environment variables
@@ -391,7 +422,29 @@ func loadConfig() config {
 		EventProcessingEnabled: getEnv("EVENT_PROCESSING_ENABLED", "true") == "true",
 		EventConsumerName:      getEnv("EVENT_CONSUMER_NAME", "voting-service-kv-consumer"),
 		EventStreamName:        getEnv("EVENT_STREAM_NAME", "KV_v1-objects"),
+		VoteLinkSigningKeys:    getEnv("VOTE_LINK_SIGNING_KEYS", ""),
+		VoteLinkActiveKID:      getEnv("VOTE_LINK_ACTIVE_KID", ""),
 	}
+}
+
+// newVoteLinkSigner builds the personalized vote link signer from configuration. It returns
+// nil when VOTE_LINK_SIGNING_KEYS is unset (feature disabled) and an error when the keys are
+// set but invalid, so a misconfigured deployment fails at startup rather than at send time.
+// The active (signing) key is VOTE_LINK_ACTIVE_KID when set, otherwise the first key listed,
+// so a rotation only ever has to change the one Secret value.
+func newVoteLinkSigner(cfg config) (*votelink.HMACSigner, error) {
+	if strings.TrimSpace(cfg.VoteLinkSigningKeys) == "" {
+		return nil, nil
+	}
+	keys, order, err := votelink.ParseKeys(cfg.VoteLinkSigningKeys)
+	if err != nil {
+		return nil, fmt.Errorf("VOTE_LINK_SIGNING_KEYS: %w", err)
+	}
+	activeKID := cfg.VoteLinkActiveKID
+	if activeKID == "" {
+		activeKID = order[0]
+	}
+	return votelink.NewHMACSigner(keys, activeKID)
 }
 
 // getEnv retrieves an environment variable or returns a default value
@@ -423,17 +476,7 @@ func parseBoolEnv(key string, logger *slog.Logger) bool {
 func parseInviteConfig(logger *slog.Logger) apieventing.InviteFeatureConfig {
 	enabled := parseBoolEnv("INVITES_ENABLED", logger)
 
-	selfServeBaseURL := os.Getenv("LFX_SELF_SERVE_BASE_URL")
-	if selfServeBaseURL == "" {
-		switch getEnv("LFX_ENVIRONMENT", "prod") {
-		case "prod":
-			selfServeBaseURL = "https://app.lfx.dev"
-		case "staging":
-			selfServeBaseURL = "https://app.staging.lfx.dev"
-		default:
-			selfServeBaseURL = "https://app.dev.lfx.dev"
-		}
-	}
+	selfServeBaseURL := resolveSelfServeBaseURL()
 
 	if enabled {
 		parsed, err := url.ParseRequestURI(selfServeBaseURL)
@@ -450,4 +493,36 @@ func parseInviteConfig(logger *slog.Logger) apieventing.InviteFeatureConfig {
 		Enabled:          enabled,
 		SelfServeBaseURL: selfServeBaseURL,
 	}
+}
+
+// resolveSelfServeBaseURL returns LFX_SELF_SERVE_BASE_URL, or the environment-appropriate
+// LFX app URL derived from LFX_ENVIRONMENT when it is unset.
+func resolveSelfServeBaseURL() string {
+	if selfServeBaseURL := os.Getenv("LFX_SELF_SERVE_BASE_URL"); selfServeBaseURL != "" {
+		return selfServeBaseURL
+	}
+	switch getEnv("LFX_ENVIRONMENT", "prod") {
+	case "prod":
+		return "https://app.lfx.dev"
+	case "staging":
+		return "https://app.staging.lfx.dev"
+	default:
+		return "https://app.dev.lfx.dev"
+	}
+}
+
+// maxVoteLinkBodyBytes caps request bodies on the anonymous /vote_links/ routes. A ballot is a
+// few KiB; the cap stops unauthenticated callers forcing large allocations during decoding,
+// before the vote token is verified.
+const maxVoteLinkBodyBytes = 1 << 20
+
+// limitVoteLinkBody wraps the request body of /vote_links/ requests in http.MaxBytesReader, so
+// oversized bodies fail decoding with a 400 instead of being read into memory.
+func limitVoteLinkBody(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/vote_links/") {
+			r.Body = http.MaxBytesReader(w, r.Body, maxVoteLinkBodyBytes)
+		}
+		next.ServeHTTP(w, r)
+	})
 }

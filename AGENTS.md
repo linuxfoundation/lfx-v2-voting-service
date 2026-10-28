@@ -115,5 +115,6 @@ To test without a live ITX connection, mock the domain interfaces in `internal/d
 | `docs/api-contracts.md` | LFXv2 ↔ ITX field mappings |
 | `docs/itx-proxy-implementation.md` | Proxy layer deep-dive |
 | `docs/glossary.md` | Service-specific terminology (ITX, SFID, v1/v2) |
+| `docs/vote-links.md` | Personalized HMAC-signed vote links (login-free voting) |
 | `README.md` | Environment variables, running locally, Helm deployment |
 | `CONTRIBUTING.md` | PR process, branch naming, commit conventions |
