@@ -18,6 +18,45 @@ func BearerTokenAttribute() {
 	})
 }
 
+// VoteLinkTokenAttribute is the DSL attribute for the HMAC-signed token from a personalized vote link.
+func VoteLinkTokenAttribute() {
+	Attribute("vote_token", String, "Signed token from the personalized vote link (the vote_token query "+
+		"parameter of the emailed URL). Identifies the ballot; treat it as a credential and never log it.", func() {
+		MinLength(1)
+		MaxLength(1024)
+		Example("v1.k2026a.eyJ2IjoiOGYzYzJhMWUtNGI1ZC00ZTZmLTlhN2ItMWMyZDNlNGY1YTZiIiwiciI6ImNiYTE0ZjQwLTE2MzYtMTFlYy05NjIxLTAyNDJhYzEzMDAwMiIsImlhdCI6MTc5MzIzMjAwMH0.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU")
+	})
+}
+
+// VoteResponseBallotAttributes is the DSL for the ballot fields shared by the vote-link
+// submit and update methods.
+func VoteResponseBallotAttributes() {
+	Attribute("user_vote_content", ArrayOf(VoteAnswerInput), "Vote answers", func() {
+		Example([]any{
+			map[string]any{
+				"question_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+				"choice_ids":  []string{"b03cdbaf-53b1-4d47-bc04-dd7e459dd309"},
+			},
+		})
+	})
+
+	Attribute("abstain", Boolean, "Whether to abstain from voting", func() {
+		Default(false)
+	})
+
+	Attribute("comment_responses", ArrayOf(CommentResponse), "The voter's free-text responses to the "+
+		"poll's comment prompts. Allowed regardless of whether abstain is true. Each prompt_id must match "+
+		"one of the poll's comment prompts and must not repeat; each comment_text is required and is "+
+		"rejected with a 400 if longer than 5000 characters.", func() {
+		Example([]any{
+			map[string]any{
+				"prompt_id":    "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+				"comment_text": "Because the incumbent has done great work this term.",
+			},
+		})
+	})
+}
+
 // VoteIDAttribute is the DSL attribute for vote ID (UUID).
 func VoteIDAttribute() {
 	Attribute("uid", String, "Vote UID", func() {

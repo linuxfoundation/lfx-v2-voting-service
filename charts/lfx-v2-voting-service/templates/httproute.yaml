@@ -31,6 +31,9 @@ spec:
         value: /vote_responses/
     - path:
         type: PathPrefix
+        value: /vote_links/
+    - path:
+        type: PathPrefix
         value: /_voting/
     {{- if .Values.heimdall.enabled }}
     filters:

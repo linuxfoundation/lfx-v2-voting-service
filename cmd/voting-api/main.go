@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -32,6 +33,7 @@ import (
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/eventing"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/idmapper"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/proxy"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/votelink"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/middleware"
 
@@ -198,9 +200,30 @@ func run() int {
 		logger.Info("Event processing is DISABLED - skipping event processor initialization")
 	}
 
+	// Initialize personalized vote links (optional; disabled when no signing keys are set)
+	var voteOpts []service.VoteServiceOption
+	var voteResponseOpts []service.VoteResponseServiceOption
+	linkSigner, err := newVoteLinkSigner(cfg)
+	if err != nil {
+		logger.Error("Failed to initialize personalized vote links", "error", err)
+		return 1
+	}
+	if linkSigner != nil {
+		linkBaseURL := resolveSelfServeBaseURL()
+		if parsed, err := url.ParseRequestURI(linkBaseURL); err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") || parsed.Host == "" {
+			logger.Error("LFX_SELF_SERVE_BASE_URL is invalid; it is required for personalized vote links", "url", linkBaseURL, "error", err)
+			return 1
+		}
+		voteOpts = append(voteOpts, service.WithVoteLinks(linkSigner, linkBaseURL))
+		voteResponseOpts = append(voteResponseOpts, service.WithVoteLinkVerifier(linkSigner))
+		logger.Info("Personalized vote links are ENABLED", "active_key_id", linkSigner.ActiveKeyID(), "base_url", linkBaseURL)
+	} else {
+		logger.Info("Personalized vote links are DISABLED - VOTE_LINK_SIGNING_KEYS is not set")
+	}
+
 	// Initialize service layer
-	voteService := service.NewVoteService(jwtAuth, proxyClient, idMapper, logger)
-	voteResponseService := service.NewVoteResponseService(jwtAuth, proxyClient, idMapper, logger)
+	voteService := service.NewVoteService(jwtAuth, proxyClient, idMapper, logger, voteOpts...)
+	voteResponseService := service.NewVoteResponseService(jwtAuth, proxyClient, idMapper, logger, voteResponseOpts...)
 
 	// Initialize API layer
 	votingAPI := NewVotingAPI(voteService, voteResponseService)
@@ -370,6 +393,8 @@ type config struct {
 	EventProcessingEnabled bool
 	EventConsumerName      string
 	EventStreamName        string
+	VoteLinkSigningKeys    string
+	VoteLinkActiveKID      string
 }
 
 // loadConfig loads configuration from environment variables
@@ -391,7 +416,32 @@ func loadConfig() config {
 		EventProcessingEnabled: getEnv("EVENT_PROCESSING_ENABLED", "true") == "true",
 		EventConsumerName:      getEnv("EVENT_CONSUMER_NAME", "voting-service-kv-consumer"),
 		EventStreamName:        getEnv("EVENT_STREAM_NAME", "KV_v1-objects"),
+		VoteLinkSigningKeys:    getEnv("VOTE_LINK_SIGNING_KEYS", ""),
+		VoteLinkActiveKID:      getEnv("VOTE_LINK_ACTIVE_KID", ""),
 	}
+}
+
+// newVoteLinkSigner builds the personalized vote link signer from configuration. It returns
+// nil when VOTE_LINK_SIGNING_KEYS is unset (feature disabled) and an error when the keys are
+// set but invalid, so a misconfigured deployment fails at startup rather than at send time.
+func newVoteLinkSigner(cfg config) (*votelink.HMACSigner, error) {
+	if strings.TrimSpace(cfg.VoteLinkSigningKeys) == "" {
+		return nil, nil
+	}
+	keys, err := votelink.ParseKeys(cfg.VoteLinkSigningKeys)
+	if err != nil {
+		return nil, fmt.Errorf("VOTE_LINK_SIGNING_KEYS: %w", err)
+	}
+	activeKID := cfg.VoteLinkActiveKID
+	if activeKID == "" {
+		if len(keys) != 1 {
+			return nil, errors.New("VOTE_LINK_ACTIVE_KID is required when VOTE_LINK_SIGNING_KEYS has more than one key")
+		}
+		for kid := range keys {
+			activeKID = kid
+		}
+	}
+	return votelink.NewHMACSigner(keys, activeKID)
 }
 
 // getEnv retrieves an environment variable or returns a default value
@@ -423,17 +473,7 @@ func parseBoolEnv(key string, logger *slog.Logger) bool {
 func parseInviteConfig(logger *slog.Logger) apieventing.InviteFeatureConfig {
 	enabled := parseBoolEnv("INVITES_ENABLED", logger)
 
-	selfServeBaseURL := os.Getenv("LFX_SELF_SERVE_BASE_URL")
-	if selfServeBaseURL == "" {
-		switch getEnv("LFX_ENVIRONMENT", "prod") {
-		case "prod":
-			selfServeBaseURL = "https://app.lfx.dev"
-		case "staging":
-			selfServeBaseURL = "https://app.staging.lfx.dev"
-		default:
-			selfServeBaseURL = "https://app.dev.lfx.dev"
-		}
-	}
+	selfServeBaseURL := resolveSelfServeBaseURL()
 
 	if enabled {
 		parsed, err := url.ParseRequestURI(selfServeBaseURL)
@@ -449,5 +489,21 @@ func parseInviteConfig(logger *slog.Logger) apieventing.InviteFeatureConfig {
 	return apieventing.InviteFeatureConfig{
 		Enabled:          enabled,
 		SelfServeBaseURL: selfServeBaseURL,
+	}
+}
+
+// resolveSelfServeBaseURL returns LFX_SELF_SERVE_BASE_URL, or the environment-appropriate
+// LFX app URL derived from LFX_ENVIRONMENT when it is unset.
+func resolveSelfServeBaseURL() string {
+	if selfServeBaseURL := os.Getenv("LFX_SELF_SERVE_BASE_URL"); selfServeBaseURL != "" {
+		return selfServeBaseURL
+	}
+	switch getEnv("LFX_ENVIRONMENT", "prod") {
+	case "prod":
+		return "https://app.lfx.dev"
+	case "staging":
+		return "https://app.staging.lfx.dev"
+	default:
+		return "https://app.dev.lfx.dev"
 	}
 }

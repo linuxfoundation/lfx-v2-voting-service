@@ -1923,6 +1923,324 @@ func DecodeUpdateVoteResponseResponse(decoder func(*http.Response) goahttp.Decod
 	}
 }
 
+// BuildCreateVoteResponseByLinkRequest instantiates a HTTP request object with
+// method and path set to call the "vote" service
+// "create_vote_response_by_link" endpoint
+func (c *Client) BuildCreateVoteResponseByLinkRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: CreateVoteResponseByLinkVotePath()}
+	req, err := http.NewRequest("POST", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("vote", "create_vote_response_by_link", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeCreateVoteResponseByLinkRequest returns an encoder for requests sent
+// to the vote create_vote_response_by_link server.
+func EncodeCreateVoteResponseByLinkRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*vote.CreateVoteResponseByLinkPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("vote", "create_vote_response_by_link", "*vote.CreateVoteResponseByLinkPayload", v)
+		}
+		if p.Token != nil {
+			head := *p.Token
+			if !strings.Contains(head, " ") {
+				req.Header.Set("Authorization", "Bearer "+head)
+			} else {
+				req.Header.Set("Authorization", head)
+			}
+		}
+		body := NewCreateVoteResponseByLinkRequestBody(p)
+		if err := encoder(req).Encode(&body); err != nil {
+			return goahttp.ErrEncodingError("vote", "create_vote_response_by_link", err)
+		}
+		return nil
+	}
+}
+
+// DecodeCreateVoteResponseByLinkResponse returns a decoder for responses
+// returned by the vote create_vote_response_by_link endpoint. restoreBody
+// controls whether the response body should be restored after having been read.
+// DecodeCreateVoteResponseByLinkResponse may return the following errors:
+//   - "BadRequest" (type *vote.BadRequestError): http.StatusBadRequest
+//   - "Forbidden" (type *vote.ForbiddenError): http.StatusForbidden
+//   - "InternalServerError" (type *vote.InternalServerError): http.StatusInternalServerError
+//   - "NotFound" (type *vote.NotFoundError): http.StatusNotFound
+//   - "ServiceUnavailable" (type *vote.ServiceUnavailableError): http.StatusServiceUnavailable
+//   - "Unauthorized" (type *vote.UnauthorizedError): http.StatusUnauthorized
+//   - error: internal error
+func DecodeCreateVoteResponseByLinkResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusNoContent:
+			return nil, nil
+		case http.StatusBadRequest:
+			var (
+				body CreateVoteResponseByLinkBadRequestResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "create_vote_response_by_link", err)
+			}
+			err = ValidateCreateVoteResponseByLinkBadRequestResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "create_vote_response_by_link", err)
+			}
+			return nil, NewCreateVoteResponseByLinkBadRequest(&body)
+		case http.StatusForbidden:
+			var (
+				body CreateVoteResponseByLinkForbiddenResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "create_vote_response_by_link", err)
+			}
+			err = ValidateCreateVoteResponseByLinkForbiddenResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "create_vote_response_by_link", err)
+			}
+			return nil, NewCreateVoteResponseByLinkForbidden(&body)
+		case http.StatusInternalServerError:
+			var (
+				body CreateVoteResponseByLinkInternalServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "create_vote_response_by_link", err)
+			}
+			err = ValidateCreateVoteResponseByLinkInternalServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "create_vote_response_by_link", err)
+			}
+			return nil, NewCreateVoteResponseByLinkInternalServerError(&body)
+		case http.StatusNotFound:
+			var (
+				body CreateVoteResponseByLinkNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "create_vote_response_by_link", err)
+			}
+			err = ValidateCreateVoteResponseByLinkNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "create_vote_response_by_link", err)
+			}
+			return nil, NewCreateVoteResponseByLinkNotFound(&body)
+		case http.StatusServiceUnavailable:
+			var (
+				body CreateVoteResponseByLinkServiceUnavailableResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "create_vote_response_by_link", err)
+			}
+			err = ValidateCreateVoteResponseByLinkServiceUnavailableResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "create_vote_response_by_link", err)
+			}
+			return nil, NewCreateVoteResponseByLinkServiceUnavailable(&body)
+		case http.StatusUnauthorized:
+			var (
+				body CreateVoteResponseByLinkUnauthorizedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "create_vote_response_by_link", err)
+			}
+			err = ValidateCreateVoteResponseByLinkUnauthorizedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "create_vote_response_by_link", err)
+			}
+			return nil, NewCreateVoteResponseByLinkUnauthorized(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("vote", "create_vote_response_by_link", resp.StatusCode, string(body))
+		}
+	}
+}
+
+// BuildUpdateVoteResponseByLinkRequest instantiates a HTTP request object with
+// method and path set to call the "vote" service
+// "update_vote_response_by_link" endpoint
+func (c *Client) BuildUpdateVoteResponseByLinkRequest(ctx context.Context, v any) (*http.Request, error) {
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateVoteResponseByLinkVotePath()}
+	req, err := http.NewRequest("PUT", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("vote", "update_vote_response_by_link", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeUpdateVoteResponseByLinkRequest returns an encoder for requests sent
+// to the vote update_vote_response_by_link server.
+func EncodeUpdateVoteResponseByLinkRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*vote.UpdateVoteResponseByLinkPayload)
+		if !ok {
+			return goahttp.ErrInvalidType("vote", "update_vote_response_by_link", "*vote.UpdateVoteResponseByLinkPayload", v)
+		}
+		if p.Token != nil {
+			head := *p.Token
+			if !strings.Contains(head, " ") {
+				req.Header.Set("Authorization", "Bearer "+head)
+			} else {
+				req.Header.Set("Authorization", head)
+			}
+		}
+		body := NewUpdateVoteResponseByLinkRequestBody(p)
+		if err := encoder(req).Encode(&body); err != nil {
+			return goahttp.ErrEncodingError("vote", "update_vote_response_by_link", err)
+		}
+		return nil
+	}
+}
+
+// DecodeUpdateVoteResponseByLinkResponse returns a decoder for responses
+// returned by the vote update_vote_response_by_link endpoint. restoreBody
+// controls whether the response body should be restored after having been read.
+// DecodeUpdateVoteResponseByLinkResponse may return the following errors:
+//   - "BadRequest" (type *vote.BadRequestError): http.StatusBadRequest
+//   - "Forbidden" (type *vote.ForbiddenError): http.StatusForbidden
+//   - "InternalServerError" (type *vote.InternalServerError): http.StatusInternalServerError
+//   - "NotFound" (type *vote.NotFoundError): http.StatusNotFound
+//   - "ServiceUnavailable" (type *vote.ServiceUnavailableError): http.StatusServiceUnavailable
+//   - "Unauthorized" (type *vote.UnauthorizedError): http.StatusUnauthorized
+//   - error: internal error
+func DecodeUpdateVoteResponseByLinkResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusNoContent:
+			return nil, nil
+		case http.StatusBadRequest:
+			var (
+				body UpdateVoteResponseByLinkBadRequestResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "update_vote_response_by_link", err)
+			}
+			err = ValidateUpdateVoteResponseByLinkBadRequestResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "update_vote_response_by_link", err)
+			}
+			return nil, NewUpdateVoteResponseByLinkBadRequest(&body)
+		case http.StatusForbidden:
+			var (
+				body UpdateVoteResponseByLinkForbiddenResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "update_vote_response_by_link", err)
+			}
+			err = ValidateUpdateVoteResponseByLinkForbiddenResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "update_vote_response_by_link", err)
+			}
+			return nil, NewUpdateVoteResponseByLinkForbidden(&body)
+		case http.StatusInternalServerError:
+			var (
+				body UpdateVoteResponseByLinkInternalServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "update_vote_response_by_link", err)
+			}
+			err = ValidateUpdateVoteResponseByLinkInternalServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "update_vote_response_by_link", err)
+			}
+			return nil, NewUpdateVoteResponseByLinkInternalServerError(&body)
+		case http.StatusNotFound:
+			var (
+				body UpdateVoteResponseByLinkNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "update_vote_response_by_link", err)
+			}
+			err = ValidateUpdateVoteResponseByLinkNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "update_vote_response_by_link", err)
+			}
+			return nil, NewUpdateVoteResponseByLinkNotFound(&body)
+		case http.StatusServiceUnavailable:
+			var (
+				body UpdateVoteResponseByLinkServiceUnavailableResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "update_vote_response_by_link", err)
+			}
+			err = ValidateUpdateVoteResponseByLinkServiceUnavailableResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "update_vote_response_by_link", err)
+			}
+			return nil, NewUpdateVoteResponseByLinkServiceUnavailable(&body)
+		case http.StatusUnauthorized:
+			var (
+				body UpdateVoteResponseByLinkUnauthorizedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "update_vote_response_by_link", err)
+			}
+			err = ValidateUpdateVoteResponseByLinkUnauthorizedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "update_vote_response_by_link", err)
+			}
+			return nil, NewUpdateVoteResponseByLinkUnauthorized(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("vote", "update_vote_response_by_link", resp.StatusCode, string(body))
+		}
+	}
+}
+
 // BuildResendVoteResponseRequest instantiates a HTTP request object with
 // method and path set to call the "vote" service "resend_vote_response"
 // endpoint

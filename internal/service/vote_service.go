@@ -5,7 +5,9 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"net/url"
 	"strings"
 	"unicode/utf8"
 
@@ -23,10 +25,25 @@ const maxVoteNameLen = 200
 
 // VoteService implements the vote service business logic
 type VoteService struct {
-	jwtAuth     domain.Authenticator
-	proxyClient domain.PollClient
-	idMapper    domain.IDMapper
-	logger      *slog.Logger
+	jwtAuth          domain.Authenticator
+	proxyClient      domain.PollClient
+	idMapper         domain.IDMapper
+	logger           *slog.Logger
+	linkSigner       domain.VoteLinkSigner
+	selfServeBaseURL string
+}
+
+// VoteServiceOption configures optional VoteService behavior.
+type VoteServiceOption func(*VoteService)
+
+// WithVoteLinks enables personalized links on bulk resend: each recipient's link is
+// selfServeBaseURL/votes/{vote_uid}?vote_token={token}, with the token from signer.
+// Without it, a bulk resend that requests personalized links returns 503.
+func WithVoteLinks(signer domain.VoteLinkSigner, selfServeBaseURL string) VoteServiceOption {
+	return func(s *VoteService) {
+		s.linkSigner = signer
+		s.selfServeBaseURL = strings.TrimRight(selfServeBaseURL, "/")
+	}
 }
 
 // NewVoteService creates a new vote service
@@ -35,13 +52,18 @@ func NewVoteService(
 	proxyClient domain.PollClient,
 	idMapper domain.IDMapper,
 	logger *slog.Logger,
+	opts ...VoteServiceOption,
 ) *VoteService {
-	return &VoteService{
+	s := &VoteService{
 		jwtAuth:     jwtAuth,
 		proxyClient: proxyClient,
 		idMapper:    idMapper,
 		logger:      logger,
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 // JWTAuth implements the authorization logic for JWT tokens
@@ -348,8 +370,10 @@ func (s *VoteService) EnableVote(ctx context.Context, voteID string) error {
 	return nil
 }
 
-// BulkResendVote bulk resends vote emails to select recipients (proxies to ITX POST /voting/poll/{poll_id}/bulk_resend)
-func (s *VoteService) BulkResendVote(ctx context.Context, voteID string, recipientIDs []string) error {
+// BulkResendVote bulk resends vote emails to select recipients (proxies to ITX POST /voting/poll/{poll_id}/bulk_resend).
+// recipientIDs are vote response (ballot) IDs. When personalizedLinks is true, each recipient's
+// email links to a personal signed URL that lets them vote without logging in.
+func (s *VoteService) BulkResendVote(ctx context.Context, voteID string, recipientIDs []string, personalizedLinks bool) error {
 	principal, err := requirePrincipal(ctx)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
@@ -360,11 +384,21 @@ func (s *VoteService) BulkResendVote(ctx context.Context, voteID string, recipie
 		"principal", principal,
 		"vote_id", voteID,
 		"recipient_count", len(recipientIDs),
+		"personalized_links", personalizedLinks,
 	)
 
 	// Build proxy request
 	proxyReq := &itx.BulkResendRequest{
 		RecipientIDs: recipientIDs,
+	}
+
+	if personalizedLinks {
+		links, err := s.buildVoteLinks(voteID, recipientIDs)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to build personalized vote links", "error", err)
+			return err
+		}
+		proxyReq.RecipientLinks = links
 	}
 
 	// Call ITX proxy
@@ -380,6 +414,34 @@ func (s *VoteService) BulkResendVote(ctx context.Context, voteID string, recipie
 	)
 
 	return nil
+}
+
+// buildVoteLinks returns a personalized, signed vote link for each recipient, keyed by
+// vote response ID. Links are never logged: each one is a voting credential.
+func (s *VoteService) buildVoteLinks(voteID string, recipientIDs []string) (map[string]string, error) {
+	if s.linkSigner == nil || s.selfServeBaseURL == "" {
+		return nil, domain.NewUnavailableError("personalized vote links are not configured")
+	}
+	if len(recipientIDs) == 0 {
+		return nil, domain.NewValidationError("recipient_ids must not be empty when personalized_links is true")
+	}
+
+	links := make(map[string]string, len(recipientIDs))
+	for _, recipientID := range recipientIDs {
+		if strings.TrimSpace(recipientID) == "" {
+			return nil, domain.NewValidationError("recipient_ids must not contain empty values")
+		}
+		if _, done := links[recipientID]; done {
+			continue
+		}
+		token, err := s.linkSigner.Sign(voteID, recipientID)
+		if err != nil {
+			return nil, domain.NewInternalError("failed to sign vote link", err)
+		}
+		links[recipientID] = fmt.Sprintf("%s/votes/%s?vote_token=%s",
+			s.selfServeBaseURL, url.PathEscape(voteID), url.QueryEscape(token))
+	}
+	return links, nil
 }
 
 // GetVoteResults retrieves aggregated poll results (proxies to ITX GET /voting/poll/{poll_id}/results)

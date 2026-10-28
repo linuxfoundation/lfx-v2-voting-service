@@ -41,6 +41,15 @@ type Service interface {
 	GetVoteResponse(context.Context, *GetVoteResponsePayload) (res *VoteResponseResult, err error)
 	// Update vote response (proxies to ITX PUT /voting/vote/{vote_id})
 	UpdateVoteResponse(context.Context, *UpdateVoteResponsePayload) (err error)
+	// Submit a vote response using a personalized vote link token, without logging
+	// in (proxies to ITX POST /voting/vote). The ballot is identified only by the
+	// token.
+	CreateVoteResponseByLink(context.Context, *CreateVoteResponseByLinkPayload) (err error)
+	// Update a vote response using a personalized vote link token, without logging
+	// in (proxies to ITX PUT /voting/vote/{vote_id}). The ballot is identified
+	// only by the token. Omitting comment_responses preserves existing comments;
+	// including it (even empty) replaces them.
+	UpdateVoteResponseByLink(context.Context, *UpdateVoteResponseByLinkPayload) (err error)
 	// Resend vote email (proxies to ITX POST /voting/vote/{vote_id}/resend)
 	ResendVoteResponse(context.Context, *ResendVoteResponsePayload) (err error)
 }
@@ -65,7 +74,7 @@ const ServiceName = "vote"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [12]string{"create_vote", "get_vote", "update_vote", "delete_vote", "extend_vote", "enable_vote", "bulk_resend_vote", "get_vote_results", "create_vote_response", "get_vote_response", "update_vote_response", "resend_vote_response"}
+var MethodNames = [14]string{"create_vote", "get_vote", "update_vote", "delete_vote", "extend_vote", "enable_vote", "bulk_resend_vote", "get_vote_results", "create_vote_response", "get_vote_response", "update_vote_response", "create_vote_response_by_link", "update_vote_response_by_link", "resend_vote_response"}
 
 // Bad request error response
 type BadRequestError struct {
@@ -82,8 +91,12 @@ type BulkResendVotePayload struct {
 	Token *string
 	// Vote UID
 	UID string
-	// List of recipient IDs to resend vote email to
+	// Vote response (ballot) IDs to resend the vote email to
 	RecipientIds []string
+	// When true, each recipient's email links to a personal HMAC-signed URL that
+	// lets them submit or update their vote response without logging in. When
+	// false or omitted, recipients receive the standard vote link.
+	PersonalizedLinks bool
 }
 
 // A voter's free-text response to a comment prompt
@@ -186,6 +199,26 @@ type CreateVotePayload struct {
 	QuorumPercentage *int
 	// Winning threshold percentage
 	WinningThresholdPercentage *int
+}
+
+// CreateVoteResponseByLinkPayload is the payload type of the vote service
+// create_vote_response_by_link method.
+type CreateVoteResponseByLinkPayload struct {
+	// JWT token
+	Token *string
+	// Signed token from the personalized vote link (the vote_token query parameter
+	// of the emailed URL). Identifies the ballot; treat it as a credential and
+	// never log it.
+	VoteToken string
+	// Vote answers
+	UserVoteContent []*VoteAnswerInput
+	// Whether to abstain from voting
+	Abstain bool
+	// The voter's free-text responses to the poll's comment prompts. Allowed
+	// regardless of whether abstain is true. Each prompt_id must match one of the
+	// poll's comment prompts and must not repeat; each comment_text is required
+	// and is rejected with a 400 if longer than 5000 characters.
+	CommentResponses []*CommentResponse
 }
 
 // CreateVoteResponsePayload is the payload type of the vote service
@@ -535,6 +568,26 @@ type UpdateVotePayload struct {
 	QuorumPercentage *int
 	// Winning threshold percentage
 	WinningThresholdPercentage *int
+}
+
+// UpdateVoteResponseByLinkPayload is the payload type of the vote service
+// update_vote_response_by_link method.
+type UpdateVoteResponseByLinkPayload struct {
+	// JWT token
+	Token *string
+	// Signed token from the personalized vote link (the vote_token query parameter
+	// of the emailed URL). Identifies the ballot; treat it as a credential and
+	// never log it.
+	VoteToken string
+	// Vote answers
+	UserVoteContent []*VoteAnswerInput
+	// Whether to abstain from voting
+	Abstain bool
+	// The voter's free-text responses to the poll's comment prompts. Allowed
+	// regardless of whether abstain is true. Each prompt_id must match one of the
+	// poll's comment prompts and must not repeat; each comment_text is required
+	// and is rejected with a 400 if longer than 5000 characters.
+	CommentResponses []*CommentResponse
 }
 
 // UpdateVoteResponsePayload is the payload type of the vote service

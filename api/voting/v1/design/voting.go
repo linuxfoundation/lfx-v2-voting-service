@@ -264,8 +264,14 @@ var _ = Service("vote", func() {
 		Payload(func() {
 			BearerTokenAttribute()
 			VoteIDAttribute()
-			Attribute("recipient_ids", ArrayOf(String), "List of recipient IDs to resend vote email to", func() {
+			Attribute("recipient_ids", ArrayOf(String), "Vote response (ballot) IDs to resend the vote email to", func() {
 				Example([]string{"cba14f40-1636-11ec-9621-0242ac130002", "cba14f40-1636-11ec-9621-0242ac130003"})
+			})
+
+			Attribute("personalized_links", Boolean, "When true, each recipient's email links to a personal "+
+				"HMAC-signed URL that lets them submit or update their vote response without logging in. "+
+				"When false or omitted, recipients receive the standard vote link.", func() {
+				Default(false)
 			})
 
 			Required("uid", "recipient_ids")
@@ -461,6 +467,66 @@ var _ = Service("vote", func() {
 
 		HTTP(func() {
 			PUT("/vote_responses/{vote_response_uid}")
+			Response(StatusNoContent)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
+	// Personalized vote link methods. Heimdall admits these anonymously; the
+	// HMAC-signed vote_token is the only authorization and identifies the ballot.
+
+	Method("create_vote_response_by_link", func() {
+		Description("Submit a vote response using a personalized vote link token, without logging in " +
+			"(proxies to ITX POST /voting/vote). The ballot is identified only by the token.")
+
+		Security(JWTAuth, func() {
+			Scope("manage:projects")
+			Scope("manage:voting")
+		})
+
+		Payload(func() {
+			BearerTokenAttribute()
+			VoteLinkTokenAttribute()
+			VoteResponseBallotAttributes()
+			Required("vote_token", "abstain")
+		})
+
+		HTTP(func() {
+			POST("/vote_links/responses")
+			Response(StatusNoContent)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
+	Method("update_vote_response_by_link", func() {
+		Description("Update a vote response using a personalized vote link token, without logging in " +
+			"(proxies to ITX PUT /voting/vote/{vote_id}). The ballot is identified only by the token. " +
+			"Omitting comment_responses preserves existing comments; including it (even empty) replaces them.")
+
+		Security(JWTAuth, func() {
+			Scope("manage:projects")
+			Scope("manage:voting")
+		})
+
+		Payload(func() {
+			BearerTokenAttribute()
+			VoteLinkTokenAttribute()
+			VoteResponseBallotAttributes()
+			Required("vote_token", "abstain")
+		})
+
+		HTTP(func() {
+			PUT("/vote_links/responses")
 			Response(StatusNoContent)
 			Response("BadRequest", StatusBadRequest)
 			Response("Unauthorized", StatusUnauthorized)
