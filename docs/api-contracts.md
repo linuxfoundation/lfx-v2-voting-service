@@ -930,7 +930,7 @@ x-scope: manage:voting
 {
   "recipient_ids": ["cba14f40-1636-11ec-9621-0242ac130002"],
   "recipient_links": {
-    "cba14f40-1636-11ec-9621-0242ac130002": "https://app.lfx.dev/votes/8f3c2a1e-4b5d-4e6f-9a7b-1c2d3e4f5a6b#vote_token=v1.k2026a.eyJ2Ijoi...fQ.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU"
+    "cba14f40-1636-11ec-9621-0242ac130002": "https://app.lfx.dev/votes/8f3c2a1e-4b5d-4e6f-9a7b-1c2d3e4f5a6b#vote_token=<signed-vote-token>"
   }
 }
 ```
@@ -1355,7 +1355,7 @@ Content-Type: application/json
 
 ```json
 {
-  "vote_token": "v1.k2026a.eyJ2Ijoi...fQ.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU",
+  "vote_token": "<signed-vote-token>",
   "user_vote_content": [
     {
       "question_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
@@ -1394,7 +1394,7 @@ The ballot is identified **only** by the token. The body has no `vote_response_u
 **Request Body**:
 
 ```json
-{ "vote_token": "v1.k2026a.eyJ2Ijoi...fQ.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU" }
+{ "vote_token": "<signed-vote-token>" }
 ```
 
 **Response** (200 OK):

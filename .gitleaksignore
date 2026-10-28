@@ -1,0 +1,10 @@
+# Copyright The Linux Foundation and each contributor to LFX.
+# SPDX-License-Identifier: MIT
+
+# Historical documentation examples with an abbreviated payload (eyJ2Ijoi...fQ),
+# not usable credentials. Current examples use <signed-vote-token> instead.
+# Ignore only these findings; keep scanning all other content and commits.
+301b5a0fdcbd7c847c0dd8ab6ad34f376e3768f6:docs/api-contracts.md:generic-api-key:1343
+c788dd3a6aad787ebf852ff4f09c5865f82fd6f1:docs/api-contracts.md:generic-api-key:879
+abaffe12894a1bc98d352fbd35ace9a9b018cbc4:docs/api-contracts.md:generic-api-key:879
+abaffe12894a1bc98d352fbd35ace9a9b018cbc4:docs/api-contracts.md:generic-api-key:1304
