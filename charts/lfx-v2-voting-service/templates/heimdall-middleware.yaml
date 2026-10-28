@@ -32,16 +32,4 @@ spec:
     address: "{{ .Values.heimdall.url }}"
     authResponseHeaders:
       - Authorization
----
-# Request-body cap for the anonymous /vote_links/ routes. Traefik rejects larger bodies with
-# 413 before Heimdall or the service see them; the service enforces the same cap itself
-# (maxVoteLinkBodyBytes in cmd/voting-api/main.go).
-apiVersion: traefik.io/v1alpha1
-kind: Middleware
-metadata:
-  name: vote-links-body-limit
-  namespace: {{ .Values.lfx.namespace }}
-spec:
-  buffering:
-    maxRequestBodyBytes: 1048576
 {{- end }}
