@@ -238,3 +238,151 @@ func TestVoteResponseByLink_Errors(t *testing.T) {
 		})
 	}
 }
+
+// ---- GetBallotByLink ----------------------------------------------------------
+
+// ballotVoteClient returns a fixed ballot from GetVote and records the requested ID.
+type ballotVoteClient struct {
+	domain.VoteResponseClient
+	ballot    *itx.VoteResponse
+	err       error
+	requested string
+}
+
+func (c *ballotVoteClient) GetVote(_ context.Context, voteID string) (*itx.VoteResponse, error) {
+	c.requested = voteID
+	return c.ballot, c.err
+}
+
+// ballotPollReader returns a fixed poll from GetPoll and records the requested ID.
+type ballotPollReader struct {
+	domain.PollClient
+	poll      *itx.PollResponse
+	err       error
+	requested string
+}
+
+func (r *ballotPollReader) GetPoll(_ context.Context, pollID string) (*itx.PollResponse, error) {
+	r.requested = pollID
+	return r.poll, r.err
+}
+
+func TestGetBallotByLink_ReturnsVoteAndBallotFromToken(t *testing.T) {
+	for _, pseudo := range []bool{false, true} {
+		votes := &ballotVoteClient{ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: "responded"}}
+		polls := &ballotPollReader{poll: &itx.PollResponse{PollID: "vote-1", PseudoAnonymity: pseudo, PseudoAnonymityKnown: true}}
+		svc := NewVoteResponseService(nil, votes, identityIDMapper{}, discardLogger(),
+			WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(polls))
+
+		got, err := svc.GetBallotByLink(context.Background(), "tok:vote-1:ballot-1")
+		if err != nil {
+			t.Fatalf("pseudo=%v: unexpected error: %v", pseudo, err)
+		}
+		if votes.requested != "ballot-1" || polls.requested != "vote-1" {
+			t.Errorf("pseudo=%v: ITX called with ballot %q, poll %q; want ids from the token", pseudo, votes.requested, polls.requested)
+		}
+		if got.IncludeBallotContents == pseudo {
+			t.Errorf("pseudo=%v: IncludeBallotContents = %v, want %v", pseudo, got.IncludeBallotContents, !pseudo)
+		}
+	}
+}
+
+func TestGetBallotByLink_Errors(t *testing.T) {
+	okBallot := &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1"}
+	okPoll := &itx.PollResponse{PollID: "vote-1"}
+	cases := []struct {
+		name     string
+		opts     func(*ballotPollReader) []VoteResponseServiceOption
+		token    string
+		ballot   *itx.VoteResponse
+		voteErr  error
+		pollErr  error
+		want     domain.ErrorType
+		noUpcall bool
+	}{
+		{
+			name:     "not configured",
+			opts:     func(*ballotPollReader) []VoteResponseServiceOption { return nil },
+			token:    "tok:vote-1:ballot-1",
+			want:     domain.ErrorTypeUnavailable,
+			noUpcall: true,
+		},
+		{
+			name: "no poll reader",
+			opts: func(*ballotPollReader) []VoteResponseServiceOption {
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{})}
+			},
+			token:    "tok:vote-1:ballot-1",
+			want:     domain.ErrorTypeUnavailable,
+			noUpcall: true,
+		},
+		{
+			name: "invalid token",
+			opts: func(p *ballotPollReader) []VoteResponseServiceOption {
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(p)}
+			},
+			token:    "forged",
+			want:     domain.ErrorTypeNotFound,
+			noUpcall: true,
+		},
+		{
+			name: "ballot belongs to another vote",
+			opts: func(p *ballotPollReader) []VoteResponseServiceOption {
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(p)}
+			},
+			token:  "tok:vote-1:ballot-1",
+			ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-2"},
+			want:   domain.ErrorTypeNotFound,
+		},
+		{
+			name: "ITX ballot not found",
+			opts: func(p *ballotPollReader) []VoteResponseServiceOption {
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(p)}
+			},
+			token:   "tok:vote-1:ballot-1",
+			voteErr: domain.NewNotFoundError("vote not found"),
+			want:    domain.ErrorTypeNotFound,
+		},
+		{
+			name: "ITX poll unavailable",
+			opts: func(p *ballotPollReader) []VoteResponseServiceOption {
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(p)}
+			},
+			token:   "tok:vote-1:ballot-1",
+			pollErr: domain.NewUnavailableError("ITX down"),
+			want:    domain.ErrorTypeUnavailable,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ballot := tc.ballot
+			if ballot == nil {
+				ballot = okBallot
+			}
+			votes := &ballotVoteClient{ballot: ballot, err: tc.voteErr}
+			polls := &ballotPollReader{poll: okPoll, err: tc.pollErr}
+			svc := NewVoteResponseService(nil, votes, identityIDMapper{}, discardLogger(), tc.opts(polls)...)
+
+			_, err := svc.GetBallotByLink(context.Background(), tc.token)
+			assertErrorType(t, err, tc.want)
+			if tc.noUpcall && (votes.requested != "" || polls.requested != "") {
+				t.Error("ITX must not be called")
+			}
+		})
+	}
+}
+
+func TestGetBallotByLink_UnknownPseudoAnonymityFailsClosed(t *testing.T) {
+	votes := &ballotVoteClient{ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: "responded"}}
+	polls := &ballotPollReader{poll: &itx.PollResponse{PollID: "vote-1", PseudoAnonymity: false, PseudoAnonymityKnown: false}}
+	svc := NewVoteResponseService(nil, votes, identityIDMapper{}, discardLogger(),
+		WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(polls))
+
+	got, err := svc.GetBallotByLink(context.Background(), "tok:vote-1:ballot-1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got.IncludeBallotContents {
+		t.Error("ballot contents must not be returned when pseudo_anonymity is unknown")
+	}
+}

@@ -3,6 +3,8 @@
 
 package itx
 
+import "encoding/json"
+
 // PollSource marks the poll's origin so ITX routes the creator's poll-ended results
 // link back to the creating surface and selects the destination for voter emails.
 // For self_serve, invitation, extension, resend, and reminder emails open the
@@ -124,6 +126,28 @@ type PollResponse struct {
 	PollType                      string                    `json:"poll_type,omitempty"`
 	NumWinners                    int                       `json:"num_winners,omitempty"`
 	AllowAbstain                  bool                      `json:"allow_abstain"`
+	// PseudoAnonymityKnown is true only when ITX sent pseudo_anonymity as a JSON bool. It is
+	// false when the field is missing or null, so callers that must protect ballot privacy can
+	// fail closed. Not serialized.
+	PseudoAnonymityKnown bool `json:"-"`
+}
+
+// UnmarshalJSON decodes a PollResponse and records whether pseudo_anonymity was present as a
+// bool. PseudoAnonymity itself decodes exactly as before (missing or null → false).
+func (p *PollResponse) UnmarshalJSON(data []byte) error {
+	type pollResponseAlias PollResponse
+	aux := struct {
+		*pollResponseAlias
+		// Shadows the embedded field of the same JSON name, so a missing or null value
+		// is distinguishable from false.
+		PseudoAnonymity *bool `json:"pseudo_anonymity"`
+	}{pollResponseAlias: (*pollResponseAlias)(p)}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	p.PseudoAnonymityKnown = aux.PseudoAnonymity != nil
+	p.PseudoAnonymity = aux.PseudoAnonymity != nil && *aux.PseudoAnonymity
+	return nil
 }
 
 // PollQuestionOutput represents a question in the response
@@ -179,6 +203,20 @@ type RankedChoiceInput struct {
 	ChoiceRank int    `json:"choice_rank"`
 }
 
+// ITX vote_status values for a ballot that has been submitted.
+const (
+	// VoteStatusResponded is a submitted ballot on a poll that has not ended.
+	VoteStatusResponded = "responded"
+	// VoteStatusEnded is a submitted ballot on a poll that has ended. An unsubmitted
+	// ballot on an ended poll is "awaiting_response_but_poll_ended" instead.
+	VoteStatusEnded = "ended"
+)
+
+// IsSubmittedVoteStatus reports whether an ITX vote_status means the ballot was submitted.
+func IsSubmittedVoteStatus(status string) bool {
+	return status == VoteStatusResponded || status == VoteStatusEnded
+}
+
 // VoteResponse represents a vote response from ITX
 type VoteResponse struct {
 	VoteID                 string            `json:"vote_id"`
@@ -210,6 +248,9 @@ type VoteResponse struct {
 	SESLinkClickedLastTime string            `json:"ses_link_clicked_last_time,omitempty"`
 	PollAnswers            []PollAnswer      `json:"poll_answers"`
 	CommentResponses       []CommentResponse `json:"comment_responses"`
+	// VoterRemoved is true once the recipient was removed from the vote; ITX then rejects
+	// submissions and updates for this ballot.
+	VoterRemoved bool `json:"voter_removed"`
 }
 
 // PollAnswer represents a vote answer in the response

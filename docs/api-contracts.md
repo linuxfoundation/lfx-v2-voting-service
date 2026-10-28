@@ -1329,6 +1329,59 @@ The ballot is identified **only** by the token. The body has no `vote_response_u
 
 ---
 
+## POST /vote_links/ballot (Get Ballot by Link)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `POST /vote_links/ballot`
+
+**Required permission**: none. Heimdall admits the request anonymously; the `vote_token` is the only authorization. See [Personalized Vote Links](vote-links.md#reading-the-ballot).
+
+**Request Body**:
+
+```json
+{ "vote_token": "v1.k2026a.eyJ2Ijoi...fQ.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU" }
+```
+
+**Response** (200 OK):
+
+```json
+{
+  "vote_uid": "8f3c2a1e-4b5d-4e6f-9a7b-1c2d3e4f5a6b",
+  "name": "TSC election",
+  "description": "Pick one",
+  "status": "active",
+  "end_time": "2026-12-01T23:59:59Z",
+  "poll_type": "generic",
+  "allow_abstain": true,
+  "pseudo_anonymity": false,
+  "poll_questions": [
+    { "question_id": "q1", "prompt": "Who?", "type": "single_choice",
+      "choices": [ { "choice_id": "c-a", "choice_text": "Alice" } ] }
+  ],
+  "ballot": {
+    "vote_status": "responded",
+    "already_voted": true,
+    "voter_removed": false,
+    "abstained": false,
+    "poll_answers": [ { "question_id": "q1", "prompt": "Who?", "type": "single_choice",
+      "user_choice": [ { "choice_id": "c-a", "choice_text": "Alice" } ] } ],
+    "comment_responses": []
+  }
+}
+```
+
+- `ballot.abstained`, `ballot.poll_answers` and `ballot.comment_responses` are present only after voting, and never on pseudo-anonymous votes. If ITX omits `pseudo_anonymity` or returns `null`, the vote is treated (and reported) as pseudo-anonymous.
+- Optional vote fields (`end_time_timezone`, `early_end_time`, `num_winners`, `poll_comment_prompts`) follow the same rules as `GET /votes/{vote_uid}`.
+
+**Errors**: 404 `invalid voting link` (bad token, or the ballot isn't part of the token's vote), 404 from ITX (deleted vote or ballot), 503 (not configured or ITX unavailable).
+
+### ITX Service API (Underlying)
+
+`GET /v2/voting/vote/{vote_id}` (ballot from the token's `r`), then `GET /v2/voting/poll/{poll_id}` (vote from the token's `v`). The ITX vote response's `voter_removed` field is mapped to `ballot.voter_removed`.
+
+---
+
 ## PUT /vote_links/responses (Update Vote Response by Link)
 
 ### LFXv2 Proxy API

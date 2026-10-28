@@ -158,3 +158,22 @@ func (s *VotingAPI) UpdateVoteResponseByLink(ctx context.Context, payload *votes
 
 	return nil
 }
+
+// GetVoteBallotByLink returns the vote and the link holder's own ballot for a personalized vote
+// link token. The token is never logged.
+func (s *VotingAPI) GetVoteBallotByLink(ctx context.Context, payload *votesvc.GetVoteBallotByLinkPayload) (*votesvc.VoteLinkBallotResult, error) {
+	logger := slog.With("component", "voting_api", "method", "GetVoteBallotByLink")
+
+	logger.InfoContext(ctx, "Get vote ballot by link request received")
+
+	// Call service layer
+	ballot, err := s.voteResponseService.GetBallotByLink(ctx, payload.VoteToken)
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to get vote ballot by link", "error", err)
+		return nil, handleError(err)
+	}
+
+	logger.InfoContext(ctx, "Vote ballot by link retrieved successfully", "vote_uid", ballot.Poll.PollID)
+
+	return apiservice.ConvertVoteLinkBallotToResult(ballot), nil
+}

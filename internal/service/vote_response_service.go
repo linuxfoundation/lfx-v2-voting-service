@@ -20,6 +20,7 @@ type VoteResponseService struct {
 	idMapper    domain.IDMapper
 	logger      *slog.Logger
 	linkSigner  domain.VoteLinkSigner
+	pollReader  domain.PollClient
 }
 
 // VoteResponseServiceOption configures optional VoteResponseService behavior.
@@ -31,6 +32,23 @@ func WithVoteLinkVerifier(signer domain.VoteLinkSigner) VoteResponseServiceOptio
 	return func(s *VoteResponseService) {
 		s.linkSigner = signer
 	}
+}
+
+// WithVoteLinkPolls lets the personalized vote link endpoints read the vote itself (questions,
+// choices, status) from ITX. Without it, GetBallotByLink returns 503.
+func WithVoteLinkPolls(polls domain.PollClient) VoteResponseServiceOption {
+	return func(s *VoteResponseService) {
+		s.pollReader = polls
+	}
+}
+
+// VoteLinkBallot is what a personalized vote link holder may see: the vote and their own
+// ballot. IncludeBallotContents is false on pseudo-anonymous votes, where the ballot's
+// answers, comments and abstention must not be returned.
+type VoteLinkBallot struct {
+	Poll                  *itx.PollResponse
+	Ballot                *itx.VoteResponse
+	IncludeBallotContents bool
 }
 
 // NewVoteResponseService creates a new vote response service
@@ -218,6 +236,51 @@ func (s *VoteResponseService) UpdateVoteResponseByLink(ctx context.Context, toke
 	)
 
 	return s.applyVoteResponseUpdate(ctx, claims.VoteResponseUID, req)
+}
+
+// GetBallotByLink returns the vote and the link holder's own ballot for a personalized vote
+// link token. Both are identified only by the verified token: the ballot must belong to the
+// token's vote, otherwise the link is treated as invalid.
+func (s *VoteResponseService) GetBallotByLink(ctx context.Context, token string) (*VoteLinkBallot, error) {
+	claims, err := s.verifyVoteLink(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+	if s.pollReader == nil {
+		s.logger.WarnContext(ctx, "Vote link ballot requested but no poll reader is configured")
+		return nil, domain.NewUnavailableError("personalized vote links are not configured")
+	}
+
+	s.logger.InfoContext(ctx, "Getting ballot by link",
+		"vote_uid", claims.VoteUID,
+		"vote_id", claims.VoteResponseUID,
+		"key_id", claims.KeyID,
+	)
+
+	ballot, err := s.proxyClient.GetVote(ctx, claims.VoteResponseUID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to get ballot from ITX", "error", err)
+		return nil, err
+	}
+	if ballot.PollID != claims.VoteUID {
+		s.logger.WarnContext(ctx, "Vote link ballot does not belong to the token's vote",
+			"vote_uid", claims.VoteUID, "ballot_poll_id", ballot.PollID)
+		return nil, domain.NewNotFoundError("invalid voting link")
+	}
+
+	poll, err := s.pollReader.GetPoll(ctx, claims.VoteUID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to get vote from ITX", "error", err)
+		return nil, err
+	}
+
+	return &VoteLinkBallot{
+		Poll:   poll,
+		Ballot: ballot,
+		// Fail closed: ballot contents only when ITX explicitly said the vote is not
+		// pseudo-anonymous; a missing or null flag is treated as pseudo-anonymous.
+		IncludeBallotContents: poll.PseudoAnonymityKnown && !poll.PseudoAnonymity,
+	}, nil
 }
 
 // verifyVoteLink checks a personalized vote link token. Every invalid token yields the

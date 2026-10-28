@@ -29,11 +29,12 @@ type Client struct {
 	UpdateVoteResponseEndpoint       goa.Endpoint
 	CreateVoteResponseByLinkEndpoint goa.Endpoint
 	UpdateVoteResponseByLinkEndpoint goa.Endpoint
+	GetVoteBallotByLinkEndpoint      goa.Endpoint
 	ResendVoteResponseEndpoint       goa.Endpoint
 }
 
 // NewClient initializes a "vote" service client given the endpoints.
-func NewClient(createVote, getVote, updateVote, deleteVote, extendVote, enableVote, bulkResendVote, getVoteResults, createVoteResponse, getVoteResponse, updateVoteResponse, createVoteResponseByLink, updateVoteResponseByLink, resendVoteResponse goa.Endpoint) *Client {
+func NewClient(createVote, getVote, updateVote, deleteVote, extendVote, enableVote, bulkResendVote, getVoteResults, createVoteResponse, getVoteResponse, updateVoteResponse, createVoteResponseByLink, updateVoteResponseByLink, getVoteBallotByLink, resendVoteResponse goa.Endpoint) *Client {
 	return &Client{
 		CreateVoteEndpoint:               createVote,
 		GetVoteEndpoint:                  getVote,
@@ -48,6 +49,7 @@ func NewClient(createVote, getVote, updateVote, deleteVote, extendVote, enableVo
 		UpdateVoteResponseEndpoint:       updateVoteResponse,
 		CreateVoteResponseByLinkEndpoint: createVoteResponseByLink,
 		UpdateVoteResponseByLinkEndpoint: updateVoteResponseByLink,
+		GetVoteBallotByLinkEndpoint:      getVoteBallotByLink,
 		ResendVoteResponseEndpoint:       resendVoteResponse,
 	}
 }
@@ -273,6 +275,26 @@ func (c *Client) CreateVoteResponseByLink(ctx context.Context, p *CreateVoteResp
 func (c *Client) UpdateVoteResponseByLink(ctx context.Context, p *UpdateVoteResponseByLinkPayload) (err error) {
 	_, err = c.UpdateVoteResponseByLinkEndpoint(ctx, p)
 	return
+}
+
+// GetVoteBallotByLink calls the "get_vote_ballot_by_link" endpoint of the
+// "vote" service.
+// GetVoteBallotByLink may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "Unauthorized" (type *UnauthorizedError): Unauthorized
+//   - "Forbidden" (type *ForbiddenError): Forbidden
+//   - "NotFound" (type *NotFoundError): Not found
+//   - "Conflict" (type *ConflictError): Conflict
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) GetVoteBallotByLink(ctx context.Context, p *GetVoteBallotByLinkPayload) (res *VoteLinkBallotResult, err error) {
+	var ires any
+	ires, err = c.GetVoteBallotByLinkEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*VoteLinkBallotResult), nil
 }
 
 // ResendVoteResponse calls the "resend_vote_response" endpoint of the "vote"

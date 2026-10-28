@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -245,4 +246,125 @@ func (d domainStatus) StatusCode() int {
 	default:
 		return http.StatusInternalServerError
 	}
+}
+
+// TestVoteLinkBallotContract drives POST /vote_links/ballot through the generated transport,
+// service, real HMAC signer and proxy client against a fake ITX: the token's ids select the
+// ballot and the vote, the response carries only ballot fields, and pseudo-anonymous votes
+// never return ballot contents.
+func TestVoteLinkBallotContract(t *testing.T) {
+	signer, err := votelink.NewHMACSigner(map[string][]byte{"k1": []byte(strings.Repeat("s", votelink.MinKeyLength))}, "k1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	token, err := signer.Sign(linkVoteUID, linkBallotUID)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		name        string
+		pseudoField string // JSON fragment for pseudo_anonymity, "" = omitted
+		wantAnswers bool
+	}{
+		{name: "regular vote", pseudoField: `"pseudo_anonymity":false,`, wantAnswers: true},
+		{name: "pseudo-anonymous vote", pseudoField: `"pseudo_anonymity":true,`},
+		{name: "pseudo_anonymity missing fails closed", pseudoField: ``},
+		{name: "pseudo_anonymity null fails closed", pseudoField: `"pseudo_anonymity":null,`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var paths []string
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				paths = append(paths, r.Method+" "+r.URL.Path)
+				w.Header().Set("Content-Type", "application/json")
+				switch r.URL.Path {
+				case "/v2/voting/vote/" + linkBallotUID:
+					_, _ = io.WriteString(w, `{"vote_id":"`+linkBallotUID+`","poll_id":"`+linkVoteUID+`","vote_status":"responded","abstained":false,"user_email":"voter@example.org","voter_removed":false,`+
+						`"poll_answers":[{"question_id":"q1","prompt":"Who?","type":"single_choice","user_choice":[{"choice_id":"c-a","choice_text":"Alice"}]}],"comment_responses":[]}`)
+				case "/v2/voting/poll/" + linkVoteUID:
+					_, _ = io.WriteString(w, `{"poll_id":"`+linkVoteUID+`","name":"TSC election","description":"Pick one","status":"active","end_time":"2030-01-01T00:00:00Z",`+
+						`"project_id":"a0941000002wBz4AAE","committee_id":"c1","total_voting_request_invitations":9,"num_response_received":4,`+tc.pseudoField+
+						`"allow_abstain":true,"poll_type":"generic","poll_questions":[{"question_id":"q1","prompt":"Who?","type":"single_choice","choices":[{"choice_id":"c-a","choice_text":"Alice"}]}]}`)
+				default:
+					w.WriteHeader(http.StatusNotFound)
+				}
+			}))
+			defer upstream.Close()
+
+			client := proxy.NewContractTestClient(upstream.Client(), upstream.URL+"/")
+			responses := service.NewVoteResponseService(nil, client, methodContractIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)),
+				service.WithVoteLinkVerifier(signer), service.WithVoteLinkPolls(client))
+			getBallot := func(ctx context.Context, payload any) (any, error) {
+				b, err := responses.GetBallotByLink(ctx, payload.(*votesvc.GetVoteBallotByLinkPayload).VoteToken)
+				if err != nil {
+					return nil, err
+				}
+				return converters.ConvertVoteLinkBallotToResult(b), nil
+			}
+			formatter := func(ctx context.Context, err error) goahttp.Statuser {
+				var dErr *domain.DomainError
+				if errors.As(err, &dErr) {
+					return domainStatus{err: dErr}
+				}
+				return goahttp.NewErrorResponse(ctx, err)
+			}
+			mux := goahttp.NewMuxer()
+			voteserver.MountGetVoteBallotByLinkHandler(mux, voteserver.NewGetVoteBallotByLinkHandler(getBallot, mux, goahttp.RequestDecoder, goahttp.ResponseEncoder, nil, formatter))
+
+			req := httptest.NewRequest(http.MethodPost, "/vote_links/ballot", strings.NewReader(`{"vote_token":"`+token+`"}`))
+			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+			mux.ServeHTTP(rec, req)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status %d: %s", rec.Code, rec.Body)
+			}
+			if len(paths) != 2 || paths[0] != "GET /v2/voting/vote/"+linkBallotUID || paths[1] != "GET /v2/voting/poll/"+linkVoteUID {
+				t.Errorf("upstream calls = %v", paths)
+			}
+
+			var body map[string]json.RawMessage
+			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+				t.Fatal(err)
+			}
+			for _, key := range []string{"vote_uid", "name", "status", "poll_questions", "ballot"} {
+				if _, ok := body[key]; !ok {
+					t.Errorf("missing %s: %s", key, rec.Body)
+				}
+			}
+			for _, leak := range []string{"project", "committee", "num_response_received", "total_voting_request_invitations", "voter@example.org", linkBallotUID} {
+				if strings.Contains(rec.Body.String(), leak) {
+					t.Errorf("response leaks %q: %s", leak, rec.Body)
+				}
+			}
+			var ballot map[string]json.RawMessage
+			if err := json.Unmarshal(body["ballot"], &ballot); err != nil {
+				t.Fatal(err)
+			}
+			if string(ballot["already_voted"]) != "true" {
+				t.Errorf("already_voted = %s", ballot["already_voted"])
+			}
+			_, hasAnswers := ballot["poll_answers"]
+			if hasAnswers != tc.wantAnswers {
+				t.Errorf("poll_answers present = %v, want %v: %s", hasAnswers, tc.wantAnswers, body["ballot"])
+			}
+			if wantPseudo := strconv.FormatBool(!tc.wantAnswers); string(body["pseudo_anonymity"]) != wantPseudo {
+				t.Errorf("pseudo_anonymity = %s, want %s", body["pseudo_anonymity"], wantPseudo)
+			}
+		})
+	}
+
+	t.Run("tampered token is rejected before ITX", func(t *testing.T) {
+		called := false
+		upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { called = true }))
+		defer upstream.Close()
+		client := proxy.NewContractTestClient(upstream.Client(), upstream.URL+"/")
+		responses := service.NewVoteResponseService(nil, client, methodContractIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)),
+			service.WithVoteLinkVerifier(signer), service.WithVoteLinkPolls(client))
+		_, err := responses.GetBallotByLink(context.Background(), token+"x")
+		var dErr *domain.DomainError
+		if !errors.As(err, &dErr) || dErr.Type != domain.ErrorTypeNotFound || called {
+			t.Errorf("err = %v, upstream called = %v", err, called)
+		}
+	})
 }
