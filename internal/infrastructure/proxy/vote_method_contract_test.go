@@ -18,6 +18,7 @@ import (
 	voteclient "github.com/linuxfoundation/lfx-v2-voting-service/gen/http/vote/client"
 	voteserver "github.com/linuxfoundation/lfx-v2-voting-service/gen/http/vote/server"
 	votesvc "github.com/linuxfoundation/lfx-v2-voting-service/gen/vote"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/proxy"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/service"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
@@ -130,6 +131,92 @@ func TestVoteMethodContract(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestEndVoteMethodContract drives POST /votes/{uid}/end through the generated server
+// transport, converters and service to the proxy's actual HTTP serialization. The sink
+// answers GetPoll and the bodiless end request; it does not model ITX persistence.
+func TestEndVoteMethodContract(t *testing.T) {
+	const uid = "a02bdbaf-53b1-4d47-bc04-dd7e459dd308"
+	const endedBody = `{"poll_id":"` + uid + `","name":"Synthetic end contract","status":"ended","end_time":"2030-03-01T23:59:59Z","early_end_time":"2030-02-20T09:00:00Z","project_id":"synthetic-project","committee_id":"` + uid + `"}`
+
+	type upstreamCall struct{ method, path, body string }
+	newMux := func(t *testing.T, currentStatus string) (http.Handler, *[]upstreamCall) {
+		t.Helper()
+		var calls []upstreamCall
+		upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			body, _ := io.ReadAll(r.Body)
+			calls = append(calls, upstreamCall{r.Method, r.URL.Path, string(body)})
+			w.Header().Set("Content-Type", "application/json")
+			if r.Method == http.MethodGet {
+				_, _ = io.WriteString(w, `{"poll_id":"`+uid+`","status":"`+currentStatus+`"}`)
+				return
+			}
+			_, _ = io.WriteString(w, endedBody)
+		}))
+		t.Cleanup(upstream.Close)
+		client := proxy.NewContractTestClient(upstream.Client(), upstream.URL+"/")
+		voting := service.NewVoteService(nil, client, methodContractIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+		mux := goahttp.NewMuxer()
+		end := func(ctx context.Context, payload any) (any, error) {
+			ctx = context.WithValue(ctx, constants.PrincipalContextID, "synthetic-contract-user")
+			poll, err := voting.EndVote(ctx, payload.(*votesvc.EndVotePayload).UID)
+			if err != nil {
+				// Mirror cmd/voting-api handleError: a domain conflict becomes the Goa ConflictError (409).
+				if domain.GetErrorType(err) == domain.ErrorTypeConflict {
+					return nil, &votesvc.ConflictError{Code: "409", Message: err.Error()}
+				}
+				return nil, err
+			}
+			return converters.ConvertPollResponseToVoteResult(poll), nil
+		}
+		voteserver.MountEndVoteHandler(mux, voteserver.NewEndVoteHandler(end, mux, goahttp.RequestDecoder, goahttp.ResponseEncoder, nil, nil))
+		return mux, &calls
+	}
+
+	t.Run("active vote returns the ended vote", func(t *testing.T) {
+		mux, calls := newMux(t, "active")
+		request := httptest.NewRequest(http.MethodPost, "/votes/"+uid+"/end", nil)
+		response := httptest.NewRecorder()
+		mux.ServeHTTP(response, request)
+		if response.Code != http.StatusOK {
+			t.Fatalf("HTTP status: want 200, got %d: %s", response.Code, response.Body)
+		}
+		var result map[string]any
+		if err := json.Unmarshal(response.Body.Bytes(), &result); err != nil {
+			t.Fatalf("decode response: %v", err)
+		}
+		if result["status"] != "ended" || result["early_end_time"] != "2030-02-20T09:00:00Z" || result["end_time"] != "2030-03-01T23:59:59Z" {
+			t.Fatalf("unexpected response shape: %s", response.Body)
+		}
+		want := []upstreamCall{
+			{http.MethodGet, "/v2/voting/poll/" + uid, ""},
+			{http.MethodPost, "/v2/voting/poll/" + uid + "/end", ""},
+		}
+		if len(*calls) != len(want) {
+			t.Fatalf("upstream calls: want %v, got %v", want, *calls)
+		}
+		for i := range want {
+			if (*calls)[i] != want[i] {
+				t.Errorf("upstream call %d: want %v, got %v", i, want[i], (*calls)[i])
+			}
+		}
+	})
+
+	t.Run("disabled vote returns 409 without calling ITX end", func(t *testing.T) {
+		mux, calls := newMux(t, "disabled")
+		request := httptest.NewRequest(http.MethodPost, "/votes/"+uid+"/end", nil)
+		response := httptest.NewRecorder()
+		mux.ServeHTTP(response, request)
+		if response.Code != http.StatusConflict {
+			t.Fatalf("HTTP status: want 409, got %d: %s", response.Code, response.Body)
+		}
+		for _, call := range *calls {
+			if call.method == http.MethodPost {
+				t.Fatalf("disabled vote reached ITX end: %v", call)
+			}
+		}
+	})
 }
 
 func voteMethodContractMux(t *testing.T, wire chan<- map[string]json.RawMessage) http.Handler {

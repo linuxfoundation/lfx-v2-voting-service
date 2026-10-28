@@ -909,6 +909,198 @@ func DecodeExtendVoteResponse(decoder func(*http.Response) goahttp.Decoder, rest
 	}
 }
 
+// BuildEndVoteRequest instantiates a HTTP request object with method and path
+// set to call the "vote" service "end_vote" endpoint
+func (c *Client) BuildEndVoteRequest(ctx context.Context, v any) (*http.Request, error) {
+	var (
+		uid string
+	)
+	{
+		p, ok := v.(*vote.EndVotePayload)
+		if !ok {
+			return nil, goahttp.ErrInvalidType("vote", "end_vote", "*vote.EndVotePayload", v)
+		}
+		uid = p.UID
+	}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: EndVoteVotePath(uid)}
+	req, err := http.NewRequest("POST", u.String(), nil)
+	if err != nil {
+		return nil, goahttp.ErrInvalidURL("vote", "end_vote", u.String(), err)
+	}
+	if ctx != nil {
+		req = req.WithContext(ctx)
+	}
+
+	return req, nil
+}
+
+// EncodeEndVoteRequest returns an encoder for requests sent to the vote
+// end_vote server.
+func EncodeEndVoteRequest(encoder func(*http.Request) goahttp.Encoder) func(*http.Request, any) error {
+	return func(req *http.Request, v any) error {
+		p, ok := v.(*vote.EndVotePayload)
+		if !ok {
+			return goahttp.ErrInvalidType("vote", "end_vote", "*vote.EndVotePayload", v)
+		}
+		if p.Token != nil {
+			head := *p.Token
+			if !strings.Contains(head, " ") {
+				req.Header.Set("Authorization", "Bearer "+head)
+			} else {
+				req.Header.Set("Authorization", head)
+			}
+		}
+		return nil
+	}
+}
+
+// DecodeEndVoteResponse returns a decoder for responses returned by the vote
+// end_vote endpoint. restoreBody controls whether the response body should be
+// restored after having been read.
+// DecodeEndVoteResponse may return the following errors:
+//   - "BadRequest" (type *vote.BadRequestError): http.StatusBadRequest
+//   - "Conflict" (type *vote.ConflictError): http.StatusConflict
+//   - "Forbidden" (type *vote.ForbiddenError): http.StatusForbidden
+//   - "InternalServerError" (type *vote.InternalServerError): http.StatusInternalServerError
+//   - "NotFound" (type *vote.NotFoundError): http.StatusNotFound
+//   - "ServiceUnavailable" (type *vote.ServiceUnavailableError): http.StatusServiceUnavailable
+//   - "Unauthorized" (type *vote.UnauthorizedError): http.StatusUnauthorized
+//   - error: internal error
+func DecodeEndVoteResponse(decoder func(*http.Response) goahttp.Decoder, restoreBody bool) func(*http.Response) (any, error) {
+	return func(resp *http.Response) (any, error) {
+		if restoreBody {
+			b, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return nil, err
+			}
+			resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			defer func() {
+				resp.Body = io.NopCloser(bytes.NewBuffer(b))
+			}()
+		} else {
+			defer resp.Body.Close()
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+			var (
+				body EndVoteResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "end_vote", err)
+			}
+			err = ValidateEndVoteResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "end_vote", err)
+			}
+			res := NewEndVoteVoteResultOK(&body)
+			return res, nil
+		case http.StatusBadRequest:
+			var (
+				body EndVoteBadRequestResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "end_vote", err)
+			}
+			err = ValidateEndVoteBadRequestResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "end_vote", err)
+			}
+			return nil, NewEndVoteBadRequest(&body)
+		case http.StatusConflict:
+			var (
+				body EndVoteConflictResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "end_vote", err)
+			}
+			err = ValidateEndVoteConflictResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "end_vote", err)
+			}
+			return nil, NewEndVoteConflict(&body)
+		case http.StatusForbidden:
+			var (
+				body EndVoteForbiddenResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "end_vote", err)
+			}
+			err = ValidateEndVoteForbiddenResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "end_vote", err)
+			}
+			return nil, NewEndVoteForbidden(&body)
+		case http.StatusInternalServerError:
+			var (
+				body EndVoteInternalServerErrorResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "end_vote", err)
+			}
+			err = ValidateEndVoteInternalServerErrorResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "end_vote", err)
+			}
+			return nil, NewEndVoteInternalServerError(&body)
+		case http.StatusNotFound:
+			var (
+				body EndVoteNotFoundResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "end_vote", err)
+			}
+			err = ValidateEndVoteNotFoundResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "end_vote", err)
+			}
+			return nil, NewEndVoteNotFound(&body)
+		case http.StatusServiceUnavailable:
+			var (
+				body EndVoteServiceUnavailableResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "end_vote", err)
+			}
+			err = ValidateEndVoteServiceUnavailableResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "end_vote", err)
+			}
+			return nil, NewEndVoteServiceUnavailable(&body)
+		case http.StatusUnauthorized:
+			var (
+				body EndVoteUnauthorizedResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "end_vote", err)
+			}
+			err = ValidateEndVoteUnauthorizedResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "end_vote", err)
+			}
+			return nil, NewEndVoteUnauthorized(&body)
+		default:
+			body, _ := io.ReadAll(resp.Body)
+			return nil, goahttp.ErrInvalidResponse("vote", "end_vote", resp.StatusCode, string(body))
+		}
+	}
+}
+
 // BuildEnableVoteRequest instantiates a HTTP request object with method and
 // path set to call the "vote" service "enable_vote" endpoint
 func (c *Client) BuildEnableVoteRequest(ctx context.Context, v any) (*http.Request, error) {

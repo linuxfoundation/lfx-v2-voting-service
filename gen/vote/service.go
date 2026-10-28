@@ -28,6 +28,10 @@ type Service interface {
 	DeleteVote(context.Context, *DeleteVotePayload) (err error)
 	// Extend a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)
 	ExtendVote(context.Context, *ExtendVotePayload) (res *VoteResult, err error)
+	// End an active vote immediately (proxies to ITX POST
+	// /voting/poll/{poll_id}/end). Idempotent for an already-ended vote; a
+	// disabled vote returns 409.
+	EndVote(context.Context, *EndVotePayload) (res *VoteResult, err error)
 	// Enable a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)
 	EnableVote(context.Context, *EnableVotePayload) (err error)
 	// Bulk resend vote email to select recipients (proxies to ITX POST
@@ -84,7 +88,7 @@ const ServiceName = "vote"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [15]string{"create_vote", "get_vote", "update_vote", "delete_vote", "extend_vote", "enable_vote", "bulk_resend_vote", "get_vote_results", "create_vote_response", "get_vote_response", "update_vote_response", "create_vote_response_by_link", "update_vote_response_by_link", "get_vote_ballot_by_link", "resend_vote_response"}
+var MethodNames = [16]string{"create_vote", "get_vote", "update_vote", "delete_vote", "extend_vote", "end_vote", "enable_vote", "bulk_resend_vote", "get_vote_results", "create_vote_response", "get_vote_response", "update_vote_response", "create_vote_response_by_link", "update_vote_response_by_link", "get_vote_ballot_by_link", "resend_vote_response"}
 
 // Bad request error response
 type BadRequestError struct {
@@ -265,6 +269,14 @@ type DeleteVotePayload struct {
 
 // EnableVotePayload is the payload type of the vote service enable_vote method.
 type EnableVotePayload struct {
+	// JWT token
+	Token *string
+	// Vote UID
+	UID string
+}
+
+// EndVotePayload is the payload type of the vote service end_vote method.
+type EndVotePayload struct {
 	// JWT token
 	Token *string
 	// Vote UID
@@ -712,7 +724,9 @@ type VoteLinkBallotResult struct {
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
 	// Absent when no timezone is stored.
 	EndTimeTimezone *string
-	// Actual close time when the poll auto-ended early. Absent otherwise.
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
 	EarlyEndTime *string
 	// Poll type
 	PollType string
@@ -812,9 +826,9 @@ type VoteResult struct {
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
 	// Absent when no timezone is stored.
 	EndTimeTimezone *string
-	// Actual close time when the poll auto-ended early because all voters
-	// responded before end_time. Absent when the poll closed on schedule or is
-	// still active. RFC3339.
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
 	EarlyEndTime *string
 	// Vote status
 	Status string

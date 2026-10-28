@@ -226,6 +226,36 @@ var _ = Service("vote", func() {
 		})
 	})
 
+	Method("end_vote", func() {
+		Description("End an active vote immediately (proxies to ITX POST /voting/poll/{poll_id}/end). Idempotent for an already-ended vote; a disabled vote returns 409.")
+
+		Security(JWTAuth, func() {
+			Scope("manage:projects")
+			Scope("manage:voting")
+		})
+
+		Payload(func() {
+			BearerTokenAttribute()
+			VoteIDAttribute()
+
+			Required("uid")
+		})
+
+		Result(VoteResult)
+
+		HTTP(func() {
+			POST("/votes/{uid}/end")
+			Response(StatusOK)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("Conflict", StatusConflict)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
 	Method("enable_vote", func() {
 		Description("Enable a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)")
 

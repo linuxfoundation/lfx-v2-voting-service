@@ -135,6 +135,30 @@ func (s *VotingAPI) ExtendVote(ctx context.Context, payload *votesvc.ExtendVoteP
 	return result, nil
 }
 
+// EndVote ends an active vote immediately (proxies to ITX POST /voting/poll/{poll_id}/end)
+func (s *VotingAPI) EndVote(ctx context.Context, payload *votesvc.EndVotePayload) (*votesvc.VoteResult, error) {
+	logger := slog.With("component", "voting_api", "method", "EndVote")
+
+	logger.InfoContext(ctx, "End vote request received", "vote_uid", payload.UID)
+
+	// Call service layer
+	pollResp, err := s.voteService.EndVote(ctx, payload.UID)
+	if err != nil {
+		logger.ErrorContext(ctx, "Failed to end vote", "error", err)
+		return nil, handleError(err)
+	}
+
+	// Convert domain response to Goa result
+	result := apiservice.ConvertPollResponseToVoteResult(pollResp)
+
+	logger.InfoContext(ctx, "Vote ended successfully",
+		"vote_uid", result.UID,
+		"status", result.Status,
+	)
+
+	return result, nil
+}
+
 // EnableVote enables a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)
 func (s *VotingAPI) EnableVote(ctx context.Context, payload *votesvc.EnableVotePayload) error {
 	logger := slog.With("component", "voting_api", "method", "EnableVote")

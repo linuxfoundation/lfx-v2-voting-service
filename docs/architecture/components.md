@@ -151,7 +151,7 @@ interfaces. HTTP concerns (headers, status codes, Goa types) belong in the API l
 
 All outbound HTTP calls to the ITX Voting API:
 
-- `CreatePoll`, `GetPoll`, `UpdatePoll`, `DeletePoll`, `ExtendPoll`, `EnablePoll`,
+- `CreatePoll`, `GetPoll`, `UpdatePoll`, `DeletePoll`, `ExtendPoll`, `EndPoll`, `EnablePoll`,
   `BulkResendPoll`, `GetPollResults` — implements `domain.PollClient`
 - `CreateVote`, `GetVote`, `UpdateVote`, `ResendVote` — implements `domain.VoteResponseClient`
 - `AcceptInvite` — implements `domain.InviteAcceptanceClient`

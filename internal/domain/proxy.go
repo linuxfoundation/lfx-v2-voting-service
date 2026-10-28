@@ -26,6 +26,9 @@ type PollClient interface {
 	// ExtendPoll extends a poll's end time in ITX
 	ExtendPoll(ctx context.Context, pollID string, req *itx.ExtendPollRequest) (*itx.PollResponse, error)
 
+	// EndPoll ends an active poll immediately in ITX; ending an already-ended poll is an idempotent success
+	EndPoll(ctx context.Context, pollID string) (*itx.PollResponse, error)
+
 	// EnablePoll enables a poll for voting in ITX
 	EnablePoll(ctx context.Context, pollID string) error
 

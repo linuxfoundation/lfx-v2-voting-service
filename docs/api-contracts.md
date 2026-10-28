@@ -298,14 +298,14 @@ Authorization: Bearer <heimdall-jwt-token>
 }
 ```
 
-When a poll auto-ends because all eligible voters respond (by voting or being removed) before its scheduled `end_time`, ITX stamps `early_end_time` with the actual close time and preserves the original `end_time`. Extending an ended poll reactivates it and clears `early_end_time`. The proxy forwards `early_end_time` as a read-only field, present only on auto-ended polls, and normalizes zero-value timestamps to absent (mirroring ITX, since the NATS KV ingress reads raw DynamoDB attributes):
+When a poll ends early, either manually or automatically because all eligible voters respond (by voting or being removed) before its scheduled `end_time`, ITX stamps `early_end_time` with the actual close time and preserves the original `end_time`. Extending an ended poll reactivates it and clears `early_end_time`. The proxy forwards `early_end_time` as a read-only field, present for both manual and automatic early endings, and normalizes zero-value timestamps to absent (mirroring ITX, since the NATS KV ingress reads raw DynamoDB attributes):
 
 ```jsonc
 {
   "vote_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
   "status": "ended",
   "end_time": "2026-02-15T23:59:59Z",
-  "early_end_time": "2026-02-10T14:32:11Z"  // Only present when all voters responded before end_time
+  "early_end_time": "2026-02-10T14:32:11Z"  // Present for manual or automatic endings before end_time
 }
 ```
 
@@ -759,6 +759,60 @@ x-scope: manage:voting
 
 ---
 
+## POST /votes/{vote_uid}/end (End Vote)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `POST /votes/{vote_uid}/end`
+
+**Required permission**: `writer` on `vote:{vote_uid}`
+
+**Headers**:
+
+```http
+Authorization: Bearer <heimdall-jwt-token>
+```
+
+**Path Parameters**:
+
+- `vote_uid` (string, UUID): The vote identifier
+
+**Request Body**: None (there is no `reason` field; ITX records no reason for an early end)
+
+**Response** (200 OK): Same structure as `GET /votes/{vote_uid}`. For an active vote the result has `status: "ended"`, `early_end_time` set to the moment the vote was ended, and the original `end_time` preserved.
+
+**Behavior**:
+
+| Current vote state | Result |
+|---|---|
+| `active` | Ended: `status: "ended"`, `early_end_time` stamped, `end_time` preserved |
+| `ended` | `200 OK` with the current state (idempotent no-op) |
+| `disabled` | `409 Conflict` — the service reads the vote from ITX first and never calls the ITX end endpoint |
+| `active` but already past its scheduled `end_time` | `400 Bad Request` passed through from ITX (`poll is already past its scheduled end time`) |
+
+Extending an ended vote reactivates it and clears `early_end_time` (see the `extend` section above). Status changes flow through the same NATS KV eventing path as any other status change.
+
+---
+
+### ITX Service API (Underlying)
+
+**Endpoint**: `POST /v2/voting/poll/{poll_id}/end`
+
+**Headers**:
+
+```http
+Authorization: Bearer <oauth2-m2m-token>
+x-scope: manage:voting
+```
+
+**Request Body**: None
+
+**Response** (200 OK): Same structure as ITX `GetPoll` response (see GET above).
+
+**Errors**: ITX returns `400` for a disabled poll (`poll has not started`) and for an active poll past its `end_time`, `409` when a concurrent extend wins the race, and `404` when the poll does not exist.
+
+---
+
 ## PUT /votes/{vote_uid}/enable (Enable Vote)
 
 ### LFXv2 Proxy API
@@ -876,7 +930,7 @@ x-scope: manage:voting
 {
   "recipient_ids": ["cba14f40-1636-11ec-9621-0242ac130002"],
   "recipient_links": {
-    "cba14f40-1636-11ec-9621-0242ac130002": "https://app.lfx.dev/votes/8f3c2a1e-4b5d-4e6f-9a7b-1c2d3e4f5a6b#vote_token=v1.k2026a.eyJ2Ijoi...fQ.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU"
+    "cba14f40-1636-11ec-9621-0242ac130002": "https://app.lfx.dev/votes/8f3c2a1e-4b5d-4e6f-9a7b-1c2d3e4f5a6b#vote_token=<signed-vote-token>"
   }
 }
 ```
@@ -1301,7 +1355,7 @@ Content-Type: application/json
 
 ```json
 {
-  "vote_token": "v1.k2026a.eyJ2Ijoi...fQ.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU",
+  "vote_token": "<signed-vote-token>",
   "user_vote_content": [
     {
       "question_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
@@ -1340,7 +1394,7 @@ The ballot is identified **only** by the token. The body has no `vote_response_u
 **Request Body**:
 
 ```json
-{ "vote_token": "v1.k2026a.eyJ2Ijoi...fQ.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU" }
+{ "vote_token": "<signed-vote-token>" }
 ```
 
 **Response** (200 OK):

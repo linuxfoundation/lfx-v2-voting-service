@@ -4,8 +4,11 @@
 package proxy
 
 import (
+	"context"
 	"errors"
+	"io"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
@@ -128,4 +131,75 @@ func TestMapHTTPError(t *testing.T) {
 // It is compiled only into the test binary, not the production package.
 func NewContractTestClient(httpClient *http.Client, baseURL string) *Client {
 	return &Client{httpClient: httpClient, config: Config{BaseURL: baseURL}}
+}
+
+// TestEndPoll protects the ITX end request shape (method, path, headers, no body) and the
+// mapping of ITX responses onto the domain.
+func TestEndPoll(t *testing.T) {
+	t.Run("sends a bodiless POST and decodes the ended poll", func(t *testing.T) {
+		var gotMethod, gotPath, gotScope, gotAccept, gotContentType string
+		var gotBody []byte
+		upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			gotMethod, gotPath = r.Method, r.URL.Path
+			gotScope, gotAccept = r.Header.Get("x-scope"), r.Header.Get("Accept")
+			gotContentType = r.Header.Get("Content-Type")
+			gotBody, _ = io.ReadAll(r.Body)
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = io.WriteString(w, `{"poll_id":"poll-1","status":"ended","end_time":"2026-03-01T23:59:59Z","early_end_time":"2026-02-20T09:00:00Z"}`)
+		}))
+		defer upstream.Close()
+
+		c := NewContractTestClient(upstream.Client(), upstream.URL+"/")
+		got, err := c.EndPoll(context.Background(), "poll-1")
+		if err != nil {
+			t.Fatalf("EndPoll returned error: %v", err)
+		}
+		if gotMethod != http.MethodPost || gotPath != "/v2/voting/poll/poll-1/end" {
+			t.Errorf("unexpected request: %s %s", gotMethod, gotPath)
+		}
+		if gotScope != "manage:voting" {
+			t.Errorf("x-scope: want manage:voting, got %q", gotScope)
+		}
+		if gotAccept != "application/json" {
+			t.Errorf("Accept: want application/json, got %q", gotAccept)
+		}
+		if gotContentType != "" {
+			t.Errorf("Content-Type must be unset for a bodiless request, got %q", gotContentType)
+		}
+		if len(gotBody) != 0 {
+			t.Errorf("request body must be empty, got %q", gotBody)
+		}
+		if got.Status != "ended" || got.EarlyEndTime != "2026-02-20T09:00:00Z" || got.EndTime != "2026-03-01T23:59:59Z" {
+			t.Errorf("unexpected decoded poll: %+v", got)
+		}
+	})
+
+	errorTests := []struct {
+		name     string
+		status   int
+		body     string
+		wantType domain.ErrorType
+	}{
+		{name: "400 maps to validation", status: http.StatusBadRequest, body: `{"code":"400","message":"poll has not started"}`, wantType: domain.ErrorTypeValidation},
+		{name: "404 maps to not found", status: http.StatusNotFound, body: `{"code":"404","message":"poll not found"}`, wantType: domain.ErrorTypeNotFound},
+		{name: "409 maps to conflict", status: http.StatusConflict, body: `{"code":"409","message":"poll was updated concurrently; retry the end request"}`, wantType: domain.ErrorTypeConflict},
+	}
+	for _, tt := range errorTests {
+		t.Run(tt.name, func(t *testing.T) {
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.WriteHeader(tt.status)
+				_, _ = io.WriteString(w, tt.body)
+			}))
+			defer upstream.Close()
+
+			c := NewContractTestClient(upstream.Client(), upstream.URL+"/")
+			_, err := c.EndPoll(context.Background(), "poll-1")
+			if err == nil {
+				t.Fatal("expected an error")
+			}
+			if got := domain.GetErrorType(err); got != tt.wantType {
+				t.Errorf("want ErrorType %d, got %d (%v)", tt.wantType, got, err)
+			}
+		})
+	}
 }

@@ -24,7 +24,7 @@ import (
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() []string {
 	return []string{
-		"vote (create-vote|get-vote|update-vote|delete-vote|extend-vote|enable-vote|bulk-resend-vote|get-vote-results|create-vote-response|get-vote-response|update-vote-response|create-vote-response-by-link|update-vote-response-by-link|get-vote-ballot-by-link|resend-vote-response)",
+		"vote (create-vote|get-vote|update-vote|delete-vote|extend-vote|end-vote|enable-vote|bulk-resend-vote|get-vote-results|create-vote-response|get-vote-response|update-vote-response|create-vote-response-by-link|update-vote-response-by-link|get-vote-ballot-by-link|resend-vote-response)",
 	}
 }
 
@@ -67,6 +67,10 @@ func ParseEndpoint(
 		voteExtendVoteBodyFlag  = voteExtendVoteFlags.String("body", "REQUIRED", "")
 		voteExtendVoteUIDFlag   = voteExtendVoteFlags.String("uid", "REQUIRED", "Vote UID")
 		voteExtendVoteTokenFlag = voteExtendVoteFlags.String("token", "", "")
+
+		voteEndVoteFlags     = flag.NewFlagSet("end-vote", flag.ExitOnError)
+		voteEndVoteUIDFlag   = voteEndVoteFlags.String("uid", "REQUIRED", "Vote UID")
+		voteEndVoteTokenFlag = voteEndVoteFlags.String("token", "", "")
 
 		voteEnableVoteFlags     = flag.NewFlagSet("enable-vote", flag.ExitOnError)
 		voteEnableVoteUIDFlag   = voteEnableVoteFlags.String("uid", "REQUIRED", "Vote UID")
@@ -116,6 +120,7 @@ func ParseEndpoint(
 	voteUpdateVoteFlags.Usage = voteUpdateVoteUsage
 	voteDeleteVoteFlags.Usage = voteDeleteVoteUsage
 	voteExtendVoteFlags.Usage = voteExtendVoteUsage
+	voteEndVoteFlags.Usage = voteEndVoteUsage
 	voteEnableVoteFlags.Usage = voteEnableVoteUsage
 	voteBulkResendVoteFlags.Usage = voteBulkResendVoteUsage
 	voteGetVoteResultsFlags.Usage = voteGetVoteResultsUsage
@@ -175,6 +180,9 @@ func ParseEndpoint(
 
 			case "extend-vote":
 				epf = voteExtendVoteFlags
+
+			case "end-vote":
+				epf = voteEndVoteFlags
 
 			case "enable-vote":
 				epf = voteEnableVoteFlags
@@ -246,6 +254,9 @@ func ParseEndpoint(
 			case "extend-vote":
 				endpoint = c.ExtendVote()
 				data, err = votec.BuildExtendVotePayload(*voteExtendVoteBodyFlag, *voteExtendVoteUIDFlag, *voteExtendVoteTokenFlag)
+			case "end-vote":
+				endpoint = c.EndVote()
+				data, err = votec.BuildEndVotePayload(*voteEndVoteUIDFlag, *voteEndVoteTokenFlag)
 			case "enable-vote":
 				endpoint = c.EnableVote()
 				data, err = votec.BuildEnableVotePayload(*voteEnableVoteUIDFlag, *voteEnableVoteTokenFlag)
@@ -296,6 +307,7 @@ func voteUsage() {
 	fmt.Fprintln(os.Stderr, `    update-vote: Update vote (proxies to ITX PUT /voting/poll/{poll_id}). Only allowed when status is 'disabled'`)
 	fmt.Fprintln(os.Stderr, `    delete-vote: Delete vote (proxies to ITX DELETE /voting/poll/{poll_id}). Only allowed when status is 'disabled'`)
 	fmt.Fprintln(os.Stderr, `    extend-vote: Extend a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)`)
+	fmt.Fprintln(os.Stderr, `    end-vote: End an active vote immediately (proxies to ITX POST /voting/poll/{poll_id}/end). Idempotent for an already-ended vote; a disabled vote returns 409.`)
 	fmt.Fprintln(os.Stderr, `    enable-vote: Enable a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)`)
 	fmt.Fprintln(os.Stderr, `    bulk-resend-vote: Bulk resend vote email to select recipients (proxies to ITX POST /voting/poll/{poll_id}/bulk_resend)`)
 	fmt.Fprintln(os.Stderr, `    get-vote-results: Get vote results (proxies to ITX GET /voting/poll/{poll_id}/results)`)
@@ -414,6 +426,26 @@ func voteExtendVoteUsage() {
 	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote extend-vote --body '{\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"end_time_timezone\": \"America/New_York\"\n   }' --uid \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\" --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
 }
 
+func voteEndVoteUsage() {
+	// Header with flags
+	fmt.Fprintf(os.Stderr, "%s [flags] vote end-vote", os.Args[0])
+	fmt.Fprint(os.Stderr, " -uid STRING")
+	fmt.Fprint(os.Stderr, " -token STRING")
+	fmt.Fprintln(os.Stderr)
+
+	// Description
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, `End an active vote immediately (proxies to ITX POST /voting/poll/{poll_id}/end). Idempotent for an already-ended vote; a disabled vote returns 409.`)
+
+	// Flags list
+	fmt.Fprintln(os.Stderr, `    -uid STRING: Vote UID`)
+	fmt.Fprintln(os.Stderr, `    -token STRING: `)
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Example:")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote end-vote --uid \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\" --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
+}
+
 func voteEnableVoteUsage() {
 	// Header with flags
 	fmt.Fprintf(os.Stderr, "%s [flags] vote enable-vote", os.Args[0])
@@ -493,7 +525,7 @@ func voteCreateVoteResponseUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote create-vote-response --body '{\n      \"abstain\": true,\n      \"comment_responses\": [\n         {\n            \"comment_text\": \"Because the incumbent has done great work this term.\",\n            \"prompt_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"user_vote_content\": [\n         {\n            \"choice_ids\": [\n               \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n            ],\n            \"question_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"vote_response_uid\": \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\",\n      \"vote_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n   }' --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote create-vote-response --body '{\n      \"abstain\": false,\n      \"comment_responses\": [\n         {\n            \"comment_text\": \"Because the incumbent has done great work this term.\",\n            \"prompt_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"user_vote_content\": [\n         {\n            \"choice_ids\": [\n               \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n            ],\n            \"question_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"vote_response_uid\": \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\",\n      \"vote_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n   }' --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
 }
 
 func voteGetVoteResponseUsage() {
@@ -535,7 +567,7 @@ func voteUpdateVoteResponseUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote update-vote-response --body '{\n      \"abstain\": false,\n      \"comment_responses\": [\n         {\n            \"comment_text\": \"Because the incumbent has done great work this term.\",\n            \"prompt_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"user_vote_content\": [\n         {\n            \"choice_ids\": [\n               \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n            ],\n            \"question_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ]\n   }' --vote-response-uid \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\" --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote update-vote-response --body '{\n      \"abstain\": true,\n      \"comment_responses\": [\n         {\n            \"comment_text\": \"Because the incumbent has done great work this term.\",\n            \"prompt_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"user_vote_content\": [\n         {\n            \"choice_ids\": [\n               \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n            ],\n            \"question_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ]\n   }' --vote-response-uid \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\" --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
 }
 
 func voteCreateVoteResponseByLinkUsage() {
@@ -555,7 +587,7 @@ func voteCreateVoteResponseByLinkUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote create-vote-response-by-link --body '{\n      \"abstain\": true,\n      \"comment_responses\": [\n         {\n            \"comment_text\": \"Because the incumbent has done great work this term.\",\n            \"prompt_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"user_vote_content\": [\n         {\n            \"choice_ids\": [\n               \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n            ],\n            \"question_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"vote_token\": \"v1.k2026a.eyJ2IjoiOGYzYzJhMWUtNGI1ZC00ZTZmLTlhN2ItMWMyZDNlNGY1YTZiIiwiciI6ImNiYTE0ZjQwLTE2MzYtMTFlYy05NjIxLTAyNDJhYzEzMDAwMiIsImlhdCI6MTc5MzIzMjAwMH0.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU\"\n   }' --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote create-vote-response-by-link --body '{\n      \"abstain\": false,\n      \"comment_responses\": [\n         {\n            \"comment_text\": \"Because the incumbent has done great work this term.\",\n            \"prompt_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"user_vote_content\": [\n         {\n            \"choice_ids\": [\n               \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n            ],\n            \"question_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"vote_token\": \"v1.k2026a.eyJ2IjoiOGYzYzJhMWUtNGI1ZC00ZTZmLTlhN2ItMWMyZDNlNGY1YTZiIiwiciI6ImNiYTE0ZjQwLTE2MzYtMTFlYy05NjIxLTAyNDJhYzEzMDAwMiIsImlhdCI6MTc5MzIzMjAwMH0.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU\"\n   }' --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
 }
 
 func voteUpdateVoteResponseByLinkUsage() {

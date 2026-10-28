@@ -18,12 +18,28 @@ import (
 )
 
 // capturePollClient records the last CreatePoll/UpdatePoll/ExtendPoll request so tests
-// can assert on the fields the proxy forwards to ITX. Only those methods are exercised here.
+// can assert on the fields the proxy forwards to ITX. It also stubs GetPoll/EndPoll for the
+// EndVote tests; only those methods are exercised here.
 type capturePollClient struct {
 	domain.PollClient
 	lastCreate *itx.CreatePollRequest
 	lastUpdate *itx.UpdatePollRequest
 	lastExtend *itx.ExtendPollRequest
+
+	getPollResp  *itx.PollResponse
+	getPollErr   error
+	endPollResp  *itx.PollResponse
+	endPollErr   error
+	endPollCalls []string
+}
+
+func (c *capturePollClient) GetPoll(_ context.Context, _ string) (*itx.PollResponse, error) {
+	return c.getPollResp, c.getPollErr
+}
+
+func (c *capturePollClient) EndPoll(_ context.Context, pollID string) (*itx.PollResponse, error) {
+	c.endPollCalls = append(c.endPollCalls, pollID)
+	return c.endPollResp, c.endPollErr
 }
 
 func (c *capturePollClient) CreatePoll(_ context.Context, req *itx.CreatePollRequest) (*itx.PollResponse, error) {
@@ -356,4 +372,93 @@ func TestVoteNumWinnersResolution(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEndVote(t *testing.T) {
+	ctx := context.WithValue(context.Background(), constants.PrincipalContextID, "test-user")
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+
+	t.Run("active vote is ended and the ITX response returned", func(t *testing.T) {
+		ended := &itx.PollResponse{PollID: "poll-1", Status: "ended", EarlyEndTime: "2026-02-20T09:00:00Z"}
+		client := &capturePollClient{getPollResp: &itx.PollResponse{PollID: "poll-1", Status: "active"}, endPollResp: ended}
+		svc := NewVoteService(nil, client, identityIDMapper{}, logger)
+
+		got, err := svc.EndVote(ctx, "poll-1")
+		if err != nil {
+			t.Fatalf("EndVote returned error: %v", err)
+		}
+		if len(client.endPollCalls) != 1 || client.endPollCalls[0] != "poll-1" {
+			t.Fatalf("expected one EndPoll call for poll-1, got %v", client.endPollCalls)
+		}
+		if got.Status != "ended" || got.EarlyEndTime != "2026-02-20T09:00:00Z" {
+			t.Fatalf("unexpected response: %+v", got)
+		}
+	})
+
+	t.Run("disabled vote returns conflict without calling ITX end", func(t *testing.T) {
+		client := &capturePollClient{getPollResp: &itx.PollResponse{PollID: "poll-1", Status: "disabled"}}
+		svc := NewVoteService(nil, client, identityIDMapper{}, logger)
+
+		_, err := svc.EndVote(ctx, "poll-1")
+		if err == nil {
+			t.Fatal("expected an error for a disabled vote")
+		}
+		if got := domain.GetErrorType(err); got != domain.ErrorTypeConflict {
+			t.Fatalf("expected ErrorTypeConflict, got %v", got)
+		}
+		if len(client.endPollCalls) != 0 {
+			t.Fatalf("expected EndPoll not to be called, got %v", client.endPollCalls)
+		}
+	})
+
+	t.Run("already ended vote is returned unchanged", func(t *testing.T) {
+		current := &itx.PollResponse{PollID: "poll-1", Status: "ended", EarlyEndTime: "2026-02-20T09:00:00Z"}
+		client := &capturePollClient{getPollResp: current, endPollResp: current}
+		svc := NewVoteService(nil, client, identityIDMapper{}, logger)
+
+		got, err := svc.EndVote(ctx, "poll-1")
+		if err != nil {
+			t.Fatalf("EndVote returned error: %v", err)
+		}
+		if got.Status != "ended" || got.EarlyEndTime != "2026-02-20T09:00:00Z" {
+			t.Fatalf("unexpected response: %+v", got)
+		}
+	})
+
+	t.Run("EndPoll error is propagated", func(t *testing.T) {
+		endErr := domain.NewValidationError("poll is already past its scheduled end time")
+		client := &capturePollClient{getPollResp: &itx.PollResponse{PollID: "poll-1", Status: "active"}, endPollErr: endErr}
+		svc := NewVoteService(nil, client, identityIDMapper{}, logger)
+
+		_, err := svc.EndVote(ctx, "poll-1")
+		if !errors.Is(err, endErr) {
+			t.Fatalf("expected EndPoll error to propagate, got %v", err)
+		}
+	})
+
+	t.Run("GetPoll error is propagated without calling EndPoll", func(t *testing.T) {
+		getErr := domain.NewNotFoundError("poll not found")
+		client := &capturePollClient{getPollErr: getErr}
+		svc := NewVoteService(nil, client, identityIDMapper{}, logger)
+
+		_, err := svc.EndVote(ctx, "poll-1")
+		if !errors.Is(err, getErr) {
+			t.Fatalf("expected GetPoll error to propagate, got %v", err)
+		}
+		if len(client.endPollCalls) != 0 {
+			t.Fatalf("expected EndPoll not to be called, got %v", client.endPollCalls)
+		}
+	})
+
+	t.Run("missing principal is rejected", func(t *testing.T) {
+		client := &capturePollClient{}
+		svc := NewVoteService(nil, client, identityIDMapper{}, logger)
+
+		if _, err := svc.EndVote(context.Background(), "poll-1"); err == nil {
+			t.Fatal("expected an error without a principal")
+		}
+		if len(client.endPollCalls) != 0 {
+			t.Fatalf("expected EndPoll not to be called, got %v", client.endPollCalls)
+		}
+	})
 }

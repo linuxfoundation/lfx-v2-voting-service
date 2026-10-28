@@ -236,7 +236,7 @@ var VoteResult = Type("VoteResult", func() {
 
 	EndTimeTimezoneAttribute("Absent when no timezone is stored.")
 
-	Attribute("early_end_time", String, "Actual close time when the poll auto-ended early because all voters responded before end_time. Absent when the poll closed on schedule or is still active. RFC3339.", func() {
+	Attribute("early_end_time", String, "Actual close time when the poll ended before end_time, either manually or automatically after all voters responded. Absent when the poll closed on schedule or is still active. RFC3339.", func() {
 		Format(FormatDateTime)
 		Example("2026-02-10T14:32:11Z")
 	})
@@ -473,7 +473,7 @@ var VoteLinkBallotResult = Type("VoteLinkBallotResult", func() {
 		Example("2026-02-15T23:59:59Z")
 	})
 	EndTimeTimezoneAttribute("Absent when no timezone is stored.")
-	Attribute("early_end_time", String, "Actual close time when the poll auto-ended early. Absent otherwise.", func() {
+	Attribute("early_end_time", String, "Actual close time when the poll ended before end_time, either manually or automatically after all voters responded. Absent when the poll closed on schedule or is still active. RFC3339.", func() {
 		Format(FormatDateTime)
 	})
 	Attribute("poll_type", String, "Poll type", func() {

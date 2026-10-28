@@ -22,6 +22,7 @@ type Endpoints struct {
 	UpdateVote               goa.Endpoint
 	DeleteVote               goa.Endpoint
 	ExtendVote               goa.Endpoint
+	EndVote                  goa.Endpoint
 	EnableVote               goa.Endpoint
 	BulkResendVote           goa.Endpoint
 	GetVoteResults           goa.Endpoint
@@ -44,6 +45,7 @@ func NewEndpoints(s Service) *Endpoints {
 		UpdateVote:               NewUpdateVoteEndpoint(s, a.JWTAuth),
 		DeleteVote:               NewDeleteVoteEndpoint(s, a.JWTAuth),
 		ExtendVote:               NewExtendVoteEndpoint(s, a.JWTAuth),
+		EndVote:                  NewEndVoteEndpoint(s, a.JWTAuth),
 		EnableVote:               NewEnableVoteEndpoint(s, a.JWTAuth),
 		BulkResendVote:           NewBulkResendVoteEndpoint(s, a.JWTAuth),
 		GetVoteResults:           NewGetVoteResultsEndpoint(s, a.JWTAuth),
@@ -64,6 +66,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.UpdateVote = m(e.UpdateVote)
 	e.DeleteVote = m(e.DeleteVote)
 	e.ExtendVote = m(e.ExtendVote)
+	e.EndVote = m(e.EndVote)
 	e.EnableVote = m(e.EnableVote)
 	e.BulkResendVote = m(e.BulkResendVote)
 	e.GetVoteResults = m(e.GetVoteResults)
@@ -188,6 +191,29 @@ func NewExtendVoteEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoi
 			return nil, err
 		}
 		return s.ExtendVote(ctx, p)
+	}
+}
+
+// NewEndVoteEndpoint returns an endpoint function that calls the method
+// "end_vote" of service "vote".
+func NewEndVoteEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*EndVotePayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{"read:projects", "manage:projects", "manage:voting"},
+			RequiredScopes: []string{"manage:projects", "manage:voting"},
+		}
+		var token string
+		if p.Token != nil {
+			token = *p.Token
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.EndVote(ctx, p)
 	}
 }
 
