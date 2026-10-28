@@ -331,7 +331,7 @@ func (s *VoteService) ExtendVote(ctx context.Context, voteID string, endTime str
 
 // EndVote ends an active vote immediately (proxies to ITX POST /voting/poll/{poll_id}/end).
 // Ending an already-ended vote is an idempotent success. A disabled vote is rejected with a
-// conflict error before ITX is called, because ITX reports it as a 400.
+// conflict error before the ITX end endpoint is called, because ITX reports it as a 400.
 func (s *VoteService) EndVote(ctx context.Context, voteID string) (*itx.PollResponse, error) {
 	principal, err := requirePrincipal(ctx)
 	if err != nil {

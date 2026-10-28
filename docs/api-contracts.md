@@ -787,7 +787,7 @@ Authorization: Bearer <heimdall-jwt-token>
 |---|---|
 | `active` | Ended: `status: "ended"`, `early_end_time` stamped, `end_time` preserved |
 | `ended` | `200 OK` with the current state (idempotent no-op) |
-| `disabled` | `409 Conflict` — the service checks the vote first and never calls ITX |
+| `disabled` | `409 Conflict` — the service reads the vote from ITX first and never calls the ITX end endpoint |
 | `active` but already past its scheduled `end_time` | `400 Bad Request` passed through from ITX (`poll is already past its scheduled end time`) |
 
 Extending an ended vote reactivates it and clears `early_end_time` (see the `extend` section above). Status changes flow through the same NATS KV eventing path as any other status change.
