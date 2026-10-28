@@ -416,6 +416,31 @@ func BuildExtendVotePayload(voteExtendVoteBody string, voteExtendVoteUID string,
 	return v, nil
 }
 
+// BuildEndVotePayload builds the payload for the vote end_vote endpoint from
+// CLI flags.
+func BuildEndVotePayload(voteEndVoteUID string, voteEndVoteToken string) (*vote.EndVotePayload, error) {
+	var err error
+	var uid string
+	{
+		uid = voteEndVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var token *string
+	{
+		if voteEndVoteToken != "" {
+			token = &voteEndVoteToken
+		}
+	}
+	v := &vote.EndVotePayload{}
+	v.UID = uid
+	v.Token = token
+
+	return v, nil
+}
+
 // BuildEnableVotePayload builds the payload for the vote enable_vote endpoint
 // from CLI flags.
 func BuildEnableVotePayload(voteEnableVoteUID string, voteEnableVoteToken string) (*vote.EnableVotePayload, error) {
@@ -520,7 +545,7 @@ func BuildCreateVoteResponsePayload(voteCreateVoteResponseBody string, voteCreat
 	{
 		err = json.Unmarshal([]byte(voteCreateVoteResponseBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"abstain\": false,\n      \"comment_responses\": [\n         {\n            \"comment_text\": \"Because the incumbent has done great work this term.\",\n            \"prompt_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"user_vote_content\": [\n         {\n            \"choice_ids\": [\n               \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n            ],\n            \"question_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"vote_response_uid\": \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\",\n      \"vote_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"abstain\": true,\n      \"comment_responses\": [\n         {\n            \"comment_text\": \"Because the incumbent has done great work this term.\",\n            \"prompt_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"user_vote_content\": [\n         {\n            \"choice_ids\": [\n               \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n            ],\n            \"question_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"vote_response_uid\": \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\",\n      \"vote_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n   }'")
 		}
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_response_uid", body.VoteResponseUID, goa.FormatUUID))
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", body.VoteUID, goa.FormatUUID))

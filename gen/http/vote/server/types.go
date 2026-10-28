@@ -168,9 +168,9 @@ type CreateVoteResponseBody struct {
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
 	// Absent when no timezone is stored.
 	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
-	// Actual close time when the poll auto-ended early because all voters
-	// responded before end_time. Absent when the poll closed on schedule or is
-	// still active. RFC3339.
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
 	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
 	// Vote status
 	Status string `form:"status" json:"status" xml:"status"`
@@ -224,9 +224,9 @@ type GetVoteResponseBody struct {
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
 	// Absent when no timezone is stored.
 	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
-	// Actual close time when the poll auto-ended early because all voters
-	// responded before end_time. Absent when the poll closed on schedule or is
-	// still active. RFC3339.
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
 	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
 	// Vote status
 	Status string `form:"status" json:"status" xml:"status"`
@@ -280,9 +280,9 @@ type UpdateVoteResponseBody struct {
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
 	// Absent when no timezone is stored.
 	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
-	// Actual close time when the poll auto-ended early because all voters
-	// responded before end_time. Absent when the poll closed on schedule or is
-	// still active. RFC3339.
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
 	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
 	// Vote status
 	Status string `form:"status" json:"status" xml:"status"`
@@ -336,9 +336,65 @@ type ExtendVoteResponseBody struct {
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
 	// Absent when no timezone is stored.
 	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
-	// Actual close time when the poll auto-ended early because all voters
-	// responded before end_time. Absent when the poll closed on schedule or is
-	// still active. RFC3339.
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
+	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
+	// Vote status
+	Status string `form:"status" json:"status" xml:"status"`
+	// Project UID
+	ProjectUID string `form:"project_uid" json:"project_uid" xml:"project_uid"`
+	// Project name
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
+	// Committee UID
+	CommitteeUID string `form:"committee_uid" json:"committee_uid" xml:"committee_uid"`
+	// Committee name
+	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee voting status filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Committee type
+	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
+	// Committee voting status
+	CommitteeVotingStatus *bool `form:"committee_voting_status,omitempty" json:"committee_voting_status,omitempty" xml:"committee_voting_status,omitempty"`
+	// Pseudo-anonymity enabled
+	PseudoAnonymity *bool `form:"pseudo_anonymity,omitempty" json:"pseudo_anonymity,omitempty" xml:"pseudo_anonymity,omitempty"`
+	// Total invitations sent
+	TotalVotingRequestInvitations *int `form:"total_voting_request_invitations,omitempty" json:"total_voting_request_invitations,omitempty" xml:"total_voting_request_invitations,omitempty"`
+	// Responses received
+	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
+	// Vote questions
+	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Comment prompts for the vote
+	PollCommentPrompts []*PollCommentPromptResponseBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
+	// Poll type
+	PollType string `form:"poll_type" json:"poll_type" xml:"poll_type"`
+	// Number of winners. Absent when no winner count is stored upstream.
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
+	// Allow abstain
+	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+}
+
+// EndVoteResponseBody is the type of the "vote" service "end_vote" endpoint
+// HTTP response body.
+type EndVoteResponseBody struct {
+	// Vote identifier
+	UID string `form:"uid" json:"uid" xml:"uid"`
+	// Vote name
+	Name string `form:"name" json:"name" xml:"name"`
+	// Vote description
+	Description string `form:"description" json:"description" xml:"description"`
+	// Creation time
+	CreationTime *string `form:"creation_time,omitempty" json:"creation_time,omitempty" xml:"creation_time,omitempty"`
+	// Last modified time
+	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
+	// End time
+	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Absent when no timezone is stored.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
 	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
 	// Vote status
 	Status string `form:"status" json:"status" xml:"status"`
@@ -735,6 +791,69 @@ type ExtendVoteServiceUnavailableResponseBody struct {
 // ExtendVoteUnauthorizedResponseBody is the type of the "vote" service
 // "extend_vote" endpoint HTTP response body for the "Unauthorized" error.
 type ExtendVoteUnauthorizedResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// EndVoteBadRequestResponseBody is the type of the "vote" service "end_vote"
+// endpoint HTTP response body for the "BadRequest" error.
+type EndVoteBadRequestResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// EndVoteConflictResponseBody is the type of the "vote" service "end_vote"
+// endpoint HTTP response body for the "Conflict" error.
+type EndVoteConflictResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// EndVoteForbiddenResponseBody is the type of the "vote" service "end_vote"
+// endpoint HTTP response body for the "Forbidden" error.
+type EndVoteForbiddenResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// EndVoteInternalServerErrorResponseBody is the type of the "vote" service
+// "end_vote" endpoint HTTP response body for the "InternalServerError" error.
+type EndVoteInternalServerErrorResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// EndVoteNotFoundResponseBody is the type of the "vote" service "end_vote"
+// endpoint HTTP response body for the "NotFound" error.
+type EndVoteNotFoundResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// EndVoteServiceUnavailableResponseBody is the type of the "vote" service
+// "end_vote" endpoint HTTP response body for the "ServiceUnavailable" error.
+type EndVoteServiceUnavailableResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// EndVoteUnauthorizedResponseBody is the type of the "vote" service "end_vote"
+// endpoint HTTP response body for the "Unauthorized" error.
+type EndVoteUnauthorizedResponseBody struct {
 	// HTTP status code
 	Code string `form:"code" json:"code" xml:"code"`
 	// Error message
@@ -1695,6 +1814,67 @@ func NewExtendVoteResponseBody(res *vote.VoteResult) *ExtendVoteResponseBody {
 	return body
 }
 
+// NewEndVoteResponseBody builds the HTTP response body from the result of the
+// "end_vote" endpoint of the "vote" service.
+func NewEndVoteResponseBody(res *vote.VoteResult) *EndVoteResponseBody {
+	body := &EndVoteResponseBody{
+		UID:                           res.UID,
+		Name:                          res.Name,
+		Description:                   res.Description,
+		CreationTime:                  res.CreationTime,
+		LastModifiedTime:              res.LastModifiedTime,
+		EndTime:                       res.EndTime,
+		EndTimeTimezone:               res.EndTimeTimezone,
+		EarlyEndTime:                  res.EarlyEndTime,
+		Status:                        res.Status,
+		ProjectUID:                    res.ProjectUID,
+		ProjectName:                   res.ProjectName,
+		CommitteeUID:                  res.CommitteeUID,
+		CommitteeName:                 res.CommitteeName,
+		CommitteeType:                 res.CommitteeType,
+		CommitteeVotingStatus:         res.CommitteeVotingStatus,
+		PseudoAnonymity:               res.PseudoAnonymity,
+		TotalVotingRequestInvitations: res.TotalVotingRequestInvitations,
+		NumResponseReceived:           res.NumResponseReceived,
+		PollType:                      res.PollType,
+		NumWinners:                    res.NumWinners,
+		AllowAbstain:                  res.AllowAbstain,
+	}
+	if res.CommitteeFilters != nil {
+		body.CommitteeFilters = make([]string, len(res.CommitteeFilters))
+		for i, val := range res.CommitteeFilters {
+			body.CommitteeFilters[i] = val
+		}
+	}
+	if res.PollQuestions != nil {
+		body.PollQuestions = make([]*PollQuestionResponseBody, len(res.PollQuestions))
+		for i, val := range res.PollQuestions {
+			if val == nil {
+				body.PollQuestions[i] = nil
+				continue
+			}
+			body.PollQuestions[i] = marshalVotePollQuestionToPollQuestionResponseBody(val)
+		}
+	}
+	if res.PollCommentPrompts != nil {
+		body.PollCommentPrompts = make([]*PollCommentPromptResponseBody, len(res.PollCommentPrompts))
+		for i, val := range res.PollCommentPrompts {
+			if val == nil {
+				body.PollCommentPrompts[i] = nil
+				continue
+			}
+			body.PollCommentPrompts[i] = marshalVotePollCommentPromptToPollCommentPromptResponseBody(val)
+		}
+	}
+	{
+		var zero string
+		if body.PollType == zero {
+			body.PollType = "generic"
+		}
+	}
+	return body
+}
+
 // NewGetVoteResultsResponseBody builds the HTTP response body from the result
 // of the "get_vote_results" endpoint of the "vote" service.
 func NewGetVoteResultsResponseBody(res *vote.VoteResultsResult) *GetVoteResultsResponseBody {
@@ -2091,6 +2271,76 @@ func NewExtendVoteServiceUnavailableResponseBody(res *vote.ServiceUnavailableErr
 // result of the "extend_vote" endpoint of the "vote" service.
 func NewExtendVoteUnauthorizedResponseBody(res *vote.UnauthorizedError) *ExtendVoteUnauthorizedResponseBody {
 	body := &ExtendVoteUnauthorizedResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewEndVoteBadRequestResponseBody builds the HTTP response body from the
+// result of the "end_vote" endpoint of the "vote" service.
+func NewEndVoteBadRequestResponseBody(res *vote.BadRequestError) *EndVoteBadRequestResponseBody {
+	body := &EndVoteBadRequestResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewEndVoteConflictResponseBody builds the HTTP response body from the result
+// of the "end_vote" endpoint of the "vote" service.
+func NewEndVoteConflictResponseBody(res *vote.ConflictError) *EndVoteConflictResponseBody {
+	body := &EndVoteConflictResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewEndVoteForbiddenResponseBody builds the HTTP response body from the
+// result of the "end_vote" endpoint of the "vote" service.
+func NewEndVoteForbiddenResponseBody(res *vote.ForbiddenError) *EndVoteForbiddenResponseBody {
+	body := &EndVoteForbiddenResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewEndVoteInternalServerErrorResponseBody builds the HTTP response body from
+// the result of the "end_vote" endpoint of the "vote" service.
+func NewEndVoteInternalServerErrorResponseBody(res *vote.InternalServerError) *EndVoteInternalServerErrorResponseBody {
+	body := &EndVoteInternalServerErrorResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewEndVoteNotFoundResponseBody builds the HTTP response body from the result
+// of the "end_vote" endpoint of the "vote" service.
+func NewEndVoteNotFoundResponseBody(res *vote.NotFoundError) *EndVoteNotFoundResponseBody {
+	body := &EndVoteNotFoundResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewEndVoteServiceUnavailableResponseBody builds the HTTP response body from
+// the result of the "end_vote" endpoint of the "vote" service.
+func NewEndVoteServiceUnavailableResponseBody(res *vote.ServiceUnavailableError) *EndVoteServiceUnavailableResponseBody {
+	body := &EndVoteServiceUnavailableResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewEndVoteUnauthorizedResponseBody builds the HTTP response body from the
+// result of the "end_vote" endpoint of the "vote" service.
+func NewEndVoteUnauthorizedResponseBody(res *vote.UnauthorizedError) *EndVoteUnauthorizedResponseBody {
+	body := &EndVoteUnauthorizedResponseBody{
 		Code:    res.Code,
 		Message: res.Message,
 	}
@@ -2681,6 +2931,15 @@ func NewExtendVotePayload(body *ExtendVoteRequestBody, uid string, token *string
 		EndTime:         *body.EndTime,
 		EndTimeTimezone: *body.EndTimeTimezone,
 	}
+	v.UID = uid
+	v.Token = token
+
+	return v
+}
+
+// NewEndVotePayload builds a vote service end_vote endpoint payload.
+func NewEndVotePayload(uid string, token *string) *vote.EndVotePayload {
+	v := &vote.EndVotePayload{}
 	v.UID = uid
 	v.Token = token
 

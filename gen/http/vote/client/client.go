@@ -38,6 +38,10 @@ type Client struct {
 	// endpoint.
 	ExtendVoteDoer goahttp.Doer
 
+	// EndVote Doer is the HTTP client used to make requests to the end_vote
+	// endpoint.
+	EndVoteDoer goahttp.Doer
+
 	// EnableVote Doer is the HTTP client used to make requests to the enable_vote
 	// endpoint.
 	EnableVoteDoer goahttp.Doer
@@ -91,6 +95,7 @@ func NewClient(
 		UpdateVoteDoer:         doer,
 		DeleteVoteDoer:         doer,
 		ExtendVoteDoer:         doer,
+		EndVoteDoer:            doer,
 		EnableVoteDoer:         doer,
 		BulkResendVoteDoer:     doer,
 		GetVoteResultsDoer:     doer,
@@ -221,6 +226,30 @@ func (c *Client) ExtendVote() goa.Endpoint {
 		resp, err := c.ExtendVoteDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("vote", "extend_vote", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// EndVote returns an endpoint that makes HTTP requests to the vote service
+// end_vote server.
+func (c *Client) EndVote() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeEndVoteRequest(c.encoder)
+		decodeResponse = DecodeEndVoteResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildEndVoteRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.EndVoteDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("vote", "end_vote", err)
 		}
 		return decodeResponse(resp)
 	}

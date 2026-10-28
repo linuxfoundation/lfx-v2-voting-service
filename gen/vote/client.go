@@ -21,6 +21,7 @@ type Client struct {
 	UpdateVoteEndpoint         goa.Endpoint
 	DeleteVoteEndpoint         goa.Endpoint
 	ExtendVoteEndpoint         goa.Endpoint
+	EndVoteEndpoint            goa.Endpoint
 	EnableVoteEndpoint         goa.Endpoint
 	BulkResendVoteEndpoint     goa.Endpoint
 	GetVoteResultsEndpoint     goa.Endpoint
@@ -31,13 +32,14 @@ type Client struct {
 }
 
 // NewClient initializes a "vote" service client given the endpoints.
-func NewClient(createVote, getVote, updateVote, deleteVote, extendVote, enableVote, bulkResendVote, getVoteResults, createVoteResponse, getVoteResponse, updateVoteResponse, resendVoteResponse goa.Endpoint) *Client {
+func NewClient(createVote, getVote, updateVote, deleteVote, extendVote, endVote, enableVote, bulkResendVote, getVoteResults, createVoteResponse, getVoteResponse, updateVoteResponse, resendVoteResponse goa.Endpoint) *Client {
 	return &Client{
 		CreateVoteEndpoint:         createVote,
 		GetVoteEndpoint:            getVote,
 		UpdateVoteEndpoint:         updateVote,
 		DeleteVoteEndpoint:         deleteVote,
 		ExtendVoteEndpoint:         extendVote,
+		EndVoteEndpoint:            endVote,
 		EnableVoteEndpoint:         enableVote,
 		BulkResendVoteEndpoint:     bulkResendVote,
 		GetVoteResultsEndpoint:     getVoteResults,
@@ -133,6 +135,25 @@ func (c *Client) DeleteVote(ctx context.Context, p *DeleteVotePayload) (err erro
 func (c *Client) ExtendVote(ctx context.Context, p *ExtendVotePayload) (res *VoteResult, err error) {
 	var ires any
 	ires, err = c.ExtendVoteEndpoint(ctx, p)
+	if err != nil {
+		return
+	}
+	return ires.(*VoteResult), nil
+}
+
+// EndVote calls the "end_vote" endpoint of the "vote" service.
+// EndVote may return the following errors:
+//   - "BadRequest" (type *BadRequestError): Bad request
+//   - "Unauthorized" (type *UnauthorizedError): Unauthorized
+//   - "Forbidden" (type *ForbiddenError): Forbidden
+//   - "NotFound" (type *NotFoundError): Not found
+//   - "Conflict" (type *ConflictError): Conflict
+//   - "InternalServerError" (type *InternalServerError): Internal server error
+//   - "ServiceUnavailable" (type *ServiceUnavailableError): Service unavailable
+//   - error: internal error
+func (c *Client) EndVote(ctx context.Context, p *EndVotePayload) (res *VoteResult, err error) {
+	var ires any
+	ires, err = c.EndVoteEndpoint(ctx, p)
 	if err != nil {
 		return
 	}

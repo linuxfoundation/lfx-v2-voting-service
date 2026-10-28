@@ -321,6 +321,7 @@ type PollClient interface {
     UpdatePoll(ctx context.Context, pollID string, req *itx.UpdatePollRequest) (*itx.PollResponse, error)
     DeletePoll(ctx context.Context, pollID string) error
     ExtendPoll(ctx context.Context, pollID string, req *itx.ExtendPollRequest) (*itx.PollResponse, error)
+    EndPoll(ctx context.Context, pollID string) (*itx.PollResponse, error)
     EnablePoll(ctx context.Context, pollID string) error
     BulkResendPoll(ctx context.Context, pollID string, req *itx.BulkResendRequest) error
     GetPollResults(ctx context.Context, pollID string) (*itx.VoteResults, error)
@@ -395,6 +396,7 @@ Response IDs are mapped from V1 to V2:
 | `PUT /votes/{id}` | `PUT /v2/voting/poll/{id}` |
 | `DELETE /votes/{id}` | `DELETE /v2/voting/poll/{id}` |
 | `POST /votes/{id}/extend` | `POST /v2/voting/poll/{id}/extend` |
+| `POST /votes/{id}/end` | `POST /v2/voting/poll/{id}/end` |
 | `PUT /votes/{id}/enable` | `PUT /v2/voting/poll/{id}/enable` |
 | `POST /votes/{id}/bulk_resend` | `POST /v2/voting/poll/{id}/bulk_resend` |
 | `GET /votes/{id}/results` | `GET /v2/voting/poll/{id}/results` |
@@ -554,7 +556,7 @@ Authorization is handled by Heimdall with OpenFGA checks:
 
 **Permission Model**:
 
-- `writer` - Can create, update, delete, extend, enable, and bulk-resend votes
+- `writer` - Can create, update, delete, extend, end, enable, and bulk-resend votes
 - `viewer` - Can read vote details
 - `results_viewer` - Can view aggregated vote results
 - `auditor` - Can view vote response details

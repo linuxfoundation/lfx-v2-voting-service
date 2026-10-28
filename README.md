@@ -297,6 +297,7 @@ The service provides the following endpoints:
 - `PUT /votes/{vote_uid}` - Update a vote/poll (only when status is "disabled")
 - `DELETE /votes/{vote_uid}` - Delete a vote/poll (only when status is "disabled")
 - `POST /votes/{vote_uid}/extend` - Extend a vote/poll end time
+- `POST /votes/{vote_uid}/end` - End an active vote/poll immediately
 - `POST /votes/{vote_uid}/enable` - Enable a vote/poll for voting
 - `POST /votes/{vote_uid}/bulk_resend` - Bulk resend vote emails to recipients
 - `GET /votes/{vote_uid}/results` - Get aggregated vote results

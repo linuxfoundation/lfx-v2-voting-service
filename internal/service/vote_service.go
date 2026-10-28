@@ -21,6 +21,9 @@ import (
 // callers receive a clear error message. Both CreateVote and UpdateVote enforce this.
 const maxVoteNameLen = 200
 
+// pollStatusDisabled is the ITX poll status for a vote that has not been enabled yet.
+const pollStatusDisabled = "disabled"
+
 // VoteService implements the vote service business logic
 type VoteService struct {
 	jwtAuth     domain.Authenticator
@@ -322,6 +325,47 @@ func (s *VoteService) ExtendVote(ctx context.Context, voteID string, endTime str
 	}
 
 	s.logger.InfoContext(ctx, "Vote extended successfully", "poll_id", pollResp.PollID, "end_time", pollResp.EndTime)
+
+	return pollResp, nil
+}
+
+// EndVote ends an active vote immediately (proxies to ITX POST /voting/poll/{poll_id}/end).
+// Ending an already-ended vote is an idempotent success. A disabled vote is rejected with a
+// conflict error before ITX is called, because ITX reports it as a 400.
+func (s *VoteService) EndVote(ctx context.Context, voteID string) (*itx.PollResponse, error) {
+	principal, err := requirePrincipal(ctx)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Principal not found in context")
+		return nil, err
+	}
+
+	s.logger.InfoContext(ctx, "Ending vote", "principal", principal, "vote_id", voteID)
+
+	// Pre-check the current status so a disabled vote maps to 409 rather than ITX's 400
+	current, err := s.proxyClient.GetPoll(ctx, voteID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to get poll from ITX", "error", err)
+		return nil, err // Return domain error as-is
+	}
+	if current.Status == pollStatusDisabled {
+		s.logger.WarnContext(ctx, "Cannot end a vote that has not started", "vote_id", voteID)
+		return nil, domain.NewConflictError("vote has not started and cannot be ended")
+	}
+
+	// Call ITX proxy
+	pollResp, err := s.proxyClient.EndPoll(ctx, voteID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to end poll in ITX", "error", err)
+		return nil, err // Return domain error as-is
+	}
+
+	// Map response fields from v1 to v2
+	if err := s.mapPollResponseV1ToV2(ctx, pollResp); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to map poll response IDs", "error", err)
+		return nil, err
+	}
+
+	s.logger.InfoContext(ctx, "Vote ended successfully", "poll_id", pollResp.PollID, "status", pollResp.Status)
 
 	return pollResp, nil
 }

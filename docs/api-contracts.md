@@ -759,6 +759,60 @@ x-scope: manage:voting
 
 ---
 
+## POST /votes/{vote_uid}/end (End Vote)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `POST /votes/{vote_uid}/end`
+
+**Required permission**: `writer` on `vote:{vote_uid}`
+
+**Headers**:
+
+```http
+Authorization: Bearer <heimdall-jwt-token>
+```
+
+**Path Parameters**:
+
+- `vote_uid` (string, UUID): The vote identifier
+
+**Request Body**: None (there is no `reason` field; ITX records no reason for an early end)
+
+**Response** (200 OK): Same structure as `GET /votes/{vote_uid}`. For an active vote the result has `status: "ended"`, `early_end_time` set to the moment the vote was ended, and the original `end_time` preserved.
+
+**Behavior**:
+
+| Current vote state | Result |
+|---|---|
+| `active` | Ended: `status: "ended"`, `early_end_time` stamped, `end_time` preserved |
+| `ended` | `200 OK` with the current state (idempotent no-op) |
+| `disabled` | `409 Conflict` — the service checks the vote first and never calls ITX |
+| `active` but already past its scheduled `end_time` | `400 Bad Request` passed through from ITX (`poll is already past its scheduled end time`) |
+
+Extending an ended vote reactivates it and clears `early_end_time` (see the `extend` section above). Status changes flow through the same NATS KV eventing path as any other status change.
+
+---
+
+### ITX Service API (Underlying)
+
+**Endpoint**: `POST /v2/voting/poll/{poll_id}/end`
+
+**Headers**:
+
+```http
+Authorization: Bearer <oauth2-m2m-token>
+x-scope: manage:voting
+```
+
+**Request Body**: None
+
+**Response** (200 OK): Same structure as ITX `GetPoll` response (see GET above).
+
+**Errors**: ITX returns `400` for a disabled poll (`poll has not started`) and for an active poll past its `end_time`, `409` when a concurrent extend wins the race, and `404` when the poll does not exist.
+
+---
+
 ## PUT /votes/{vote_uid}/enable (Enable Vote)
 
 ### LFXv2 Proxy API

@@ -352,6 +352,49 @@ func (c *Client) ExtendPoll(ctx context.Context, pollID string, req *itx.ExtendP
 	return &result, nil
 }
 
+// EndPoll ends an active poll immediately in ITX. ITX returns 200 with the poll for an
+// already-ended poll, so the call is idempotent.
+func (c *Client) EndPoll(ctx context.Context, pollID string) (*itx.PollResponse, error) {
+	// Create HTTP request (no body)
+	url := fmt.Sprintf("%sv2/voting/poll/%s/end", c.config.BaseURL, pollID)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
+	if err != nil {
+		return nil, domain.NewInternalError("failed to create request", err)
+	}
+
+	// Set headers (Authorization header is automatically set by OAuth2 transport)
+	httpReq.Header.Set("Accept", "application/json")
+	httpReq.Header.Set("x-scope", "manage:voting")
+
+	// Execute request
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, domain.NewUnavailableError("ITX service request failed", err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	// Read response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, domain.NewInternalError("failed to read response", err)
+	}
+
+	// Handle non-2xx status codes
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, c.mapHTTPError(resp.StatusCode, respBody)
+	}
+
+	// Parse response
+	var result itx.PollResponse
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, domain.NewInternalError("failed to parse response", err)
+	}
+
+	return &result, nil
+}
+
 // EnablePoll enables a poll for voting in ITX
 func (c *Client) EnablePoll(ctx context.Context, pollID string) error {
 	// Create HTTP request

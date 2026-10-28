@@ -37,6 +37,11 @@ func ExtendVoteVotePath(uid string) string {
 	return fmt.Sprintf("/votes/%v/extend", uid)
 }
 
+// EndVoteVotePath returns the URL path to the vote service end_vote HTTP endpoint.
+func EndVoteVotePath(uid string) string {
+	return fmt.Sprintf("/votes/%v/end", uid)
+}
+
 // EnableVoteVotePath returns the URL path to the vote service enable_vote HTTP endpoint.
 func EnableVoteVotePath(uid string) string {
 	return fmt.Sprintf("/votes/%v/enable", uid)
