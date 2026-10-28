@@ -270,7 +270,7 @@ func (r *ballotPollReader) GetPoll(_ context.Context, pollID string) (*itx.PollR
 func TestGetBallotByLink_ReturnsVoteAndBallotFromToken(t *testing.T) {
 	for _, pseudo := range []bool{false, true} {
 		votes := &ballotVoteClient{ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: "responded"}}
-		polls := &ballotPollReader{poll: &itx.PollResponse{PollID: "vote-1", PseudoAnonymity: pseudo}}
+		polls := &ballotPollReader{poll: &itx.PollResponse{PollID: "vote-1", PseudoAnonymity: pseudo, PseudoAnonymityKnown: true}}
 		svc := NewVoteResponseService(nil, votes, identityIDMapper{}, discardLogger(),
 			WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(polls))
 
@@ -369,5 +369,20 @@ func TestGetBallotByLink_Errors(t *testing.T) {
 				t.Error("ITX must not be called")
 			}
 		})
+	}
+}
+
+func TestGetBallotByLink_UnknownPseudoAnonymityFailsClosed(t *testing.T) {
+	votes := &ballotVoteClient{ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: "responded"}}
+	polls := &ballotPollReader{poll: &itx.PollResponse{PollID: "vote-1", PseudoAnonymity: false, PseudoAnonymityKnown: false}}
+	svc := NewVoteResponseService(nil, votes, identityIDMapper{}, discardLogger(),
+		WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(polls))
+
+	got, err := svc.GetBallotByLink(context.Background(), "tok:vote-1:ballot-1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got.IncludeBallotContents {
+		t.Error("ballot contents must not be returned when pseudo_anonymity is unknown")
 	}
 }

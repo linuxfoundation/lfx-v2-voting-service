@@ -275,9 +275,11 @@ func (s *VoteResponseService) GetBallotByLink(ctx context.Context, token string)
 	}
 
 	return &VoteLinkBallot{
-		Poll:                  poll,
-		Ballot:                ballot,
-		IncludeBallotContents: !poll.PseudoAnonymity,
+		Poll:   poll,
+		Ballot: ballot,
+		// Fail closed: ballot contents only when ITX explicitly said the vote is not
+		// pseudo-anonymous; a missing or null flag is treated as pseudo-anonymous.
+		IncludeBallotContents: poll.PseudoAnonymityKnown && !poll.PseudoAnonymity,
 	}, nil
 }
 

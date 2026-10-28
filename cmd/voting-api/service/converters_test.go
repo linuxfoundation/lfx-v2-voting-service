@@ -339,7 +339,7 @@ func voteLinkBallotFixture(pseudo bool, status string) *service.VoteLinkBallot {
 			PollID: "vote-1", Name: "TSC election", Description: "Pick two", Status: "active",
 			EndTime: "2026-12-01T00:00:00Z", ProjectID: "a0941000002wBz4AAE", CommitteeID: "c1",
 			CommitteeName: "TSC", TotalVotingRequestInvitations: 9, NumResponseReceived: 4,
-			PseudoAnonymity: pseudo, PollType: "generic", AllowAbstain: true,
+			PseudoAnonymity: pseudo, PseudoAnonymityKnown: true, PollType: "generic", AllowAbstain: true,
 			PollQuestions: []itx.PollQuestionOutput{{QuestionID: "q1", Prompt: "Who?", Type: "single_choice",
 				Choices: []itx.PollChoiceOutput{{ChoiceID: "c-a", ChoiceText: "Alice"}}}},
 		},

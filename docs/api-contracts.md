@@ -1371,7 +1371,7 @@ The ballot is identified **only** by the token. The body has no `vote_response_u
 }
 ```
 
-- `ballot.abstained`, `ballot.poll_answers` and `ballot.comment_responses` are present only after voting, and never on pseudo-anonymous votes.
+- `ballot.abstained`, `ballot.poll_answers` and `ballot.comment_responses` are present only after voting, and never on pseudo-anonymous votes. If ITX omits `pseudo_anonymity` or returns `null`, the vote is treated (and reported) as pseudo-anonymous.
 - Optional vote fields (`end_time_timezone`, `early_end_time`, `num_winners`, `poll_comment_prompts`) follow the same rules as `GET /votes/{vote_uid}`.
 
 **Errors**: 404 `invalid voting link` (bad token, or the ballot isn't part of the token's vote), 404 from ITX (deleted vote or ballot), 503 (not configured or ITX unavailable).

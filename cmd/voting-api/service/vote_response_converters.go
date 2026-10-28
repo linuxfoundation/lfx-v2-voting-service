@@ -276,13 +276,15 @@ func convertCommentResponsesToResult(comments []itx.CommentResponse) []*votesvc.
 func ConvertVoteLinkBallotToResult(b *service.VoteLinkBallot) *votesvc.VoteLinkBallotResult {
 	poll := b.Poll
 	result := &votesvc.VoteLinkBallotResult{
-		VoteUID:            poll.PollID,
-		Name:               poll.Name,
-		Description:        poll.Description,
-		Status:             poll.Status,
-		PollType:           poll.PollType,
-		AllowAbstain:       utils.BoolPtr(poll.AllowAbstain),
-		PseudoAnonymity:    poll.PseudoAnonymity,
+		VoteUID:      poll.PollID,
+		Name:         poll.Name,
+		Description:  poll.Description,
+		Status:       poll.Status,
+		PollType:     poll.PollType,
+		AllowAbstain: utils.BoolPtr(poll.AllowAbstain),
+		// An unknown flag is reported as pseudo-anonymous, matching the service's fail-closed
+		// handling of ballot contents.
+		PseudoAnonymity:    poll.PseudoAnonymity || !poll.PseudoAnonymityKnown,
 		PollQuestions:      convertPollQuestionsToResult(poll.PollQuestions),
 		PollCommentPrompts: convertPollCommentPromptsToResult(poll.PollCommentPrompts),
 		Ballot: &votesvc.VoteLinkBallot{

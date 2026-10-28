@@ -262,8 +262,18 @@ func TestVoteLinkBallotContract(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for _, pseudo := range []bool{false, true} {
-		t.Run(map[bool]string{false: "regular vote", true: "pseudo-anonymous vote"}[pseudo], func(t *testing.T) {
+	cases := []struct {
+		name        string
+		pseudoField string // JSON fragment for pseudo_anonymity, "" = omitted
+		wantAnswers bool
+	}{
+		{name: "regular vote", pseudoField: `"pseudo_anonymity":false,`, wantAnswers: true},
+		{name: "pseudo-anonymous vote", pseudoField: `"pseudo_anonymity":true,`},
+		{name: "pseudo_anonymity missing fails closed", pseudoField: ``},
+		{name: "pseudo_anonymity null fails closed", pseudoField: `"pseudo_anonymity":null,`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
 			var paths []string
 			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				paths = append(paths, r.Method+" "+r.URL.Path)
@@ -274,7 +284,7 @@ func TestVoteLinkBallotContract(t *testing.T) {
 						`"poll_answers":[{"question_id":"q1","prompt":"Who?","type":"single_choice","user_choice":[{"choice_id":"c-a","choice_text":"Alice"}]}],"comment_responses":[]}`)
 				case "/v2/voting/poll/" + linkVoteUID:
 					_, _ = io.WriteString(w, `{"poll_id":"`+linkVoteUID+`","name":"TSC election","description":"Pick one","status":"active","end_time":"2030-01-01T00:00:00Z",`+
-						`"project_id":"a0941000002wBz4AAE","committee_id":"c1","total_voting_request_invitations":9,"num_response_received":4,"pseudo_anonymity":`+strconv.FormatBool(pseudo)+`,`+
+						`"project_id":"a0941000002wBz4AAE","committee_id":"c1","total_voting_request_invitations":9,"num_response_received":4,`+tc.pseudoField+
 						`"allow_abstain":true,"poll_type":"generic","poll_questions":[{"question_id":"q1","prompt":"Who?","type":"single_choice","choices":[{"choice_id":"c-a","choice_text":"Alice"}]}]}`)
 				default:
 					w.WriteHeader(http.StatusNotFound)
@@ -335,8 +345,11 @@ func TestVoteLinkBallotContract(t *testing.T) {
 				t.Errorf("already_voted = %s", ballot["already_voted"])
 			}
 			_, hasAnswers := ballot["poll_answers"]
-			if hasAnswers == pseudo {
-				t.Errorf("poll_answers present = %v on pseudo=%v: %s", hasAnswers, pseudo, body["ballot"])
+			if hasAnswers != tc.wantAnswers {
+				t.Errorf("poll_answers present = %v, want %v: %s", hasAnswers, tc.wantAnswers, body["ballot"])
+			}
+			if wantPseudo := strconv.FormatBool(!tc.wantAnswers); string(body["pseudo_anonymity"]) != wantPseudo {
+				t.Errorf("pseudo_anonymity = %s, want %s", body["pseudo_anonymity"], wantPseudo)
 			}
 		})
 	}
