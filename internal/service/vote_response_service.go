@@ -19,6 +19,18 @@ type VoteResponseService struct {
 	proxyClient domain.VoteResponseClient
 	idMapper    domain.IDMapper
 	logger      *slog.Logger
+	linkSigner  domain.VoteLinkSigner
+}
+
+// VoteResponseServiceOption configures optional VoteResponseService behavior.
+type VoteResponseServiceOption func(*VoteResponseService)
+
+// WithVoteLinkVerifier enables the personalized vote link endpoints, verifying their
+// tokens with signer. Without it those endpoints return 503.
+func WithVoteLinkVerifier(signer domain.VoteLinkSigner) VoteResponseServiceOption {
+	return func(s *VoteResponseService) {
+		s.linkSigner = signer
+	}
 }
 
 // NewVoteResponseService creates a new vote response service
@@ -27,13 +39,18 @@ func NewVoteResponseService(
 	proxyClient domain.VoteResponseClient,
 	idMapper domain.IDMapper,
 	logger *slog.Logger,
+	opts ...VoteResponseServiceOption,
 ) *VoteResponseService {
-	return &VoteResponseService{
+	s := &VoteResponseService{
 		jwtAuth:     jwtAuth,
 		proxyClient: proxyClient,
 		idMapper:    idMapper,
 		logger:      logger,
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 // JWTAuth implements the authorization logic for JWT tokens
@@ -65,6 +82,33 @@ func (s *VoteResponseService) CreateVoteResponse(ctx context.Context, req *Creat
 		"abstain", req.Abstain,
 	)
 
+	return s.submitVoteResponse(ctx, req)
+}
+
+// CreateVoteResponseByLink submits a vote response authorized by a personalized vote link
+// token instead of the caller's identity. The ballot is taken from the verified token;
+// ITX rejects the submission if the vote has ended, the voter was removed, or the ballot
+// was already submitted.
+func (s *VoteResponseService) CreateVoteResponseByLink(ctx context.Context, token string, req *CreateVoteResponseRequest) error {
+	claims, err := s.verifyVoteLink(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	// abstain is not logged: next to the ballot ID it would reveal the voter's choice,
+	// including on pseudo-anonymous votes.
+	s.logger.InfoContext(ctx, "Creating vote response by link",
+		"vote_uid", claims.VoteUID,
+		"vote_id", claims.VoteResponseUID,
+		"key_id", claims.KeyID,
+	)
+
+	req.VoteID = claims.VoteResponseUID
+	return s.submitVoteResponse(ctx, req)
+}
+
+// submitVoteResponse sends a new ballot to ITX for req.VoteID.
+func (s *VoteResponseService) submitVoteResponse(ctx context.Context, req *CreateVoteResponseRequest) error {
 	// Build proxy request
 	proxyReq := &itx.CreateVoteRequest{
 		VoteID:          req.VoteID,
@@ -101,7 +145,7 @@ func (s *VoteResponseService) CreateVoteResponse(ctx context.Context, req *Creat
 	}
 
 	// Call ITX proxy
-	err = s.proxyClient.CreateVote(ctx, proxyReq)
+	err := s.proxyClient.CreateVote(ctx, proxyReq)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create vote response in ITX", "error", err)
 		return err // Return domain error as-is
@@ -154,6 +198,45 @@ func (s *VoteResponseService) UpdateVoteResponse(ctx context.Context, voteID str
 		"abstain", req.Abstain,
 	)
 
+	return s.applyVoteResponseUpdate(ctx, voteID, req)
+}
+
+// UpdateVoteResponseByLink updates a vote response authorized by a personalized vote link
+// token instead of the caller's identity. The ballot is taken from the verified token;
+// ITX rejects the update if the vote has ended, the voter was removed, or no ballot has
+// been submitted yet.
+func (s *VoteResponseService) UpdateVoteResponseByLink(ctx context.Context, token string, req *UpdateVoteResponseRequest) error {
+	claims, err := s.verifyVoteLink(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	s.logger.InfoContext(ctx, "Updating vote response by link",
+		"vote_uid", claims.VoteUID,
+		"vote_id", claims.VoteResponseUID,
+		"key_id", claims.KeyID,
+	)
+
+	return s.applyVoteResponseUpdate(ctx, claims.VoteResponseUID, req)
+}
+
+// verifyVoteLink checks a personalized vote link token. Every invalid token yields the
+// same 404 so callers cannot learn which check failed or whether a ballot exists.
+func (s *VoteResponseService) verifyVoteLink(ctx context.Context, token string) (*domain.VoteLinkClaims, error) {
+	if s.linkSigner == nil {
+		s.logger.WarnContext(ctx, "Vote link request received but personalized vote links are not configured")
+		return nil, domain.NewUnavailableError("personalized vote links are not configured")
+	}
+	claims, err := s.linkSigner.Verify(token)
+	if err != nil {
+		s.logger.WarnContext(ctx, "Rejected invalid vote link token")
+		return nil, domain.NewNotFoundError("invalid voting link")
+	}
+	return claims, nil
+}
+
+// applyVoteResponseUpdate sends an updated ballot to ITX for voteID.
+func (s *VoteResponseService) applyVoteResponseUpdate(ctx context.Context, voteID string, req *UpdateVoteResponseRequest) error {
 	// Build proxy request
 	proxyReq := &itx.UpdateVoteRequest{
 		UserVoteContent: make([]itx.PollAnswerInput, len(req.UserVoteContent)),
@@ -192,7 +275,7 @@ func (s *VoteResponseService) UpdateVoteResponse(ctx context.Context, voteID str
 	}
 
 	// Call ITX proxy
-	err = s.proxyClient.UpdateVote(ctx, voteID, proxyReq)
+	err := s.proxyClient.UpdateVote(ctx, voteID, proxyReq)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update vote response in ITX", "error", err)
 		return err // Return domain error as-is

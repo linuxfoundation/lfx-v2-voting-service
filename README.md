@@ -128,6 +128,14 @@ See [Event Processing Documentation](docs/event-processing.md) for details.
 
 See [LFID Invite Flow](docs/lfid-invites.md) for the full design, NATS subjects, KV markers, and operational notes.
 
+### Personalized Vote Links
+
+- `VOTE_LINK_SIGNING_KEYS` - HMAC signing keys as `kid1:base64key,kid2:base64key` (each at least 32 bytes). Unset disables the feature; set but invalid fails startup.
+- `VOTE_LINK_ACTIVE_KID` - Optional signing key ID override; defaults to the first key listed in `VOTE_LINK_SIGNING_KEYS`.
+- Links use `LFX_SELF_SERVE_BASE_URL` (above) as their base.
+
+See [Personalized Vote Links](docs/vote-links.md) for the token format, key rotation, and the ITX dependency.
+
 ### Local Infrastructure (NATS + Heimdall)
 
 The service depends on NATS (for ID mapping and event processing) and Heimdall (for JWT validation). The easiest way to run both locally is with the [lfx-platform Helm chart](https://github.com/linuxfoundation/lfx-v2-helm/tree/main/charts/lfx-platform):
@@ -298,7 +306,7 @@ The service provides the following endpoints:
 - `DELETE /votes/{vote_uid}` - Delete a vote/poll (only when status is "disabled")
 - `POST /votes/{vote_uid}/extend` - Extend a vote/poll end time
 - `POST /votes/{vote_uid}/enable` - Enable a vote/poll for voting
-- `POST /votes/{vote_uid}/bulk_resend` - Bulk resend vote emails to recipients
+- `POST /votes/{vote_uid}/bulk_resend` - Bulk resend vote emails to recipients (optional `personalized_links` for login-free voting)
 - `GET /votes/{vote_uid}/results` - Get aggregated vote results
 
 #### Vote Responses (Ballot Submissions)
@@ -307,6 +315,13 @@ The service provides the following endpoints:
 - `GET /vote_responses/{vote_response_uid}` - Get vote response details
 - `PUT /vote_responses/{vote_response_uid}` - Update a vote response
 - `POST /vote_responses/{vote_response_uid}/resend` - Resend vote email
+
+#### Personalized Vote Links (no login; authorized by the link's signed token)
+
+- `POST /vote_links/responses` - Submit a vote response by link
+- `PUT /vote_links/responses` - Update a vote response by link
+
+See [Personalized Vote Links](docs/vote-links.md).
 
 For detailed request/response schemas, authentication requirements, and examples, refer to the generated OpenAPI specification or the Goa design files.
 

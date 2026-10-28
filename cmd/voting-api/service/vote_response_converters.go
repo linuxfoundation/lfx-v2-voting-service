@@ -19,44 +19,21 @@ import (
 // before they can cause a nil dereference.
 func ConvertCreateVoteResponsePayloadToDomain(payload *votesvc.CreateVoteResponsePayload) (*service.CreateVoteResponseRequest, error) {
 	req := &service.CreateVoteResponseRequest{
-		VoteID:          payload.VoteResponseUID,
-		UserVoteContent: make([]service.VoteAnswerRequest, 0),
-		Abstain:         payload.Abstain,
+		VoteID:  payload.VoteResponseUID,
+		Abstain: payload.Abstain,
 	}
 
-	if payload.UserVoteContent != nil {
-		req.UserVoteContent = make([]service.VoteAnswerRequest, len(payload.UserVoteContent))
-		for i, answer := range payload.UserVoteContent {
-			req.UserVoteContent[i] = service.VoteAnswerRequest{
-				QuestionID: answer.QuestionID,
-				ChoiceIDs:  answer.ChoiceIds,
-			}
-
-			if answer.RankedChoices != nil {
-				req.UserVoteContent[i].RankedChoices = make([]service.RankedChoiceRequest, len(answer.RankedChoices))
-				for j, rc := range answer.RankedChoices {
-					req.UserVoteContent[i].RankedChoices[j] = service.RankedChoiceRequest{
-						ChoiceID:   rc.ChoiceID,
-						ChoiceRank: rc.ChoiceRank,
-					}
-				}
-			}
-		}
+	answers, err := convertVoteAnswers(payload.UserVoteContent)
+	if err != nil {
+		return nil, err
 	}
+	req.UserVoteContent = answers
 
-	// Convert comment responses
-	if payload.CommentResponses != nil {
-		req.CommentResponses = make([]service.CommentResponseRequest, len(payload.CommentResponses))
-		for i, c := range payload.CommentResponses {
-			if c == nil {
-				return nil, domain.NewValidationError(fmt.Sprintf("comment_responses[%d] must not be null", i))
-			}
-			req.CommentResponses[i] = service.CommentResponseRequest{
-				PromptID:    c.PromptID,
-				CommentText: c.CommentText,
-			}
-		}
+	comments, err := convertCommentResponses(payload.CommentResponses)
+	if err != nil {
+		return nil, err
 	}
+	req.CommentResponses = comments
 
 	return req, nil
 }
@@ -67,48 +44,120 @@ func ConvertCreateVoteResponsePayloadToDomain(payload *votesvc.CreateVoteRespons
 // before they can cause a nil dereference.
 func ConvertUpdateVoteResponsePayloadToDomain(payload *votesvc.UpdateVoteResponsePayload) (*service.UpdateVoteResponseRequest, error) {
 	req := &service.UpdateVoteResponseRequest{
-		UserVoteContent: make([]service.VoteAnswerRequest, 0),
-		Abstain:         payload.Abstain,
+		Abstain: payload.Abstain,
 	}
 
-	if payload.UserVoteContent != nil {
-		req.UserVoteContent = make([]service.VoteAnswerRequest, len(payload.UserVoteContent))
-		for i, answer := range payload.UserVoteContent {
-			req.UserVoteContent[i] = service.VoteAnswerRequest{
-				QuestionID: answer.QuestionID,
-				ChoiceIDs:  answer.ChoiceIds,
-			}
-
-			if answer.RankedChoices != nil {
-				req.UserVoteContent[i].RankedChoices = make([]service.RankedChoiceRequest, len(answer.RankedChoices))
-				for j, rc := range answer.RankedChoices {
-					req.UserVoteContent[i].RankedChoices[j] = service.RankedChoiceRequest{
-						ChoiceID:   rc.ChoiceID,
-						ChoiceRank: rc.ChoiceRank,
-					}
-				}
-			}
-		}
+	answers, err := convertVoteAnswers(payload.UserVoteContent)
+	if err != nil {
+		return nil, err
 	}
+	req.UserVoteContent = answers
 
 	// Convert comment responses. A nil payload.CommentResponses means the field
 	// was omitted (preserve existing comments); a non-nil value (including an
 	// empty slice) means it was included (validate and replace them).
 	if payload.CommentResponses != nil {
-		converted := make([]service.CommentResponseRequest, len(payload.CommentResponses))
-		for i, c := range payload.CommentResponses {
-			if c == nil {
-				return nil, domain.NewValidationError(fmt.Sprintf("comment_responses[%d] must not be null", i))
-			}
-			converted[i] = service.CommentResponseRequest{
-				PromptID:    c.PromptID,
-				CommentText: c.CommentText,
-			}
+		converted, err := convertCommentResponses(payload.CommentResponses)
+		if err != nil {
+			return nil, err
 		}
 		req.CommentResponses = &converted
 	}
 
 	return req, nil
+}
+
+// ConvertCreateVoteResponseByLinkPayloadToDomain converts the vote-link submit payload to a
+// service request. VoteID is left empty: the service sets it from the verified token so the
+// ballot can only come from the link, never from the request body.
+func ConvertCreateVoteResponseByLinkPayloadToDomain(payload *votesvc.CreateVoteResponseByLinkPayload) (*service.CreateVoteResponseRequest, error) {
+	answers, err := convertVoteAnswers(payload.UserVoteContent)
+	if err != nil {
+		return nil, err
+	}
+	comments, err := convertCommentResponses(payload.CommentResponses)
+	if err != nil {
+		return nil, err
+	}
+	return &service.CreateVoteResponseRequest{
+		UserVoteContent:  answers,
+		Abstain:          payload.Abstain,
+		CommentResponses: comments,
+	}, nil
+}
+
+// ConvertUpdateVoteResponseByLinkPayloadToDomain converts the vote-link update payload to a
+// service request, keeping the omitted-vs-empty comment_responses distinction of the
+// authenticated update.
+func ConvertUpdateVoteResponseByLinkPayloadToDomain(payload *votesvc.UpdateVoteResponseByLinkPayload) (*service.UpdateVoteResponseRequest, error) {
+	answers, err := convertVoteAnswers(payload.UserVoteContent)
+	if err != nil {
+		return nil, err
+	}
+	req := &service.UpdateVoteResponseRequest{
+		UserVoteContent: answers,
+		Abstain:         payload.Abstain,
+	}
+	if payload.CommentResponses != nil {
+		converted, err := convertCommentResponses(payload.CommentResponses)
+		if err != nil {
+			return nil, err
+		}
+		req.CommentResponses = &converted
+	}
+	return req, nil
+}
+
+// convertVoteAnswers converts Goa vote answers to service requests. It returns a validation
+// error (400) for null answers or null ranked choices — the generated validator skips nil
+// array elements, so they are rejected here before they can cause a nil dereference. A nil
+// input yields an empty, non-nil slice.
+func convertVoteAnswers(answers []*votesvc.VoteAnswerInput) ([]service.VoteAnswerRequest, error) {
+	converted := make([]service.VoteAnswerRequest, len(answers))
+	for i, answer := range answers {
+		if answer == nil {
+			return nil, domain.NewValidationError(fmt.Sprintf("user_vote_content[%d] must not be null", i))
+		}
+		converted[i] = service.VoteAnswerRequest{
+			QuestionID: answer.QuestionID,
+			ChoiceIDs:  answer.ChoiceIds,
+		}
+
+		if answer.RankedChoices != nil {
+			converted[i].RankedChoices = make([]service.RankedChoiceRequest, len(answer.RankedChoices))
+			for j, rc := range answer.RankedChoices {
+				if rc == nil {
+					return nil, domain.NewValidationError(fmt.Sprintf("user_vote_content[%d].ranked_choices[%d] must not be null", i, j))
+				}
+				converted[i].RankedChoices[j] = service.RankedChoiceRequest{
+					ChoiceID:   rc.ChoiceID,
+					ChoiceRank: rc.ChoiceRank,
+				}
+			}
+		}
+	}
+	return converted, nil
+}
+
+// convertCommentResponses converts Goa comment responses to service requests. It returns a
+// validation error (400) for null entries — the generated validator skips nil array
+// elements, so they are rejected here before they can cause a nil dereference. A nil input
+// yields a nil slice.
+func convertCommentResponses(comments []*votesvc.CommentResponse) ([]service.CommentResponseRequest, error) {
+	if comments == nil {
+		return nil, nil
+	}
+	converted := make([]service.CommentResponseRequest, len(comments))
+	for i, c := range comments {
+		if c == nil {
+			return nil, domain.NewValidationError(fmt.Sprintf("comment_responses[%d] must not be null", i))
+		}
+		converted[i] = service.CommentResponseRequest{
+			PromptID:    c.PromptID,
+			CommentText: c.CommentText,
+		}
+	}
+	return converted, nil
 }
 
 // ConvertVoteResponseToResult converts ITX response to Goa result

@@ -108,8 +108,12 @@ type ExtendVoteRequestBody struct {
 // BulkResendVoteRequestBody is the type of the "vote" service
 // "bulk_resend_vote" endpoint HTTP request body.
 type BulkResendVoteRequestBody struct {
-	// List of recipient IDs to resend vote email to
+	// Vote response (ballot) IDs to resend the vote email to
 	RecipientIds []string `form:"recipient_ids" json:"recipient_ids" xml:"recipient_ids"`
+	// When true, each recipient's email links to a personal HMAC-signed URL that
+	// lets them submit or update their vote response without logging in. When
+	// false or omitted, recipients receive the standard vote link.
+	PersonalizedLinks bool `form:"personalized_links" json:"personalized_links" xml:"personalized_links"`
 }
 
 // CreateVoteResponseRequestBody is the type of the "vote" service
@@ -123,30 +127,70 @@ type CreateVoteResponseRequestBody struct {
 	UserVoteContent []*VoteAnswerInputRequestBody `form:"user_vote_content,omitempty" json:"user_vote_content,omitempty" xml:"user_vote_content,omitempty"`
 	// Whether to abstain from voting
 	Abstain bool `form:"abstain" json:"abstain" xml:"abstain"`
-	// The voter's free-text responses to the poll's comment prompts. Optional;
-	// only meaningful if the poll has poll_comment_prompts. Allowed regardless of
-	// whether abstain is true — an abstaining voter skips the ballot but may still
-	// comment. Each prompt_id must match one of the poll's comment prompts and
-	// must not repeat; each comment_text is required (cannot be empty after
-	// trimming) and is rejected with a 400 if longer than 5000 characters.
+	// The voter's free-text responses to the poll's comment prompts. Allowed
+	// regardless of whether abstain is true — an abstaining voter skips the ballot
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Optional; only meaningful if the poll has poll_comment_prompts.
 	CommentResponses []*CommentResponseRequestBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
 }
 
 // UpdateVoteResponseRequestBody is the type of the "vote" service
 // "update_vote_response" endpoint HTTP request body.
 type UpdateVoteResponseRequestBody struct {
-	// Updated vote answers
+	// Vote answers
 	UserVoteContent []*VoteAnswerInputRequestBody `form:"user_vote_content,omitempty" json:"user_vote_content,omitempty" xml:"user_vote_content,omitempty"`
 	// Whether to abstain from voting
 	Abstain bool `form:"abstain" json:"abstain" xml:"abstain"`
 	// The voter's free-text responses to the poll's comment prompts. Allowed
 	// regardless of whether abstain is true — an abstaining voter skips the ballot
-	// but may still comment. Otherwise, omitting this field entirely preserves the
-	// vote's existing comments untouched; including it (even as an empty array)
-	// validates and replaces them. Each prompt_id must match one of the poll's
-	// comment prompts and must not repeat; each comment_text is required (cannot
-	// be empty after trimming) and is rejected with a 400 if longer than 5000
-	// characters.
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Omitting this field entirely preserves the vote's existing comments
+	// untouched; including it (even as an empty array) validates and replaces them.
+	CommentResponses []*CommentResponseRequestBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
+}
+
+// CreateVoteResponseByLinkRequestBody is the type of the "vote" service
+// "create_vote_response_by_link" endpoint HTTP request body.
+type CreateVoteResponseByLinkRequestBody struct {
+	// Signed token from the personalized vote link (the vote_token in the emailed
+	// URL's fragment). Identifies the ballot; treat it as a credential and never
+	// log it.
+	VoteToken string `form:"vote_token" json:"vote_token" xml:"vote_token"`
+	// Vote answers
+	UserVoteContent []*VoteAnswerInputRequestBody `form:"user_vote_content,omitempty" json:"user_vote_content,omitempty" xml:"user_vote_content,omitempty"`
+	// Whether to abstain from voting
+	Abstain bool `form:"abstain" json:"abstain" xml:"abstain"`
+	// The voter's free-text responses to the poll's comment prompts. Allowed
+	// regardless of whether abstain is true — an abstaining voter skips the ballot
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Optional; only meaningful if the poll has poll_comment_prompts.
+	CommentResponses []*CommentResponseRequestBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
+}
+
+// UpdateVoteResponseByLinkRequestBody is the type of the "vote" service
+// "update_vote_response_by_link" endpoint HTTP request body.
+type UpdateVoteResponseByLinkRequestBody struct {
+	// Signed token from the personalized vote link (the vote_token in the emailed
+	// URL's fragment). Identifies the ballot; treat it as a credential and never
+	// log it.
+	VoteToken string `form:"vote_token" json:"vote_token" xml:"vote_token"`
+	// Vote answers
+	UserVoteContent []*VoteAnswerInputRequestBody `form:"user_vote_content,omitempty" json:"user_vote_content,omitempty" xml:"user_vote_content,omitempty"`
+	// Whether to abstain from voting
+	Abstain bool `form:"abstain" json:"abstain" xml:"abstain"`
+	// The voter's free-text responses to the poll's comment prompts. Allowed
+	// regardless of whether abstain is true — an abstaining voter skips the ballot
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Omitting this field entirely preserves the vote's existing comments
+	// untouched; including it (even as an empty array) validates and replaces them.
 	CommentResponses []*CommentResponseRequestBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
 }
 
@@ -1080,6 +1124,146 @@ type UpdateVoteResponseUnauthorizedResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
+// CreateVoteResponseByLinkBadRequestResponseBody is the type of the "vote"
+// service "create_vote_response_by_link" endpoint HTTP response body for the
+// "BadRequest" error.
+type CreateVoteResponseByLinkBadRequestResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CreateVoteResponseByLinkConflictResponseBody is the type of the "vote"
+// service "create_vote_response_by_link" endpoint HTTP response body for the
+// "Conflict" error.
+type CreateVoteResponseByLinkConflictResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CreateVoteResponseByLinkForbiddenResponseBody is the type of the "vote"
+// service "create_vote_response_by_link" endpoint HTTP response body for the
+// "Forbidden" error.
+type CreateVoteResponseByLinkForbiddenResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CreateVoteResponseByLinkInternalServerErrorResponseBody is the type of the
+// "vote" service "create_vote_response_by_link" endpoint HTTP response body
+// for the "InternalServerError" error.
+type CreateVoteResponseByLinkInternalServerErrorResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CreateVoteResponseByLinkNotFoundResponseBody is the type of the "vote"
+// service "create_vote_response_by_link" endpoint HTTP response body for the
+// "NotFound" error.
+type CreateVoteResponseByLinkNotFoundResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CreateVoteResponseByLinkServiceUnavailableResponseBody is the type of the
+// "vote" service "create_vote_response_by_link" endpoint HTTP response body
+// for the "ServiceUnavailable" error.
+type CreateVoteResponseByLinkServiceUnavailableResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CreateVoteResponseByLinkUnauthorizedResponseBody is the type of the "vote"
+// service "create_vote_response_by_link" endpoint HTTP response body for the
+// "Unauthorized" error.
+type CreateVoteResponseByLinkUnauthorizedResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateVoteResponseByLinkBadRequestResponseBody is the type of the "vote"
+// service "update_vote_response_by_link" endpoint HTTP response body for the
+// "BadRequest" error.
+type UpdateVoteResponseByLinkBadRequestResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateVoteResponseByLinkConflictResponseBody is the type of the "vote"
+// service "update_vote_response_by_link" endpoint HTTP response body for the
+// "Conflict" error.
+type UpdateVoteResponseByLinkConflictResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateVoteResponseByLinkForbiddenResponseBody is the type of the "vote"
+// service "update_vote_response_by_link" endpoint HTTP response body for the
+// "Forbidden" error.
+type UpdateVoteResponseByLinkForbiddenResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateVoteResponseByLinkInternalServerErrorResponseBody is the type of the
+// "vote" service "update_vote_response_by_link" endpoint HTTP response body
+// for the "InternalServerError" error.
+type UpdateVoteResponseByLinkInternalServerErrorResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateVoteResponseByLinkNotFoundResponseBody is the type of the "vote"
+// service "update_vote_response_by_link" endpoint HTTP response body for the
+// "NotFound" error.
+type UpdateVoteResponseByLinkNotFoundResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateVoteResponseByLinkServiceUnavailableResponseBody is the type of the
+// "vote" service "update_vote_response_by_link" endpoint HTTP response body
+// for the "ServiceUnavailable" error.
+type UpdateVoteResponseByLinkServiceUnavailableResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateVoteResponseByLinkUnauthorizedResponseBody is the type of the "vote"
+// service "update_vote_response_by_link" endpoint HTTP response body for the
+// "Unauthorized" error.
+type UpdateVoteResponseByLinkUnauthorizedResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
 // ResendVoteResponseBadRequestResponseBody is the type of the "vote" service
 // "resend_vote_response" endpoint HTTP response body for the "BadRequest"
 // error.
@@ -1602,7 +1786,9 @@ func NewExtendVoteRequestBody(p *vote.ExtendVotePayload) *ExtendVoteRequestBody 
 // NewBulkResendVoteRequestBody builds the HTTP request body from the payload
 // of the "bulk_resend_vote" endpoint of the "vote" service.
 func NewBulkResendVoteRequestBody(p *vote.BulkResendVotePayload) *BulkResendVoteRequestBody {
-	body := &BulkResendVoteRequestBody{}
+	body := &BulkResendVoteRequestBody{
+		PersonalizedLinks: p.PersonalizedLinks,
+	}
 	if p.RecipientIds != nil {
 		body.RecipientIds = make([]string, len(p.RecipientIds))
 		for i, val := range p.RecipientIds {
@@ -1610,6 +1796,12 @@ func NewBulkResendVoteRequestBody(p *vote.BulkResendVotePayload) *BulkResendVote
 		}
 	} else {
 		body.RecipientIds = []string{}
+	}
+	{
+		var zero bool
+		if body.PersonalizedLinks == zero {
+			body.PersonalizedLinks = false
+		}
 	}
 	return body
 }
@@ -1650,6 +1842,66 @@ func NewCreateVoteResponseRequestBody(p *vote.CreateVoteResponsePayload) *Create
 func NewUpdateVoteResponseRequestBody(p *vote.UpdateVoteResponsePayload) *UpdateVoteResponseRequestBody {
 	body := &UpdateVoteResponseRequestBody{
 		Abstain: p.Abstain,
+	}
+	if p.UserVoteContent != nil {
+		body.UserVoteContent = make([]*VoteAnswerInputRequestBody, len(p.UserVoteContent))
+		for i, val := range p.UserVoteContent {
+			if val == nil {
+				body.UserVoteContent[i] = nil
+				continue
+			}
+			body.UserVoteContent[i] = marshalVoteVoteAnswerInputToVoteAnswerInputRequestBody(val)
+		}
+	}
+	if p.CommentResponses != nil {
+		body.CommentResponses = make([]*CommentResponseRequestBody, len(p.CommentResponses))
+		for i, val := range p.CommentResponses {
+			if val == nil {
+				body.CommentResponses[i] = nil
+				continue
+			}
+			body.CommentResponses[i] = marshalVoteCommentResponseToCommentResponseRequestBody(val)
+		}
+	}
+	return body
+}
+
+// NewCreateVoteResponseByLinkRequestBody builds the HTTP request body from the
+// payload of the "create_vote_response_by_link" endpoint of the "vote" service.
+func NewCreateVoteResponseByLinkRequestBody(p *vote.CreateVoteResponseByLinkPayload) *CreateVoteResponseByLinkRequestBody {
+	body := &CreateVoteResponseByLinkRequestBody{
+		VoteToken: p.VoteToken,
+		Abstain:   p.Abstain,
+	}
+	if p.UserVoteContent != nil {
+		body.UserVoteContent = make([]*VoteAnswerInputRequestBody, len(p.UserVoteContent))
+		for i, val := range p.UserVoteContent {
+			if val == nil {
+				body.UserVoteContent[i] = nil
+				continue
+			}
+			body.UserVoteContent[i] = marshalVoteVoteAnswerInputToVoteAnswerInputRequestBody(val)
+		}
+	}
+	if p.CommentResponses != nil {
+		body.CommentResponses = make([]*CommentResponseRequestBody, len(p.CommentResponses))
+		for i, val := range p.CommentResponses {
+			if val == nil {
+				body.CommentResponses[i] = nil
+				continue
+			}
+			body.CommentResponses[i] = marshalVoteCommentResponseToCommentResponseRequestBody(val)
+		}
+	}
+	return body
+}
+
+// NewUpdateVoteResponseByLinkRequestBody builds the HTTP request body from the
+// payload of the "update_vote_response_by_link" endpoint of the "vote" service.
+func NewUpdateVoteResponseByLinkRequestBody(p *vote.UpdateVoteResponseByLinkPayload) *UpdateVoteResponseByLinkRequestBody {
+	body := &UpdateVoteResponseByLinkRequestBody{
+		VoteToken: p.VoteToken,
+		Abstain:   p.Abstain,
 	}
 	if p.UserVoteContent != nil {
 		body.UserVoteContent = make([]*VoteAnswerInputRequestBody, len(p.UserVoteContent))
@@ -2731,6 +2983,160 @@ func NewUpdateVoteResponseServiceUnavailable(body *UpdateVoteResponseServiceUnav
 // NewUpdateVoteResponseUnauthorized builds a vote service update_vote_response
 // endpoint Unauthorized error.
 func NewUpdateVoteResponseUnauthorized(body *UpdateVoteResponseUnauthorizedResponseBody) *vote.UnauthorizedError {
+	v := &vote.UnauthorizedError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateVoteResponseByLinkBadRequest builds a vote service
+// create_vote_response_by_link endpoint BadRequest error.
+func NewCreateVoteResponseByLinkBadRequest(body *CreateVoteResponseByLinkBadRequestResponseBody) *vote.BadRequestError {
+	v := &vote.BadRequestError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateVoteResponseByLinkConflict builds a vote service
+// create_vote_response_by_link endpoint Conflict error.
+func NewCreateVoteResponseByLinkConflict(body *CreateVoteResponseByLinkConflictResponseBody) *vote.ConflictError {
+	v := &vote.ConflictError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateVoteResponseByLinkForbidden builds a vote service
+// create_vote_response_by_link endpoint Forbidden error.
+func NewCreateVoteResponseByLinkForbidden(body *CreateVoteResponseByLinkForbiddenResponseBody) *vote.ForbiddenError {
+	v := &vote.ForbiddenError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateVoteResponseByLinkInternalServerError builds a vote service
+// create_vote_response_by_link endpoint InternalServerError error.
+func NewCreateVoteResponseByLinkInternalServerError(body *CreateVoteResponseByLinkInternalServerErrorResponseBody) *vote.InternalServerError {
+	v := &vote.InternalServerError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateVoteResponseByLinkNotFound builds a vote service
+// create_vote_response_by_link endpoint NotFound error.
+func NewCreateVoteResponseByLinkNotFound(body *CreateVoteResponseByLinkNotFoundResponseBody) *vote.NotFoundError {
+	v := &vote.NotFoundError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateVoteResponseByLinkServiceUnavailable builds a vote service
+// create_vote_response_by_link endpoint ServiceUnavailable error.
+func NewCreateVoteResponseByLinkServiceUnavailable(body *CreateVoteResponseByLinkServiceUnavailableResponseBody) *vote.ServiceUnavailableError {
+	v := &vote.ServiceUnavailableError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateVoteResponseByLinkUnauthorized builds a vote service
+// create_vote_response_by_link endpoint Unauthorized error.
+func NewCreateVoteResponseByLinkUnauthorized(body *CreateVoteResponseByLinkUnauthorizedResponseBody) *vote.UnauthorizedError {
+	v := &vote.UnauthorizedError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateVoteResponseByLinkBadRequest builds a vote service
+// update_vote_response_by_link endpoint BadRequest error.
+func NewUpdateVoteResponseByLinkBadRequest(body *UpdateVoteResponseByLinkBadRequestResponseBody) *vote.BadRequestError {
+	v := &vote.BadRequestError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateVoteResponseByLinkConflict builds a vote service
+// update_vote_response_by_link endpoint Conflict error.
+func NewUpdateVoteResponseByLinkConflict(body *UpdateVoteResponseByLinkConflictResponseBody) *vote.ConflictError {
+	v := &vote.ConflictError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateVoteResponseByLinkForbidden builds a vote service
+// update_vote_response_by_link endpoint Forbidden error.
+func NewUpdateVoteResponseByLinkForbidden(body *UpdateVoteResponseByLinkForbiddenResponseBody) *vote.ForbiddenError {
+	v := &vote.ForbiddenError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateVoteResponseByLinkInternalServerError builds a vote service
+// update_vote_response_by_link endpoint InternalServerError error.
+func NewUpdateVoteResponseByLinkInternalServerError(body *UpdateVoteResponseByLinkInternalServerErrorResponseBody) *vote.InternalServerError {
+	v := &vote.InternalServerError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateVoteResponseByLinkNotFound builds a vote service
+// update_vote_response_by_link endpoint NotFound error.
+func NewUpdateVoteResponseByLinkNotFound(body *UpdateVoteResponseByLinkNotFoundResponseBody) *vote.NotFoundError {
+	v := &vote.NotFoundError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateVoteResponseByLinkServiceUnavailable builds a vote service
+// update_vote_response_by_link endpoint ServiceUnavailable error.
+func NewUpdateVoteResponseByLinkServiceUnavailable(body *UpdateVoteResponseByLinkServiceUnavailableResponseBody) *vote.ServiceUnavailableError {
+	v := &vote.ServiceUnavailableError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateVoteResponseByLinkUnauthorized builds a vote service
+// update_vote_response_by_link endpoint Unauthorized error.
+func NewUpdateVoteResponseByLinkUnauthorized(body *UpdateVoteResponseByLinkUnauthorizedResponseBody) *vote.UnauthorizedError {
 	v := &vote.UnauthorizedError{
 		Code:    *body.Code,
 		Message: *body.Message,
@@ -3951,6 +4357,180 @@ func ValidateUpdateVoteResponseServiceUnavailableResponseBody(body *UpdateVoteRe
 // ValidateUpdateVoteResponseUnauthorizedResponseBody runs the validations
 // defined on update_vote_response_Unauthorized_response_body
 func ValidateUpdateVoteResponseUnauthorizedResponseBody(body *UpdateVoteResponseUnauthorizedResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCreateVoteResponseByLinkBadRequestResponseBody runs the validations
+// defined on create_vote_response_by_link_BadRequest_response_body
+func ValidateCreateVoteResponseByLinkBadRequestResponseBody(body *CreateVoteResponseByLinkBadRequestResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCreateVoteResponseByLinkConflictResponseBody runs the validations
+// defined on create_vote_response_by_link_Conflict_response_body
+func ValidateCreateVoteResponseByLinkConflictResponseBody(body *CreateVoteResponseByLinkConflictResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCreateVoteResponseByLinkForbiddenResponseBody runs the validations
+// defined on create_vote_response_by_link_Forbidden_response_body
+func ValidateCreateVoteResponseByLinkForbiddenResponseBody(body *CreateVoteResponseByLinkForbiddenResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCreateVoteResponseByLinkInternalServerErrorResponseBody runs the
+// validations defined on
+// create_vote_response_by_link_InternalServerError_response_body
+func ValidateCreateVoteResponseByLinkInternalServerErrorResponseBody(body *CreateVoteResponseByLinkInternalServerErrorResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCreateVoteResponseByLinkNotFoundResponseBody runs the validations
+// defined on create_vote_response_by_link_NotFound_response_body
+func ValidateCreateVoteResponseByLinkNotFoundResponseBody(body *CreateVoteResponseByLinkNotFoundResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCreateVoteResponseByLinkServiceUnavailableResponseBody runs the
+// validations defined on
+// create_vote_response_by_link_ServiceUnavailable_response_body
+func ValidateCreateVoteResponseByLinkServiceUnavailableResponseBody(body *CreateVoteResponseByLinkServiceUnavailableResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCreateVoteResponseByLinkUnauthorizedResponseBody runs the
+// validations defined on
+// create_vote_response_by_link_Unauthorized_response_body
+func ValidateCreateVoteResponseByLinkUnauthorizedResponseBody(body *CreateVoteResponseByLinkUnauthorizedResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateVoteResponseByLinkBadRequestResponseBody runs the validations
+// defined on update_vote_response_by_link_BadRequest_response_body
+func ValidateUpdateVoteResponseByLinkBadRequestResponseBody(body *UpdateVoteResponseByLinkBadRequestResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateVoteResponseByLinkConflictResponseBody runs the validations
+// defined on update_vote_response_by_link_Conflict_response_body
+func ValidateUpdateVoteResponseByLinkConflictResponseBody(body *UpdateVoteResponseByLinkConflictResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateVoteResponseByLinkForbiddenResponseBody runs the validations
+// defined on update_vote_response_by_link_Forbidden_response_body
+func ValidateUpdateVoteResponseByLinkForbiddenResponseBody(body *UpdateVoteResponseByLinkForbiddenResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateVoteResponseByLinkInternalServerErrorResponseBody runs the
+// validations defined on
+// update_vote_response_by_link_InternalServerError_response_body
+func ValidateUpdateVoteResponseByLinkInternalServerErrorResponseBody(body *UpdateVoteResponseByLinkInternalServerErrorResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateVoteResponseByLinkNotFoundResponseBody runs the validations
+// defined on update_vote_response_by_link_NotFound_response_body
+func ValidateUpdateVoteResponseByLinkNotFoundResponseBody(body *UpdateVoteResponseByLinkNotFoundResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateVoteResponseByLinkServiceUnavailableResponseBody runs the
+// validations defined on
+// update_vote_response_by_link_ServiceUnavailable_response_body
+func ValidateUpdateVoteResponseByLinkServiceUnavailableResponseBody(body *UpdateVoteResponseByLinkServiceUnavailableResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateVoteResponseByLinkUnauthorizedResponseBody runs the
+// validations defined on
+// update_vote_response_by_link_Unauthorized_response_body
+func ValidateUpdateVoteResponseByLinkUnauthorizedResponseBody(body *UpdateVoteResponseByLinkUnauthorizedResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
 	}

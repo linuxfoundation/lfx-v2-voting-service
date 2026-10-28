@@ -67,6 +67,16 @@ func UpdateVoteResponseVotePath(voteResponseUID string) string {
 	return fmt.Sprintf("/vote_responses/%v", voteResponseUID)
 }
 
+// CreateVoteResponseByLinkVotePath returns the URL path to the vote service create_vote_response_by_link HTTP endpoint.
+func CreateVoteResponseByLinkVotePath() string {
+	return "/vote_links/responses"
+}
+
+// UpdateVoteResponseByLinkVotePath returns the URL path to the vote service update_vote_response_by_link HTTP endpoint.
+func UpdateVoteResponseByLinkVotePath() string {
+	return "/vote_links/responses"
+}
+
 // ResendVoteResponseVotePath returns the URL path to the vote service resend_vote_response HTTP endpoint.
 func ResendVoteResponseVotePath(voteResponseUID string) string {
 	return fmt.Sprintf("/vote_responses/%v/resend", voteResponseUID)

@@ -115,6 +115,19 @@ app:
     # Defaults to the environment-appropriate app URL derived from LFX_ENVIRONMENT.
     LFX_SELF_SERVE_BASE_URL:
       value: ""
+    # Personalized vote links (bulk_resend personalized_links=true). Format:
+    # "kid1:base64key,kid2:base64key" with keys of at least 32 bytes. When the secret key
+    # is absent the feature is disabled and the service starts normally.
+    VOTE_LINK_SIGNING_KEYS:
+      valueFrom:
+        secretKeyRef:
+          name: lfx-v2-voting-service
+          key: VOTE_LINK_SIGNING_KEYS
+          optional: true
+    # VOTE_LINK_ACTIVE_KID optionally overrides the signing key. Leave it empty: the first key
+    # listed in VOTE_LINK_SIGNING_KEYS signs, so rotation only changes the one Secret value.
+    VOTE_LINK_ACTIVE_KID:
+      value: ""
 
     # OpenTelemetry configuration
     OTEL_SERVICE_NAME:
