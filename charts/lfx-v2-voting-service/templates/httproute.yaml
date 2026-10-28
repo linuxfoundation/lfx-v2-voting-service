@@ -31,9 +31,6 @@ spec:
         value: /vote_responses/
     - path:
         type: PathPrefix
-        value: /vote_links/
-    - path:
-        type: PathPrefix
         value: /_voting/
     {{- if .Values.heimdall.enabled }}
     filters:
@@ -42,6 +39,42 @@ spec:
         group: traefik.io
         kind: Middleware
         name: heimdall-forward-body
+    {{- end }}
+    backendRefs:
+    - group: ''
+      kind: Service
+      name: lfx-v2-voting-service
+      port: {{ .Values.service.port }}
+      weight: 1
+  # Anonymous personalized vote-link endpoints. Kept on their own rule so they can be
+  # protected before any body handling: their Heimdall rules authorize on headers only
+  # (json_content_type + allow_all), so the body is not forwarded to Heimdall, and when the
+  # chart owns its middlewares the request body is capped at the gateway as well as in the
+  # service.
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /vote_links/
+    {{- if .Values.heimdall.enabled }}
+    filters:
+    {{- if .Values.heimdall.add_middleware }}
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: vote-links-body-limit
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: heimdall
+    {{- else }}
+    - type: ExtensionRef
+      extensionRef:
+        group: traefik.io
+        kind: Middleware
+        name: heimdall-forward-body
+    {{- end }}
     {{- end }}
     backendRefs:
     - group: ''
