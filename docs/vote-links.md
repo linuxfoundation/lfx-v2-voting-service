@@ -70,7 +70,7 @@ Both IDs come from the verified token. The service fetches the ballot first and 
 
 ## Authorization model
 
-The `/vote_links/responses` Heimdall rules use the `anonymous_authenticator` and `allow_all` on purpose. Heimdall still issues its JWT (principal `_anonymous`), so the request is proven to have come through the gateway. **The verified token is the only authorization.**
+The `/vote_links/` Heimdall rules (`POST /vote_links/ballot` and `POST`/`PUT /vote_links/responses`) use the `anonymous_authenticator` and `allow_all` on purpose. Heimdall still issues its JWT (principal `_anonymous`), so the request is proven to have come through the gateway. **The verified token is the only authorization.**
 
 The service enforces this as follows:
 - The ballot comes **only** from the token. The request body cannot name a ballot.

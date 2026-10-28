@@ -376,8 +376,19 @@ func TestConvertVoteLinkBallotToResult(t *testing.T) {
 
 	t.Run("not yet voted returns no contents", func(t *testing.T) {
 		b := ConvertVoteLinkBallotToResult(voteLinkBallotFixture(false, "awaiting_response")).Ballot
-		if b.AlreadyVoted || b.PollAnswers != nil || b.Abstained != nil {
+		if b.AlreadyVoted || b.PollAnswers != nil || b.Abstained != nil || b.CommentResponses != nil {
 			t.Errorf("unexpected ballot contents before voting: %+v", b)
+		}
+	})
+
+	t.Run("voter_removed is mapped", func(t *testing.T) {
+		fixture := voteLinkBallotFixture(false, "awaiting_response")
+		if ConvertVoteLinkBallotToResult(fixture).Ballot.VoterRemoved {
+			t.Fatal("voter_removed should be false by default")
+		}
+		fixture.Ballot.VoterRemoved = true
+		if !ConvertVoteLinkBallotToResult(fixture).Ballot.VoterRemoved {
+			t.Error("voter_removed = true was not mapped to ballot.voter_removed")
 		}
 	})
 
