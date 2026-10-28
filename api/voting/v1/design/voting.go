@@ -520,6 +520,37 @@ var _ = Service("vote", func() {
 		})
 	})
 
+	Method("get_vote_ballot_by_link", func() {
+		Description("Get the vote's questions and the link holder's own ballot using a personalized vote " +
+			"link token, without logging in. The vote and ballot are identified only by the token. " +
+			"External callers send no Authorization header: the gateway (Heimdall) admits the request " +
+			"anonymously and supplies the JWT shown in this spec's security requirement.")
+
+		// Heimdall admits this route anonymously and still mints its JWT (principal
+		// "_anonymous"); JWTAuth only proves the request came through the gateway. No
+		// scopes apply. The vote_token is the only authorization.
+		Security(JWTAuth)
+
+		Payload(func() {
+			BearerTokenAttribute()
+			VoteLinkTokenAttribute()
+			Required("vote_token")
+		})
+
+		Result(VoteLinkBallotResult)
+
+		HTTP(func() {
+			POST("/vote_links/ballot")
+			Response(StatusOK)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
 	Method("resend_vote_response", func() {
 		Description("Resend vote email (proxies to ITX POST /voting/vote/{vote_id}/resend)")
 

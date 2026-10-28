@@ -194,6 +194,15 @@ type UpdateVoteResponseByLinkRequestBody struct {
 	CommentResponses []*CommentResponseRequestBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
 }
 
+// GetVoteBallotByLinkRequestBody is the type of the "vote" service
+// "get_vote_ballot_by_link" endpoint HTTP request body.
+type GetVoteBallotByLinkRequestBody struct {
+	// Signed token from the personalized vote link (the vote_token in the emailed
+	// URL's fragment). Identifies the ballot; treat it as a credential and never
+	// log it.
+	VoteToken *string `form:"vote_token,omitempty" json:"vote_token,omitempty" xml:"vote_token,omitempty"`
+}
+
 // CreateVoteResponseBody is the type of the "vote" service "create_vote"
 // endpoint HTTP response body.
 type CreateVoteResponseBody struct {
@@ -556,6 +565,43 @@ type GetVoteResponseResponseBody struct {
 	// The voter's free-text responses to the poll's comment prompts. Always an
 	// array (empty if the poll has no comment prompts or the voter left none).
 	CommentResponses []*CommentResponseResponseBody `form:"comment_responses" json:"comment_responses" xml:"comment_responses"`
+}
+
+// GetVoteBallotByLinkResponseBody is the type of the "vote" service
+// "get_vote_ballot_by_link" endpoint HTTP response body.
+type GetVoteBallotByLinkResponseBody struct {
+	// Vote identifier
+	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
+	// Vote name
+	Name string `form:"name" json:"name" xml:"name"`
+	// Vote description
+	Description string `form:"description" json:"description" xml:"description"`
+	// Vote status; ballots can be submitted or updated only while active
+	Status string `form:"status" json:"status" xml:"status"`
+	// End time
+	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Absent when no timezone is stored.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
+	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
+	// Poll type
+	PollType string `form:"poll_type" json:"poll_type" xml:"poll_type"`
+	// Number of winners. Absent when no winner count is stored upstream.
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
+	// Whether abstaining is allowed
+	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Whether the vote is pseudo-anonymous; if so, ballot contents are never
+	// returned
+	PseudoAnonymity bool `form:"pseudo_anonymity" json:"pseudo_anonymity" xml:"pseudo_anonymity"`
+	// Vote questions with their choices
+	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Comment prompts for the vote
+	PollCommentPrompts []*PollCommentPromptResponseBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
+	// The link holder's own ballot
+	Ballot *VoteLinkBallotResponseBody `form:"ballot" json:"ballot" xml:"ballot"`
 }
 
 // CreateVoteBadRequestResponseBody is the type of the "vote" service
@@ -1383,6 +1429,66 @@ type UpdateVoteResponseByLinkUnauthorizedResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// GetVoteBallotByLinkBadRequestResponseBody is the type of the "vote" service
+// "get_vote_ballot_by_link" endpoint HTTP response body for the "BadRequest"
+// error.
+type GetVoteBallotByLinkBadRequestResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetVoteBallotByLinkForbiddenResponseBody is the type of the "vote" service
+// "get_vote_ballot_by_link" endpoint HTTP response body for the "Forbidden"
+// error.
+type GetVoteBallotByLinkForbiddenResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetVoteBallotByLinkInternalServerErrorResponseBody is the type of the "vote"
+// service "get_vote_ballot_by_link" endpoint HTTP response body for the
+// "InternalServerError" error.
+type GetVoteBallotByLinkInternalServerErrorResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetVoteBallotByLinkNotFoundResponseBody is the type of the "vote" service
+// "get_vote_ballot_by_link" endpoint HTTP response body for the "NotFound"
+// error.
+type GetVoteBallotByLinkNotFoundResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetVoteBallotByLinkServiceUnavailableResponseBody is the type of the "vote"
+// service "get_vote_ballot_by_link" endpoint HTTP response body for the
+// "ServiceUnavailable" error.
+type GetVoteBallotByLinkServiceUnavailableResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// GetVoteBallotByLinkUnauthorizedResponseBody is the type of the "vote"
+// service "get_vote_ballot_by_link" endpoint HTTP response body for the
+// "Unauthorized" error.
+type GetVoteBallotByLinkUnauthorizedResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // ResendVoteResponseBadRequestResponseBody is the type of the "vote" service
 // "resend_vote_response" endpoint HTTP response body for the "BadRequest"
 // error.
@@ -1699,6 +1805,23 @@ type CommentResponseResponseBody struct {
 	PromptID string `form:"prompt_id" json:"prompt_id" xml:"prompt_id"`
 	// The voter's free-text response
 	CommentText string `form:"comment_text" json:"comment_text" xml:"comment_text"`
+}
+
+// VoteLinkBallotResponseBody is used to define fields on response body types.
+type VoteLinkBallotResponseBody struct {
+	// Ballot status from ITX, e.g. awaiting_response or responded
+	VoteStatus string `form:"vote_status" json:"vote_status" xml:"vote_status"`
+	// True when a ballot has been submitted (vote_status responded, or ended after
+	// voting), so changes use PUT /vote_links/responses while the vote is active
+	AlreadyVoted bool `form:"already_voted" json:"already_voted" xml:"already_voted"`
+	// True when the recipient was removed from the vote and can no longer vote
+	VoterRemoved bool `form:"voter_removed" json:"voter_removed" xml:"voter_removed"`
+	// Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.
+	Abstained *bool `form:"abstained,omitempty" json:"abstained,omitempty" xml:"abstained,omitempty"`
+	// The submitted answers. Omitted on pseudo-anonymous votes and before voting.
+	PollAnswers []*VoteAnswerResponseBody `form:"poll_answers,omitempty" json:"poll_answers,omitempty" xml:"poll_answers,omitempty"`
+	// The submitted comments. Omitted on pseudo-anonymous votes and before voting.
+	CommentResponses []*CommentResponseResponseBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
 }
 
 // PollQuestionRequestBody is used to define fields on request body types.
@@ -2147,6 +2270,54 @@ func NewGetVoteResponseResponseBody(res *vote.VoteResponseResult) *GetVoteRespon
 		}
 	} else {
 		body.CommentResponses = []*CommentResponseResponseBody{}
+	}
+	return body
+}
+
+// NewGetVoteBallotByLinkResponseBody builds the HTTP response body from the
+// result of the "get_vote_ballot_by_link" endpoint of the "vote" service.
+func NewGetVoteBallotByLinkResponseBody(res *vote.VoteLinkBallotResult) *GetVoteBallotByLinkResponseBody {
+	body := &GetVoteBallotByLinkResponseBody{
+		VoteUID:         res.VoteUID,
+		Name:            res.Name,
+		Description:     res.Description,
+		Status:          res.Status,
+		EndTime:         res.EndTime,
+		EndTimeTimezone: res.EndTimeTimezone,
+		EarlyEndTime:    res.EarlyEndTime,
+		PollType:        res.PollType,
+		NumWinners:      res.NumWinners,
+		AllowAbstain:    res.AllowAbstain,
+		PseudoAnonymity: res.PseudoAnonymity,
+	}
+	{
+		var zero string
+		if body.PollType == zero {
+			body.PollType = "generic"
+		}
+	}
+	if res.PollQuestions != nil {
+		body.PollQuestions = make([]*PollQuestionResponseBody, len(res.PollQuestions))
+		for i, val := range res.PollQuestions {
+			if val == nil {
+				body.PollQuestions[i] = nil
+				continue
+			}
+			body.PollQuestions[i] = marshalVotePollQuestionToPollQuestionResponseBody(val)
+		}
+	}
+	if res.PollCommentPrompts != nil {
+		body.PollCommentPrompts = make([]*PollCommentPromptResponseBody, len(res.PollCommentPrompts))
+		for i, val := range res.PollCommentPrompts {
+			if val == nil {
+				body.PollCommentPrompts[i] = nil
+				continue
+			}
+			body.PollCommentPrompts[i] = marshalVotePollCommentPromptToPollCommentPromptResponseBody(val)
+		}
+	}
+	if res.Ballot != nil {
+		body.Ballot = marshalVoteVoteLinkBallotToVoteLinkBallotResponseBody(res.Ballot)
 	}
 	return body
 }
@@ -3055,6 +3226,72 @@ func NewUpdateVoteResponseByLinkUnauthorizedResponseBody(res *vote.UnauthorizedE
 	return body
 }
 
+// NewGetVoteBallotByLinkBadRequestResponseBody builds the HTTP response body
+// from the result of the "get_vote_ballot_by_link" endpoint of the "vote"
+// service.
+func NewGetVoteBallotByLinkBadRequestResponseBody(res *vote.BadRequestError) *GetVoteBallotByLinkBadRequestResponseBody {
+	body := &GetVoteBallotByLinkBadRequestResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetVoteBallotByLinkForbiddenResponseBody builds the HTTP response body
+// from the result of the "get_vote_ballot_by_link" endpoint of the "vote"
+// service.
+func NewGetVoteBallotByLinkForbiddenResponseBody(res *vote.ForbiddenError) *GetVoteBallotByLinkForbiddenResponseBody {
+	body := &GetVoteBallotByLinkForbiddenResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetVoteBallotByLinkInternalServerErrorResponseBody builds the HTTP
+// response body from the result of the "get_vote_ballot_by_link" endpoint of
+// the "vote" service.
+func NewGetVoteBallotByLinkInternalServerErrorResponseBody(res *vote.InternalServerError) *GetVoteBallotByLinkInternalServerErrorResponseBody {
+	body := &GetVoteBallotByLinkInternalServerErrorResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetVoteBallotByLinkNotFoundResponseBody builds the HTTP response body
+// from the result of the "get_vote_ballot_by_link" endpoint of the "vote"
+// service.
+func NewGetVoteBallotByLinkNotFoundResponseBody(res *vote.NotFoundError) *GetVoteBallotByLinkNotFoundResponseBody {
+	body := &GetVoteBallotByLinkNotFoundResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetVoteBallotByLinkServiceUnavailableResponseBody builds the HTTP
+// response body from the result of the "get_vote_ballot_by_link" endpoint of
+// the "vote" service.
+func NewGetVoteBallotByLinkServiceUnavailableResponseBody(res *vote.ServiceUnavailableError) *GetVoteBallotByLinkServiceUnavailableResponseBody {
+	body := &GetVoteBallotByLinkServiceUnavailableResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewGetVoteBallotByLinkUnauthorizedResponseBody builds the HTTP response body
+// from the result of the "get_vote_ballot_by_link" endpoint of the "vote"
+// service.
+func NewGetVoteBallotByLinkUnauthorizedResponseBody(res *vote.UnauthorizedError) *GetVoteBallotByLinkUnauthorizedResponseBody {
+	body := &GetVoteBallotByLinkUnauthorizedResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewResendVoteResponseBadRequestResponseBody builds the HTTP response body
 // from the result of the "resend_vote_response" endpoint of the "vote" service.
 func NewResendVoteResponseBadRequestResponseBody(res *vote.BadRequestError) *ResendVoteResponseBadRequestResponseBody {
@@ -3462,6 +3699,17 @@ func NewUpdateVoteResponseByLinkPayload(body *UpdateVoteResponseByLinkRequestBod
 	return v
 }
 
+// NewGetVoteBallotByLinkPayload builds a vote service get_vote_ballot_by_link
+// endpoint payload.
+func NewGetVoteBallotByLinkPayload(body *GetVoteBallotByLinkRequestBody, token *string) *vote.GetVoteBallotByLinkPayload {
+	v := &vote.GetVoteBallotByLinkPayload{
+		VoteToken: *body.VoteToken,
+	}
+	v.Token = token
+
+	return v
+}
+
 // NewResendVoteResponsePayload builds a vote service resend_vote_response
 // endpoint payload.
 func NewResendVoteResponsePayload(voteResponseUID string, token *string) *vote.ResendVoteResponsePayload {
@@ -3824,6 +4072,25 @@ func ValidateUpdateVoteResponseByLinkRequestBody(body *UpdateVoteResponseByLinkR
 			if err2 := ValidateCommentResponseRequestBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
+		}
+	}
+	return
+}
+
+// ValidateGetVoteBallotByLinkRequestBody runs the validations defined on
+// get_vote_ballot_by_link_request_body
+func ValidateGetVoteBallotByLinkRequestBody(body *GetVoteBallotByLinkRequestBody) (err error) {
+	if body.VoteToken == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_token", "body"))
+	}
+	if body.VoteToken != nil {
+		if utf8.RuneCountInString(*body.VoteToken) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.vote_token", *body.VoteToken, utf8.RuneCountInString(*body.VoteToken), 1, true))
+		}
+	}
+	if body.VoteToken != nil {
+		if utf8.RuneCountInString(*body.VoteToken) > 1024 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.vote_token", *body.VoteToken, utf8.RuneCountInString(*body.VoteToken), 1024, false))
 		}
 	}
 	return

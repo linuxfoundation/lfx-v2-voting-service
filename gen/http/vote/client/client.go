@@ -74,6 +74,10 @@ type Client struct {
 	// the update_vote_response_by_link endpoint.
 	UpdateVoteResponseByLinkDoer goahttp.Doer
 
+	// GetVoteBallotByLink Doer is the HTTP client used to make requests to the
+	// get_vote_ballot_by_link endpoint.
+	GetVoteBallotByLinkDoer goahttp.Doer
+
 	// ResendVoteResponse Doer is the HTTP client used to make requests to the
 	// resend_vote_response endpoint.
 	ResendVoteResponseDoer goahttp.Doer
@@ -112,6 +116,7 @@ func NewClient(
 		UpdateVoteResponseDoer:       doer,
 		CreateVoteResponseByLinkDoer: doer,
 		UpdateVoteResponseByLinkDoer: doer,
+		GetVoteBallotByLinkDoer:      doer,
 		ResendVoteResponseDoer:       doer,
 		RestoreResponseBody:          restoreBody,
 		scheme:                       scheme,
@@ -452,6 +457,30 @@ func (c *Client) UpdateVoteResponseByLink() goa.Endpoint {
 		resp, err := c.UpdateVoteResponseByLinkDoer.Do(req)
 		if err != nil {
 			return nil, goahttp.ErrRequestError("vote", "update_vote_response_by_link", err)
+		}
+		return decodeResponse(resp)
+	}
+}
+
+// GetVoteBallotByLink returns an endpoint that makes HTTP requests to the vote
+// service get_vote_ballot_by_link server.
+func (c *Client) GetVoteBallotByLink() goa.Endpoint {
+	var (
+		encodeRequest  = EncodeGetVoteBallotByLinkRequest(c.encoder)
+		decodeResponse = DecodeGetVoteBallotByLinkResponse(c.decoder, c.RestoreResponseBody)
+	)
+	return func(ctx context.Context, v any) (any, error) {
+		req, err := c.BuildGetVoteBallotByLinkRequest(ctx, v)
+		if err != nil {
+			return nil, err
+		}
+		err = encodeRequest(req, v)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := c.GetVoteBallotByLinkDoer.Do(req)
+		if err != nil {
+			return nil, goahttp.ErrRequestError("vote", "get_vote_ballot_by_link", err)
 		}
 		return decodeResponse(resp)
 	}

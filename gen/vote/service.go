@@ -58,6 +58,12 @@ type Service interface {
 	// in this spec's security requirement. Omitting comment_responses preserves
 	// existing comments; including it (even empty) replaces them.
 	UpdateVoteResponseByLink(context.Context, *UpdateVoteResponseByLinkPayload) (err error)
+	// Get the vote's questions and the link holder's own ballot using a
+	// personalized vote link token, without logging in. The vote and ballot are
+	// identified only by the token. External callers send no Authorization header:
+	// the gateway (Heimdall) admits the request anonymously and supplies the JWT
+	// shown in this spec's security requirement.
+	GetVoteBallotByLink(context.Context, *GetVoteBallotByLinkPayload) (res *VoteLinkBallotResult, err error)
 	// Resend vote email (proxies to ITX POST /voting/vote/{vote_id}/resend)
 	ResendVoteResponse(context.Context, *ResendVoteResponsePayload) (err error)
 }
@@ -82,7 +88,7 @@ const ServiceName = "vote"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [15]string{"create_vote", "get_vote", "update_vote", "delete_vote", "extend_vote", "end_vote", "enable_vote", "bulk_resend_vote", "get_vote_results", "create_vote_response", "get_vote_response", "update_vote_response", "create_vote_response_by_link", "update_vote_response_by_link", "resend_vote_response"}
+var MethodNames = [16]string{"create_vote", "get_vote", "update_vote", "delete_vote", "extend_vote", "end_vote", "enable_vote", "bulk_resend_vote", "get_vote_results", "create_vote_response", "get_vote_response", "update_vote_response", "create_vote_response_by_link", "update_vote_response_by_link", "get_vote_ballot_by_link", "resend_vote_response"}
 
 // Bad request error response
 type BadRequestError struct {
@@ -306,6 +312,17 @@ type GenericChoiceVote struct {
 	VoteCount int
 	// Percentage of votes
 	Percentage float64
+}
+
+// GetVoteBallotByLinkPayload is the payload type of the vote service
+// get_vote_ballot_by_link method.
+type GetVoteBallotByLinkPayload struct {
+	// JWT token
+	Token *string
+	// Signed token from the personalized vote link (the vote_token in the emailed
+	// URL's fragment). Identifies the ballot; treat it as a credential and never
+	// log it.
+	VoteToken string
 }
 
 // GetVotePayload is the payload type of the vote service get_vote method.
@@ -672,6 +689,60 @@ type VoteCount struct {
 	VoteCount int
 	// Percentage of votes
 	Percentage *float64
+}
+
+// The link holder's own ballot
+type VoteLinkBallot struct {
+	// Ballot status from ITX, e.g. awaiting_response or responded
+	VoteStatus string
+	// True when a ballot has been submitted (vote_status responded, or ended after
+	// voting), so changes use PUT /vote_links/responses while the vote is active
+	AlreadyVoted bool
+	// True when the recipient was removed from the vote and can no longer vote
+	VoterRemoved bool
+	// Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.
+	Abstained *bool
+	// The submitted answers. Omitted on pseudo-anonymous votes and before voting.
+	PollAnswers []*VoteAnswer
+	// The submitted comments. Omitted on pseudo-anonymous votes and before voting.
+	CommentResponses []*CommentResponse
+}
+
+// VoteLinkBallotResult is the result type of the vote service
+// get_vote_ballot_by_link method.
+type VoteLinkBallotResult struct {
+	// Vote identifier
+	VoteUID string
+	// Vote name
+	Name string
+	// Vote description
+	Description string
+	// Vote status; ballots can be submitted or updated only while active
+	Status string
+	// End time
+	EndTime *string
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Absent when no timezone is stored.
+	EndTimeTimezone *string
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
+	EarlyEndTime *string
+	// Poll type
+	PollType string
+	// Number of winners. Absent when no winner count is stored upstream.
+	NumWinners *int
+	// Whether abstaining is allowed
+	AllowAbstain *bool
+	// Whether the vote is pseudo-anonymous; if so, ballot contents are never
+	// returned
+	PseudoAnonymity bool
+	// Vote questions with their choices
+	PollQuestions []*PollQuestion
+	// Comment prompts for the vote
+	PollCommentPrompts []*PollCommentPrompt
+	// The link holder's own ballot
+	Ballot *VoteLinkBallot
 }
 
 // VoteResponseResult is the result type of the vote service get_vote_response

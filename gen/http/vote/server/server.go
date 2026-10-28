@@ -34,6 +34,7 @@ type Server struct {
 	UpdateVoteResponse       http.Handler
 	CreateVoteResponseByLink http.Handler
 	UpdateVoteResponseByLink http.Handler
+	GetVoteBallotByLink      http.Handler
 	ResendVoteResponse       http.Handler
 }
 
@@ -78,6 +79,7 @@ func New(
 			{"UpdateVoteResponse", "PUT", "/vote_responses/{vote_response_uid}"},
 			{"CreateVoteResponseByLink", "POST", "/vote_links/responses"},
 			{"UpdateVoteResponseByLink", "PUT", "/vote_links/responses"},
+			{"GetVoteBallotByLink", "POST", "/vote_links/ballot"},
 			{"ResendVoteResponse", "POST", "/vote_responses/{vote_response_uid}/resend"},
 		},
 		CreateVote:               NewCreateVoteHandler(e.CreateVote, mux, decoder, encoder, errhandler, formatter),
@@ -94,6 +96,7 @@ func New(
 		UpdateVoteResponse:       NewUpdateVoteResponseHandler(e.UpdateVoteResponse, mux, decoder, encoder, errhandler, formatter),
 		CreateVoteResponseByLink: NewCreateVoteResponseByLinkHandler(e.CreateVoteResponseByLink, mux, decoder, encoder, errhandler, formatter),
 		UpdateVoteResponseByLink: NewUpdateVoteResponseByLinkHandler(e.UpdateVoteResponseByLink, mux, decoder, encoder, errhandler, formatter),
+		GetVoteBallotByLink:      NewGetVoteBallotByLinkHandler(e.GetVoteBallotByLink, mux, decoder, encoder, errhandler, formatter),
 		ResendVoteResponse:       NewResendVoteResponseHandler(e.ResendVoteResponse, mux, decoder, encoder, errhandler, formatter),
 	}
 }
@@ -117,6 +120,7 @@ func (s *Server) Use(m func(http.Handler) http.Handler) {
 	s.UpdateVoteResponse = m(s.UpdateVoteResponse)
 	s.CreateVoteResponseByLink = m(s.CreateVoteResponseByLink)
 	s.UpdateVoteResponseByLink = m(s.UpdateVoteResponseByLink)
+	s.GetVoteBallotByLink = m(s.GetVoteBallotByLink)
 	s.ResendVoteResponse = m(s.ResendVoteResponse)
 }
 
@@ -139,6 +143,7 @@ func Mount(mux goahttp.Muxer, h *Server) {
 	MountUpdateVoteResponseHandler(mux, h.UpdateVoteResponse)
 	MountCreateVoteResponseByLinkHandler(mux, h.CreateVoteResponseByLink)
 	MountUpdateVoteResponseByLinkHandler(mux, h.UpdateVoteResponseByLink)
+	MountGetVoteBallotByLinkHandler(mux, h.GetVoteBallotByLink)
 	MountResendVoteResponseHandler(mux, h.ResendVoteResponse)
 }
 
@@ -868,6 +873,59 @@ func NewUpdateVoteResponseByLinkHandler(
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
 		ctx = context.WithValue(ctx, goa.MethodKey, "update_vote_response_by_link")
+		ctx = context.WithValue(ctx, goa.ServiceKey, "vote")
+		payload, err := decodeRequest(r)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		res, err := endpoint(ctx, payload)
+		if err != nil {
+			if err := encodeError(ctx, w, err); err != nil && errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+			return
+		}
+		if err := encodeResponse(ctx, w, res); err != nil {
+			if errhandler != nil {
+				errhandler(ctx, w, err)
+			}
+		}
+	})
+}
+
+// MountGetVoteBallotByLinkHandler configures the mux to serve the "vote"
+// service "get_vote_ballot_by_link" endpoint.
+func MountGetVoteBallotByLinkHandler(mux goahttp.Muxer, h http.Handler) {
+	f, ok := h.(http.HandlerFunc)
+	if !ok {
+		f = func(w http.ResponseWriter, r *http.Request) {
+			h.ServeHTTP(w, r)
+		}
+	}
+	mux.Handle("POST", "/vote_links/ballot", f)
+}
+
+// NewGetVoteBallotByLinkHandler creates a HTTP handler which loads the HTTP
+// request and calls the "vote" service "get_vote_ballot_by_link" endpoint.
+func NewGetVoteBallotByLinkHandler(
+	endpoint goa.Endpoint,
+	mux goahttp.Muxer,
+	decoder func(*http.Request) goahttp.Decoder,
+	encoder func(context.Context, http.ResponseWriter) goahttp.Encoder,
+	errhandler func(context.Context, http.ResponseWriter, error),
+	formatter func(ctx context.Context, err error) goahttp.Statuser,
+) http.Handler {
+	var (
+		decodeRequest  = DecodeGetVoteBallotByLinkRequest(mux, decoder)
+		encodeResponse = EncodeGetVoteBallotByLinkResponse(encoder)
+		encodeError    = EncodeGetVoteBallotByLinkError(encoder, formatter)
+	)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.WithValue(r.Context(), goahttp.AcceptTypeKey, r.Header.Get("Accept"))
+		ctx = context.WithValue(ctx, goa.MethodKey, "get_vote_ballot_by_link")
 		ctx = context.WithValue(ctx, goa.ServiceKey, "vote")
 		payload, err := decodeRequest(r)
 		if err != nil {

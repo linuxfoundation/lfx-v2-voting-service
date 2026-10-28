@@ -12,11 +12,14 @@ package service
 // side without updating the converter fails immediately.
 
 import (
+	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 
 	votesvc "github.com/linuxfoundation/lfx-v2-voting-service/gen/vote"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/service"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/utils"
 )
@@ -328,4 +331,90 @@ func TestConvertVoteResponsePayloads_NullAnswerEntriesAreRejected(t *testing.T) 
 			})
 		}
 	}
+}
+
+func voteLinkBallotFixture(pseudo bool, status string) *service.VoteLinkBallot {
+	return &service.VoteLinkBallot{
+		Poll: &itx.PollResponse{
+			PollID: "vote-1", Name: "TSC election", Description: "Pick two", Status: "active",
+			EndTime: "2026-12-01T00:00:00Z", ProjectID: "a0941000002wBz4AAE", CommitteeID: "c1",
+			CommitteeName: "TSC", TotalVotingRequestInvitations: 9, NumResponseReceived: 4,
+			PseudoAnonymity: pseudo, PseudoAnonymityKnown: true, PollType: "generic", AllowAbstain: true,
+			PollQuestions: []itx.PollQuestionOutput{{QuestionID: "q1", Prompt: "Who?", Type: "single_choice",
+				Choices: []itx.PollChoiceOutput{{ChoiceID: "c-a", ChoiceText: "Alice"}}}},
+		},
+		Ballot: &itx.VoteResponse{
+			VoteID: "ballot-1", PollID: "vote-1", VoteStatus: status, Abstained: false, UserEmail: "voter@example.org",
+			PollAnswers:      []itx.PollAnswer{{QuestionID: "q1", Prompt: "Who?", Type: "single_choice", UserChoice: []itx.PollChoiceAnswer{{ChoiceID: "c-a", ChoiceText: "Alice"}}}},
+			CommentResponses: []itx.CommentResponse{{PromptID: "p1", CommentText: "Great"}},
+		},
+		IncludeBallotContents: !pseudo,
+	}
+}
+
+func TestConvertVoteLinkBallotToResult(t *testing.T) {
+	t.Run("returns ballot fields and own answers", func(t *testing.T) {
+		got := ConvertVoteLinkBallotToResult(voteLinkBallotFixture(false, "responded"))
+		if got.VoteUID != "vote-1" || got.Name != "TSC election" || got.Status != "active" || len(got.PollQuestions) != 1 {
+			t.Fatalf("vote fields not mapped: %+v", got)
+		}
+		if *got.PollQuestions[0].QuestionID != "q1" || *got.PollQuestions[0].Choices[0].ChoiceID != "c-a" {
+			t.Errorf("questions not mapped: %+v", got.PollQuestions[0])
+		}
+		b := got.Ballot
+		if !b.AlreadyVoted || b.VoteStatus != "responded" || b.Abstained == nil || len(b.PollAnswers) != 1 || len(b.CommentResponses) != 1 {
+			t.Errorf("ballot contents not returned: %+v", b)
+		}
+	})
+
+	t.Run("pseudo-anonymous vote never returns ballot contents", func(t *testing.T) {
+		b := ConvertVoteLinkBallotToResult(voteLinkBallotFixture(true, "responded")).Ballot
+		if !b.AlreadyVoted || b.Abstained != nil || b.PollAnswers != nil || b.CommentResponses != nil {
+			t.Errorf("pseudo-anonymous ballot leaked contents: %+v", b)
+		}
+	})
+
+	t.Run("not yet voted returns no contents", func(t *testing.T) {
+		b := ConvertVoteLinkBallotToResult(voteLinkBallotFixture(false, "awaiting_response")).Ballot
+		if b.AlreadyVoted || b.PollAnswers != nil || b.Abstained != nil || b.CommentResponses != nil {
+			t.Errorf("unexpected ballot contents before voting: %+v", b)
+		}
+	})
+
+	t.Run("submitted ballot on an ended vote is already voted", func(t *testing.T) {
+		b := ConvertVoteLinkBallotToResult(voteLinkBallotFixture(false, "ended")).Ballot
+		if !b.AlreadyVoted || b.VoteStatus != "ended" || len(b.PollAnswers) != 1 || b.Abstained == nil || b.CommentResponses == nil {
+			t.Errorf("ended (submitted) ballot not treated as voted: %+v", b)
+		}
+	})
+
+	t.Run("unsubmitted ballot on an ended vote is not already voted", func(t *testing.T) {
+		b := ConvertVoteLinkBallotToResult(voteLinkBallotFixture(false, "awaiting_response_but_poll_ended")).Ballot
+		if b.AlreadyVoted || b.PollAnswers != nil || b.Abstained != nil || b.CommentResponses != nil {
+			t.Errorf("unsubmitted ended ballot treated as voted: %+v", b)
+		}
+	})
+
+	t.Run("voter_removed is mapped", func(t *testing.T) {
+		fixture := voteLinkBallotFixture(false, "awaiting_response")
+		if ConvertVoteLinkBallotToResult(fixture).Ballot.VoterRemoved {
+			t.Fatal("voter_removed should be false by default")
+		}
+		fixture.Ballot.VoterRemoved = true
+		if !ConvertVoteLinkBallotToResult(fixture).Ballot.VoterRemoved {
+			t.Error("voter_removed = true was not mapped to ballot.voter_removed")
+		}
+	})
+
+	t.Run("no project, committee, counts or PII in the JSON", func(t *testing.T) {
+		raw, err := json.Marshal(ConvertVoteLinkBallotToResult(voteLinkBallotFixture(false, "responded")))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, leak := range []string{"a0941000002wBz4AAE", "TSC\"", "voter@example.org", "ballot-1"} {
+			if strings.Contains(string(raw), leak) {
+				t.Errorf("result contains %q: %s", leak, raw)
+			}
+		}
+	})
 }

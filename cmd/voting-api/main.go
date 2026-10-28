@@ -218,7 +218,7 @@ func run() int {
 			return 1
 		}
 		voteOpts = append(voteOpts, service.WithVoteLinks(linkSigner, linkBaseURL))
-		voteResponseOpts = append(voteResponseOpts, service.WithVoteLinkVerifier(linkSigner))
+		voteResponseOpts = append(voteResponseOpts, service.WithVoteLinkVerifier(linkSigner), service.WithVoteLinkPolls(proxyClient))
 		logger.Info("Personalized vote links are ENABLED", "active_key_id", linkSigner.ActiveKeyID(), "base_url", linkBaseURL)
 	} else {
 		logger.Info("Personalized vote links are DISABLED - VOTE_LINK_SIGNING_KEYS is not set")

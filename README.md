@@ -319,6 +319,7 @@ The service provides the following endpoints:
 
 #### Personalized Vote Links (no login; authorized by the link's signed token)
 
+- `POST /vote_links/ballot` - Get the vote's questions and the link holder's own ballot
 - `POST /vote_links/responses` - Submit a vote response by link
 - `PUT /vote_links/responses` - Update a vote response by link
 
