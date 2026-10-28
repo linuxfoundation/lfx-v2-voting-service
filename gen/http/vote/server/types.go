@@ -1690,8 +1690,8 @@ type CommentResponseResponseBody struct {
 type VoteLinkBallotResponseBody struct {
 	// Ballot status from ITX, e.g. awaiting_response or responded
 	VoteStatus string `form:"vote_status" json:"vote_status" xml:"vote_status"`
-	// True when a ballot has been submitted, so changes use PUT
-	// /vote_links/responses
+	// True when a ballot has been submitted (vote_status responded, or ended after
+	// voting), so changes use PUT /vote_links/responses while the vote is active
 	AlreadyVoted bool `form:"already_voted" json:"already_voted" xml:"already_voted"`
 	// True when the recipient was removed from the vote and can no longer vote
 	VoterRemoved bool `form:"voter_removed" json:"voter_removed" xml:"voter_removed"`

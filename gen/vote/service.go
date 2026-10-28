@@ -683,8 +683,8 @@ type VoteCount struct {
 type VoteLinkBallot struct {
 	// Ballot status from ITX, e.g. awaiting_response or responded
 	VoteStatus string
-	// True when a ballot has been submitted, so changes use PUT
-	// /vote_links/responses
+	// True when a ballot has been submitted (vote_status responded, or ended after
+	// voting), so changes use PUT /vote_links/responses while the vote is active
 	AlreadyVoted bool
 	// True when the recipient was removed from the vote and can no longer vote
 	VoterRemoved bool

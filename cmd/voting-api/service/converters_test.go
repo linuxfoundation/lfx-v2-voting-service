@@ -381,6 +381,20 @@ func TestConvertVoteLinkBallotToResult(t *testing.T) {
 		}
 	})
 
+	t.Run("submitted ballot on an ended vote is already voted", func(t *testing.T) {
+		b := ConvertVoteLinkBallotToResult(voteLinkBallotFixture(false, "ended")).Ballot
+		if !b.AlreadyVoted || b.VoteStatus != "ended" || len(b.PollAnswers) != 1 || b.Abstained == nil || b.CommentResponses == nil {
+			t.Errorf("ended (submitted) ballot not treated as voted: %+v", b)
+		}
+	})
+
+	t.Run("unsubmitted ballot on an ended vote is not already voted", func(t *testing.T) {
+		b := ConvertVoteLinkBallotToResult(voteLinkBallotFixture(false, "awaiting_response_but_poll_ended")).Ballot
+		if b.AlreadyVoted || b.PollAnswers != nil || b.Abstained != nil || b.CommentResponses != nil {
+			t.Errorf("unsubmitted ended ballot treated as voted: %+v", b)
+		}
+	})
+
 	t.Run("voter_removed is mapped", func(t *testing.T) {
 		fixture := voteLinkBallotFixture(false, "awaiting_response")
 		if ConvertVoteLinkBallotToResult(fixture).Ballot.VoterRemoved {

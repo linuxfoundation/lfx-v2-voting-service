@@ -42,3 +42,17 @@ func TestPollResponseUnmarshal_PseudoAnonymityPresence(t *testing.T) {
 		}
 	})
 }
+
+func TestIsSubmittedVoteStatus(t *testing.T) {
+	for status, want := range map[string]bool{
+		"responded":                        true,
+		"ended":                            true,
+		"awaiting_response":                false,
+		"awaiting_response_but_poll_ended": false,
+		"":                                 false,
+	} {
+		if got := IsSubmittedVoteStatus(status); got != want {
+			t.Errorf("IsSubmittedVoteStatus(%q) = %v, want %v", status, got, want)
+		}
+	}
+}

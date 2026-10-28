@@ -289,7 +289,7 @@ func ConvertVoteLinkBallotToResult(b *service.VoteLinkBallot) *votesvc.VoteLinkB
 		PollCommentPrompts: convertPollCommentPromptsToResult(poll.PollCommentPrompts),
 		Ballot: &votesvc.VoteLinkBallot{
 			VoteStatus:   b.Ballot.VoteStatus,
-			AlreadyVoted: b.Ballot.VoteStatus == itx.VoteStatusResponded,
+			AlreadyVoted: itx.IsSubmittedVoteStatus(b.Ballot.VoteStatus),
 			VoterRemoved: b.Ballot.VoterRemoved,
 		},
 	}

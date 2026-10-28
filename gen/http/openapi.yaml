@@ -3377,7 +3377,7 @@ definitions:
                 example: true
             already_voted:
                 type: boolean
-                description: True when a ballot has been submitted, so changes use PUT /vote_links/responses
+                description: True when a ballot has been submitted (vote_status responded, or ended after voting), so changes use PUT /vote_links/responses while the vote is active
                 example: true
             comment_responses:
                 type: array

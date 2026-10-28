@@ -203,8 +203,19 @@ type RankedChoiceInput struct {
 	ChoiceRank int    `json:"choice_rank"`
 }
 
-// VoteStatusResponded is the ITX vote_status of a ballot that has been submitted.
-const VoteStatusResponded = "responded"
+// ITX vote_status values for a ballot that has been submitted.
+const (
+	// VoteStatusResponded is a submitted ballot on a poll that has not ended.
+	VoteStatusResponded = "responded"
+	// VoteStatusEnded is a submitted ballot on a poll that has ended. An unsubmitted
+	// ballot on an ended poll is "awaiting_response_but_poll_ended" instead.
+	VoteStatusEnded = "ended"
+)
+
+// IsSubmittedVoteStatus reports whether an ITX vote_status means the ballot was submitted.
+func IsSubmittedVoteStatus(status string) bool {
+	return status == VoteStatusResponded || status == VoteStatusEnded
+}
 
 // VoteResponse represents a vote response from ITX
 type VoteResponse struct {

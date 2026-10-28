@@ -497,7 +497,8 @@ var VoteLinkBallot = Type("VoteLinkBallot", func() {
 	Attribute("vote_status", String, "Ballot status from ITX, e.g. awaiting_response or responded", func() {
 		Example("awaiting_response")
 	})
-	Attribute("already_voted", Boolean, "True when a ballot has been submitted, so changes use PUT /vote_links/responses")
+	Attribute("already_voted", Boolean, "True when a ballot has been submitted (vote_status responded, or ended after "+
+		"voting), so changes use PUT /vote_links/responses while the vote is active")
 	Attribute("voter_removed", Boolean, "True when the recipient was removed from the vote and can no longer vote")
 	Attribute("abstained", Boolean, "Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.")
 	Attribute("poll_answers", ArrayOf(VoteAnswer), "The submitted answers. Omitted on pseudo-anonymous votes and before voting.")
