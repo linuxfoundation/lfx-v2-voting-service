@@ -453,6 +453,59 @@ var VoteResponseResult = Type("VoteResponseResult", func() {
 	Required("vote_response_uid", "vote_uid", "project_uid", "vote_status", "comment_responses")
 })
 
+// VoteLinkBallotResult is what a personalized vote link holder may see: the vote's ballot
+// fields (no project, committee, creator or response counts) and their own ballot's state.
+var VoteLinkBallotResult = Type("VoteLinkBallotResult", func() {
+	Description("The vote and the link holder's ballot, as returned to a personalized vote link")
+
+	Attribute("vote_uid", String, "Vote identifier", func() {
+		Format(FormatUUID)
+		Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
+	})
+	Attribute("name", String, "Vote name")
+	Attribute("description", String, "Vote description")
+	Attribute("status", String, "Vote status; ballots can be submitted or updated only while active", func() {
+		Enum("disabled", "active", "ended")
+		Example("active")
+	})
+	Attribute("end_time", String, "End time", func() {
+		Format(FormatDateTime)
+		Example("2026-02-15T23:59:59Z")
+	})
+	EndTimeTimezoneAttribute("Absent when no timezone is stored.")
+	Attribute("early_end_time", String, "Actual close time when the poll auto-ended early. Absent otherwise.", func() {
+		Format(FormatDateTime)
+	})
+	Attribute("poll_type", String, "Poll type", func() {
+		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
+		Default("generic")
+	})
+	Attribute("num_winners", Int, "Number of winners. Absent when no winner count is stored upstream.")
+	Attribute("allow_abstain", Boolean, "Whether abstaining is allowed")
+	Attribute("pseudo_anonymity", Boolean, "Whether the vote is pseudo-anonymous; if so, ballot contents are never returned")
+	Attribute("poll_questions", ArrayOf(PollQuestion), "Vote questions with their choices")
+	Attribute("poll_comment_prompts", ArrayOf(PollCommentPrompt), "Comment prompts for the vote")
+	Attribute("ballot", VoteLinkBallot, "The link holder's own ballot")
+
+	Required("vote_uid", "name", "description", "status", "pseudo_anonymity", "ballot")
+})
+
+// VoteLinkBallot is the link holder's own ballot state.
+var VoteLinkBallot = Type("VoteLinkBallot", func() {
+	Description("The link holder's own ballot")
+
+	Attribute("vote_status", String, "Ballot status from ITX, e.g. awaiting_response or responded", func() {
+		Example("awaiting_response")
+	})
+	Attribute("already_voted", Boolean, "True when a ballot has been submitted, so changes use PUT /vote_links/responses")
+	Attribute("voter_removed", Boolean, "True when the recipient was removed from the vote and can no longer vote")
+	Attribute("abstained", Boolean, "Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.")
+	Attribute("poll_answers", ArrayOf(VoteAnswer), "The submitted answers. Omitted on pseudo-anonymous votes and before voting.")
+	Attribute("comment_responses", ArrayOf(CommentResponse), "The submitted comments. Omitted on pseudo-anonymous votes and before voting.")
+
+	Required("vote_status", "already_voted", "voter_removed")
+})
+
 // VoteAnswer represents an answer to a poll question
 var VoteAnswer = Type("VoteAnswer", func() {
 	Description("Vote answer for a question")

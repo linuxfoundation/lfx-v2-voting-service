@@ -153,40 +153,51 @@ func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *votesvc.VoteResult
 		result.EndTimeTimezone = utils.StringPtr(poll.EndTimeTimezone)
 	}
 
-	// Convert poll questions
-	if len(poll.PollQuestions) > 0 {
-		questions := make([]*votesvc.PollQuestion, len(poll.PollQuestions))
-		for i, q := range poll.PollQuestions {
-			choices := make([]*votesvc.PollChoice, len(q.Choices))
-			for j, c := range q.Choices {
-				choices[j] = &votesvc.PollChoice{
-					ChoiceID:   utils.StringPtr(c.ChoiceID),
-					ChoiceText: c.ChoiceText,
-				}
-			}
-			questions[i] = &votesvc.PollQuestion{
-				QuestionID: utils.StringPtr(q.QuestionID),
-				Prompt:     q.Prompt,
-				Type:       q.Type,
-				Choices:    choices,
-			}
-		}
-		result.PollQuestions = questions
-	}
-
-	// Convert poll comment prompts
-	if len(poll.PollCommentPrompts) > 0 {
-		prompts := make([]*votesvc.PollCommentPrompt, len(poll.PollCommentPrompts))
-		for i, p := range poll.PollCommentPrompts {
-			prompts[i] = &votesvc.PollCommentPrompt{
-				PromptID: p.PromptID,
-				Prompt:   p.Prompt,
-			}
-		}
-		result.PollCommentPrompts = prompts
-	}
+	result.PollQuestions = convertPollQuestionsToResult(poll.PollQuestions)
+	result.PollCommentPrompts = convertPollCommentPromptsToResult(poll.PollCommentPrompts)
 
 	return result
+}
+
+// convertPollQuestionsToResult converts ITX poll questions to Goa results. An empty input
+// yields nil, so the field is omitted.
+func convertPollQuestionsToResult(questions []itx.PollQuestionOutput) []*votesvc.PollQuestion {
+	if len(questions) == 0 {
+		return nil
+	}
+	converted := make([]*votesvc.PollQuestion, len(questions))
+	for i, q := range questions {
+		choices := make([]*votesvc.PollChoice, len(q.Choices))
+		for j, c := range q.Choices {
+			choices[j] = &votesvc.PollChoice{
+				ChoiceID:   utils.StringPtr(c.ChoiceID),
+				ChoiceText: c.ChoiceText,
+			}
+		}
+		converted[i] = &votesvc.PollQuestion{
+			QuestionID: utils.StringPtr(q.QuestionID),
+			Prompt:     q.Prompt,
+			Type:       q.Type,
+			Choices:    choices,
+		}
+	}
+	return converted
+}
+
+// convertPollCommentPromptsToResult converts ITX comment prompts to Goa results. An empty
+// input yields nil, so the field is omitted.
+func convertPollCommentPromptsToResult(prompts []itx.PollCommentPromptOutput) []*votesvc.PollCommentPrompt {
+	if len(prompts) == 0 {
+		return nil
+	}
+	converted := make([]*votesvc.PollCommentPrompt, len(prompts))
+	for i, p := range prompts {
+		converted[i] = &votesvc.PollCommentPrompt{
+			PromptID: p.PromptID,
+			Prompt:   p.Prompt,
+		}
+	}
+	return converted
 }
 
 // ConvertVoteResultsToResult converts ITX VoteResults to Goa VoteResultsResult

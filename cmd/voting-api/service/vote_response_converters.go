@@ -206,52 +206,109 @@ func ConvertVoteResponseToResult(resp *itx.VoteResponse) *votesvc.VoteResponseRe
 		result.SesLinkClickedLastTime = &resp.SESLinkClickedLastTime
 	}
 
-	// Convert poll answers
-	if resp.PollAnswers != nil {
-		result.PollAnswers = make([]*votesvc.VoteAnswer, len(resp.PollAnswers))
-		for i, answer := range resp.PollAnswers {
-			voteAnswer := &votesvc.VoteAnswer{
-				QuestionID: answer.QuestionID,
-				Prompt:     answer.Prompt,
-				Type:       answer.Type,
-			}
-
-			// Convert regular choices
-			if answer.UserChoice != nil {
-				voteAnswer.UserChoice = make([]*votesvc.VoteChoiceAnswer, len(answer.UserChoice))
-				for j, choice := range answer.UserChoice {
-					voteAnswer.UserChoice[j] = &votesvc.VoteChoiceAnswer{
-						ChoiceID:   choice.ChoiceID,
-						ChoiceText: choice.ChoiceText,
-					}
-				}
-			}
-
-			// Convert ranked choices
-			if answer.RankedUserChoice != nil {
-				voteAnswer.RankedUserChoice = make([]*votesvc.RankedVoteChoiceAnswer, len(answer.RankedUserChoice))
-				for j, choice := range answer.RankedUserChoice {
-					voteAnswer.RankedUserChoice[j] = &votesvc.RankedVoteChoiceAnswer{
-						ChoiceID:   choice.ChoiceID,
-						ChoiceText: choice.ChoiceText,
-						ChoiceRank: choice.ChoiceRank,
-					}
-				}
-			}
-
-			result.PollAnswers[i] = voteAnswer
-		}
-	}
+	result.PollAnswers = convertPollAnswersToResult(resp.PollAnswers)
 
 	// Convert comment responses. Always an array (empty if the poll has no
 	// comment prompts or the voter left none).
-	result.CommentResponses = make([]*votesvc.CommentResponse, len(resp.CommentResponses))
-	for i, c := range resp.CommentResponses {
-		result.CommentResponses[i] = &votesvc.CommentResponse{
+	result.CommentResponses = convertCommentResponsesToResult(resp.CommentResponses)
+
+	return result
+}
+
+// convertPollAnswersToResult converts ITX ballot answers to Goa results. A nil input yields nil.
+func convertPollAnswersToResult(answers []itx.PollAnswer) []*votesvc.VoteAnswer {
+	if answers == nil {
+		return nil
+	}
+	converted := make([]*votesvc.VoteAnswer, len(answers))
+	for i, answer := range answers {
+		voteAnswer := &votesvc.VoteAnswer{
+			QuestionID: answer.QuestionID,
+			Prompt:     answer.Prompt,
+			Type:       answer.Type,
+		}
+
+		// Convert regular choices
+		if answer.UserChoice != nil {
+			voteAnswer.UserChoice = make([]*votesvc.VoteChoiceAnswer, len(answer.UserChoice))
+			for j, choice := range answer.UserChoice {
+				voteAnswer.UserChoice[j] = &votesvc.VoteChoiceAnswer{
+					ChoiceID:   choice.ChoiceID,
+					ChoiceText: choice.ChoiceText,
+				}
+			}
+		}
+
+		// Convert ranked choices
+		if answer.RankedUserChoice != nil {
+			voteAnswer.RankedUserChoice = make([]*votesvc.RankedVoteChoiceAnswer, len(answer.RankedUserChoice))
+			for j, choice := range answer.RankedUserChoice {
+				voteAnswer.RankedUserChoice[j] = &votesvc.RankedVoteChoiceAnswer{
+					ChoiceID:   choice.ChoiceID,
+					ChoiceText: choice.ChoiceText,
+					ChoiceRank: choice.ChoiceRank,
+				}
+			}
+		}
+
+		converted[i] = voteAnswer
+	}
+	return converted
+}
+
+// convertCommentResponsesToResult converts ITX comment responses to Goa results. It always
+// returns a non-nil slice.
+func convertCommentResponsesToResult(comments []itx.CommentResponse) []*votesvc.CommentResponse {
+	converted := make([]*votesvc.CommentResponse, len(comments))
+	for i, c := range comments {
+		converted[i] = &votesvc.CommentResponse{
 			PromptID:    c.PromptID,
 			CommentText: c.CommentText,
 		}
 	}
+	return converted
+}
 
+// ConvertVoteLinkBallotToResult converts the vote and ballot visible to a personalized vote
+// link holder to the Goa result. Only ballot-related vote fields are returned (no project,
+// committee, creator or response counts), and the ballot's answers, comments and abstention
+// only when the service allows it (never on pseudo-anonymous votes).
+func ConvertVoteLinkBallotToResult(b *service.VoteLinkBallot) *votesvc.VoteLinkBallotResult {
+	poll := b.Poll
+	result := &votesvc.VoteLinkBallotResult{
+		VoteUID:            poll.PollID,
+		Name:               poll.Name,
+		Description:        poll.Description,
+		Status:             poll.Status,
+		PollType:           poll.PollType,
+		AllowAbstain:       utils.BoolPtr(poll.AllowAbstain),
+		PseudoAnonymity:    poll.PseudoAnonymity,
+		PollQuestions:      convertPollQuestionsToResult(poll.PollQuestions),
+		PollCommentPrompts: convertPollCommentPromptsToResult(poll.PollCommentPrompts),
+		Ballot: &votesvc.VoteLinkBallot{
+			VoteStatus:   b.Ballot.VoteStatus,
+			AlreadyVoted: b.Ballot.VoteStatus == itx.VoteStatusResponded,
+			VoterRemoved: b.Ballot.VoterRemoved,
+		},
+	}
+	if poll.EndTime != "" {
+		result.EndTime = utils.StringPtr(poll.EndTime)
+	}
+	if poll.EndTimeTimezone != "" {
+		result.EndTimeTimezone = utils.StringPtr(poll.EndTimeTimezone)
+	}
+	if v := utils.NormalizeTimestamp(poll.EarlyEndTime); v != "" {
+		result.EarlyEndTime = utils.StringPtr(v)
+	}
+	// num_winners is omitted when ITX stores none, as in ConvertPollResponseToVoteResult.
+	if poll.NumWinners != 0 {
+		result.NumWinners = utils.IntPtr(poll.NumWinners)
+	}
+
+	if b.IncludeBallotContents && result.Ballot.AlreadyVoted {
+		result.Ballot.Abstained = utils.BoolPtr(b.Ballot.Abstained)
+		result.Ballot.PollAnswers = convertPollAnswersToResult(b.Ballot.PollAnswers)
+		result.Ballot.CommentResponses = convertCommentResponsesToResult(b.Ballot.CommentResponses)
+	}
 	return result
 }

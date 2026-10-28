@@ -194,6 +194,15 @@ type UpdateVoteResponseByLinkRequestBody struct {
 	CommentResponses []*CommentResponseRequestBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
 }
 
+// GetVoteBallotByLinkRequestBody is the type of the "vote" service
+// "get_vote_ballot_by_link" endpoint HTTP request body.
+type GetVoteBallotByLinkRequestBody struct {
+	// Signed token from the personalized vote link (the vote_token in the emailed
+	// URL's fragment). Identifies the ballot; treat it as a credential and never
+	// log it.
+	VoteToken string `form:"vote_token" json:"vote_token" xml:"vote_token"`
+}
+
 // CreateVoteResponseBody is the type of the "vote" service "create_vote"
 // endpoint HTTP response body.
 type CreateVoteResponseBody struct {
@@ -500,6 +509,41 @@ type GetVoteResponseResponseBody struct {
 	// The voter's free-text responses to the poll's comment prompts. Always an
 	// array (empty if the poll has no comment prompts or the voter left none).
 	CommentResponses []*CommentResponseResponseBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
+}
+
+// GetVoteBallotByLinkResponseBody is the type of the "vote" service
+// "get_vote_ballot_by_link" endpoint HTTP response body.
+type GetVoteBallotByLinkResponseBody struct {
+	// Vote identifier
+	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
+	// Vote name
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// Vote description
+	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	// Vote status; ballots can be submitted or updated only while active
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// End time
+	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Absent when no timezone is stored.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
+	// Actual close time when the poll auto-ended early. Absent otherwise.
+	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
+	// Poll type
+	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
+	// Number of winners. Absent when no winner count is stored upstream.
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
+	// Whether abstaining is allowed
+	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Whether the vote is pseudo-anonymous; if so, ballot contents are never
+	// returned
+	PseudoAnonymity *bool `form:"pseudo_anonymity,omitempty" json:"pseudo_anonymity,omitempty" xml:"pseudo_anonymity,omitempty"`
+	// Vote questions with their choices
+	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Comment prompts for the vote
+	PollCommentPrompts []*PollCommentPromptResponseBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
+	// The link holder's own ballot
+	Ballot *VoteLinkBallotResponseBody `form:"ballot,omitempty" json:"ballot,omitempty" xml:"ballot,omitempty"`
 }
 
 // CreateVoteBadRequestResponseBody is the type of the "vote" service
@@ -1264,6 +1308,66 @@ type UpdateVoteResponseByLinkUnauthorizedResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
+// GetVoteBallotByLinkBadRequestResponseBody is the type of the "vote" service
+// "get_vote_ballot_by_link" endpoint HTTP response body for the "BadRequest"
+// error.
+type GetVoteBallotByLinkBadRequestResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetVoteBallotByLinkForbiddenResponseBody is the type of the "vote" service
+// "get_vote_ballot_by_link" endpoint HTTP response body for the "Forbidden"
+// error.
+type GetVoteBallotByLinkForbiddenResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetVoteBallotByLinkInternalServerErrorResponseBody is the type of the "vote"
+// service "get_vote_ballot_by_link" endpoint HTTP response body for the
+// "InternalServerError" error.
+type GetVoteBallotByLinkInternalServerErrorResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetVoteBallotByLinkNotFoundResponseBody is the type of the "vote" service
+// "get_vote_ballot_by_link" endpoint HTTP response body for the "NotFound"
+// error.
+type GetVoteBallotByLinkNotFoundResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetVoteBallotByLinkServiceUnavailableResponseBody is the type of the "vote"
+// service "get_vote_ballot_by_link" endpoint HTTP response body for the
+// "ServiceUnavailable" error.
+type GetVoteBallotByLinkServiceUnavailableResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetVoteBallotByLinkUnauthorizedResponseBody is the type of the "vote"
+// service "get_vote_ballot_by_link" endpoint HTTP response body for the
+// "Unauthorized" error.
+type GetVoteBallotByLinkUnauthorizedResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
 // ResendVoteResponseBadRequestResponseBody is the type of the "vote" service
 // "resend_vote_response" endpoint HTTP response body for the "BadRequest"
 // error.
@@ -1635,6 +1739,23 @@ type CommentResponseResponseBody struct {
 	CommentText *string `form:"comment_text,omitempty" json:"comment_text,omitempty" xml:"comment_text,omitempty"`
 }
 
+// VoteLinkBallotResponseBody is used to define fields on response body types.
+type VoteLinkBallotResponseBody struct {
+	// Ballot status from ITX, e.g. awaiting_response or responded
+	VoteStatus *string `form:"vote_status,omitempty" json:"vote_status,omitempty" xml:"vote_status,omitempty"`
+	// True when a ballot has been submitted, so changes use PUT
+	// /vote_links/responses
+	AlreadyVoted *bool `form:"already_voted,omitempty" json:"already_voted,omitempty" xml:"already_voted,omitempty"`
+	// True when the recipient was removed from the vote and can no longer vote
+	VoterRemoved *bool `form:"voter_removed,omitempty" json:"voter_removed,omitempty" xml:"voter_removed,omitempty"`
+	// Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.
+	Abstained *bool `form:"abstained,omitempty" json:"abstained,omitempty" xml:"abstained,omitempty"`
+	// The submitted answers. Omitted on pseudo-anonymous votes and before voting.
+	PollAnswers []*VoteAnswerResponseBody `form:"poll_answers,omitempty" json:"poll_answers,omitempty" xml:"poll_answers,omitempty"`
+	// The submitted comments. Omitted on pseudo-anonymous votes and before voting.
+	CommentResponses []*CommentResponseResponseBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
+}
+
 // NewCreateVoteRequestBody builds the HTTP request body from the payload of
 // the "create_vote" endpoint of the "vote" service.
 func NewCreateVoteRequestBody(p *vote.CreateVotePayload) *CreateVoteRequestBody {
@@ -1922,6 +2043,15 @@ func NewUpdateVoteResponseByLinkRequestBody(p *vote.UpdateVoteResponseByLinkPayl
 			}
 			body.CommentResponses[i] = marshalVoteCommentResponseToCommentResponseRequestBody(val)
 		}
+	}
+	return body
+}
+
+// NewGetVoteBallotByLinkRequestBody builds the HTTP request body from the
+// payload of the "get_vote_ballot_by_link" endpoint of the "vote" service.
+func NewGetVoteBallotByLinkRequestBody(p *vote.GetVoteBallotByLinkPayload) *GetVoteBallotByLinkRequestBody {
+	body := &GetVoteBallotByLinkRequestBody{
+		VoteToken: p.VoteToken,
 	}
 	return body
 }
@@ -3145,6 +3275,118 @@ func NewUpdateVoteResponseByLinkUnauthorized(body *UpdateVoteResponseByLinkUnaut
 	return v
 }
 
+// NewGetVoteBallotByLinkVoteLinkBallotResultOK builds a "vote" service
+// "get_vote_ballot_by_link" endpoint result from a HTTP "OK" response.
+func NewGetVoteBallotByLinkVoteLinkBallotResultOK(body *GetVoteBallotByLinkResponseBody) *vote.VoteLinkBallotResult {
+	v := &vote.VoteLinkBallotResult{
+		VoteUID:         *body.VoteUID,
+		Name:            *body.Name,
+		Description:     *body.Description,
+		Status:          *body.Status,
+		EndTime:         body.EndTime,
+		EndTimeTimezone: body.EndTimeTimezone,
+		EarlyEndTime:    body.EarlyEndTime,
+		NumWinners:      body.NumWinners,
+		AllowAbstain:    body.AllowAbstain,
+		PseudoAnonymity: *body.PseudoAnonymity,
+	}
+	if body.PollType != nil {
+		v.PollType = *body.PollType
+	}
+	if body.PollType == nil {
+		v.PollType = "generic"
+	}
+	if body.PollQuestions != nil {
+		v.PollQuestions = make([]*vote.PollQuestion, len(body.PollQuestions))
+		for i, val := range body.PollQuestions {
+			if val == nil {
+				v.PollQuestions[i] = nil
+				continue
+			}
+			v.PollQuestions[i] = unmarshalPollQuestionResponseBodyToVotePollQuestion(val)
+		}
+	}
+	if body.PollCommentPrompts != nil {
+		v.PollCommentPrompts = make([]*vote.PollCommentPrompt, len(body.PollCommentPrompts))
+		for i, val := range body.PollCommentPrompts {
+			if val == nil {
+				v.PollCommentPrompts[i] = nil
+				continue
+			}
+			v.PollCommentPrompts[i] = unmarshalPollCommentPromptResponseBodyToVotePollCommentPrompt(val)
+		}
+	}
+	v.Ballot = unmarshalVoteLinkBallotResponseBodyToVoteVoteLinkBallot(body.Ballot)
+
+	return v
+}
+
+// NewGetVoteBallotByLinkBadRequest builds a vote service
+// get_vote_ballot_by_link endpoint BadRequest error.
+func NewGetVoteBallotByLinkBadRequest(body *GetVoteBallotByLinkBadRequestResponseBody) *vote.BadRequestError {
+	v := &vote.BadRequestError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetVoteBallotByLinkForbidden builds a vote service
+// get_vote_ballot_by_link endpoint Forbidden error.
+func NewGetVoteBallotByLinkForbidden(body *GetVoteBallotByLinkForbiddenResponseBody) *vote.ForbiddenError {
+	v := &vote.ForbiddenError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetVoteBallotByLinkInternalServerError builds a vote service
+// get_vote_ballot_by_link endpoint InternalServerError error.
+func NewGetVoteBallotByLinkInternalServerError(body *GetVoteBallotByLinkInternalServerErrorResponseBody) *vote.InternalServerError {
+	v := &vote.InternalServerError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetVoteBallotByLinkNotFound builds a vote service get_vote_ballot_by_link
+// endpoint NotFound error.
+func NewGetVoteBallotByLinkNotFound(body *GetVoteBallotByLinkNotFoundResponseBody) *vote.NotFoundError {
+	v := &vote.NotFoundError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetVoteBallotByLinkServiceUnavailable builds a vote service
+// get_vote_ballot_by_link endpoint ServiceUnavailable error.
+func NewGetVoteBallotByLinkServiceUnavailable(body *GetVoteBallotByLinkServiceUnavailableResponseBody) *vote.ServiceUnavailableError {
+	v := &vote.ServiceUnavailableError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetVoteBallotByLinkUnauthorized builds a vote service
+// get_vote_ballot_by_link endpoint Unauthorized error.
+func NewGetVoteBallotByLinkUnauthorized(body *GetVoteBallotByLinkUnauthorizedResponseBody) *vote.UnauthorizedError {
+	v := &vote.UnauthorizedError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
 // NewResendVoteResponseBadRequest builds a vote service resend_vote_response
 // endpoint BadRequest error.
 func NewResendVoteResponseBadRequest(body *ResendVoteResponseBadRequestResponseBody) *vote.BadRequestError {
@@ -3557,6 +3799,73 @@ func ValidateGetVoteResponseResponseBody(body *GetVoteResponseResponseBody) (err
 			if err2 := ValidateCommentResponseResponseBody(e); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
+		}
+	}
+	return
+}
+
+// ValidateGetVoteBallotByLinkResponseBody runs the validations defined on
+// get_vote_ballot_by_link_response_body
+func ValidateGetVoteBallotByLinkResponseBody(body *GetVoteBallotByLinkResponseBody) (err error) {
+	if body.VoteUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
+	}
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Description == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("description", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.PseudoAnonymity == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("pseudo_anonymity", "body"))
+	}
+	if body.Ballot == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("ballot", "body"))
+	}
+	if body.VoteUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))
+	}
+	if body.Status != nil {
+		if !(*body.Status == "disabled" || *body.Status == "active" || *body.Status == "ended") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"disabled", "active", "ended"}))
+		}
+	}
+	if body.EndTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", *body.EndTime, goa.FormatDateTime))
+	}
+	if body.EndTimeTimezone != nil {
+		if utf8.RuneCountInString(*body.EndTimeTimezone) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.end_time_timezone", *body.EndTimeTimezone, utf8.RuneCountInString(*body.EndTimeTimezone), 1, true))
+		}
+	}
+	if body.EarlyEndTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.early_end_time", *body.EarlyEndTime, goa.FormatDateTime))
+	}
+	if body.PollType != nil {
+		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
+		}
+	}
+	for _, e := range body.PollQuestions {
+		if e != nil {
+			if err2 := ValidatePollQuestionResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.PollCommentPrompts {
+		if e != nil {
+			if err2 := ValidatePollCommentPromptResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if body.Ballot != nil {
+		if err2 := ValidateVoteLinkBallotResponseBody(body.Ballot); err2 != nil {
+			err = goa.MergeErrors(err, err2)
 		}
 	}
 	return
@@ -4540,6 +4849,80 @@ func ValidateUpdateVoteResponseByLinkUnauthorizedResponseBody(body *UpdateVoteRe
 	return
 }
 
+// ValidateGetVoteBallotByLinkBadRequestResponseBody runs the validations
+// defined on get_vote_ballot_by_link_BadRequest_response_body
+func ValidateGetVoteBallotByLinkBadRequestResponseBody(body *GetVoteBallotByLinkBadRequestResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetVoteBallotByLinkForbiddenResponseBody runs the validations
+// defined on get_vote_ballot_by_link_Forbidden_response_body
+func ValidateGetVoteBallotByLinkForbiddenResponseBody(body *GetVoteBallotByLinkForbiddenResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetVoteBallotByLinkInternalServerErrorResponseBody runs the
+// validations defined on
+// get_vote_ballot_by_link_InternalServerError_response_body
+func ValidateGetVoteBallotByLinkInternalServerErrorResponseBody(body *GetVoteBallotByLinkInternalServerErrorResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetVoteBallotByLinkNotFoundResponseBody runs the validations defined
+// on get_vote_ballot_by_link_NotFound_response_body
+func ValidateGetVoteBallotByLinkNotFoundResponseBody(body *GetVoteBallotByLinkNotFoundResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetVoteBallotByLinkServiceUnavailableResponseBody runs the
+// validations defined on
+// get_vote_ballot_by_link_ServiceUnavailable_response_body
+func ValidateGetVoteBallotByLinkServiceUnavailableResponseBody(body *GetVoteBallotByLinkServiceUnavailableResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetVoteBallotByLinkUnauthorizedResponseBody runs the validations
+// defined on get_vote_ballot_by_link_Unauthorized_response_body
+func ValidateGetVoteBallotByLinkUnauthorizedResponseBody(body *GetVoteBallotByLinkUnauthorizedResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
 // ValidateResendVoteResponseBadRequestResponseBody runs the validations
 // defined on resend_vote_response_BadRequest_response_body
 func ValidateResendVoteResponseBadRequestResponseBody(body *ResendVoteResponseBadRequestResponseBody) (err error) {
@@ -5177,6 +5560,35 @@ func ValidateCommentResponseResponseBody(body *CommentResponseResponseBody) (err
 	}
 	if body.PromptID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.prompt_id", *body.PromptID, goa.FormatUUID))
+	}
+	return
+}
+
+// ValidateVoteLinkBallotResponseBody runs the validations defined on
+// VoteLinkBallotResponseBody
+func ValidateVoteLinkBallotResponseBody(body *VoteLinkBallotResponseBody) (err error) {
+	if body.VoteStatus == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_status", "body"))
+	}
+	if body.AlreadyVoted == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("already_voted", "body"))
+	}
+	if body.VoterRemoved == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("voter_removed", "body"))
+	}
+	for _, e := range body.PollAnswers {
+		if e != nil {
+			if err2 := ValidateVoteAnswerResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.CommentResponses {
+		if e != nil {
+			if err2 := ValidateCommentResponseResponseBody(e); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
 	}
 	return
 }

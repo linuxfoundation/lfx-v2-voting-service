@@ -30,6 +30,7 @@ type Endpoints struct {
 	UpdateVoteResponse       goa.Endpoint
 	CreateVoteResponseByLink goa.Endpoint
 	UpdateVoteResponseByLink goa.Endpoint
+	GetVoteBallotByLink      goa.Endpoint
 	ResendVoteResponse       goa.Endpoint
 }
 
@@ -51,6 +52,7 @@ func NewEndpoints(s Service) *Endpoints {
 		UpdateVoteResponse:       NewUpdateVoteResponseEndpoint(s, a.JWTAuth),
 		CreateVoteResponseByLink: NewCreateVoteResponseByLinkEndpoint(s, a.JWTAuth),
 		UpdateVoteResponseByLink: NewUpdateVoteResponseByLinkEndpoint(s, a.JWTAuth),
+		GetVoteBallotByLink:      NewGetVoteBallotByLinkEndpoint(s, a.JWTAuth),
 		ResendVoteResponse:       NewResendVoteResponseEndpoint(s, a.JWTAuth),
 	}
 }
@@ -70,6 +72,7 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.UpdateVoteResponse = m(e.UpdateVoteResponse)
 	e.CreateVoteResponseByLink = m(e.CreateVoteResponseByLink)
 	e.UpdateVoteResponseByLink = m(e.UpdateVoteResponseByLink)
+	e.GetVoteBallotByLink = m(e.GetVoteBallotByLink)
 	e.ResendVoteResponse = m(e.ResendVoteResponse)
 }
 
@@ -369,6 +372,29 @@ func NewUpdateVoteResponseByLinkEndpoint(s Service, authJWTFn security.AuthJWTFu
 			return nil, err
 		}
 		return nil, s.UpdateVoteResponseByLink(ctx, p)
+	}
+}
+
+// NewGetVoteBallotByLinkEndpoint returns an endpoint function that calls the
+// method "get_vote_ballot_by_link" of service "vote".
+func NewGetVoteBallotByLinkEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*GetVoteBallotByLinkPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{"read:projects", "manage:projects", "manage:voting"},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.Token != nil {
+			token = *p.Token
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.GetVoteBallotByLink(ctx, p)
 	}
 }
 

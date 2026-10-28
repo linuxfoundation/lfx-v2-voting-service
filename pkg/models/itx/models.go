@@ -179,6 +179,9 @@ type RankedChoiceInput struct {
 	ChoiceRank int    `json:"choice_rank"`
 }
 
+// VoteStatusResponded is the ITX vote_status of a ballot that has been submitted.
+const VoteStatusResponded = "responded"
+
 // VoteResponse represents a vote response from ITX
 type VoteResponse struct {
 	VoteID                 string            `json:"vote_id"`
@@ -210,6 +213,9 @@ type VoteResponse struct {
 	SESLinkClickedLastTime string            `json:"ses_link_clicked_last_time,omitempty"`
 	PollAnswers            []PollAnswer      `json:"poll_answers"`
 	CommentResponses       []CommentResponse `json:"comment_responses"`
+	// VoterRemoved is true once the recipient was removed from the vote; ITX then rejects
+	// submissions and updates for this ballot.
+	VoterRemoved bool `json:"voter_removed"`
 }
 
 // PollAnswer represents a vote answer in the response

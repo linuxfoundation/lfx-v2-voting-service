@@ -18,6 +18,10 @@ sequenceDiagram
     V->>ITX: POST /v2/voting/poll/{id}/bulk_resend<br/>{recipient_ids, recipient_links}
     ITX-->>Voter: email with personal link
     Voter->>SS: GET /votes/{vote_uid}#vote_token=... (fragment stays in the browser)
+    SS->>H: POST /vote_links/ballot {vote_token}
+    H->>V: anonymous JWT (allow_all)
+    V->>ITX: GET /v2/voting/vote/{ballot} + GET /v2/voting/poll/{vote}
+    V-->>SS: questions + this ballot's state
     SS->>H: POST|PUT /vote_links/responses {vote_token, answers}
     H->>V: anonymous JWT (allow_all)
     V->>V: verify token → vote_response_uid
@@ -54,6 +58,15 @@ v1.<kid>.<base64url(payload)>.<base64url(HMAC-SHA256(key[kid], "v1.<kid>.<payloa
 - **Signed, not encrypted.** Anyone holding the token can decode the payload. It contains only the two IDs, with no email or name.
 - **No expiry.** ITX checks on every submission and rejects it while the vote is ended or the voter is removed. Ending a vote does **not** revoke its links permanently: **extending an ended vote reactivates it, and its existing links work again.** Only removing the voter or the signing key revokes a link.
 - **Implementation:** `internal/infrastructure/votelink/hmac_signer.go`, behind `domain.VoteLinkSigner`.
+
+## Reading the ballot
+
+`POST /vote_links/ballot { vote_token }` returns what the ballot page needs:
+
+- The vote: name, description, status, end time, poll type, number of winners, whether abstaining is allowed, questions with choices, and comment prompts. It never returns project, committee, creator or response counts.
+- This recipient's ballot: `vote_status`, `already_voted` (so the page knows to use `PUT` to change it) and `voter_removed`. On **regular** votes, once a ballot is submitted, it also returns `abstained`, `poll_answers` and `comment_responses`, so the page can prefill them. On **pseudo-anonymous** votes these are never returned, because a forwarded link must not reveal how someone voted.
+
+Both IDs come from the verified token. The service fetches the ballot first and returns `404 invalid voting link` unless it belongs to the token's vote. It then fetches the vote. No ID mapping is involved.
 
 ## Authorization model
 
@@ -110,4 +123,4 @@ Until ITX supports this, ITX ignores the field and emails the standard link.
   - SES click tracking and browser history will see the full URL, fragment included.
   - Servers, `Referer` headers and request logs never see the token, because it's in the fragment.
 - **Only bulk resend sends personalized links.** Enable, extend and reminder emails still use the standard link.
-- **No anonymous read endpoint.** The Self Serve page must load the vote's questions itself.
+- **Prefill depends on the vote type.** A link holder can read their own previous answers on regular votes, but not on pseudo-anonymous ones.
