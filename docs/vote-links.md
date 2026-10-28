@@ -17,7 +17,7 @@ sequenceDiagram
     V->>V: sign token per recipient (HMAC-SHA256)
     V->>ITX: POST /v2/voting/poll/{id}/bulk_resend<br/>{recipient_ids, recipient_links}
     ITX-->>Voter: email with personal link
-    Voter->>SS: GET /votes/{vote_uid}?vote_token=...
+    Voter->>SS: GET /votes/{vote_uid}#vote_token=... (fragment stays in the browser)
     SS->>H: POST|PUT /vote_links/responses {vote_token, answers}
     H->>V: anonymous JWT (allow_all)
     V->>V: verify token → vote_response_uid
@@ -27,13 +27,15 @@ sequenceDiagram
 ## Link format
 
 ```
-{LFX_SELF_SERVE_BASE_URL}/votes/{vote_uid}?vote_token={token}
+{LFX_SELF_SERVE_BASE_URL}/votes/{vote_uid}#vote_token={token}
 ```
+
+The token is in the URL **fragment**, so the browser never sends it to a server. It stays out of access, ingress and CDN logs, OTel `http.url` attributes, `Referer` headers and analytics page events. The Self Serve page reads it client-side and sends it in the body of `POST`/`PUT /vote_links/responses`. `LFX_SELF_SERVE_BASE_URL` must be `https`; the service refuses to start with personalized links enabled otherwise.
 
 Example (production):
 
 ```
-https://app.lfx.dev/votes/8f3c2a1e-4b5d-4e6f-9a7b-1c2d3e4f5a6b?vote_token=v1.k2026a.eyJ2IjoiOGYzYzJhMWUtNGI1ZC00ZTZmLTlhN2ItMWMyZDNlNGY1YTZiIiwiciI6ImNiYTE0ZjQwLTE2MzYtMTFlYy05NjIxLTAyNDJhYzEzMDAwMiIsImlhdCI6MTc5MzIzMjAwMH0.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU
+https://app.lfx.dev/votes/8f3c2a1e-4b5d-4e6f-9a7b-1c2d3e4f5a6b#vote_token=v1.k2026a.eyJ2IjoiOGYzYzJhMWUtNGI1ZC00ZTZmLTlhN2ItMWMyZDNlNGY1YTZiIiwiciI6ImNiYTE0ZjQwLTE2MzYtMTFlYy05NjIxLTAyNDJhYzEzMDAwMiIsImlhdCI6MTc5MzIzMjAwMH0.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU
 ```
 
 ## Token format
@@ -50,7 +52,7 @@ v1.<kid>.<base64url(payload)>.<base64url(HMAC-SHA256(key[kid], "v1.<kid>.<payloa
 | signature | HMAC-SHA256 over the first three segments, compared in constant time |
 
 - **Signed, not encrypted.** Anyone holding the token can decode the payload. It contains only the two IDs, with no email or name.
-- **No expiry.** ITX checks on every submission and rejects it once the vote has ended or the voter has been removed. That limits how long a link is useful without needing an expiry in the token.
+- **No expiry.** ITX checks on every submission and rejects it while the vote is ended or the voter is removed. Ending a vote does **not** revoke its links permanently: **extending an ended vote reactivates it, and its existing links work again.** Only removing the voter or the signing key revokes a link.
 - **Implementation:** `internal/infrastructure/votelink/hmac_signer.go`, behind `domain.VoteLinkSigner`.
 
 ## Authorization model
@@ -65,7 +67,8 @@ The service enforces this as follows:
   - the voter has not been removed;
   - create needs `vote_status = awaiting_response`;
   - update needs `vote_status = responded`.
-- Tokens and links are never logged. Logs record the vote and ballot UIDs and the key ID.
+- Tokens and links are never logged. Logs record the vote and ballot UIDs and the key ID, but not ballot contents such as `abstain`.
+- Request bodies on `/vote_links/` are capped at 1 MiB before decoding, and null answer entries are rejected with a 400.
 
 The existing `POST /vote_responses` and `PUT /vote_responses/{id}` routes are unchanged and still require the OpenFGA `owner` check.
 
@@ -74,30 +77,37 @@ The existing `POST /vote_responses` and `PUT /vote_responses/{id}` routes are un
 | Variable | Description |
 |---|---|
 | `VOTE_LINK_SIGNING_KEYS` | `kid1:base64key,kid2:base64key`. Each key must be at least 32 bytes after decoding. Unset means the feature is disabled. Set but invalid means the service **fails at startup**. Comes from the `lfx-v2-voting-service` Secret (key `VOTE_LINK_SIGNING_KEYS`, optional), synced by the service's ExternalSecret in lfx-v2-argocd from AWS Secrets Manager `/cloudops/managed-secrets/voting/vote-link-signing-keys` (property `vote_link_signing_keys`), which lfx-secrets-management fills from the 1Password item "LFX Voting Vote Link Signing Keys". |
-| `VOTE_LINK_ACTIVE_KID` | The key ID used for signing. Required when more than one key is configured. |
-| `LFX_SELF_SERVE_BASE_URL` | The base of the link. Defaults to the environment's LFX app URL, derived from `LFX_ENVIRONMENT`. |
+| `VOTE_LINK_ACTIVE_KID` | Optional override for the signing key ID. When unset, the **first key listed** in `VOTE_LINK_SIGNING_KEYS` signs. Prefer leaving it unset so rotation only touches one Secret value. |
+| `LFX_SELF_SERVE_BASE_URL` | The base of the link; must be `https`. Defaults to the environment's LFX app URL, derived from `LFX_ENVIRONMENT`. |
 
 To generate a key: `echo "k$(date +%Y%m):$(openssl rand -base64 32)"`
 
 ### Key rotation
 
-1. Add the new key to `VOTE_LINK_SIGNING_KEYS` and set `VOTE_LINK_ACTIVE_KID` to it. Links already sent keep working, because every listed key can verify.
-2. Once the old links are no longer needed (for example, after the votes that used them have closed), remove the old key. **Removing a key revokes every link signed with it.** You can use that as an emergency revocation.
+Keys are read **only at pod startup**. Creating, rotating or removing a key has no effect on running pods until they restart, so every change below needs a rollout (for example `kubectl rollout restart deployment/lfx-v2-voting-service -n voting-service` after the ExternalSecret has refreshed).
+
+Every replica must be able to verify a new key **before** any replica signs with it. Otherwise a link signed by a new pod could be rejected by an old one during the rollout. So rotate in two steps:
+
+1. **Add the new key last**, e.g. `kOld:...,kNew:...`, and roll out. All replicas now verify `kNew`, and `kOld` still signs.
+2. **Move the new key first**, e.g. `kNew:...,kOld:...`, and roll out. `kNew` now signs, and links signed with `kOld` keep working.
+3. Once the old links are no longer needed, remove `kOld` and roll out. **Removing a key revokes every link signed with it**, including links for votes that might later be extended.
+
+For an **emergency revocation**, remove the compromised key (adding a fresh key first if the list would be empty) and roll out immediately.
 
 ## ITX dependency
 
 ITX must accept `recipient_links` on `POST /v2/voting/poll/{poll_id}/bulk_resend` and use each value as that recipient's `VotingLink`. This goes in `itx-service-voting`'s `bulkResendEmail` (`polling.go`), where `models.VotingEmailData.VotingLink` is already set per recipient. ITX should reject:
 - keys that aren't in `recipient_ids`;
-- links that aren't https on its configured Self Serve host, so a caller can't make ITX email arbitrary URLs.
+- links that aren't `https://<Self Serve host>/votes/{poll_id}#vote_token=...`, so a caller can't make ITX email arbitrary URLs.
 
 Until ITX supports this, ITX ignores the field and emails the standard link.
 
 ## Known limits
 
-- **A link is a bearer credential.** Anyone who has the email, including a forwarded copy, can vote as that recipient until the vote closes or the voter is removed.
+- **A link is a bearer credential.** Anyone who has the email, including a forwarded copy, can vote as that recipient while the vote is active, including after an ended vote is extended, until the voter or the signing key is removed.
 - **Exposure points:**
   - Email security scanners may open the link (GET). That's harmless, because voting needs POST/PUT.
-  - SES click tracking and browser history will see the URL.
-  - The Self Serve page should send `Referrer-Policy: no-referrer` and redact `vote_token` from its access logs.
+  - SES click tracking and browser history will see the full URL, fragment included.
+  - Servers, `Referer` headers and request logs never see the token, because it's in the fragment.
 - **Only bulk resend sends personalized links.** Enable, extend and reminder emails still use the standard link.
 - **No anonymous read endpoint.** The Self Serve page must load the vote's questions itself.

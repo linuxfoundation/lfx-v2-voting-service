@@ -876,7 +876,7 @@ x-scope: manage:voting
 {
   "recipient_ids": ["cba14f40-1636-11ec-9621-0242ac130002"],
   "recipient_links": {
-    "cba14f40-1636-11ec-9621-0242ac130002": "https://app.lfx.dev/votes/8f3c2a1e-4b5d-4e6f-9a7b-1c2d3e4f5a6b?vote_token=v1.k2026a.eyJ2Ijoi...fQ.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU"
+    "cba14f40-1636-11ec-9621-0242ac130002": "https://app.lfx.dev/votes/8f3c2a1e-4b5d-4e6f-9a7b-1c2d3e4f5a6b#vote_token=v1.k2026a.eyJ2Ijoi...fQ.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU"
   }
 }
 ```

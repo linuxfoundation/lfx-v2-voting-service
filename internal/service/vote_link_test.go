@@ -126,8 +126,8 @@ func TestBulkResendVote_PersonalizedLinks_BuildsLinkPerRecipient(t *testing.T) {
 		t.Errorf("RecipientIDs should pass through unchanged, got %v", client.req.RecipientIDs)
 	}
 	want := map[string]string{
-		"r1": "https://app.lfx.dev/votes/vote-1?vote_token=" + url.QueryEscape("tok:vote-1:r1"),
-		"r2": "https://app.lfx.dev/votes/vote-1?vote_token=" + url.QueryEscape("tok:vote-1:r2"),
+		"r1": "https://app.lfx.dev/votes/vote-1#vote_token=" + url.QueryEscape("tok:vote-1:r1"),
+		"r2": "https://app.lfx.dev/votes/vote-1#vote_token=" + url.QueryEscape("tok:vote-1:r2"),
 	}
 	if len(client.req.RecipientLinks) != len(want) {
 		t.Fatalf("RecipientLinks = %v, want %v", client.req.RecipientLinks, want)

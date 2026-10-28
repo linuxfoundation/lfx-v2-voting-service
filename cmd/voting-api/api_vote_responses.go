@@ -112,7 +112,7 @@ func (s *VotingAPI) ResendVoteResponse(ctx context.Context, payload *votesvc.Res
 func (s *VotingAPI) CreateVoteResponseByLink(ctx context.Context, payload *votesvc.CreateVoteResponseByLinkPayload) error {
 	logger := slog.With("component", "voting_api", "method", "CreateVoteResponseByLink")
 
-	logger.InfoContext(ctx, "Create vote response by link request received", "abstain", payload.Abstain)
+	logger.InfoContext(ctx, "Create vote response by link request received")
 
 	// Convert Goa payload to service request
 	req, err := apiservice.ConvertCreateVoteResponseByLinkPayloadToDomain(payload)
@@ -138,7 +138,7 @@ func (s *VotingAPI) CreateVoteResponseByLink(ctx context.Context, payload *votes
 func (s *VotingAPI) UpdateVoteResponseByLink(ctx context.Context, payload *votesvc.UpdateVoteResponseByLinkPayload) error {
 	logger := slog.With("component", "voting_api", "method", "UpdateVoteResponseByLink")
 
-	logger.InfoContext(ctx, "Update vote response by link request received", "abstain", payload.Abstain)
+	logger.InfoContext(ctx, "Update vote response by link request received")
 
 	// Convert Goa payload to service request
 	req, err := apiservice.ConvertUpdateVoteResponseByLinkPayloadToDomain(payload)

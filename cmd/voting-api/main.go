@@ -5,7 +5,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -210,8 +209,9 @@ func run() int {
 	}
 	if linkSigner != nil {
 		linkBaseURL := resolveSelfServeBaseURL()
-		if parsed, err := url.ParseRequestURI(linkBaseURL); err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") || parsed.Host == "" {
-			logger.Error("LFX_SELF_SERVE_BASE_URL is invalid; it is required for personalized vote links", "url", linkBaseURL, "error", err)
+		// Links carry a voting credential, so they must only ever be served over HTTPS.
+		if parsed, err := url.ParseRequestURI(linkBaseURL); err != nil || parsed.Scheme != "https" || parsed.Host == "" {
+			logger.Error("LFX_SELF_SERVE_BASE_URL must be an https URL for personalized vote links", "url", linkBaseURL, "error", err)
 			return 1
 		}
 		voteOpts = append(voteOpts, service.WithVoteLinks(linkSigner, linkBaseURL))
@@ -240,6 +240,9 @@ func run() int {
 		koDataPath = "../../gen/http"
 	}
 	koDataDir := http.Dir(koDataPath)
+
+	// Cap request bodies on the anonymous vote-link routes before Goa decodes them.
+	mux.Use(limitVoteLinkBody)
 
 	// Register route-tagging middleware inside chi's routing chain so that
 	// http.route is set on the OTel span after chi has matched the route pattern.
@@ -424,22 +427,19 @@ func loadConfig() config {
 // newVoteLinkSigner builds the personalized vote link signer from configuration. It returns
 // nil when VOTE_LINK_SIGNING_KEYS is unset (feature disabled) and an error when the keys are
 // set but invalid, so a misconfigured deployment fails at startup rather than at send time.
+// The active (signing) key is VOTE_LINK_ACTIVE_KID when set, otherwise the first key listed,
+// so a rotation only ever has to change the one Secret value.
 func newVoteLinkSigner(cfg config) (*votelink.HMACSigner, error) {
 	if strings.TrimSpace(cfg.VoteLinkSigningKeys) == "" {
 		return nil, nil
 	}
-	keys, err := votelink.ParseKeys(cfg.VoteLinkSigningKeys)
+	keys, order, err := votelink.ParseKeys(cfg.VoteLinkSigningKeys)
 	if err != nil {
 		return nil, fmt.Errorf("VOTE_LINK_SIGNING_KEYS: %w", err)
 	}
 	activeKID := cfg.VoteLinkActiveKID
 	if activeKID == "" {
-		if len(keys) != 1 {
-			return nil, errors.New("VOTE_LINK_ACTIVE_KID is required when VOTE_LINK_SIGNING_KEYS has more than one key")
-		}
-		for kid := range keys {
-			activeKID = kid
-		}
+		activeKID = order[0]
 	}
 	return votelink.NewHMACSigner(keys, activeKID)
 }
@@ -506,4 +506,20 @@ func resolveSelfServeBaseURL() string {
 	default:
 		return "https://app.dev.lfx.dev"
 	}
+}
+
+// maxVoteLinkBodyBytes caps request bodies on the anonymous /vote_links/ routes. A ballot is a
+// few KiB; the cap stops unauthenticated callers forcing large allocations during decoding,
+// before the vote token is verified.
+const maxVoteLinkBodyBytes = 1 << 20
+
+// limitVoteLinkBody wraps the request body of /vote_links/ requests in http.MaxBytesReader, so
+// oversized bodies fail decoding with a 400 instead of being read into memory.
+func limitVoteLinkBody(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/vote_links/") {
+			r.Body = http.MaxBytesReader(w, r.Body, maxVoteLinkBodyBytes)
+		}
+		next.ServeHTTP(w, r)
+	})
 }

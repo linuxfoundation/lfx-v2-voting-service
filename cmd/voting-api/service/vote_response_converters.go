@@ -23,7 +23,11 @@ func ConvertCreateVoteResponsePayloadToDomain(payload *votesvc.CreateVoteRespons
 		Abstain: payload.Abstain,
 	}
 
-	req.UserVoteContent = convertVoteAnswers(payload.UserVoteContent)
+	answers, err := convertVoteAnswers(payload.UserVoteContent)
+	if err != nil {
+		return nil, err
+	}
+	req.UserVoteContent = answers
 
 	comments, err := convertCommentResponses(payload.CommentResponses)
 	if err != nil {
@@ -43,7 +47,11 @@ func ConvertUpdateVoteResponsePayloadToDomain(payload *votesvc.UpdateVoteRespons
 		Abstain: payload.Abstain,
 	}
 
-	req.UserVoteContent = convertVoteAnswers(payload.UserVoteContent)
+	answers, err := convertVoteAnswers(payload.UserVoteContent)
+	if err != nil {
+		return nil, err
+	}
+	req.UserVoteContent = answers
 
 	// Convert comment responses. A nil payload.CommentResponses means the field
 	// was omitted (preserve existing comments); a non-nil value (including an
@@ -63,12 +71,16 @@ func ConvertUpdateVoteResponsePayloadToDomain(payload *votesvc.UpdateVoteRespons
 // service request. VoteID is left empty: the service sets it from the verified token so the
 // ballot can only come from the link, never from the request body.
 func ConvertCreateVoteResponseByLinkPayloadToDomain(payload *votesvc.CreateVoteResponseByLinkPayload) (*service.CreateVoteResponseRequest, error) {
+	answers, err := convertVoteAnswers(payload.UserVoteContent)
+	if err != nil {
+		return nil, err
+	}
 	comments, err := convertCommentResponses(payload.CommentResponses)
 	if err != nil {
 		return nil, err
 	}
 	return &service.CreateVoteResponseRequest{
-		UserVoteContent:  convertVoteAnswers(payload.UserVoteContent),
+		UserVoteContent:  answers,
 		Abstain:          payload.Abstain,
 		CommentResponses: comments,
 	}, nil
@@ -78,8 +90,12 @@ func ConvertCreateVoteResponseByLinkPayloadToDomain(payload *votesvc.CreateVoteR
 // service request, keeping the omitted-vs-empty comment_responses distinction of the
 // authenticated update.
 func ConvertUpdateVoteResponseByLinkPayloadToDomain(payload *votesvc.UpdateVoteResponseByLinkPayload) (*service.UpdateVoteResponseRequest, error) {
+	answers, err := convertVoteAnswers(payload.UserVoteContent)
+	if err != nil {
+		return nil, err
+	}
 	req := &service.UpdateVoteResponseRequest{
-		UserVoteContent: convertVoteAnswers(payload.UserVoteContent),
+		UserVoteContent: answers,
 		Abstain:         payload.Abstain,
 	}
 	if payload.CommentResponses != nil {
@@ -92,11 +108,16 @@ func ConvertUpdateVoteResponseByLinkPayloadToDomain(payload *votesvc.UpdateVoteR
 	return req, nil
 }
 
-// convertVoteAnswers converts Goa vote answers to service requests. A nil input yields an
-// empty, non-nil slice.
-func convertVoteAnswers(answers []*votesvc.VoteAnswerInput) []service.VoteAnswerRequest {
+// convertVoteAnswers converts Goa vote answers to service requests. It returns a validation
+// error (400) for null answers or null ranked choices — the generated validator skips nil
+// array elements, so they are rejected here before they can cause a nil dereference. A nil
+// input yields an empty, non-nil slice.
+func convertVoteAnswers(answers []*votesvc.VoteAnswerInput) ([]service.VoteAnswerRequest, error) {
 	converted := make([]service.VoteAnswerRequest, len(answers))
 	for i, answer := range answers {
+		if answer == nil {
+			return nil, domain.NewValidationError(fmt.Sprintf("user_vote_content[%d] must not be null", i))
+		}
 		converted[i] = service.VoteAnswerRequest{
 			QuestionID: answer.QuestionID,
 			ChoiceIDs:  answer.ChoiceIds,
@@ -105,6 +126,9 @@ func convertVoteAnswers(answers []*votesvc.VoteAnswerInput) []service.VoteAnswer
 		if answer.RankedChoices != nil {
 			converted[i].RankedChoices = make([]service.RankedChoiceRequest, len(answer.RankedChoices))
 			for j, rc := range answer.RankedChoices {
+				if rc == nil {
+					return nil, domain.NewValidationError(fmt.Sprintf("user_vote_content[%d].ranked_choices[%d] must not be null", i, j))
+				}
 				converted[i].RankedChoices[j] = service.RankedChoiceRequest{
 					ChoiceID:   rc.ChoiceID,
 					ChoiceRank: rc.ChoiceRank,
@@ -112,7 +136,7 @@ func convertVoteAnswers(answers []*votesvc.VoteAnswerInput) []service.VoteAnswer
 			}
 		}
 	}
-	return converted
+	return converted, nil
 }
 
 // convertCommentResponses converts Goa comment responses to service requests. It returns a

@@ -68,6 +68,15 @@ paths:
                             example:
                                 code: Ea veniam.
                                 message: Repudiandae fugit rem omnis.
+                "409":
+                    description: 'Conflict: Conflict'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConflictError'
+                            example:
+                                code: Fugit amet quia quia ut.
+                                message: Eum ut veritatis.
                 "500":
                     description: 'InternalServerError: Internal server error'
                     content:
@@ -75,8 +84,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/InternalServerError'
                             example:
-                                code: Fugit amet quia quia ut.
-                                message: Eum ut veritatis.
+                                code: Aliquid nam exercitationem blanditiis.
+                                message: Cum et et rerum suscipit quisquam.
                 "503":
                     description: 'ServiceUnavailable: Service unavailable'
                     content:
@@ -84,12 +93,10 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ServiceUnavailableError'
                             example:
-                                code: Aliquid nam exercitationem blanditiis.
-                                message: Cum et et rerum suscipit quisquam.
+                                code: Et vitae sunt id natus.
+                                message: Debitis quis blanditiis consequuntur.
             security:
-                - jwt_header_Authorization:
-                    - manage:projects
-                    - manage:voting
+                - jwt_header_Authorization: []
         put:
             tags:
                 - vote
@@ -103,7 +110,7 @@ paths:
                         schema:
                             $ref: '#/components/schemas/CreateVoteResponseByLinkRequestBody'
                         example:
-                            abstain: true
+                            abstain: false
                             comment_responses:
                                 - comment_text: Because the incumbent has done great work this term.
                                   prompt_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
@@ -122,8 +129,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/BadRequestError'
                             example:
-                                code: Vitae sunt id natus vitae.
-                                message: Quis blanditiis consequuntur non.
+                                code: Dolores quasi.
+                                message: Unde quaerat.
                 "401":
                     description: 'Unauthorized: Unauthorized'
                     content:
@@ -131,8 +138,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/UnauthorizedError'
                             example:
-                                code: Dolores quasi.
-                                message: Unde quaerat.
+                                code: Odit laudantium tenetur occaecati.
+                                message: Et sunt eum provident.
                 "403":
                     description: 'Forbidden: Forbidden'
                     content:
@@ -140,8 +147,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ForbiddenError'
                             example:
-                                code: Odit laudantium tenetur occaecati.
-                                message: Et sunt eum provident.
+                                code: Voluptate ullam ullam vero non.
+                                message: Velit corporis.
                 "404":
                     description: 'NotFound: Not found'
                     content:
@@ -149,8 +156,17 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/NotFoundError'
                             example:
-                                code: Voluptate ullam ullam vero non.
-                                message: Velit corporis.
+                                code: Iusto vel explicabo ipsa quo est facere.
+                                message: Voluptatibus esse facilis molestiae.
+                "409":
+                    description: 'Conflict: Conflict'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ConflictError'
+                            example:
+                                code: Sed quibusdam voluptatem distinctio nulla unde.
+                                message: Autem quia earum vero consequatur qui accusamus.
                 "500":
                     description: 'InternalServerError: Internal server error'
                     content:
@@ -158,8 +174,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/InternalServerError'
                             example:
-                                code: Iusto vel explicabo ipsa quo est facere.
-                                message: Voluptatibus esse facilis molestiae.
+                                code: Corrupti eum nesciunt ut.
+                                message: Velit aut distinctio enim eum necessitatibus.
                 "503":
                     description: 'ServiceUnavailable: Service unavailable'
                     content:
@@ -167,12 +183,10 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ServiceUnavailableError'
                             example:
-                                code: Sed quibusdam voluptatem distinctio nulla unde.
-                                message: Autem quia earum vero consequatur qui accusamus.
+                                code: Repellat suscipit dolorem quo ut non.
+                                message: In et ipsam eum.
             security:
-                - jwt_header_Authorization:
-                    - manage:projects
-                    - manage:voting
+                - jwt_header_Authorization: []
     /vote_responses:
         post:
             tags:
@@ -588,8 +602,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/BadRequestError'
                             example:
-                                code: Corrupti eum nesciunt ut.
-                                message: Velit aut distinctio enim eum necessitatibus.
+                                code: Magnam placeat molestiae iusto atque.
+                                message: Ea totam possimus delectus.
                 "401":
                     description: 'Unauthorized: Unauthorized'
                     content:
@@ -597,8 +611,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/UnauthorizedError'
                             example:
-                                code: Repellat suscipit dolorem quo ut non.
-                                message: In et ipsam eum.
+                                code: Earum quaerat et quo quaerat nesciunt.
+                                message: Recusandae et architecto et non.
                 "403":
                     description: 'Forbidden: Forbidden'
                     content:
@@ -606,8 +620,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ForbiddenError'
                             example:
-                                code: Magnam placeat molestiae iusto atque.
-                                message: Ea totam possimus delectus.
+                                code: Natus perferendis quasi.
+                                message: Amet dolorem voluptatem est ut.
                 "404":
                     description: 'NotFound: Not found'
                     content:
@@ -615,8 +629,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/NotFoundError'
                             example:
-                                code: Earum quaerat et quo quaerat nesciunt.
-                                message: Recusandae et architecto et non.
+                                code: Sed non sunt.
+                                message: Reiciendis deserunt nam sint facilis.
                 "500":
                     description: 'InternalServerError: Internal server error'
                     content:
@@ -624,8 +638,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/InternalServerError'
                             example:
-                                code: Natus perferendis quasi.
-                                message: Amet dolorem voluptatem est ut.
+                                code: Recusandae voluptatum.
+                                message: Consectetur commodi aliquam voluptatem ratione velit eos.
                 "503":
                     description: 'ServiceUnavailable: Service unavailable'
                     content:
@@ -633,8 +647,8 @@ paths:
                             schema:
                                 $ref: '#/components/schemas/ServiceUnavailableError'
                             example:
-                                code: Sed non sunt.
-                                message: Reiciendis deserunt nam sint facilis.
+                                code: Cupiditate est placeat optio voluptas.
+                                message: Est eligendi asperiores iusto autem.
             security:
                 - jwt_header_Authorization:
                     - manage:projects
@@ -3609,7 +3623,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/CommentResponse'
-                    description: The voter's free-text responses to the poll's comment prompts. Allowed regardless of whether abstain is true. Each prompt_id must match one of the poll's comment prompts and must not repeat; each comment_text is required and is rejected with a 400 if longer than 5000 characters.
+                    description: The voter's free-text responses to the poll's comment prompts. Allowed regardless of whether abstain is true — an abstaining voter skips the ballot but may still comment. Each prompt_id must match one of the poll's comment prompts and must not repeat; each comment_text is required (cannot be empty after trimming) and is rejected with a 400 if longer than 5000 characters. Optional; only meaningful if the poll has poll_comment_prompts.
                     example:
                         - comment_text: Because the incumbent has done great work this term.
                           prompt_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
@@ -3624,7 +3638,7 @@ components:
                           question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
                 vote_token:
                     type: string
-                    description: Signed token from the personalized vote link (the vote_token query parameter of the emailed URL). Identifies the ballot; treat it as a credential and never log it.
+                    description: Signed token from the personalized vote link (the vote_token in the emailed URL's fragment). Identifies the ballot; treat it as a credential and never log it.
                     example: v1.k2026a.eyJ2IjoiOGYzYzJhMWUtNGI1ZC00ZTZmLTlhN2ItMWMyZDNlNGY1YTZiIiwiciI6ImNiYTE0ZjQwLTE2MzYtMTFlYy05NjIxLTAyNDJhYzEzMDAwMiIsImlhdCI6MTc5MzIzMjAwMH0.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU
                     minLength: 1
                     maxLength: 1024
@@ -3653,7 +3667,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/CommentResponse'
-                    description: The voter's free-text responses to the poll's comment prompts. Optional; only meaningful if the poll has poll_comment_prompts. Allowed regardless of whether abstain is true — an abstaining voter skips the ballot but may still comment. Each prompt_id must match one of the poll's comment prompts and must not repeat; each comment_text is required (cannot be empty after trimming) and is rejected with a 400 if longer than 5000 characters.
+                    description: The voter's free-text responses to the poll's comment prompts. Allowed regardless of whether abstain is true — an abstaining voter skips the ballot but may still comment. Each prompt_id must match one of the poll's comment prompts and must not repeat; each comment_text is required (cannot be empty after trimming) and is rejected with a 400 if longer than 5000 characters. Optional; only meaningful if the poll has poll_comment_prompts.
                     example:
                         - comment_text: Because the incumbent has done great work this term.
                           prompt_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
@@ -5156,7 +5170,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/CommentResponse'
-                    description: The voter's free-text responses to the poll's comment prompts. Allowed regardless of whether abstain is true — an abstaining voter skips the ballot but may still comment. Otherwise, omitting this field entirely preserves the vote's existing comments untouched; including it (even as an empty array) validates and replaces them. Each prompt_id must match one of the poll's comment prompts and must not repeat; each comment_text is required (cannot be empty after trimming) and is rejected with a 400 if longer than 5000 characters.
+                    description: The voter's free-text responses to the poll's comment prompts. Allowed regardless of whether abstain is true — an abstaining voter skips the ballot but may still comment. Each prompt_id must match one of the poll's comment prompts and must not repeat; each comment_text is required (cannot be empty after trimming) and is rejected with a 400 if longer than 5000 characters. Omitting this field entirely preserves the vote's existing comments untouched; including it (even as an empty array) validates and replaces them.
                     example:
                         - comment_text: Because the incumbent has done great work this term.
                           prompt_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
@@ -5164,7 +5178,7 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/VoteAnswerInput'
-                    description: Updated vote answers
+                    description: Vote answers
                     example:
                         - choice_ids:
                             - b03cdbaf-53b1-4d47-bc04-dd7e459dd309

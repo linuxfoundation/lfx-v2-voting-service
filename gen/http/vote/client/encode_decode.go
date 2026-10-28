@@ -1968,6 +1968,7 @@ func EncodeCreateVoteResponseByLinkRequest(encoder func(*http.Request) goahttp.E
 // controls whether the response body should be restored after having been read.
 // DecodeCreateVoteResponseByLinkResponse may return the following errors:
 //   - "BadRequest" (type *vote.BadRequestError): http.StatusBadRequest
+//   - "Conflict" (type *vote.ConflictError): http.StatusConflict
 //   - "Forbidden" (type *vote.ForbiddenError): http.StatusForbidden
 //   - "InternalServerError" (type *vote.InternalServerError): http.StatusInternalServerError
 //   - "NotFound" (type *vote.NotFoundError): http.StatusNotFound
@@ -2005,6 +2006,20 @@ func DecodeCreateVoteResponseByLinkResponse(decoder func(*http.Response) goahttp
 				return nil, goahttp.ErrValidationError("vote", "create_vote_response_by_link", err)
 			}
 			return nil, NewCreateVoteResponseByLinkBadRequest(&body)
+		case http.StatusConflict:
+			var (
+				body CreateVoteResponseByLinkConflictResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "create_vote_response_by_link", err)
+			}
+			err = ValidateCreateVoteResponseByLinkConflictResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "create_vote_response_by_link", err)
+			}
+			return nil, NewCreateVoteResponseByLinkConflict(&body)
 		case http.StatusForbidden:
 			var (
 				body CreateVoteResponseByLinkForbiddenResponseBody
@@ -2127,6 +2142,7 @@ func EncodeUpdateVoteResponseByLinkRequest(encoder func(*http.Request) goahttp.E
 // controls whether the response body should be restored after having been read.
 // DecodeUpdateVoteResponseByLinkResponse may return the following errors:
 //   - "BadRequest" (type *vote.BadRequestError): http.StatusBadRequest
+//   - "Conflict" (type *vote.ConflictError): http.StatusConflict
 //   - "Forbidden" (type *vote.ForbiddenError): http.StatusForbidden
 //   - "InternalServerError" (type *vote.InternalServerError): http.StatusInternalServerError
 //   - "NotFound" (type *vote.NotFoundError): http.StatusNotFound
@@ -2164,6 +2180,20 @@ func DecodeUpdateVoteResponseByLinkResponse(decoder func(*http.Response) goahttp
 				return nil, goahttp.ErrValidationError("vote", "update_vote_response_by_link", err)
 			}
 			return nil, NewUpdateVoteResponseByLinkBadRequest(&body)
+		case http.StatusConflict:
+			var (
+				body UpdateVoteResponseByLinkConflictResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "update_vote_response_by_link", err)
+			}
+			err = ValidateUpdateVoteResponseByLinkConflictResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "update_vote_response_by_link", err)
+			}
+			return nil, NewUpdateVoteResponseByLinkConflict(&body)
 		case http.StatusForbidden:
 			var (
 				body UpdateVoteResponseByLinkForbiddenResponseBody

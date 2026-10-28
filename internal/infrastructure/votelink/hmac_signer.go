@@ -5,8 +5,9 @@
 //
 // Token format: v1.<kid>.<base64url(payload)>.<base64url(HMAC-SHA256(key[kid], "v1.<kid>.<payload>"))>
 // where payload is the JSON object {"v":<vote_uid>,"r":<vote_response_uid>,"iat":<unix seconds>}.
-// Tokens carry no expiry: ITX rejects submissions once the vote has ended or the
-// voter has been removed, which bounds a link's useful lifetime.
+// Tokens carry no expiry: ITX rejects submissions while the vote is ended or the voter is
+// removed. Extending an ended vote reactivates its links; only removing the voter or the
+// signing key revokes them.
 package votelink
 
 import (
@@ -78,10 +79,12 @@ func NewHMACSigner(keys map[string][]byte, activeKID string) (*HMACSigner, error
 	return &HMACSigner{keys: copied, activeKID: activeKID, now: time.Now}, nil
 }
 
-// ParseKeys parses a key set in the form "kid1:base64key,kid2:base64key". Keys may use
-// standard or URL-safe base64, with or without padding.
-func ParseKeys(raw string) (map[string][]byte, error) {
+// ParseKeys parses a key set in the form "kid1:base64key,kid2:base64key" and also returns the
+// key ids in the order listed, so callers can treat the first as the default signing key. Keys
+// may use standard or URL-safe base64, with or without padding.
+func ParseKeys(raw string) (map[string][]byte, []string, error) {
 	keys := make(map[string][]byte)
+	var order []string
 	for _, entry := range strings.Split(raw, ",") {
 		entry = strings.TrimSpace(entry)
 		if entry == "" {
@@ -89,21 +92,22 @@ func ParseKeys(raw string) (map[string][]byte, error) {
 		}
 		kid, encoded, ok := strings.Cut(entry, ":")
 		if !ok || kid == "" || encoded == "" {
-			return nil, errors.New("each key entry must be in the form kid:base64key")
+			return nil, nil, errors.New("each key entry must be in the form kid:base64key")
 		}
 		if _, dup := keys[kid]; dup {
-			return nil, fmt.Errorf("duplicate key id %q", kid)
+			return nil, nil, fmt.Errorf("duplicate key id %q", kid)
 		}
 		key, err := decodeKey(encoded)
 		if err != nil {
-			return nil, fmt.Errorf("key %q is not valid base64: %w", kid, err)
+			return nil, nil, fmt.Errorf("key %q is not valid base64: %w", kid, err)
 		}
 		keys[kid] = key
+		order = append(order, kid)
 	}
 	if len(keys) == 0 {
-		return nil, errors.New("no signing keys found")
+		return nil, nil, errors.New("no signing keys found")
 	}
-	return keys, nil
+	return keys, order, nil
 }
 
 func decodeKey(encoded string) ([]byte, error) {

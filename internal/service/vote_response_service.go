@@ -95,11 +95,12 @@ func (s *VoteResponseService) CreateVoteResponseByLink(ctx context.Context, toke
 		return err
 	}
 
+	// abstain is not logged: next to the ballot ID it would reveal the voter's choice,
+	// including on pseudo-anonymous votes.
 	s.logger.InfoContext(ctx, "Creating vote response by link",
 		"vote_uid", claims.VoteUID,
 		"vote_id", claims.VoteResponseUID,
 		"key_id", claims.KeyID,
-		"abstain", req.Abstain,
 	)
 
 	req.VoteID = claims.VoteResponseUID
@@ -214,7 +215,6 @@ func (s *VoteResponseService) UpdateVoteResponseByLink(ctx context.Context, toke
 		"vote_uid", claims.VoteUID,
 		"vote_id", claims.VoteResponseUID,
 		"key_id", claims.KeyID,
-		"abstain", req.Abstain,
 	)
 
 	return s.applyVoteResponseUpdate(ctx, claims.VoteResponseUID, req)

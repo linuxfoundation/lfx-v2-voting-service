@@ -173,11 +173,14 @@ func TestParseKeys(t *testing.T) {
 	std := base64.StdEncoding.EncodeToString(testKey('a'))
 	url := base64.RawURLEncoding.EncodeToString(testKey(0xfb))
 
-	keys, err := ParseKeys(" k1:" + std + " , k2:" + url + ",")
+	keys, order, err := ParseKeys(" k2:" + std + " , k1:" + url + ",")
 	if err != nil {
 		t.Fatalf("ParseKeys: %v", err)
 	}
-	if string(keys["k1"]) != string(testKey('a')) || string(keys["k2"]) != string(testKey(0xfb)) {
+	if len(order) != 2 || order[0] != "k2" || order[1] != "k1" {
+		t.Errorf("order = %v, want [k2 k1] as listed", order)
+	}
+	if string(keys["k2"]) != string(testKey('a')) || string(keys["k1"]) != string(testKey(0xfb)) {
 		t.Errorf("decoded keys mismatch: %v", keys)
 	}
 
@@ -189,7 +192,7 @@ func TestParseKeys(t *testing.T) {
 		"invalid b64": "k1:%%%",
 	} {
 		t.Run(name, func(t *testing.T) {
-			if _, err := ParseKeys(raw); err == nil {
+			if _, _, err := ParseKeys(raw); err == nil {
 				t.Error("expected error")
 			}
 		})

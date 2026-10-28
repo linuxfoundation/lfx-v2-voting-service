@@ -341,33 +341,7 @@ var _ = Service("vote", func() {
 				Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
 			})
 
-			Attribute("user_vote_content", ArrayOf(VoteAnswerInput), "Vote answers", func() {
-				Example([]any{
-					map[string]any{
-						"question_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
-						"choice_ids":  []string{"b03cdbaf-53b1-4d47-bc04-dd7e459dd309"},
-					},
-				})
-			})
-
-			Attribute("abstain", Boolean, "Whether to abstain from voting", func() {
-				Default(false)
-			})
-
-			Attribute("comment_responses", ArrayOf(CommentResponse), "The voter's free-text "+
-				"responses to the poll's comment prompts. Optional; only meaningful if the poll "+
-				"has poll_comment_prompts. Allowed regardless of whether abstain is true — an "+
-				"abstaining voter skips the ballot but may still comment. Each prompt_id must "+
-				"match one of the poll's comment prompts and must not repeat; each comment_text "+
-				"is required (cannot be empty after trimming) and is rejected with a 400 if "+
-				"longer than 5000 characters.", func() {
-				Example([]any{
-					map[string]any{
-						"prompt_id":    "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
-						"comment_text": "Because the incumbent has done great work this term.",
-					},
-				})
-			})
+			VoteResponseBallotAttributes(createCommentNote)
 
 			Required("vote_response_uid", "vote_uid", "abstain")
 		})
@@ -433,34 +407,7 @@ var _ = Service("vote", func() {
 				Example("b03cdbaf-53b1-4d47-bc04-dd7e459dd309")
 			})
 
-			Attribute("user_vote_content", ArrayOf(VoteAnswerInput), "Updated vote answers", func() {
-				Example([]any{
-					map[string]any{
-						"question_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
-						"choice_ids":  []string{"b03cdbaf-53b1-4d47-bc04-dd7e459dd309"},
-					},
-				})
-			})
-
-			Attribute("abstain", Boolean, "Whether to abstain from voting", func() {
-				Default(false)
-			})
-
-			Attribute("comment_responses", ArrayOf(CommentResponse), "The voter's free-text "+
-				"responses to the poll's comment prompts. Allowed regardless of whether abstain "+
-				"is true — an abstaining voter skips the ballot but may still comment. Otherwise, "+
-				"omitting this field entirely preserves the vote's existing comments untouched; "+
-				"including it (even as an empty array) validates and replaces them. Each "+
-				"prompt_id must match one of the poll's comment prompts and must not repeat; "+
-				"each comment_text is required (cannot be empty after trimming) and is "+
-				"rejected with a 400 if longer than 5000 characters.", func() {
-				Example([]any{
-					map[string]any{
-						"prompt_id":    "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
-						"comment_text": "Because the incumbent has done great work this term.",
-					},
-				})
-			})
+			VoteResponseBallotAttributes(updateCommentNote)
 
 			Required("vote_response_uid", "abstain")
 		})
@@ -484,15 +431,15 @@ var _ = Service("vote", func() {
 		Description("Submit a vote response using a personalized vote link token, without logging in " +
 			"(proxies to ITX POST /voting/vote). The ballot is identified only by the token.")
 
-		Security(JWTAuth, func() {
-			Scope("manage:projects")
-			Scope("manage:voting")
-		})
+		// Heimdall admits this route anonymously and still mints its JWT (principal
+		// "_anonymous"); JWTAuth only proves the request came through the gateway. No
+		// scopes apply. The vote_token is the only authorization.
+		Security(JWTAuth)
 
 		Payload(func() {
 			BearerTokenAttribute()
 			VoteLinkTokenAttribute()
-			VoteResponseBallotAttributes()
+			VoteResponseBallotAttributes(createCommentNote)
 			Required("vote_token", "abstain")
 		})
 
@@ -503,6 +450,7 @@ var _ = Service("vote", func() {
 			Response("Unauthorized", StatusUnauthorized)
 			Response("Forbidden", StatusForbidden)
 			Response("NotFound", StatusNotFound)
+			Response("Conflict", StatusConflict)
 			Response("InternalServerError", StatusInternalServerError)
 			Response("ServiceUnavailable", StatusServiceUnavailable)
 		})
@@ -513,15 +461,15 @@ var _ = Service("vote", func() {
 			"(proxies to ITX PUT /voting/vote/{vote_id}). The ballot is identified only by the token. " +
 			"Omitting comment_responses preserves existing comments; including it (even empty) replaces them.")
 
-		Security(JWTAuth, func() {
-			Scope("manage:projects")
-			Scope("manage:voting")
-		})
+		// Heimdall admits this route anonymously and still mints its JWT (principal
+		// "_anonymous"); JWTAuth only proves the request came through the gateway. No
+		// scopes apply. The vote_token is the only authorization.
+		Security(JWTAuth)
 
 		Payload(func() {
 			BearerTokenAttribute()
 			VoteLinkTokenAttribute()
-			VoteResponseBallotAttributes()
+			VoteResponseBallotAttributes(updateCommentNote)
 			Required("vote_token", "abstain")
 		})
 
@@ -532,6 +480,7 @@ var _ = Service("vote", func() {
 			Response("Unauthorized", StatusUnauthorized)
 			Response("Forbidden", StatusForbidden)
 			Response("NotFound", StatusNotFound)
+			Response("Conflict", StatusConflict)
 			Response("InternalServerError", StatusInternalServerError)
 			Response("ServiceUnavailable", StatusServiceUnavailable)
 		})

@@ -18,12 +18,7 @@ paths:
             tags:
                 - vote
             summary: update_vote_response_by_link vote
-            description: |-
-                Update a vote response using a personalized vote link token, without logging in (proxies to ITX PUT /voting/vote/{vote_id}). The ballot is identified only by the token. Omitting comment_responses preserves existing comments; including it (even empty) replaces them.
-
-                **Required security scopes for jwt**:
-                  * `manage:projects`
-                  * `manage:voting`
+            description: Update a vote response using a personalized vote link token, without logging in (proxies to ITX PUT /voting/vote/{vote_id}). The ballot is identified only by the token. Omitting comment_responses preserves existing comments; including it (even empty) replaces them.
             operationId: vote#update_vote_response_by_link
             parameters:
                 - name: Authorization
@@ -70,6 +65,13 @@ paths:
                         required:
                             - code
                             - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
+                        required:
+                            - code
+                            - message
                 "500":
                     description: Internal Server Error response.
                     schema:
@@ -92,12 +94,7 @@ paths:
             tags:
                 - vote
             summary: create_vote_response_by_link vote
-            description: |-
-                Submit a vote response using a personalized vote link token, without logging in (proxies to ITX POST /voting/vote). The ballot is identified only by the token.
-
-                **Required security scopes for jwt**:
-                  * `manage:projects`
-                  * `manage:voting`
+            description: Submit a vote response using a personalized vote link token, without logging in (proxies to ITX POST /voting/vote). The ballot is identified only by the token.
             operationId: vote#create_vote_response_by_link
             parameters:
                 - name: Authorization
@@ -141,6 +138,13 @@ paths:
                     description: Not Found response.
                     schema:
                         $ref: '#/definitions/NotFoundError'
+                        required:
+                            - code
+                            - message
+                "409":
+                    description: Conflict response.
+                    schema:
+                        $ref: '#/definitions/ConflictError'
                         required:
                             - code
                             - message
@@ -1144,15 +1148,15 @@ definitions:
             code:
                 type: string
                 description: HTTP status code
-                example: Corrupti rerum.
+                example: Illum ut.
             message:
                 type: string
                 description: Error message
-                example: Eum illum.
+                example: Libero eos illo sit.
         description: Bad request
         example:
-            code: Et quia.
-            message: Nobis expedita a quia ut.
+            code: Nihil qui rerum in.
+            message: Perspiciatis qui.
         required:
             - code
             - message
@@ -1163,16 +1167,16 @@ definitions:
             comment_text:
                 type: string
                 description: The voter's free-text response
-                example: Et iusto quibusdam officiis culpa.
+                example: Commodi est harum.
             prompt_id:
                 type: string
                 description: The comment prompt this response answers
-                example: 81bc2915-87d8-469f-ac61-e0518674db78
+                example: bea15373-7387-42c9-b299-69ded86a246f
                 format: uuid
         description: A voter's free-text response to a comment prompt
         example:
-            comment_text: Est consequuntur.
-            prompt_id: 6445f5bd-dffc-4f61-8ba0-4f739b2eb7b3
+            comment_text: Omnis voluptatem.
+            prompt_id: 70cf9dd1-d83f-4dc2-a8d4-23dc655080b4
         required:
             - prompt_id
             - comment_text
@@ -1183,42 +1187,42 @@ definitions:
             abstained:
                 type: boolean
                 description: Whether the voter who submitted this comment abstained from voting on the poll
-                example: false
+                example: true
             comment_text:
                 type: string
                 description: The comment text
-                example: Culpa sit nam.
+                example: Ab repellat nisi quia nam.
             profile_picture:
                 type: string
                 description: URL of the voter's profile picture. Absent entirely when the poll has pseudo_anonymity enabled.
-                example: Iusto assumenda quis.
+                example: Voluptatum soluta porro officiis doloremque eum.
             user_id:
                 type: string
                 description: The LFX identifier of the voter who submitted this comment. Absent entirely when the poll has pseudo_anonymity enabled.
-                example: Enim animi totam.
+                example: Totam recusandae culpa sit.
             user_name:
                 type: string
                 description: The name of the voter who submitted this comment. Absent entirely when the poll has pseudo_anonymity enabled.
-                example: Repellat nisi quia nam numquam.
+                example: Facilis iusto assumenda quis quam iure est.
             vote_creation_time:
                 type: string
                 description: The time the voter submitted this comment (their vote_creation_time)
-                example: "1997-07-25T20:54:18Z"
+                example: "2007-03-24T13:10:12Z"
                 format: date-time
             vote_id:
                 type: string
                 description: The vote that submitted this comment
-                example: 22f9b201-01de-4d8d-bd5b-49df18621fae
+                example: b5d92001-cf08-4986-9a51-1a453b608129
                 format: uuid
         description: A voter's free-text comment response, with attribution
         example:
-            abstained: false
-            comment_text: Aut quam inventore ut nisi soluta facilis.
-            profile_picture: Est et harum.
-            user_id: Qui molestias hic quae voluptate.
-            user_name: Alias at optio soluta ex officia.
-            vote_creation_time: "2007-03-12T16:55:58Z"
-            vote_id: dd8a437f-6ca2-4ab4-ac95-79ba3ba8d2f9
+            abstained: true
+            comment_text: Optio soluta ex officia sit est et.
+            profile_picture: Porro enim.
+            user_id: Facilis est alias.
+            user_name: Voluptatibus incidunt officiis.
+            vote_creation_time: "2008-05-08T08:11:18Z"
+            vote_id: 40d50984-a5a9-41db-8bdc-3ea016cb9b28
         required:
             - vote_id
             - comment_text
@@ -1284,6 +1288,13 @@ definitions:
                   user_name: Exercitationem et quaerat dicta labore molestias accusantium.
                   vote_creation_time: "1979-10-04T15:45:37Z"
                   vote_id: 4ee2fda2-ef95-4285-a76c-c8de6db94856
+                - abstained: true
+                  comment_text: Incidunt quasi autem unde odio.
+                  profile_picture: Sed eveniet veritatis consequuntur reiciendis accusantium molestiae.
+                  user_id: Ullam est voluptas molestias deserunt eligendi temporibus.
+                  user_name: Exercitationem et quaerat dicta labore molestias accusantium.
+                  vote_creation_time: "1979-10-04T15:45:37Z"
+                  vote_id: 4ee2fda2-ef95-4285-a76c-c8de6db94856
         required:
             - prompt
             - responses
@@ -1294,32 +1305,32 @@ definitions:
             choice_id:
                 type: string
                 description: Choice identifier
-                example: Unde explicabo similique.
+                example: Nihil architecto sunt hic quis.
             choice_id_wins:
                 type: integer
                 description: Number of times choice_id wins against other_choice_id
-                example: 3232849295267616464
+                example: 2295024298815983760
                 format: int64
             other_choice_id:
                 type: string
                 description: Other choice identifier
-                example: Enim sapiente ut suscipit eos animi aut.
+                example: Sint provident quisquam.
             other_choice_id_wins:
                 type: integer
                 description: Number of times other_choice_id wins against choice_id
-                example: 740818765914537562
+                example: 6251251422686244736
                 format: int64
             result:
                 type: string
                 description: Result string (e.g., '23(10)')
-                example: Qui minima.
+                example: Dolores aut porro nostrum.
         description: Condorcet matrix entry for pairwise comparison
         example:
-            choice_id: Architecto sunt hic quis natus sint.
-            choice_id_wins: 6251251422686244736
-            other_choice_id: Quisquam et.
-            other_choice_id_wins: 4897215695789055553
-            result: Aut porro.
+            choice_id: Cupiditate officia earum.
+            choice_id_wins: 5457962909151546163
+            other_choice_id: Aperiam natus nisi sit est sed culpa.
+            other_choice_id_wins: 2054627434292251396
+            result: Laborum beatae rerum corporis vel illum laborum.
         required:
             - choice_id
             - other_choice_id
@@ -1333,15 +1344,15 @@ definitions:
             code:
                 type: string
                 description: HTTP status code
-                example: Eum quibusdam doloribus.
+                example: Sapiente dolorem.
             message:
                 type: string
                 description: Error message
-                example: Nihil eos.
+                example: A cumque autem aut qui repellendus.
         description: Conflict
         example:
-            code: Vero dolor quis sit voluptatem nihil.
-            message: Sapiente dolorem.
+            code: Quia qui.
+            message: Distinctio beatae aliquid velit et ea.
         required:
             - code
             - message
@@ -1352,15 +1363,15 @@ definitions:
             code:
                 type: string
                 description: HTTP status code
-                example: Aut quis dicta odio consectetur omnis.
+                example: Et ipsa qui quia officiis quidem.
             message:
                 type: string
                 description: Error message
-                example: Debitis laboriosam.
+                example: Et harum esse eaque aliquam aut necessitatibus.
         description: Forbidden
         example:
-            code: Minima ab possimus corporis cum harum quis.
-            message: Et ipsa qui quia officiis quidem.
+            code: Molestiae sequi.
+            message: Debitis quasi excepturi.
         required:
             - code
             - message
@@ -1371,23 +1382,23 @@ definitions:
             choice_id:
                 type: string
                 description: Choice identifier
-                example: 8f052dcb-e73e-4fdc-aaab-8e9f24006d51
+                example: 32202085-f9ca-487a-95fa-1bf8ef35d662
                 format: uuid
             percentage:
                 type: number
                 description: Percentage of votes
-                example: 0.6738255235806042
+                example: 0.3797003525561891
                 format: double
             vote_count:
                 type: integer
                 description: Number of votes
-                example: 7966226965193326932
+                example: 4325284636946447847
                 format: int64
         description: Vote count for a single choice
         example:
-            choice_id: 33c48422-e5b6-4343-8027-1a5dd07bf303
-            percentage: 0.2561795361770086
-            vote_count: 8194564934101880328
+            choice_id: 8da0957e-0509-4537-b60a-db18b37599ab
+            percentage: 0.7866517895828851
+            vote_count: 4619186605157680574
         required:
             - choice_id
             - vote_count
@@ -1399,35 +1410,35 @@ definitions:
             eliminated_choice_id:
                 type: string
                 description: ID of eliminated choice
-                example: Et quibusdam voluptatibus eaque aspernatur a.
+                example: Quos eos et ut totam quos.
             exhausted_votes:
                 type: integer
                 description: Number of exhausted votes
-                example: 4540593802374353900
+                example: 7556314225553422812
                 format: int64
             message:
                 type: string
                 description: Round message
-                example: Dolorem illum quia corrupti ut provident magni.
+                example: Molestiae veritatis magni aut minus dolor.
             min_votes:
                 type: integer
                 description: Minimum votes
-                example: 3166165794858919043
+                example: 3851830917113225749
                 format: int64
             round_number:
                 type: integer
                 description: Round number
-                example: 7414820943376467379
+                example: 3166165794858919043
                 format: int64
             threshold:
                 type: integer
                 description: Winning threshold
-                example: 1989537321227961795
+                example: 9096273270109370318
                 format: int64
             total_votes:
                 type: integer
                 description: Total votes in this round
-                example: 3162136618972302968
+                example: 7537688689019706723
                 format: int64
             transferred_votes:
                 type: array
@@ -1435,9 +1446,6 @@ definitions:
                     $ref: '#/definitions/VoteCount'
                 description: Transferred votes
                 example:
-                    - choice_id: Excepturi minima qui error reiciendis velit vel.
-                      percentage: 0.01092029121751492
-                      vote_count: 7278998924775707805
                     - choice_id: Excepturi minima qui error reiciendis velit vel.
                       percentage: 0.01092029121751492
                       vote_count: 7278998924775707805
@@ -1467,13 +1475,13 @@ definitions:
                       vote_count: 7278998924775707805
         description: Instant runoff voting round summary
         example:
-            eliminated_choice_id: Odio molestiae veritatis magni aut minus dolor.
-            exhausted_votes: 424960379750981129
-            message: Aut illo non excepturi nihil.
-            min_votes: 5933135941122346769
-            round_number: 9096273270109370318
-            threshold: 844016515070846645
-            total_votes: 3307816764233015786
+            eliminated_choice_id: Quis est qui.
+            exhausted_votes: 6882246126511512006
+            message: Animi quo in perferendis ut ducimus.
+            min_votes: 8231515268382550101
+            round_number: 8740486222741694236
+            threshold: 7102139685358519241
+            total_votes: 6774267864691474889
             transferred_votes:
                 - choice_id: Excepturi minima qui error reiciendis velit vel.
                   percentage: 0.01092029121751492
@@ -1508,15 +1516,15 @@ definitions:
             code:
                 type: string
                 description: HTTP status code
-                example: A cumque autem aut qui repellendus.
+                example: Velit deserunt quia amet.
             message:
                 type: string
                 description: Error message
-                example: Quia qui.
+                example: Sed est repudiandae laboriosam modi architecto.
         description: Internal server error
         example:
-            code: Distinctio beatae aliquid velit et ea.
-            message: Velit deserunt quia amet.
+            code: Eum nesciunt.
+            message: Ea quidem.
         required:
             - code
             - message
@@ -1527,22 +1535,22 @@ definitions:
             choice_id:
                 type: string
                 description: Choice identifier
-                example: Nesciunt et hic fuga provident qui.
+                example: Natus et quidem voluptatem harum harum.
             surplus_votes:
                 type: integer
                 description: Surplus votes over threshold
-                example: 5068087413953333675
+                example: 7472318757995916876
                 format: int64
             vote_count:
                 type: integer
                 description: Number of votes
-                example: 8759404134556057812
+                example: 369394505416820518
                 format: int64
         description: Elected choice in Meek STV
         example:
-            choice_id: Et quidem voluptatem harum harum quasi.
-            surplus_votes: 8812367756869476335
-            vote_count: 7472318757995916876
+            choice_id: Et aut.
+            surplus_votes: 2375069820868340201
+            vote_count: 2714546425087024352
         required:
             - choice_id
             - vote_count
@@ -1575,19 +1583,21 @@ definitions:
                       vote_count: 1292848879970647050
                     - choice_id: Ut voluptates praesentium.
                       vote_count: 1292848879970647050
+                    - choice_id: Ut voluptates praesentium.
+                      vote_count: 1292848879970647050
             exhausted_votes:
                 type: integer
                 description: Number of exhausted votes
-                example: 6597306667059328686
+                example: 4329062225875243462
                 format: int64
             message:
                 type: string
                 description: Round message
-                example: Aliquam excepturi voluptatem quibusdam accusamus eligendi ipsum.
+                example: Fuga provident qui sit.
             round_number:
                 type: integer
                 description: Round number
-                example: 8488635967013358713
+                example: 3275886225527914215
                 format: int64
             surplus_votes:
                 type: array
@@ -1599,19 +1609,15 @@ definitions:
                       vote_count: 1292848879970647050
                     - choice_id: Ut voluptates praesentium.
                       vote_count: 1292848879970647050
-                    - choice_id: Ut voluptates praesentium.
-                      vote_count: 1292848879970647050
-                    - choice_id: Ut voluptates praesentium.
-                      vote_count: 1292848879970647050
             threshold:
                 type: integer
                 description: Election threshold
-                example: 3014204711584184140
+                example: 664331023315495160
                 format: int64
             total_votes:
                 type: integer
                 description: Total votes in this round
-                example: 8817602100606820085
+                example: 4405767094822942916
                 format: int64
             transferred_votes:
                 type: array
@@ -1619,8 +1625,6 @@ definitions:
                     $ref: '#/definitions/MeekSTVVoteCount'
                 description: Transferred votes
                 example:
-                    - choice_id: Ut voluptates praesentium.
-                      vote_count: 1292848879970647050
                     - choice_id: Ut voluptates praesentium.
                       vote_count: 1292848879970647050
                     - choice_id: Ut voluptates praesentium.
@@ -1637,12 +1641,11 @@ definitions:
                       vote_count: 1292848879970647050
                     - choice_id: Ut voluptates praesentium.
                       vote_count: 1292848879970647050
+                    - choice_id: Ut voluptates praesentium.
+                      vote_count: 1292848879970647050
         description: Meek STV round summary
         example:
             elected_choices:
-                - choice_id: Consequatur aut incidunt dolore.
-                  surplus_votes: 8004730653397919364
-                  vote_count: 6810217793271733942
                 - choice_id: Consequatur aut incidunt dolore.
                   surplus_votes: 8004730653397919364
                   vote_count: 6810217793271733942
@@ -1654,17 +1657,21 @@ definitions:
                   vote_count: 1292848879970647050
                 - choice_id: Ut voluptates praesentium.
                   vote_count: 1292848879970647050
-            exhausted_votes: 732625586428677339
-            message: Labore laborum sit.
-            round_number: 6521683852416464022
+                - choice_id: Ut voluptates praesentium.
+                  vote_count: 1292848879970647050
+            exhausted_votes: 8285589371660422862
+            message: Est architecto.
+            round_number: 1113108374848693998
             surplus_votes:
                 - choice_id: Ut voluptates praesentium.
                   vote_count: 1292848879970647050
                 - choice_id: Ut voluptates praesentium.
                   vote_count: 1292848879970647050
-            threshold: 1113108374848693998
-            total_votes: 6991254192496148890
+            threshold: 7709930426761319535
+            total_votes: 665922352813478012
             transferred_votes:
+                - choice_id: Ut voluptates praesentium.
+                  vote_count: 1292848879970647050
                 - choice_id: Ut voluptates praesentium.
                   vote_count: 1292848879970647050
                 - choice_id: Ut voluptates praesentium.
@@ -1694,16 +1701,16 @@ definitions:
             choice_id:
                 type: string
                 description: Choice identifier
-                example: Est qui voluptatem animi.
+                example: Harum itaque numquam omnis aut.
             vote_count:
                 type: integer
                 description: Number of votes
-                example: 1831749470924075919
+                example: 4513639231643238086
                 format: int64
         description: Vote count for Meek STV
         example:
-            choice_id: Perferendis ut ducimus laborum et.
-            vote_count: 2379100898383017886
+            choice_id: Voluptatem quibusdam accusamus.
+            vote_count: 2978979181722144381
         required:
             - choice_id
             - vote_count
@@ -1714,15 +1721,15 @@ definitions:
             code:
                 type: string
                 description: HTTP status code
-                example: Et harum esse eaque aliquam aut necessitatibus.
+                example: Molestiae molestiae est nisi.
             message:
                 type: string
                 description: Error message
-                example: Molestiae sequi.
+                example: Eum quibusdam doloribus.
         description: Not found
         example:
-            code: Debitis quasi excepturi.
-            message: Molestiae molestiae est nisi.
+            code: Nihil eos.
+            message: Vero dolor quis sit voluptatem nihil.
         required:
             - code
             - message
@@ -1733,7 +1740,7 @@ definitions:
             choice_id:
                 type: string
                 description: Choice identifier
-                example: 1192e305-46b0-479c-838b-0e986463e1f3
+                example: 64e03408-7eff-41a9-8198-ceed7e8ce863
                 format: uuid
             choice_text:
                 type: string
@@ -1741,7 +1748,7 @@ definitions:
                 example: John Doe
         description: Answer choice
         example:
-            choice_id: 2261d47d-3230-4f14-a013-30902ae587fa
+            choice_id: 6e872b86-11d3-4b71-aac0-95b1f80eaa68
             choice_text: John Doe
         required:
             - choice_text
@@ -1756,12 +1763,12 @@ definitions:
             prompt_id:
                 type: string
                 description: Comment prompt identifier (server-assigned)
-                example: 30e2696b-77aa-435d-a985-dc763cfedf18
+                example: 0e075934-89a4-4eda-b1ba-a37bc4956757
                 format: uuid
         description: Comment prompt for collecting feedback
         example:
             prompt: Please provide any additional feedback
-            prompt_id: 3cfe6531-0145-4569-b5a7-a0fc361fd48b
+            prompt_id: a106d104-010e-4027-9bce-62a1526bb109
         required:
             - prompt_id
             - prompt
@@ -1801,7 +1808,7 @@ definitions:
             question_id:
                 type: string
                 description: Question identifier
-                example: eb6b6334-6a9b-4795-87c2-1dd06cddb0b6
+                example: 5a9f61ca-dce4-4614-bd12-e8dd97d9b202
                 format: uuid
             type:
                 type: string
@@ -1817,8 +1824,10 @@ definitions:
                   choice_text: John Doe
                 - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
                   choice_text: John Doe
+                - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                  choice_text: John Doe
             prompt: Who should be elected to the TSC?
-            question_id: 12c24134-3284-4fdc-b8a1-ba00ba170a94
+            question_id: 37337185-857c-4b2f-a5c4-5f7b183111a0
             type: single_choice
         required:
             - prompt
@@ -1838,19 +1847,21 @@ definitions:
                       choice_text: John Doe
                     - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
                       choice_text: John Doe
+                    - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                      choice_text: John Doe
             prompt:
                 type: string
                 description: Question prompt
-                example: Autem quas iure earum.
+                example: Ullam eius aut facilis.
             question_id:
                 type: string
                 description: Question identifier
-                example: 84d57514-3377-424d-9d81-3573e8e1480e
+                example: 1580cd1b-e27e-4732-a62d-76a21e3ea6fc
                 format: uuid
             type:
                 type: string
                 description: Question type
-                example: Deleniti ad et quia nihil sint.
+                example: Nemo inventore delectus consequatur quod dolor.
         description: Question details
         example:
             choices:
@@ -1858,11 +1869,9 @@ definitions:
                   choice_text: John Doe
                 - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
                   choice_text: John Doe
-                - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
-                  choice_text: John Doe
-            prompt: Eaque velit libero perspiciatis expedita.
-            question_id: 172e0721-b9d3-4812-a496-4c7fafc276d7
-            type: Similique ipsam deserunt alias quis.
+            prompt: Cum adipisci incidunt cum.
+            question_id: f3195c1e-2a76-458a-9ac5-b0a4ecdc5302
+            type: Qui quo.
         required:
             - question_id
             - prompt
@@ -2068,47 +2077,6 @@ definitions:
                           vote_count: 1292848879970647050
                         - choice_id: Ut voluptates praesentium.
                           vote_count: 1292848879970647050
-                    - elected_choices:
-                        - choice_id: Consequatur aut incidunt dolore.
-                          surplus_votes: 8004730653397919364
-                          vote_count: 6810217793271733942
-                        - choice_id: Consequatur aut incidunt dolore.
-                          surplus_votes: 8004730653397919364
-                          vote_count: 6810217793271733942
-                        - choice_id: Consequatur aut incidunt dolore.
-                          surplus_votes: 8004730653397919364
-                          vote_count: 6810217793271733942
-                      eliminated_choices:
-                        - choice_id: Ut voluptates praesentium.
-                          vote_count: 1292848879970647050
-                        - choice_id: Ut voluptates praesentium.
-                          vote_count: 1292848879970647050
-                        - choice_id: Ut voluptates praesentium.
-                          vote_count: 1292848879970647050
-                      exhausted_votes: 6526633248933146391
-                      message: Rerum veritatis sed asperiores non et quia.
-                      round_number: 5459963594304209021
-                      surplus_votes:
-                        - choice_id: Ut voluptates praesentium.
-                          vote_count: 1292848879970647050
-                        - choice_id: Ut voluptates praesentium.
-                          vote_count: 1292848879970647050
-                      threshold: 5348233475168050925
-                      total_votes: 8458599308955695486
-                      transferred_votes:
-                        - choice_id: Ut voluptates praesentium.
-                          vote_count: 1292848879970647050
-                        - choice_id: Ut voluptates praesentium.
-                          vote_count: 1292848879970647050
-                        - choice_id: Ut voluptates praesentium.
-                          vote_count: 1292848879970647050
-                      votes:
-                        - choice_id: Ut voluptates praesentium.
-                          vote_count: 1292848879970647050
-                        - choice_id: Ut voluptates praesentium.
-                          vote_count: 1292848879970647050
-                        - choice_id: Ut voluptates praesentium.
-                          vote_count: 1292848879970647050
             question:
                 $ref: '#/definitions/PollQuestionDetail'
             ranked_choice_votes:
@@ -2117,68 +2085,6 @@ definitions:
                     $ref: '#/definitions/RankedChoiceVote'
                 description: Ranked choice voting results
                 example:
-                    - choice_id: c468c73b-6f50-4899-86ab-2303113527b4
-                      condorcet_matrix:
-                        - choice_id: Iure consectetur consequatur est.
-                          choice_id_wins: 3276382842794251245
-                          other_choice_id: Asperiores delectus.
-                          other_choice_id_wins: 9032806777793381158
-                          result: Sunt sed itaque ab minima.
-                        - choice_id: Iure consectetur consequatur est.
-                          choice_id_wins: 3276382842794251245
-                          other_choice_id: Asperiores delectus.
-                          other_choice_id_wins: 9032806777793381158
-                          result: Sunt sed itaque ab minima.
-                        - choice_id: Iure consectetur consequatur est.
-                          choice_id_wins: 3276382842794251245
-                          other_choice_id: Asperiores delectus.
-                          other_choice_id_wins: 9032806777793381158
-                          result: Sunt sed itaque ab minima.
-                        - choice_id: Iure consectetur consequatur est.
-                          choice_id_wins: 3276382842794251245
-                          other_choice_id: Asperiores delectus.
-                          other_choice_id_wins: 9032806777793381158
-                          result: Sunt sed itaque ab minima.
-                      rank_counts:
-                        - count: 1190231891355337437
-                          rank: 7365953190447389267
-                        - count: 1190231891355337437
-                          rank: 7365953190447389267
-                        - count: 1190231891355337437
-                          rank: 7365953190447389267
-                        - count: 1190231891355337437
-                          rank: 7365953190447389267
-                    - choice_id: c468c73b-6f50-4899-86ab-2303113527b4
-                      condorcet_matrix:
-                        - choice_id: Iure consectetur consequatur est.
-                          choice_id_wins: 3276382842794251245
-                          other_choice_id: Asperiores delectus.
-                          other_choice_id_wins: 9032806777793381158
-                          result: Sunt sed itaque ab minima.
-                        - choice_id: Iure consectetur consequatur est.
-                          choice_id_wins: 3276382842794251245
-                          other_choice_id: Asperiores delectus.
-                          other_choice_id_wins: 9032806777793381158
-                          result: Sunt sed itaque ab minima.
-                        - choice_id: Iure consectetur consequatur est.
-                          choice_id_wins: 3276382842794251245
-                          other_choice_id: Asperiores delectus.
-                          other_choice_id_wins: 9032806777793381158
-                          result: Sunt sed itaque ab minima.
-                        - choice_id: Iure consectetur consequatur est.
-                          choice_id_wins: 3276382842794251245
-                          other_choice_id: Asperiores delectus.
-                          other_choice_id_wins: 9032806777793381158
-                          result: Sunt sed itaque ab minima.
-                      rank_counts:
-                        - count: 1190231891355337437
-                          rank: 7365953190447389267
-                        - count: 1190231891355337437
-                          rank: 7365953190447389267
-                        - count: 1190231891355337437
-                          rank: 7365953190447389267
-                        - count: 1190231891355337437
-                          rank: 7365953190447389267
                     - choice_id: c468c73b-6f50-4899-86ab-2303113527b4
                       condorcet_matrix:
                         - choice_id: Iure consectetur consequatur est.
@@ -2255,10 +2161,49 @@ definitions:
                 - choice_id: 8305a54f-744e-4f5e-a4cb-548a760dc95a
                   percentage: 0.38717239204887705
                   vote_count: 1576237825128352243
-                - choice_id: 8305a54f-744e-4f5e-a4cb-548a760dc95a
-                  percentage: 0.38717239204887705
-                  vote_count: 1576237825128352243
             irv_round_summary:
+                - eliminated_choice_id: Aut beatae natus sit.
+                  exhausted_votes: 3449552188985342331
+                  message: Deserunt omnis sint qui dolores id architecto.
+                  min_votes: 853907966276650893
+                  round_number: 860270295819916644
+                  threshold: 674735210732628048
+                  total_votes: 2155717709162666527
+                  transferred_votes:
+                    - choice_id: Excepturi minima qui error reiciendis velit vel.
+                      percentage: 0.01092029121751492
+                      vote_count: 7278998924775707805
+                    - choice_id: Excepturi minima qui error reiciendis velit vel.
+                      percentage: 0.01092029121751492
+                      vote_count: 7278998924775707805
+                  votes:
+                    - choice_id: Excepturi minima qui error reiciendis velit vel.
+                      percentage: 0.01092029121751492
+                      vote_count: 7278998924775707805
+                    - choice_id: Excepturi minima qui error reiciendis velit vel.
+                      percentage: 0.01092029121751492
+                      vote_count: 7278998924775707805
+                - eliminated_choice_id: Aut beatae natus sit.
+                  exhausted_votes: 3449552188985342331
+                  message: Deserunt omnis sint qui dolores id architecto.
+                  min_votes: 853907966276650893
+                  round_number: 860270295819916644
+                  threshold: 674735210732628048
+                  total_votes: 2155717709162666527
+                  transferred_votes:
+                    - choice_id: Excepturi minima qui error reiciendis velit vel.
+                      percentage: 0.01092029121751492
+                      vote_count: 7278998924775707805
+                    - choice_id: Excepturi minima qui error reiciendis velit vel.
+                      percentage: 0.01092029121751492
+                      vote_count: 7278998924775707805
+                  votes:
+                    - choice_id: Excepturi minima qui error reiciendis velit vel.
+                      percentage: 0.01092029121751492
+                      vote_count: 7278998924775707805
+                    - choice_id: Excepturi minima qui error reiciendis velit vel.
+                      percentage: 0.01092029121751492
+                      vote_count: 7278998924775707805
                 - eliminated_choice_id: Aut beatae natus sit.
                   exhausted_votes: 3449552188985342331
                   message: Deserunt omnis sint qui dolores id architecto.
@@ -2501,6 +2446,37 @@ definitions:
                       rank: 7365953190447389267
                     - count: 1190231891355337437
                       rank: 7365953190447389267
+                - choice_id: c468c73b-6f50-4899-86ab-2303113527b4
+                  condorcet_matrix:
+                    - choice_id: Iure consectetur consequatur est.
+                      choice_id_wins: 3276382842794251245
+                      other_choice_id: Asperiores delectus.
+                      other_choice_id_wins: 9032806777793381158
+                      result: Sunt sed itaque ab minima.
+                    - choice_id: Iure consectetur consequatur est.
+                      choice_id_wins: 3276382842794251245
+                      other_choice_id: Asperiores delectus.
+                      other_choice_id_wins: 9032806777793381158
+                      result: Sunt sed itaque ab minima.
+                    - choice_id: Iure consectetur consequatur est.
+                      choice_id_wins: 3276382842794251245
+                      other_choice_id: Asperiores delectus.
+                      other_choice_id_wins: 9032806777793381158
+                      result: Sunt sed itaque ab minima.
+                    - choice_id: Iure consectetur consequatur est.
+                      choice_id_wins: 3276382842794251245
+                      other_choice_id: Asperiores delectus.
+                      other_choice_id_wins: 9032806777793381158
+                      result: Sunt sed itaque ab minima.
+                  rank_counts:
+                    - count: 1190231891355337437
+                      rank: 7365953190447389267
+                    - count: 1190231891355337437
+                      rank: 7365953190447389267
+                    - count: 1190231891355337437
+                      rank: 7365953190447389267
+                    - count: 1190231891355337437
+                      rank: 7365953190447389267
             ranked_choice_winner_info:
                 condorcet_irv_used_for_eliminations: true
                 poll_choices:
@@ -2521,18 +2497,18 @@ definitions:
             count:
                 type: integer
                 description: Number of votes at this rank
-                example: 2028789335116278295
+                example: 3232849295267616464
                 format: int64
             rank:
                 type: integer
                 description: Rank position
-                example: 4495059384562182949
+                example: 1168375080348359810
                 format: int64
                 minimum: 1
         description: Vote count at a specific rank
         example:
-            count: 376064532830211067
-            rank: 4968733044894944557
+            count: 3106147144339158970
+            rank: 740818765914537563
         required:
             - rank
             - count
@@ -2565,7 +2541,7 @@ definitions:
             choice_id:
                 type: string
                 description: Choice identifier
-                example: 82593683-5cad-4fa3-8174-45debef9d461
+                example: 357aeffb-386c-4cb3-a4fa-b32f6e39460c
                 format: uuid
             condorcet_matrix:
                 type: array
@@ -2573,16 +2549,6 @@ definitions:
                     $ref: '#/definitions/CondorcetMatrixEntry'
                 description: Condorcet matrix entries
                 example:
-                    - choice_id: Iure consectetur consequatur est.
-                      choice_id_wins: 3276382842794251245
-                      other_choice_id: Asperiores delectus.
-                      other_choice_id_wins: 9032806777793381158
-                      result: Sunt sed itaque ab minima.
-                    - choice_id: Iure consectetur consequatur est.
-                      choice_id_wins: 3276382842794251245
-                      other_choice_id: Asperiores delectus.
-                      other_choice_id_wins: 9032806777793381158
-                      result: Sunt sed itaque ab minima.
                     - choice_id: Iure consectetur consequatur est.
                       choice_id_wins: 3276382842794251245
                       other_choice_id: Asperiores delectus.
@@ -2605,15 +2571,12 @@ definitions:
                       rank: 7365953190447389267
                     - count: 1190231891355337437
                       rank: 7365953190447389267
+                    - count: 1190231891355337437
+                      rank: 7365953190447389267
         description: Ranked choice voting results for a choice
         example:
-            choice_id: 1435d875-3b8a-4b27-9d09-baf0ee5174d0
+            choice_id: 67a6649f-debc-4109-87c4-b5ddb11b6e46
             condorcet_matrix:
-                - choice_id: Iure consectetur consequatur est.
-                  choice_id_wins: 3276382842794251245
-                  other_choice_id: Asperiores delectus.
-                  other_choice_id_wins: 9032806777793381158
-                  result: Sunt sed itaque ab minima.
                 - choice_id: Iure consectetur consequatur est.
                   choice_id_wins: 3276382842794251245
                   other_choice_id: Asperiores delectus.
@@ -2659,14 +2622,12 @@ definitions:
                       choice_text: John Doe
                     - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
                       choice_text: John Doe
-                    - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
-                      choice_text: John Doe
-                    - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
-                      choice_text: John Doe
         description: Winner information for ranked choice voting
         example:
-            condorcet_irv_used_for_eliminations: false
+            condorcet_irv_used_for_eliminations: true
             poll_choices:
+                - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                  choice_text: John Doe
                 - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
                   choice_text: John Doe
                 - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
@@ -2682,23 +2643,23 @@ definitions:
             choice_id:
                 type: string
                 description: Choice identifier
-                example: 1a71a887-063e-4b9f-8471-7f95b33e63f3
+                example: 9e6fc1c4-e0aa-484e-aed9-18791fd251dd
                 format: uuid
             choice_rank:
                 type: integer
                 description: Choice rank (1-based)
-                example: 3113107506488338631
+                example: 7106091766631416028
                 format: int64
                 minimum: 1
             choice_text:
                 type: string
                 description: Choice text
-                example: Voluptates nihil nostrum dolore qui similique sint.
+                example: Minus recusandae quam vitae voluptates nihil nostrum.
         description: Ranked answer choice
         example:
-            choice_id: c994c4f5-9ed4-46ea-bbf9-29a6af7db2ef
-            choice_rank: 5919354696909435323
-            choice_text: Magnam quam.
+            choice_id: b1091bbb-4d50-4278-95b3-2315083d3fa4
+            choice_rank: 2957172870695651564
+            choice_text: Perspiciatis ut error est magnam.
         required:
             - choice_id
             - choice_text
@@ -2710,15 +2671,15 @@ definitions:
             code:
                 type: string
                 description: HTTP status code
-                example: Sed est repudiandae laboriosam modi architecto.
+                example: Voluptas harum et et.
             message:
                 type: string
                 description: Error message
-                example: Eum nesciunt.
+                example: Iusto ipsum eum.
         description: Service unavailable
         example:
-            code: Ea quidem.
-            message: Voluptas harum et et.
+            code: Et sint.
+            message: Ea est incidunt voluptatem ut.
         required:
             - code
             - message
@@ -2729,15 +2690,15 @@ definitions:
             code:
                 type: string
                 description: HTTP status code
-                example: Debitis est omnis illum.
+                example: Et voluptatem ut voluptas.
             message:
                 type: string
                 description: Error message
-                example: Animi libero eos illo sit assumenda.
+                example: Aut quis dicta odio consectetur omnis.
         description: Unauthorized
         example:
-            code: Qui rerum in ipsum perspiciatis qui.
-            message: Et voluptatem ut voluptas.
+            code: Debitis laboriosam.
+            message: Minima ab possimus corporis cum harum quis.
         required:
             - code
             - message
@@ -2748,11 +2709,11 @@ definitions:
             prompt:
                 type: string
                 description: Question prompt
-                example: Error ducimus.
+                example: Et laboriosam iste error ducimus et aut.
             question_id:
                 type: string
                 description: Question identifier
-                example: adef9bfa-8d59-4ae7-a23b-7597341f5916
+                example: 26465d1e-8db8-4077-8363-fcceac100207
                 format: uuid
             ranked_user_choice:
                 type: array
@@ -2772,7 +2733,7 @@ definitions:
             type:
                 type: string
                 description: Question type
-                example: multiple_choice
+                example: single_choice
                 enum:
                     - single_choice
                     - multiple_choice
@@ -2788,10 +2749,12 @@ definitions:
                       choice_text: Cupiditate deleniti sed.
                     - choice_id: bd77c2e4-56e2-493e-a7b2-d9b4733d012f
                       choice_text: Cupiditate deleniti sed.
+                    - choice_id: bd77c2e4-56e2-493e-a7b2-d9b4733d012f
+                      choice_text: Cupiditate deleniti sed.
         description: Vote answer for a question
         example:
             prompt: Omnis magnam officia dolor.
-            question_id: 08058513-a15a-4dc1-a170-cb5ea659fc30
+            question_id: fc520cb3-8f5a-4dc1-a170-cb5ea659fc30
             ranked_user_choice:
                 - choice_id: 684cc9b7-c4a7-464b-bb6e-6801fb5fdafa
                   choice_rank: 4720798599588006627
@@ -2819,7 +2782,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Quisquam rerum ducimus dolorem.
+                    example: At in eligendi aut cum corrupti.
                 description: Selected choice IDs
                 example:
                     - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
@@ -2840,12 +2803,16 @@ definitions:
                       choice_rank: 1
                     - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                       choice_rank: 1
+                    - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                      choice_rank: 1
         description: Answer submission for a question
         example:
             choice_ids:
                 - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
             question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
             ranked_choices:
+                - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                  choice_rank: 1
                 - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                   choice_rank: 1
                 - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
@@ -2865,13 +2832,13 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Dolorem tempore voluptas.
+                    example: Doloremque numquam reprehenderit soluta et est aut.
                 description: Vote response (ballot) IDs to resend the vote email to
                 example:
                     - cba14f40-1636-11ec-9621-0242ac130002
                     - cba14f40-1636-11ec-9621-0242ac130003
         example:
-            personalized_links: false
+            personalized_links: true
             recipient_ids:
                 - cba14f40-1636-11ec-9621-0242ac130002
                 - cba14f40-1636-11ec-9621-0242ac130003
@@ -2884,16 +2851,16 @@ definitions:
             choice_id:
                 type: string
                 description: Choice identifier
-                example: cd4e4ac0-02b3-4376-be7a-2da13e387e28
+                example: 55bb444c-ef09-4139-9b87-59406786aac8
                 format: uuid
             choice_text:
                 type: string
                 description: Choice text
-                example: Quos necessitatibus praesentium alias facilis molestias sunt.
+                example: Praesentium alias facilis molestias sunt aut eaque.
         description: Selected answer choice
         example:
-            choice_id: 54c9a747-c7e3-4f5f-9438-ab1c2c90830f
-            choice_text: Molestias pariatur est dolore unde porro voluptatibus.
+            choice_id: 9b3dcdb4-1bef-4cdc-93f8-afa26c6f1f93
+            choice_text: Est dolore unde.
         required:
             - choice_id
             - choice_text
@@ -2904,22 +2871,22 @@ definitions:
             choice_id:
                 type: string
                 description: Choice identifier
-                example: Eius illum beatae id aut magni.
+                example: Vel reprehenderit qui et quibusdam.
             percentage:
                 type: number
                 description: Percentage of votes
-                example: 0.9067512745951071
+                example: 0.7867451194633879
                 format: double
             vote_count:
                 type: integer
                 description: Number of votes
-                example: 3554908346531591644
+                example: 896490543610093511
                 format: int64
         description: Vote count for a choice
         example:
-            choice_id: Inventore vel accusantium vel a quis.
-            percentage: 0.07390542720197477
-            vote_count: 3186397101714307485
+            choice_id: A aut.
+            percentage: 0.25641152186563493
+            vote_count: 2303261458892669112
         required:
             - choice_id
             - vote_count
@@ -2931,12 +2898,12 @@ definitions:
                 type: boolean
                 description: Allow voters to abstain
                 default: false
-                example: true
+                example: false
             committee_filters:
                 type: array
                 items:
                     type: string
-                    example: Alternate Voting Rep
+                    example: Voting Rep
                     enum:
                         - Voting Rep
                         - Alternate Voting Rep
@@ -2955,7 +2922,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Iusto ipsum eum.
+                    example: Aperiam et ut ut.
                 description: Multiple committee UIDs
                 example:
                     - a02bdbaf-53b1-4d47-bc04-dd7e459dd308
@@ -2983,7 +2950,7 @@ definitions:
             num_winners:
                 type: integer
                 description: Number of winners. Sent upstream only when explicitly provided; meek_stv creates default to 2 when omitted. Updates leave omitted counts for ITX to resolve.
-                example: 9
+                example: 7
                 format: int64
                 minimum: 2
                 maximum: 10
@@ -3023,11 +2990,31 @@ definitions:
                       prompt: Who should be elected to the TSC?
                       question_id: cbc6e0f7-71e8-4c85-b787-a7b5be6d8f03
                       type: single_choice
+                    - choices:
+                        - choice_id: 089e77ca-8c66-4950-ac46-3903b6e6b3c3
+                          choice_text: John Doe
+                        - choice_id: 089e77ca-8c66-4950-ac46-3903b6e6b3c3
+                          choice_text: John Doe
+                        - choice_id: 089e77ca-8c66-4950-ac46-3903b6e6b3c3
+                          choice_text: John Doe
+                      prompt: Who should be elected to the TSC?
+                      question_id: cbc6e0f7-71e8-4c85-b787-a7b5be6d8f03
+                      type: single_choice
+                    - choices:
+                        - choice_id: 089e77ca-8c66-4950-ac46-3903b6e6b3c3
+                          choice_text: John Doe
+                        - choice_id: 089e77ca-8c66-4950-ac46-3903b6e6b3c3
+                          choice_text: John Doe
+                        - choice_id: 089e77ca-8c66-4950-ac46-3903b6e6b3c3
+                          choice_text: John Doe
+                      prompt: Who should be elected to the TSC?
+                      question_id: cbc6e0f7-71e8-4c85-b787-a7b5be6d8f03
+                      type: single_choice
             poll_type:
                 type: string
                 description: Type of poll
                 default: generic
-                example: condorcet_irv
+                example: instant_runoff_vote
                 enum:
                     - generic
                     - condorcet_irv
@@ -3069,7 +3056,7 @@ definitions:
             end_time: "2026-02-15T23:59:59Z"
             end_time_timezone: America/New_York
             name: Q1 2026 Technical Steering Committee Election
-            num_winners: 7
+            num_winners: 4
             poll_comment_prompts:
                 - prompt: Please provide any additional feedback
                 - prompt: Please provide any additional feedback
@@ -3106,17 +3093,7 @@ definitions:
                   prompt: Who should be elected to the TSC?
                   question_id: cbc6e0f7-71e8-4c85-b787-a7b5be6d8f03
                   type: single_choice
-                - choices:
-                    - choice_id: 089e77ca-8c66-4950-ac46-3903b6e6b3c3
-                      choice_text: John Doe
-                    - choice_id: 089e77ca-8c66-4950-ac46-3903b6e6b3c3
-                      choice_text: John Doe
-                    - choice_id: 089e77ca-8c66-4950-ac46-3903b6e6b3c3
-                      choice_text: John Doe
-                  prompt: Who should be elected to the TSC?
-                  question_id: cbc6e0f7-71e8-4c85-b787-a7b5be6d8f03
-                  type: single_choice
-            poll_type: instant_runoff_vote
+            poll_type: meek_stv
             project_uid: a09P000000DsCBuIRT
             pseudo_anonymity: true
             quorum_percentage: 50
@@ -3142,7 +3119,7 @@ definitions:
                 type: array
                 items:
                     $ref: '#/definitions/CommentResponse'
-                description: The voter's free-text responses to the poll's comment prompts. Allowed regardless of whether abstain is true. Each prompt_id must match one of the poll's comment prompts and must not repeat; each comment_text is required and is rejected with a 400 if longer than 5000 characters.
+                description: The voter's free-text responses to the poll's comment prompts. Allowed regardless of whether abstain is true — an abstaining voter skips the ballot but may still comment. Each prompt_id must match one of the poll's comment prompts and must not repeat; each comment_text is required (cannot be empty after trimming) and is rejected with a 400 if longer than 5000 characters. Optional; only meaningful if the poll has poll_comment_prompts.
                 example:
                     - comment_text: Because the incumbent has done great work this term.
                       prompt_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
@@ -3157,7 +3134,7 @@ definitions:
                       question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
             vote_token:
                 type: string
-                description: Signed token from the personalized vote link (the vote_token query parameter of the emailed URL). Identifies the ballot; treat it as a credential and never log it.
+                description: Signed token from the personalized vote link (the vote_token in the emailed URL's fragment). Identifies the ballot; treat it as a credential and never log it.
                 example: v1.k2026a.eyJ2IjoiOGYzYzJhMWUtNGI1ZC00ZTZmLTlhN2ItMWMyZDNlNGY1YTZiIiwiciI6ImNiYTE0ZjQwLTE2MzYtMTFlYy05NjIxLTAyNDJhYzEzMDAwMiIsImlhdCI6MTc5MzIzMjAwMH0.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU
                 minLength: 1
                 maxLength: 1024
@@ -3187,7 +3164,7 @@ definitions:
                 type: array
                 items:
                     $ref: '#/definitions/CommentResponse'
-                description: The voter's free-text responses to the poll's comment prompts. Optional; only meaningful if the poll has poll_comment_prompts. Allowed regardless of whether abstain is true — an abstaining voter skips the ballot but may still comment. Each prompt_id must match one of the poll's comment prompts and must not repeat; each comment_text is required (cannot be empty after trimming) and is rejected with a 400 if longer than 5000 characters.
+                description: The voter's free-text responses to the poll's comment prompts. Allowed regardless of whether abstain is true — an abstaining voter skips the ballot but may still comment. Each prompt_id must match one of the poll's comment prompts and must not repeat; each comment_text is required (cannot be empty after trimming) and is rejected with a 400 if longer than 5000 characters. Optional; only meaningful if the poll has poll_comment_prompts.
                 example:
                     - comment_text: Because the incumbent has done great work this term.
                       prompt_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
@@ -3252,7 +3229,7 @@ definitions:
             abstained:
                 type: boolean
                 description: Whether the voter abstained
-                example: true
+                example: false
             allow_abstain:
                 type: boolean
                 description: Whether abstention is allowed
@@ -3372,91 +3349,91 @@ definitions:
             profile_picture:
                 type: string
                 description: Voter profile picture URL
-                example: Ullam hic et et dolor earum.
+                example: Dolor earum qui ea iste.
             project_uid:
                 type: string
                 description: Project identifier
-                example: Dignissimos provident omnis voluptatem in dolorum.
+                example: Voluptate tempora iste.
             ses_bounce_subtype:
                 type: string
                 description: SES bounce subtype
-                example: Sed unde accusamus accusamus iusto.
+                example: Reiciendis temporibus.
             ses_bounce_type:
                 type: string
                 description: SES bounce type
-                example: Reiciendis temporibus.
+                example: Dolor voluptatum quod consequuntur.
             ses_complaint_date:
                 type: string
                 description: SES complaint date
-                example: Optio possimus quae quia numquam ut ut.
+                example: Sed et voluptatem optio.
             ses_complaint_exists:
                 type: boolean
                 description: SES complaint exists
-                example: false
+                example: true
             ses_complaint_type:
                 type: string
                 description: SES complaint type
-                example: Dignissimos sed et.
+                example: Unde accusamus accusamus iusto perspiciatis recusandae.
             ses_delivery_successful:
                 type: boolean
                 description: SES delivery successful
-                example: true
+                example: false
             ses_email_opened:
                 type: boolean
                 description: SES email opened
-                example: true
+                example: false
             ses_email_opened_last_time:
                 type: string
                 description: SES email opened last time
-                example: Debitis quis sed.
+                example: Numquam ut ut eum ad voluptatibus debitis.
             ses_link_clicked:
                 type: boolean
                 description: SES link clicked
-                example: true
+                example: false
             ses_link_clicked_last_time:
                 type: string
                 description: SES link clicked last time
-                example: Deleniti reiciendis ut dignissimos tenetur laboriosam harum.
+                example: Unde sint deleniti reiciendis ut dignissimos tenetur.
             ses_message_id:
                 type: string
                 description: SES message ID
-                example: Sint quidem facilis.
+                example: Debitis minima quis.
             ses_message_last_sent_time:
                 type: string
                 description: SES message last sent time
-                example: Dolor voluptatum quod consequuntur.
+                example: Sint quidem facilis.
             user_email:
                 type: string
                 description: User email
-                example: Aut dolorum voluptatem sit optio.
+                example: Praesentium aut.
             user_id:
                 type: string
                 description: User identifier
-                example: Ea iste dolores dolore voluptatibus praesentium.
+                example: Dolore voluptatibus.
             user_name:
                 type: string
                 description: Voter name
-                example: Qui neque consequuntur voluptatibus animi.
+                example: Voluptatibus animi neque ullam hic et.
             user_org_id:
                 type: string
                 description: User organization ID
-                example: Debitis minima quis.
+                example: Sit qui nihil aut.
             user_org_name:
                 type: string
                 description: User organization name
-                example: Sit qui nihil aut.
+                example: Aut tempore vel.
             user_role:
                 type: string
                 description: User role
-                example: Vel quos cumque recusandae ratione sint ducimus.
+                example: Voluptatem sit optio.
             user_voting_status:
                 type: string
                 description: User voting status
-                example: Aut tempore vel.
+                example: Vel quos cumque recusandae ratione sint ducimus.
             vote_creation_time:
                 type: string
                 description: Vote creation time
-                example: "1977-11-23T23:54:28Z"
+                example: "2003-05-13T03:01:54Z"
                 format: date-time
             vote_response_uid:
                 type: string
@@ -3592,12 +3569,12 @@ definitions:
             allow_abstain:
                 type: boolean
                 description: Allow abstain
-                example: true
+                example: false
             committee_filters:
                 type: array
                 items:
                     type: string
-                    example: Qui iusto.
+                    example: Et ut ut.
                 description: Committee voting status filters
                 example:
                     - Voting Rep
@@ -3605,28 +3582,28 @@ definitions:
             committee_name:
                 type: string
                 description: Committee name
-                example: Ipsam rem nesciunt iure dolore eius consequatur.
+                example: Voluptas atque quam nobis est sequi.
             committee_type:
                 type: string
                 description: Committee type
-                example: Delectus optio aspernatur.
+                example: Sed aut est neque sint.
             committee_uid:
                 type: string
                 description: Committee UID
-                example: Eaque assumenda iure officia voluptates.
+                example: Adipisci dolores earum est autem quidem amet.
             committee_voting_status:
                 type: boolean
                 description: Committee voting status
-                example: false
+                example: true
             creation_time:
                 type: string
                 description: Creation time
-                example: "1990-03-19T15:06:18Z"
+                example: "1973-01-29T20:25:32Z"
                 format: date-time
             description:
                 type: string
                 description: Vote description
-                example: Dolorem accusantium ipsa voluptatum consequatur.
+                example: Aliquam et voluptatem sit.
             early_end_time:
                 type: string
                 description: Actual close time when the poll auto-ended early because all voters responded before end_time. Absent when the poll closed on schedule or is still active. RFC3339.
@@ -3645,21 +3622,21 @@ definitions:
             last_modified_time:
                 type: string
                 description: Last modified time
-                example: "2014-11-10T01:47:03Z"
+                example: "2002-07-05T08:27:26Z"
                 format: date-time
             name:
                 type: string
                 description: Vote name
-                example: Architecto odit ad eius est sit.
+                example: Aut vel exercitationem in unde sapiente.
             num_response_received:
                 type: integer
                 description: Responses received
-                example: 243987822286171416
+                example: 6051655180989798808
                 format: int64
             num_winners:
                 type: integer
                 description: Number of winners. Absent when no winner count is stored upstream.
-                example: 7425113763027163227
+                example: 7837270605495652669
                 format: int64
             poll_comment_prompts:
                 type: array
@@ -3667,8 +3644,6 @@ definitions:
                     $ref: '#/definitions/PollCommentPrompt'
                 description: Comment prompts for the vote
                 example:
-                    - prompt: Please provide any additional feedback
-                      prompt_id: ebf1f93b-8d90-4584-af14-4a2f4cf400fb
                     - prompt: Please provide any additional feedback
                       prompt_id: ebf1f93b-8d90-4584-af14-4a2f4cf400fb
                     - prompt: Please provide any additional feedback
@@ -3733,7 +3708,7 @@ definitions:
                 type: string
                 description: Poll type
                 default: generic
-                example: instant_runoff_vote
+                example: meek_stv
                 enum:
                     - generic
                     - condorcet_irv
@@ -3742,15 +3717,15 @@ definitions:
             project_name:
                 type: string
                 description: Project name
-                example: Quas et qui officiis et repudiandae.
+                example: Delectus optio aspernatur.
             project_uid:
                 type: string
                 description: Project UID
-                example: Culpa modi aut.
+                example: Et qui iusto.
             pseudo_anonymity:
                 type: boolean
                 description: Pseudo-anonymity enabled
-                example: false
+                example: true
             status:
                 type: string
                 description: Vote status
@@ -3762,7 +3737,7 @@ definitions:
             total_voting_request_invitations:
                 type: integer
                 description: Total invitations sent
-                example: 2168569938711269348
+                example: 4034803106982755445
                 format: int64
             uid:
                 type: string
@@ -3770,28 +3745,24 @@ definitions:
                 example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
                 format: uuid
         example:
-            allow_abstain: false
+            allow_abstain: true
             committee_filters:
                 - Voting Rep
                 - Alternate Voting Rep
-            committee_name: Iste quod harum.
-            committee_type: Fugit incidunt aspernatur molestiae et.
-            committee_uid: Expedita omnis et quidem ab rerum qui.
+            committee_name: Perspiciatis corrupti rerum aspernatur.
+            committee_type: Illum ab et quia.
+            committee_uid: Voluptatibus explicabo dolor tempore.
             committee_voting_status: true
-            creation_time: "2004-11-05T20:48:17Z"
-            description: Illo aspernatur laudantium animi neque ea.
+            creation_time: "1979-11-26T07:14:34Z"
+            description: Culpa qui.
             early_end_time: "2026-02-10T14:32:11Z"
             end_time: "2026-02-15T23:59:59Z"
             end_time_timezone: America/New_York
-            last_modified_time: "2012-12-21T01:16:41Z"
-            name: Et impedit inventore pariatur est voluptas.
-            num_response_received: 1114320111550100571
-            num_winners: 8916579121851208018
+            last_modified_time: "2002-06-23T10:24:32Z"
+            name: Officia delectus vel a deleniti enim rerum.
+            num_response_received: 8889851813826340196
+            num_winners: 6720191098466906262
             poll_comment_prompts:
-                - prompt: Please provide any additional feedback
-                  prompt_id: ebf1f93b-8d90-4584-af14-4a2f4cf400fb
-                - prompt: Please provide any additional feedback
-                  prompt_id: ebf1f93b-8d90-4584-af14-4a2f4cf400fb
                 - prompt: Please provide any additional feedback
                   prompt_id: ebf1f93b-8d90-4584-af14-4a2f4cf400fb
                 - prompt: Please provide any additional feedback
@@ -3822,11 +3793,11 @@ definitions:
                   question_id: b7db6f26-85ad-4150-9666-3e60e35a2189
                   type: single_choice
             poll_type: generic
-            project_name: Non voluptas tenetur illum provident.
-            project_uid: Voluptatibus deleniti consequuntur.
+            project_name: Molestiae et suscipit enim architecto.
+            project_uid: Quod harum cumque fugit incidunt.
             pseudo_anonymity: true
             status: disabled
-            total_voting_request_invitations: 7861588410460259841
+            total_voting_request_invitations: 6938379409628880166
             uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
         required:
             - uid
@@ -3941,25 +3912,57 @@ definitions:
                           user_name: Exercitationem et quaerat dicta labore molestias accusantium.
                           vote_creation_time: "1979-10-04T15:45:37Z"
                           vote_id: 4ee2fda2-ef95-4285-a76c-c8de6db94856
+                    - prompt:
+                        prompt: Please provide any additional feedback
+                        prompt_id: ebf1f93b-8d90-4584-af14-4a2f4cf400fb
+                      responses:
+                        - abstained: true
+                          comment_text: Incidunt quasi autem unde odio.
+                          profile_picture: Sed eveniet veritatis consequuntur reiciendis accusantium molestiae.
+                          user_id: Ullam est voluptas molestias deserunt eligendi temporibus.
+                          user_name: Exercitationem et quaerat dicta labore molestias accusantium.
+                          vote_creation_time: "1979-10-04T15:45:37Z"
+                          vote_id: 4ee2fda2-ef95-4285-a76c-c8de6db94856
+                        - abstained: true
+                          comment_text: Incidunt quasi autem unde odio.
+                          profile_picture: Sed eveniet veritatis consequuntur reiciendis accusantium molestiae.
+                          user_id: Ullam est voluptas molestias deserunt eligendi temporibus.
+                          user_name: Exercitationem et quaerat dicta labore molestias accusantium.
+                          vote_creation_time: "1979-10-04T15:45:37Z"
+                          vote_id: 4ee2fda2-ef95-4285-a76c-c8de6db94856
+                        - abstained: true
+                          comment_text: Incidunt quasi autem unde odio.
+                          profile_picture: Sed eveniet veritatis consequuntur reiciendis accusantium molestiae.
+                          user_id: Ullam est voluptas molestias deserunt eligendi temporibus.
+                          user_name: Exercitationem et quaerat dicta labore molestias accusantium.
+                          vote_creation_time: "1979-10-04T15:45:37Z"
+                          vote_id: 4ee2fda2-ef95-4285-a76c-c8de6db94856
+                        - abstained: true
+                          comment_text: Incidunt quasi autem unde odio.
+                          profile_picture: Sed eveniet veritatis consequuntur reiciendis accusantium molestiae.
+                          user_id: Ullam est voluptas molestias deserunt eligendi temporibus.
+                          user_name: Exercitationem et quaerat dicta labore molestias accusantium.
+                          vote_creation_time: "1979-10-04T15:45:37Z"
+                          vote_id: 4ee2fda2-ef95-4285-a76c-c8de6db94856
             num_abstained:
                 type: integer
                 description: Number who abstained
-                example: 4322668228677079899
+                example: 7849034889875142497
                 format: int64
             num_recipients:
                 type: integer
                 description: Number of recipients
-                example: 8861192527159876815
+                example: 6848377024645062174
                 format: int64
             num_votes_cast:
                 type: integer
                 description: Number of votes cast
-                example: 6338830049441963124
+                example: 377657690984970560
                 format: int64
             poll_end_time:
                 type: string
                 description: Poll end time
-                example: "1972-09-26T16:55:02Z"
+                example: "1999-11-21T09:31:48Z"
                 format: date-time
             poll_end_time_timezone:
                 type: string
@@ -4952,6 +4955,333 @@ definitions:
                               choice_text: John Doe
                             - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
                               choice_text: John Doe
+                    - generic_choice_votes:
+                        - choice_id: 8305a54f-744e-4f5e-a4cb-548a760dc95a
+                          percentage: 0.38717239204887705
+                          vote_count: 1576237825128352243
+                        - choice_id: 8305a54f-744e-4f5e-a4cb-548a760dc95a
+                          percentage: 0.38717239204887705
+                          vote_count: 1576237825128352243
+                        - choice_id: 8305a54f-744e-4f5e-a4cb-548a760dc95a
+                          percentage: 0.38717239204887705
+                          vote_count: 1576237825128352243
+                      irv_round_summary:
+                        - eliminated_choice_id: Aut beatae natus sit.
+                          exhausted_votes: 3449552188985342331
+                          message: Deserunt omnis sint qui dolores id architecto.
+                          min_votes: 853907966276650893
+                          round_number: 860270295819916644
+                          threshold: 674735210732628048
+                          total_votes: 2155717709162666527
+                          transferred_votes:
+                            - choice_id: Excepturi minima qui error reiciendis velit vel.
+                              percentage: 0.01092029121751492
+                              vote_count: 7278998924775707805
+                            - choice_id: Excepturi minima qui error reiciendis velit vel.
+                              percentage: 0.01092029121751492
+                              vote_count: 7278998924775707805
+                          votes:
+                            - choice_id: Excepturi minima qui error reiciendis velit vel.
+                              percentage: 0.01092029121751492
+                              vote_count: 7278998924775707805
+                            - choice_id: Excepturi minima qui error reiciendis velit vel.
+                              percentage: 0.01092029121751492
+                              vote_count: 7278998924775707805
+                        - eliminated_choice_id: Aut beatae natus sit.
+                          exhausted_votes: 3449552188985342331
+                          message: Deserunt omnis sint qui dolores id architecto.
+                          min_votes: 853907966276650893
+                          round_number: 860270295819916644
+                          threshold: 674735210732628048
+                          total_votes: 2155717709162666527
+                          transferred_votes:
+                            - choice_id: Excepturi minima qui error reiciendis velit vel.
+                              percentage: 0.01092029121751492
+                              vote_count: 7278998924775707805
+                            - choice_id: Excepturi minima qui error reiciendis velit vel.
+                              percentage: 0.01092029121751492
+                              vote_count: 7278998924775707805
+                          votes:
+                            - choice_id: Excepturi minima qui error reiciendis velit vel.
+                              percentage: 0.01092029121751492
+                              vote_count: 7278998924775707805
+                            - choice_id: Excepturi minima qui error reiciendis velit vel.
+                              percentage: 0.01092029121751492
+                              vote_count: 7278998924775707805
+                        - eliminated_choice_id: Aut beatae natus sit.
+                          exhausted_votes: 3449552188985342331
+                          message: Deserunt omnis sint qui dolores id architecto.
+                          min_votes: 853907966276650893
+                          round_number: 860270295819916644
+                          threshold: 674735210732628048
+                          total_votes: 2155717709162666527
+                          transferred_votes:
+                            - choice_id: Excepturi minima qui error reiciendis velit vel.
+                              percentage: 0.01092029121751492
+                              vote_count: 7278998924775707805
+                            - choice_id: Excepturi minima qui error reiciendis velit vel.
+                              percentage: 0.01092029121751492
+                              vote_count: 7278998924775707805
+                          votes:
+                            - choice_id: Excepturi minima qui error reiciendis velit vel.
+                              percentage: 0.01092029121751492
+                              vote_count: 7278998924775707805
+                            - choice_id: Excepturi minima qui error reiciendis velit vel.
+                              percentage: 0.01092029121751492
+                              vote_count: 7278998924775707805
+                        - eliminated_choice_id: Aut beatae natus sit.
+                          exhausted_votes: 3449552188985342331
+                          message: Deserunt omnis sint qui dolores id architecto.
+                          min_votes: 853907966276650893
+                          round_number: 860270295819916644
+                          threshold: 674735210732628048
+                          total_votes: 2155717709162666527
+                          transferred_votes:
+                            - choice_id: Excepturi minima qui error reiciendis velit vel.
+                              percentage: 0.01092029121751492
+                              vote_count: 7278998924775707805
+                            - choice_id: Excepturi minima qui error reiciendis velit vel.
+                              percentage: 0.01092029121751492
+                              vote_count: 7278998924775707805
+                          votes:
+                            - choice_id: Excepturi minima qui error reiciendis velit vel.
+                              percentage: 0.01092029121751492
+                              vote_count: 7278998924775707805
+                            - choice_id: Excepturi minima qui error reiciendis velit vel.
+                              percentage: 0.01092029121751492
+                              vote_count: 7278998924775707805
+                      meek_stv_round_summary:
+                        - elected_choices:
+                            - choice_id: Consequatur aut incidunt dolore.
+                              surplus_votes: 8004730653397919364
+                              vote_count: 6810217793271733942
+                            - choice_id: Consequatur aut incidunt dolore.
+                              surplus_votes: 8004730653397919364
+                              vote_count: 6810217793271733942
+                            - choice_id: Consequatur aut incidunt dolore.
+                              surplus_votes: 8004730653397919364
+                              vote_count: 6810217793271733942
+                          eliminated_choices:
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                          exhausted_votes: 6526633248933146391
+                          message: Rerum veritatis sed asperiores non et quia.
+                          round_number: 5459963594304209021
+                          surplus_votes:
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                          threshold: 5348233475168050925
+                          total_votes: 8458599308955695486
+                          transferred_votes:
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                          votes:
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                        - elected_choices:
+                            - choice_id: Consequatur aut incidunt dolore.
+                              surplus_votes: 8004730653397919364
+                              vote_count: 6810217793271733942
+                            - choice_id: Consequatur aut incidunt dolore.
+                              surplus_votes: 8004730653397919364
+                              vote_count: 6810217793271733942
+                            - choice_id: Consequatur aut incidunt dolore.
+                              surplus_votes: 8004730653397919364
+                              vote_count: 6810217793271733942
+                          eliminated_choices:
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                          exhausted_votes: 6526633248933146391
+                          message: Rerum veritatis sed asperiores non et quia.
+                          round_number: 5459963594304209021
+                          surplus_votes:
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                          threshold: 5348233475168050925
+                          total_votes: 8458599308955695486
+                          transferred_votes:
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                          votes:
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                            - choice_id: Ut voluptates praesentium.
+                              vote_count: 1292848879970647050
+                      question:
+                        choices:
+                            - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                              choice_text: John Doe
+                            - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                              choice_text: John Doe
+                            - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                              choice_text: John Doe
+                            - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                              choice_text: John Doe
+                        prompt: Reprehenderit ea in in sit ut sed.
+                        question_id: 27b05120-faef-4d55-92a2-e57c30a65f73
+                        type: Ad nulla similique porro laudantium et cum.
+                      ranked_choice_votes:
+                        - choice_id: c468c73b-6f50-4899-86ab-2303113527b4
+                          condorcet_matrix:
+                            - choice_id: Iure consectetur consequatur est.
+                              choice_id_wins: 3276382842794251245
+                              other_choice_id: Asperiores delectus.
+                              other_choice_id_wins: 9032806777793381158
+                              result: Sunt sed itaque ab minima.
+                            - choice_id: Iure consectetur consequatur est.
+                              choice_id_wins: 3276382842794251245
+                              other_choice_id: Asperiores delectus.
+                              other_choice_id_wins: 9032806777793381158
+                              result: Sunt sed itaque ab minima.
+                            - choice_id: Iure consectetur consequatur est.
+                              choice_id_wins: 3276382842794251245
+                              other_choice_id: Asperiores delectus.
+                              other_choice_id_wins: 9032806777793381158
+                              result: Sunt sed itaque ab minima.
+                            - choice_id: Iure consectetur consequatur est.
+                              choice_id_wins: 3276382842794251245
+                              other_choice_id: Asperiores delectus.
+                              other_choice_id_wins: 9032806777793381158
+                              result: Sunt sed itaque ab minima.
+                          rank_counts:
+                            - count: 1190231891355337437
+                              rank: 7365953190447389267
+                            - count: 1190231891355337437
+                              rank: 7365953190447389267
+                            - count: 1190231891355337437
+                              rank: 7365953190447389267
+                            - count: 1190231891355337437
+                              rank: 7365953190447389267
+                        - choice_id: c468c73b-6f50-4899-86ab-2303113527b4
+                          condorcet_matrix:
+                            - choice_id: Iure consectetur consequatur est.
+                              choice_id_wins: 3276382842794251245
+                              other_choice_id: Asperiores delectus.
+                              other_choice_id_wins: 9032806777793381158
+                              result: Sunt sed itaque ab minima.
+                            - choice_id: Iure consectetur consequatur est.
+                              choice_id_wins: 3276382842794251245
+                              other_choice_id: Asperiores delectus.
+                              other_choice_id_wins: 9032806777793381158
+                              result: Sunt sed itaque ab minima.
+                            - choice_id: Iure consectetur consequatur est.
+                              choice_id_wins: 3276382842794251245
+                              other_choice_id: Asperiores delectus.
+                              other_choice_id_wins: 9032806777793381158
+                              result: Sunt sed itaque ab minima.
+                            - choice_id: Iure consectetur consequatur est.
+                              choice_id_wins: 3276382842794251245
+                              other_choice_id: Asperiores delectus.
+                              other_choice_id_wins: 9032806777793381158
+                              result: Sunt sed itaque ab minima.
+                          rank_counts:
+                            - count: 1190231891355337437
+                              rank: 7365953190447389267
+                            - count: 1190231891355337437
+                              rank: 7365953190447389267
+                            - count: 1190231891355337437
+                              rank: 7365953190447389267
+                            - count: 1190231891355337437
+                              rank: 7365953190447389267
+                        - choice_id: c468c73b-6f50-4899-86ab-2303113527b4
+                          condorcet_matrix:
+                            - choice_id: Iure consectetur consequatur est.
+                              choice_id_wins: 3276382842794251245
+                              other_choice_id: Asperiores delectus.
+                              other_choice_id_wins: 9032806777793381158
+                              result: Sunt sed itaque ab minima.
+                            - choice_id: Iure consectetur consequatur est.
+                              choice_id_wins: 3276382842794251245
+                              other_choice_id: Asperiores delectus.
+                              other_choice_id_wins: 9032806777793381158
+                              result: Sunt sed itaque ab minima.
+                            - choice_id: Iure consectetur consequatur est.
+                              choice_id_wins: 3276382842794251245
+                              other_choice_id: Asperiores delectus.
+                              other_choice_id_wins: 9032806777793381158
+                              result: Sunt sed itaque ab minima.
+                            - choice_id: Iure consectetur consequatur est.
+                              choice_id_wins: 3276382842794251245
+                              other_choice_id: Asperiores delectus.
+                              other_choice_id_wins: 9032806777793381158
+                              result: Sunt sed itaque ab minima.
+                          rank_counts:
+                            - count: 1190231891355337437
+                              rank: 7365953190447389267
+                            - count: 1190231891355337437
+                              rank: 7365953190447389267
+                            - count: 1190231891355337437
+                              rank: 7365953190447389267
+                            - count: 1190231891355337437
+                              rank: 7365953190447389267
+                        - choice_id: c468c73b-6f50-4899-86ab-2303113527b4
+                          condorcet_matrix:
+                            - choice_id: Iure consectetur consequatur est.
+                              choice_id_wins: 3276382842794251245
+                              other_choice_id: Asperiores delectus.
+                              other_choice_id_wins: 9032806777793381158
+                              result: Sunt sed itaque ab minima.
+                            - choice_id: Iure consectetur consequatur est.
+                              choice_id_wins: 3276382842794251245
+                              other_choice_id: Asperiores delectus.
+                              other_choice_id_wins: 9032806777793381158
+                              result: Sunt sed itaque ab minima.
+                            - choice_id: Iure consectetur consequatur est.
+                              choice_id_wins: 3276382842794251245
+                              other_choice_id: Asperiores delectus.
+                              other_choice_id_wins: 9032806777793381158
+                              result: Sunt sed itaque ab minima.
+                            - choice_id: Iure consectetur consequatur est.
+                              choice_id_wins: 3276382842794251245
+                              other_choice_id: Asperiores delectus.
+                              other_choice_id_wins: 9032806777793381158
+                              result: Sunt sed itaque ab minima.
+                          rank_counts:
+                            - count: 1190231891355337437
+                              rank: 7365953190447389267
+                            - count: 1190231891355337437
+                              rank: 7365953190447389267
+                            - count: 1190231891355337437
+                              rank: 7365953190447389267
+                            - count: 1190231891355337437
+                              rank: 7365953190447389267
+                      ranked_choice_winner_info:
+                        condorcet_irv_used_for_eliminations: true
+                        poll_choices:
+                            - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                              choice_text: John Doe
+                            - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                              choice_text: John Doe
+                            - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                              choice_text: John Doe
+                            - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                              choice_text: John Doe
         example:
             comment_results:
                 - prompt:
@@ -5082,12 +5412,339 @@ definitions:
                       user_name: Exercitationem et quaerat dicta labore molestias accusantium.
                       vote_creation_time: "1979-10-04T15:45:37Z"
                       vote_id: 4ee2fda2-ef95-4285-a76c-c8de6db94856
-            num_abstained: 2763646488582420389
-            num_recipients: 1061397105879086056
-            num_votes_cast: 3807701589747079401
-            poll_end_time: "2011-02-20T10:16:03Z"
+            num_abstained: 5430071510875303302
+            num_recipients: 1394026086513172799
+            num_votes_cast: 3335931428692680625
+            poll_end_time: "1971-10-17T02:15:29Z"
             poll_end_time_timezone: America/New_York
             poll_results:
+                - generic_choice_votes:
+                    - choice_id: 8305a54f-744e-4f5e-a4cb-548a760dc95a
+                      percentage: 0.38717239204887705
+                      vote_count: 1576237825128352243
+                    - choice_id: 8305a54f-744e-4f5e-a4cb-548a760dc95a
+                      percentage: 0.38717239204887705
+                      vote_count: 1576237825128352243
+                    - choice_id: 8305a54f-744e-4f5e-a4cb-548a760dc95a
+                      percentage: 0.38717239204887705
+                      vote_count: 1576237825128352243
+                  irv_round_summary:
+                    - eliminated_choice_id: Aut beatae natus sit.
+                      exhausted_votes: 3449552188985342331
+                      message: Deserunt omnis sint qui dolores id architecto.
+                      min_votes: 853907966276650893
+                      round_number: 860270295819916644
+                      threshold: 674735210732628048
+                      total_votes: 2155717709162666527
+                      transferred_votes:
+                        - choice_id: Excepturi minima qui error reiciendis velit vel.
+                          percentage: 0.01092029121751492
+                          vote_count: 7278998924775707805
+                        - choice_id: Excepturi minima qui error reiciendis velit vel.
+                          percentage: 0.01092029121751492
+                          vote_count: 7278998924775707805
+                      votes:
+                        - choice_id: Excepturi minima qui error reiciendis velit vel.
+                          percentage: 0.01092029121751492
+                          vote_count: 7278998924775707805
+                        - choice_id: Excepturi minima qui error reiciendis velit vel.
+                          percentage: 0.01092029121751492
+                          vote_count: 7278998924775707805
+                    - eliminated_choice_id: Aut beatae natus sit.
+                      exhausted_votes: 3449552188985342331
+                      message: Deserunt omnis sint qui dolores id architecto.
+                      min_votes: 853907966276650893
+                      round_number: 860270295819916644
+                      threshold: 674735210732628048
+                      total_votes: 2155717709162666527
+                      transferred_votes:
+                        - choice_id: Excepturi minima qui error reiciendis velit vel.
+                          percentage: 0.01092029121751492
+                          vote_count: 7278998924775707805
+                        - choice_id: Excepturi minima qui error reiciendis velit vel.
+                          percentage: 0.01092029121751492
+                          vote_count: 7278998924775707805
+                      votes:
+                        - choice_id: Excepturi minima qui error reiciendis velit vel.
+                          percentage: 0.01092029121751492
+                          vote_count: 7278998924775707805
+                        - choice_id: Excepturi minima qui error reiciendis velit vel.
+                          percentage: 0.01092029121751492
+                          vote_count: 7278998924775707805
+                    - eliminated_choice_id: Aut beatae natus sit.
+                      exhausted_votes: 3449552188985342331
+                      message: Deserunt omnis sint qui dolores id architecto.
+                      min_votes: 853907966276650893
+                      round_number: 860270295819916644
+                      threshold: 674735210732628048
+                      total_votes: 2155717709162666527
+                      transferred_votes:
+                        - choice_id: Excepturi minima qui error reiciendis velit vel.
+                          percentage: 0.01092029121751492
+                          vote_count: 7278998924775707805
+                        - choice_id: Excepturi minima qui error reiciendis velit vel.
+                          percentage: 0.01092029121751492
+                          vote_count: 7278998924775707805
+                      votes:
+                        - choice_id: Excepturi minima qui error reiciendis velit vel.
+                          percentage: 0.01092029121751492
+                          vote_count: 7278998924775707805
+                        - choice_id: Excepturi minima qui error reiciendis velit vel.
+                          percentage: 0.01092029121751492
+                          vote_count: 7278998924775707805
+                    - eliminated_choice_id: Aut beatae natus sit.
+                      exhausted_votes: 3449552188985342331
+                      message: Deserunt omnis sint qui dolores id architecto.
+                      min_votes: 853907966276650893
+                      round_number: 860270295819916644
+                      threshold: 674735210732628048
+                      total_votes: 2155717709162666527
+                      transferred_votes:
+                        - choice_id: Excepturi minima qui error reiciendis velit vel.
+                          percentage: 0.01092029121751492
+                          vote_count: 7278998924775707805
+                        - choice_id: Excepturi minima qui error reiciendis velit vel.
+                          percentage: 0.01092029121751492
+                          vote_count: 7278998924775707805
+                      votes:
+                        - choice_id: Excepturi minima qui error reiciendis velit vel.
+                          percentage: 0.01092029121751492
+                          vote_count: 7278998924775707805
+                        - choice_id: Excepturi minima qui error reiciendis velit vel.
+                          percentage: 0.01092029121751492
+                          vote_count: 7278998924775707805
+                  meek_stv_round_summary:
+                    - elected_choices:
+                        - choice_id: Consequatur aut incidunt dolore.
+                          surplus_votes: 8004730653397919364
+                          vote_count: 6810217793271733942
+                        - choice_id: Consequatur aut incidunt dolore.
+                          surplus_votes: 8004730653397919364
+                          vote_count: 6810217793271733942
+                        - choice_id: Consequatur aut incidunt dolore.
+                          surplus_votes: 8004730653397919364
+                          vote_count: 6810217793271733942
+                      eliminated_choices:
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                      exhausted_votes: 6526633248933146391
+                      message: Rerum veritatis sed asperiores non et quia.
+                      round_number: 5459963594304209021
+                      surplus_votes:
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                      threshold: 5348233475168050925
+                      total_votes: 8458599308955695486
+                      transferred_votes:
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                      votes:
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                    - elected_choices:
+                        - choice_id: Consequatur aut incidunt dolore.
+                          surplus_votes: 8004730653397919364
+                          vote_count: 6810217793271733942
+                        - choice_id: Consequatur aut incidunt dolore.
+                          surplus_votes: 8004730653397919364
+                          vote_count: 6810217793271733942
+                        - choice_id: Consequatur aut incidunt dolore.
+                          surplus_votes: 8004730653397919364
+                          vote_count: 6810217793271733942
+                      eliminated_choices:
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                      exhausted_votes: 6526633248933146391
+                      message: Rerum veritatis sed asperiores non et quia.
+                      round_number: 5459963594304209021
+                      surplus_votes:
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                      threshold: 5348233475168050925
+                      total_votes: 8458599308955695486
+                      transferred_votes:
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                      votes:
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                        - choice_id: Ut voluptates praesentium.
+                          vote_count: 1292848879970647050
+                  question:
+                    choices:
+                        - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                          choice_text: John Doe
+                        - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                          choice_text: John Doe
+                        - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                          choice_text: John Doe
+                        - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                          choice_text: John Doe
+                    prompt: Reprehenderit ea in in sit ut sed.
+                    question_id: 27b05120-faef-4d55-92a2-e57c30a65f73
+                    type: Ad nulla similique porro laudantium et cum.
+                  ranked_choice_votes:
+                    - choice_id: c468c73b-6f50-4899-86ab-2303113527b4
+                      condorcet_matrix:
+                        - choice_id: Iure consectetur consequatur est.
+                          choice_id_wins: 3276382842794251245
+                          other_choice_id: Asperiores delectus.
+                          other_choice_id_wins: 9032806777793381158
+                          result: Sunt sed itaque ab minima.
+                        - choice_id: Iure consectetur consequatur est.
+                          choice_id_wins: 3276382842794251245
+                          other_choice_id: Asperiores delectus.
+                          other_choice_id_wins: 9032806777793381158
+                          result: Sunt sed itaque ab minima.
+                        - choice_id: Iure consectetur consequatur est.
+                          choice_id_wins: 3276382842794251245
+                          other_choice_id: Asperiores delectus.
+                          other_choice_id_wins: 9032806777793381158
+                          result: Sunt sed itaque ab minima.
+                        - choice_id: Iure consectetur consequatur est.
+                          choice_id_wins: 3276382842794251245
+                          other_choice_id: Asperiores delectus.
+                          other_choice_id_wins: 9032806777793381158
+                          result: Sunt sed itaque ab minima.
+                      rank_counts:
+                        - count: 1190231891355337437
+                          rank: 7365953190447389267
+                        - count: 1190231891355337437
+                          rank: 7365953190447389267
+                        - count: 1190231891355337437
+                          rank: 7365953190447389267
+                        - count: 1190231891355337437
+                          rank: 7365953190447389267
+                    - choice_id: c468c73b-6f50-4899-86ab-2303113527b4
+                      condorcet_matrix:
+                        - choice_id: Iure consectetur consequatur est.
+                          choice_id_wins: 3276382842794251245
+                          other_choice_id: Asperiores delectus.
+                          other_choice_id_wins: 9032806777793381158
+                          result: Sunt sed itaque ab minima.
+                        - choice_id: Iure consectetur consequatur est.
+                          choice_id_wins: 3276382842794251245
+                          other_choice_id: Asperiores delectus.
+                          other_choice_id_wins: 9032806777793381158
+                          result: Sunt sed itaque ab minima.
+                        - choice_id: Iure consectetur consequatur est.
+                          choice_id_wins: 3276382842794251245
+                          other_choice_id: Asperiores delectus.
+                          other_choice_id_wins: 9032806777793381158
+                          result: Sunt sed itaque ab minima.
+                        - choice_id: Iure consectetur consequatur est.
+                          choice_id_wins: 3276382842794251245
+                          other_choice_id: Asperiores delectus.
+                          other_choice_id_wins: 9032806777793381158
+                          result: Sunt sed itaque ab minima.
+                      rank_counts:
+                        - count: 1190231891355337437
+                          rank: 7365953190447389267
+                        - count: 1190231891355337437
+                          rank: 7365953190447389267
+                        - count: 1190231891355337437
+                          rank: 7365953190447389267
+                        - count: 1190231891355337437
+                          rank: 7365953190447389267
+                    - choice_id: c468c73b-6f50-4899-86ab-2303113527b4
+                      condorcet_matrix:
+                        - choice_id: Iure consectetur consequatur est.
+                          choice_id_wins: 3276382842794251245
+                          other_choice_id: Asperiores delectus.
+                          other_choice_id_wins: 9032806777793381158
+                          result: Sunt sed itaque ab minima.
+                        - choice_id: Iure consectetur consequatur est.
+                          choice_id_wins: 3276382842794251245
+                          other_choice_id: Asperiores delectus.
+                          other_choice_id_wins: 9032806777793381158
+                          result: Sunt sed itaque ab minima.
+                        - choice_id: Iure consectetur consequatur est.
+                          choice_id_wins: 3276382842794251245
+                          other_choice_id: Asperiores delectus.
+                          other_choice_id_wins: 9032806777793381158
+                          result: Sunt sed itaque ab minima.
+                        - choice_id: Iure consectetur consequatur est.
+                          choice_id_wins: 3276382842794251245
+                          other_choice_id: Asperiores delectus.
+                          other_choice_id_wins: 9032806777793381158
+                          result: Sunt sed itaque ab minima.
+                      rank_counts:
+                        - count: 1190231891355337437
+                          rank: 7365953190447389267
+                        - count: 1190231891355337437
+                          rank: 7365953190447389267
+                        - count: 1190231891355337437
+                          rank: 7365953190447389267
+                        - count: 1190231891355337437
+                          rank: 7365953190447389267
+                    - choice_id: c468c73b-6f50-4899-86ab-2303113527b4
+                      condorcet_matrix:
+                        - choice_id: Iure consectetur consequatur est.
+                          choice_id_wins: 3276382842794251245
+                          other_choice_id: Asperiores delectus.
+                          other_choice_id_wins: 9032806777793381158
+                          result: Sunt sed itaque ab minima.
+                        - choice_id: Iure consectetur consequatur est.
+                          choice_id_wins: 3276382842794251245
+                          other_choice_id: Asperiores delectus.
+                          other_choice_id_wins: 9032806777793381158
+                          result: Sunt sed itaque ab minima.
+                        - choice_id: Iure consectetur consequatur est.
+                          choice_id_wins: 3276382842794251245
+                          other_choice_id: Asperiores delectus.
+                          other_choice_id_wins: 9032806777793381158
+                          result: Sunt sed itaque ab minima.
+                        - choice_id: Iure consectetur consequatur est.
+                          choice_id_wins: 3276382842794251245
+                          other_choice_id: Asperiores delectus.
+                          other_choice_id_wins: 9032806777793381158
+                          result: Sunt sed itaque ab minima.
+                      rank_counts:
+                        - count: 1190231891355337437
+                          rank: 7365953190447389267
+                        - count: 1190231891355337437
+                          rank: 7365953190447389267
+                        - count: 1190231891355337437
+                          rank: 7365953190447389267
+                        - count: 1190231891355337437
+                          rank: 7365953190447389267
+                  ranked_choice_winner_info:
+                    condorcet_irv_used_for_eliminations: true
+                    poll_choices:
+                        - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                          choice_text: John Doe
+                        - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                          choice_text: John Doe
+                        - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                          choice_text: John Doe
+                        - choice_id: 8f38a658-f952-4c5d-a1ce-f24c34e974e6
+                          choice_text: John Doe
                 - generic_choice_votes:
                     - choice_id: 8305a54f-744e-4f5e-a4cb-548a760dc95a
                       percentage: 0.38717239204887705
@@ -6087,7 +6744,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Emeritus
+                    example: Alternate Voting Rep
                     enum:
                         - Voting Rep
                         - Alternate Voting Rep
@@ -6106,7 +6763,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Praesentium animi laboriosam qui et qui.
+                    example: Excepturi itaque est qui.
                 description: Multiple committee UIDs
                 example:
                     - a02bdbaf-53b1-4d47-bc04-dd7e459dd308
@@ -6147,7 +6804,6 @@ definitions:
                     - prompt: Please provide any additional feedback
                     - prompt: Please provide any additional feedback
                     - prompt: Please provide any additional feedback
-                    - prompt: Please provide any additional feedback
             poll_questions:
                 type: array
                 items:
@@ -6174,20 +6830,10 @@ definitions:
                       prompt: Who should be elected to the TSC?
                       question_id: cbc6e0f7-71e8-4c85-b787-a7b5be6d8f03
                       type: single_choice
-                    - choices:
-                        - choice_id: 089e77ca-8c66-4950-ac46-3903b6e6b3c3
-                          choice_text: John Doe
-                        - choice_id: 089e77ca-8c66-4950-ac46-3903b6e6b3c3
-                          choice_text: John Doe
-                        - choice_id: 089e77ca-8c66-4950-ac46-3903b6e6b3c3
-                          choice_text: John Doe
-                      prompt: Who should be elected to the TSC?
-                      question_id: cbc6e0f7-71e8-4c85-b787-a7b5be6d8f03
-                      type: single_choice
             poll_type:
                 type: string
                 description: Type of poll
-                example: meek_stv
+                example: generic
                 enum:
                     - generic
                     - condorcet_irv
@@ -6201,7 +6847,7 @@ definitions:
                 type: boolean
                 description: Enable pseudo-anonymity
                 default: false
-                example: true
+                example: false
             quorum_percentage:
                 type: integer
                 description: Quorum percentage required
@@ -6217,7 +6863,7 @@ definitions:
                 minimum: 0
                 maximum: 100
         example:
-            allow_abstain: false
+            allow_abstain: true
             committee_filters:
                 - Voting Rep
                 - Alternate Voting Rep
@@ -6229,8 +6875,10 @@ definitions:
             end_time: "2026-02-15T23:59:59Z"
             end_time_timezone: America/New_York
             name: Q1 2026 Technical Steering Committee Election
-            num_winners: 3
+            num_winners: 6
             poll_comment_prompts:
+                - prompt: Please provide any additional feedback
+                - prompt: Please provide any additional feedback
                 - prompt: Please provide any additional feedback
                 - prompt: Please provide any additional feedback
             poll_questions:
@@ -6266,7 +6914,7 @@ definitions:
                   type: single_choice
             poll_type: generic
             project_uid: a09P000000DsCBuIRT
-            pseudo_anonymity: true
+            pseudo_anonymity: false
             quorum_percentage: 50
             winning_threshold_percentage: 51
         required:
@@ -6288,7 +6936,7 @@ definitions:
                 type: array
                 items:
                     $ref: '#/definitions/CommentResponse'
-                description: The voter's free-text responses to the poll's comment prompts. Allowed regardless of whether abstain is true. Each prompt_id must match one of the poll's comment prompts and must not repeat; each comment_text is required and is rejected with a 400 if longer than 5000 characters.
+                description: The voter's free-text responses to the poll's comment prompts. Allowed regardless of whether abstain is true — an abstaining voter skips the ballot but may still comment. Each prompt_id must match one of the poll's comment prompts and must not repeat; each comment_text is required (cannot be empty after trimming) and is rejected with a 400 if longer than 5000 characters. Omitting this field entirely preserves the vote's existing comments untouched; including it (even as an empty array) validates and replaces them.
                 example:
                     - comment_text: Because the incumbent has done great work this term.
                       prompt_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
@@ -6303,7 +6951,7 @@ definitions:
                       question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
             vote_token:
                 type: string
-                description: Signed token from the personalized vote link (the vote_token query parameter of the emailed URL). Identifies the ballot; treat it as a credential and never log it.
+                description: Signed token from the personalized vote link (the vote_token in the emailed URL's fragment). Identifies the ballot; treat it as a credential and never log it.
                 example: v1.k2026a.eyJ2IjoiOGYzYzJhMWUtNGI1ZC00ZTZmLTlhN2ItMWMyZDNlNGY1YTZiIiwiciI6ImNiYTE0ZjQwLTE2MzYtMTFlYy05NjIxLTAyNDJhYzEzMDAwMiIsImlhdCI6MTc5MzIzMjAwMH0.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU
                 minLength: 1
                 maxLength: 1024
@@ -6333,7 +6981,7 @@ definitions:
                 type: array
                 items:
                     $ref: '#/definitions/CommentResponse'
-                description: The voter's free-text responses to the poll's comment prompts. Allowed regardless of whether abstain is true — an abstaining voter skips the ballot but may still comment. Otherwise, omitting this field entirely preserves the vote's existing comments untouched; including it (even as an empty array) validates and replaces them. Each prompt_id must match one of the poll's comment prompts and must not repeat; each comment_text is required (cannot be empty after trimming) and is rejected with a 400 if longer than 5000 characters.
+                description: The voter's free-text responses to the poll's comment prompts. Allowed regardless of whether abstain is true — an abstaining voter skips the ballot but may still comment. Each prompt_id must match one of the poll's comment prompts and must not repeat; each comment_text is required (cannot be empty after trimming) and is rejected with a 400 if longer than 5000 characters. Omitting this field entirely preserves the vote's existing comments untouched; including it (even as an empty array) validates and replaces them.
                 example:
                     - comment_text: Because the incumbent has done great work this term.
                       prompt_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
@@ -6341,7 +6989,7 @@ definitions:
                 type: array
                 items:
                     $ref: '#/definitions/VoteAnswerInput'
-                description: Updated vote answers
+                description: Vote answers
                 example:
                     - choice_ids:
                         - b03cdbaf-53b1-4d47-bc04-dd7e459dd309

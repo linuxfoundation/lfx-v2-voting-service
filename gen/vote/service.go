@@ -206,18 +206,20 @@ type CreateVotePayload struct {
 type CreateVoteResponseByLinkPayload struct {
 	// JWT token
 	Token *string
-	// Signed token from the personalized vote link (the vote_token query parameter
-	// of the emailed URL). Identifies the ballot; treat it as a credential and
-	// never log it.
+	// Signed token from the personalized vote link (the vote_token in the emailed
+	// URL's fragment). Identifies the ballot; treat it as a credential and never
+	// log it.
 	VoteToken string
 	// Vote answers
 	UserVoteContent []*VoteAnswerInput
 	// Whether to abstain from voting
 	Abstain bool
 	// The voter's free-text responses to the poll's comment prompts. Allowed
-	// regardless of whether abstain is true. Each prompt_id must match one of the
-	// poll's comment prompts and must not repeat; each comment_text is required
-	// and is rejected with a 400 if longer than 5000 characters.
+	// regardless of whether abstain is true — an abstaining voter skips the ballot
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Optional; only meaningful if the poll has poll_comment_prompts.
 	CommentResponses []*CommentResponse
 }
 
@@ -234,12 +236,12 @@ type CreateVoteResponsePayload struct {
 	UserVoteContent []*VoteAnswerInput
 	// Whether to abstain from voting
 	Abstain bool
-	// The voter's free-text responses to the poll's comment prompts. Optional;
-	// only meaningful if the poll has poll_comment_prompts. Allowed regardless of
-	// whether abstain is true — an abstaining voter skips the ballot but may still
-	// comment. Each prompt_id must match one of the poll's comment prompts and
-	// must not repeat; each comment_text is required (cannot be empty after
-	// trimming) and is rejected with a 400 if longer than 5000 characters.
+	// The voter's free-text responses to the poll's comment prompts. Allowed
+	// regardless of whether abstain is true — an abstaining voter skips the ballot
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Optional; only meaningful if the poll has poll_comment_prompts.
 	CommentResponses []*CommentResponse
 }
 
@@ -575,18 +577,21 @@ type UpdateVotePayload struct {
 type UpdateVoteResponseByLinkPayload struct {
 	// JWT token
 	Token *string
-	// Signed token from the personalized vote link (the vote_token query parameter
-	// of the emailed URL). Identifies the ballot; treat it as a credential and
-	// never log it.
+	// Signed token from the personalized vote link (the vote_token in the emailed
+	// URL's fragment). Identifies the ballot; treat it as a credential and never
+	// log it.
 	VoteToken string
 	// Vote answers
 	UserVoteContent []*VoteAnswerInput
 	// Whether to abstain from voting
 	Abstain bool
 	// The voter's free-text responses to the poll's comment prompts. Allowed
-	// regardless of whether abstain is true. Each prompt_id must match one of the
-	// poll's comment prompts and must not repeat; each comment_text is required
-	// and is rejected with a 400 if longer than 5000 characters.
+	// regardless of whether abstain is true — an abstaining voter skips the ballot
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Omitting this field entirely preserves the vote's existing comments
+	// untouched; including it (even as an empty array) validates and replaces them.
 	CommentResponses []*CommentResponse
 }
 
@@ -597,18 +602,17 @@ type UpdateVoteResponsePayload struct {
 	Token *string
 	// Vote response identifier
 	VoteResponseUID string
-	// Updated vote answers
+	// Vote answers
 	UserVoteContent []*VoteAnswerInput
 	// Whether to abstain from voting
 	Abstain bool
 	// The voter's free-text responses to the poll's comment prompts. Allowed
 	// regardless of whether abstain is true — an abstaining voter skips the ballot
-	// but may still comment. Otherwise, omitting this field entirely preserves the
-	// vote's existing comments untouched; including it (even as an empty array)
-	// validates and replaces them. Each prompt_id must match one of the poll's
-	// comment prompts and must not repeat; each comment_text is required (cannot
-	// be empty after trimming) and is rejected with a 400 if longer than 5000
-	// characters.
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Omitting this field entirely preserves the vote's existing comments
+	// untouched; including it (even as an empty array) validates and replaces them.
 	CommentResponses []*CommentResponse
 }
 

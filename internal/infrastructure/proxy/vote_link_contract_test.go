@@ -99,7 +99,14 @@ func TestVoteLinkContract(t *testing.T) {
 		if link.Scheme != "https" || link.Host != "app.lfx.dev" || link.Path != "/votes/"+linkVoteUID {
 			t.Errorf("link = %s", link)
 		}
-		token = link.Query().Get("vote_token")
+		if link.RawQuery != "" {
+			t.Errorf("token must not be in the query string: %s", link)
+		}
+		fragment, err := url.ParseQuery(link.Fragment)
+		if err != nil {
+			t.Fatalf("parse fragment: %v", err)
+		}
+		token = fragment.Get("vote_token")
 		claims, err := signer.Verify(token)
 		if err != nil {
 			t.Fatalf("emailed token does not verify: %v", err)

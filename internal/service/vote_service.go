@@ -37,7 +37,8 @@ type VoteService struct {
 type VoteServiceOption func(*VoteService)
 
 // WithVoteLinks enables personalized links on bulk resend: each recipient's link is
-// selfServeBaseURL/votes/{vote_uid}?vote_token={token}, with the token from signer.
+// selfServeBaseURL/votes/{vote_uid}#vote_token={token}. The token is in the
+// fragment so browsers never send it to a server (access logs, Referer, analytics), with the token from signer.
 // Without it, a bulk resend that requests personalized links returns 503.
 func WithVoteLinks(signer domain.VoteLinkSigner, selfServeBaseURL string) VoteServiceOption {
 	return func(s *VoteService) {
@@ -438,7 +439,7 @@ func (s *VoteService) buildVoteLinks(voteID string, recipientIDs []string) (map[
 		if err != nil {
 			return nil, domain.NewInternalError("failed to sign vote link", err)
 		}
-		links[recipientID] = fmt.Sprintf("%s/votes/%s?vote_token=%s",
+		links[recipientID] = fmt.Sprintf("%s/votes/%s#vote_token=%s",
 			s.selfServeBaseURL, url.PathEscape(voteID), url.QueryEscape(token))
 	}
 	return links, nil

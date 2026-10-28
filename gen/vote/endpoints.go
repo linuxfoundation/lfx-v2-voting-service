@@ -335,7 +335,7 @@ func NewCreateVoteResponseByLinkEndpoint(s Service, authJWTFn security.AuthJWTFu
 		sc := security.JWTScheme{
 			Name:           "jwt",
 			Scopes:         []string{"read:projects", "manage:projects", "manage:voting"},
-			RequiredScopes: []string{"manage:projects", "manage:voting"},
+			RequiredScopes: []string{},
 		}
 		var token string
 		if p.Token != nil {
@@ -358,7 +358,7 @@ func NewUpdateVoteResponseByLinkEndpoint(s Service, authJWTFn security.AuthJWTFu
 		sc := security.JWTScheme{
 			Name:           "jwt",
 			Scopes:         []string{"read:projects", "manage:projects", "manage:voting"},
-			RequiredScopes: []string{"manage:projects", "manage:voting"},
+			RequiredScopes: []string{},
 		}
 		var token string
 		if p.Token != nil {

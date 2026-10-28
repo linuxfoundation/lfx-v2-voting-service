@@ -127,66 +127,70 @@ type CreateVoteResponseRequestBody struct {
 	UserVoteContent []*VoteAnswerInputRequestBody `form:"user_vote_content,omitempty" json:"user_vote_content,omitempty" xml:"user_vote_content,omitempty"`
 	// Whether to abstain from voting
 	Abstain *bool `form:"abstain,omitempty" json:"abstain,omitempty" xml:"abstain,omitempty"`
-	// The voter's free-text responses to the poll's comment prompts. Optional;
-	// only meaningful if the poll has poll_comment_prompts. Allowed regardless of
-	// whether abstain is true — an abstaining voter skips the ballot but may still
-	// comment. Each prompt_id must match one of the poll's comment prompts and
-	// must not repeat; each comment_text is required (cannot be empty after
-	// trimming) and is rejected with a 400 if longer than 5000 characters.
+	// The voter's free-text responses to the poll's comment prompts. Allowed
+	// regardless of whether abstain is true — an abstaining voter skips the ballot
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Optional; only meaningful if the poll has poll_comment_prompts.
 	CommentResponses []*CommentResponseRequestBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
 }
 
 // UpdateVoteResponseRequestBody is the type of the "vote" service
 // "update_vote_response" endpoint HTTP request body.
 type UpdateVoteResponseRequestBody struct {
-	// Updated vote answers
+	// Vote answers
 	UserVoteContent []*VoteAnswerInputRequestBody `form:"user_vote_content,omitempty" json:"user_vote_content,omitempty" xml:"user_vote_content,omitempty"`
 	// Whether to abstain from voting
 	Abstain *bool `form:"abstain,omitempty" json:"abstain,omitempty" xml:"abstain,omitempty"`
 	// The voter's free-text responses to the poll's comment prompts. Allowed
 	// regardless of whether abstain is true — an abstaining voter skips the ballot
-	// but may still comment. Otherwise, omitting this field entirely preserves the
-	// vote's existing comments untouched; including it (even as an empty array)
-	// validates and replaces them. Each prompt_id must match one of the poll's
-	// comment prompts and must not repeat; each comment_text is required (cannot
-	// be empty after trimming) and is rejected with a 400 if longer than 5000
-	// characters.
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Omitting this field entirely preserves the vote's existing comments
+	// untouched; including it (even as an empty array) validates and replaces them.
 	CommentResponses []*CommentResponseRequestBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
 }
 
 // CreateVoteResponseByLinkRequestBody is the type of the "vote" service
 // "create_vote_response_by_link" endpoint HTTP request body.
 type CreateVoteResponseByLinkRequestBody struct {
-	// Signed token from the personalized vote link (the vote_token query parameter
-	// of the emailed URL). Identifies the ballot; treat it as a credential and
-	// never log it.
+	// Signed token from the personalized vote link (the vote_token in the emailed
+	// URL's fragment). Identifies the ballot; treat it as a credential and never
+	// log it.
 	VoteToken *string `form:"vote_token,omitempty" json:"vote_token,omitempty" xml:"vote_token,omitempty"`
 	// Vote answers
 	UserVoteContent []*VoteAnswerInputRequestBody `form:"user_vote_content,omitempty" json:"user_vote_content,omitempty" xml:"user_vote_content,omitempty"`
 	// Whether to abstain from voting
 	Abstain *bool `form:"abstain,omitempty" json:"abstain,omitempty" xml:"abstain,omitempty"`
 	// The voter's free-text responses to the poll's comment prompts. Allowed
-	// regardless of whether abstain is true. Each prompt_id must match one of the
-	// poll's comment prompts and must not repeat; each comment_text is required
-	// and is rejected with a 400 if longer than 5000 characters.
+	// regardless of whether abstain is true — an abstaining voter skips the ballot
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Optional; only meaningful if the poll has poll_comment_prompts.
 	CommentResponses []*CommentResponseRequestBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
 }
 
 // UpdateVoteResponseByLinkRequestBody is the type of the "vote" service
 // "update_vote_response_by_link" endpoint HTTP request body.
 type UpdateVoteResponseByLinkRequestBody struct {
-	// Signed token from the personalized vote link (the vote_token query parameter
-	// of the emailed URL). Identifies the ballot; treat it as a credential and
-	// never log it.
+	// Signed token from the personalized vote link (the vote_token in the emailed
+	// URL's fragment). Identifies the ballot; treat it as a credential and never
+	// log it.
 	VoteToken *string `form:"vote_token,omitempty" json:"vote_token,omitempty" xml:"vote_token,omitempty"`
 	// Vote answers
 	UserVoteContent []*VoteAnswerInputRequestBody `form:"user_vote_content,omitempty" json:"user_vote_content,omitempty" xml:"user_vote_content,omitempty"`
 	// Whether to abstain from voting
 	Abstain *bool `form:"abstain,omitempty" json:"abstain,omitempty" xml:"abstain,omitempty"`
 	// The voter's free-text responses to the poll's comment prompts. Allowed
-	// regardless of whether abstain is true. Each prompt_id must match one of the
-	// poll's comment prompts and must not repeat; each comment_text is required
-	// and is rejected with a 400 if longer than 5000 characters.
+	// regardless of whether abstain is true — an abstaining voter skips the ballot
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Omitting this field entirely preserves the vote's existing comments
+	// untouched; including it (even as an empty array) validates and replaces them.
 	CommentResponses []*CommentResponseRequestBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
 }
 
@@ -1130,6 +1134,16 @@ type CreateVoteResponseByLinkBadRequestResponseBody struct {
 	Message string `form:"message" json:"message" xml:"message"`
 }
 
+// CreateVoteResponseByLinkConflictResponseBody is the type of the "vote"
+// service "create_vote_response_by_link" endpoint HTTP response body for the
+// "Conflict" error.
+type CreateVoteResponseByLinkConflictResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
 // CreateVoteResponseByLinkForbiddenResponseBody is the type of the "vote"
 // service "create_vote_response_by_link" endpoint HTTP response body for the
 // "Forbidden" error.
@@ -1184,6 +1198,16 @@ type CreateVoteResponseByLinkUnauthorizedResponseBody struct {
 // service "update_vote_response_by_link" endpoint HTTP response body for the
 // "BadRequest" error.
 type UpdateVoteResponseByLinkBadRequestResponseBody struct {
+	// HTTP status code
+	Code string `form:"code" json:"code" xml:"code"`
+	// Error message
+	Message string `form:"message" json:"message" xml:"message"`
+}
+
+// UpdateVoteResponseByLinkConflictResponseBody is the type of the "vote"
+// service "update_vote_response_by_link" endpoint HTTP response body for the
+// "Conflict" error.
+type UpdateVoteResponseByLinkConflictResponseBody struct {
 	// HTTP status code
 	Code string `form:"code" json:"code" xml:"code"`
 	// Error message
@@ -2638,6 +2662,17 @@ func NewCreateVoteResponseByLinkBadRequestResponseBody(res *vote.BadRequestError
 	return body
 }
 
+// NewCreateVoteResponseByLinkConflictResponseBody builds the HTTP response
+// body from the result of the "create_vote_response_by_link" endpoint of the
+// "vote" service.
+func NewCreateVoteResponseByLinkConflictResponseBody(res *vote.ConflictError) *CreateVoteResponseByLinkConflictResponseBody {
+	body := &CreateVoteResponseByLinkConflictResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
 // NewCreateVoteResponseByLinkForbiddenResponseBody builds the HTTP response
 // body from the result of the "create_vote_response_by_link" endpoint of the
 // "vote" service.
@@ -2698,6 +2733,17 @@ func NewCreateVoteResponseByLinkUnauthorizedResponseBody(res *vote.UnauthorizedE
 // "vote" service.
 func NewUpdateVoteResponseByLinkBadRequestResponseBody(res *vote.BadRequestError) *UpdateVoteResponseByLinkBadRequestResponseBody {
 	body := &UpdateVoteResponseByLinkBadRequestResponseBody{
+		Code:    res.Code,
+		Message: res.Message,
+	}
+	return body
+}
+
+// NewUpdateVoteResponseByLinkConflictResponseBody builds the HTTP response
+// body from the result of the "update_vote_response_by_link" endpoint of the
+// "vote" service.
+func NewUpdateVoteResponseByLinkConflictResponseBody(res *vote.ConflictError) *UpdateVoteResponseByLinkConflictResponseBody {
+	body := &UpdateVoteResponseByLinkConflictResponseBody{
 		Code:    res.Code,
 		Message: res.Message,
 	}

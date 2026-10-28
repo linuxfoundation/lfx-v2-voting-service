@@ -131,7 +131,7 @@ See [LFID Invite Flow](docs/lfid-invites.md) for the full design, NATS subjects,
 ### Personalized Vote Links
 
 - `VOTE_LINK_SIGNING_KEYS` - HMAC signing keys as `kid1:base64key,kid2:base64key` (each at least 32 bytes). Unset disables the feature; set but invalid fails startup.
-- `VOTE_LINK_ACTIVE_KID` - Key ID used for signing; required when more than one key is set.
+- `VOTE_LINK_ACTIVE_KID` - Optional signing key ID override; defaults to the first key listed in `VOTE_LINK_SIGNING_KEYS`.
 - Links use `LFX_SELF_SERVE_BASE_URL` (above) as their base.
 
 See [Personalized Vote Links](docs/vote-links.md) for the token format, key rotation, and the ITX dependency.
