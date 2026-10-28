@@ -73,7 +73,7 @@ The existing `POST /vote_responses` and `PUT /vote_responses/{id}` routes are un
 
 | Variable | Description |
 |---|---|
-| `VOTE_LINK_SIGNING_KEYS` | `kid1:base64key,kid2:base64key`. Each key must be at least 32 bytes after decoding. Unset means the feature is disabled. Set but invalid means the service **fails at startup**. Comes from the `lfx-v2-voting-service-vote-links` Secret (key `VOTE_LINK_SIGNING_KEYS`, optional). That Secret is synced by its own ExternalSecret in lfx-v2-argocd from AWS Secrets Manager `/cloudops/managed-secrets/voting/vote-link-signing-keys` (property `vote_link_signing_keys`), which lfx-secrets-management fills from the 1Password item "LFX Voting Vote Link Signing Keys". |
+| `VOTE_LINK_SIGNING_KEYS` | `kid1:base64key,kid2:base64key`. Each key must be at least 32 bytes after decoding. Unset means the feature is disabled. Set but invalid means the service **fails at startup**. Comes from the `lfx-v2-voting-service` Secret (key `VOTE_LINK_SIGNING_KEYS`, optional), synced by the service's ExternalSecret in lfx-v2-argocd from AWS Secrets Manager `/cloudops/managed-secrets/voting/vote-link-signing-keys` (property `vote_link_signing_keys`), which lfx-secrets-management fills from the 1Password item "LFX Voting Vote Link Signing Keys". |
 | `VOTE_LINK_ACTIVE_KID` | The key ID used for signing. Required when more than one key is configured. |
 | `LFX_SELF_SERVE_BASE_URL` | The base of the link. Defaults to the environment's LFX app URL, derived from `LFX_ENVIRONMENT`. |
 
