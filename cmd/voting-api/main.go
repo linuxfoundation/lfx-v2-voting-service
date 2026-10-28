@@ -209,9 +209,12 @@ func run() int {
 	}
 	if linkSigner != nil {
 		linkBaseURL := resolveSelfServeBaseURL()
-		// Links carry a voting credential, so they must only ever be served over HTTPS.
-		if parsed, err := url.ParseRequestURI(linkBaseURL); err != nil || parsed.Scheme != "https" || parsed.Host == "" {
-			logger.Error("LFX_SELF_SERVE_BASE_URL must be an https URL for personalized vote links", "url", linkBaseURL, "error", err)
+		// Links carry a voting credential, so they must only ever be served over HTTPS. The
+		// base must also be a plain origin/path: links append /votes/{uid}#vote_token=..., which
+		// a query string or fragment on the base would swallow.
+		if parsed, err := url.ParseRequestURI(linkBaseURL); err != nil || parsed.Scheme != "https" || parsed.Host == "" ||
+			parsed.RawQuery != "" || parsed.ForceQuery || strings.Contains(linkBaseURL, "#") {
+			logger.Error("LFX_SELF_SERVE_BASE_URL must be an https URL without a query string or fragment for personalized vote links", "url", linkBaseURL, "error", err)
 			return 1
 		}
 		voteOpts = append(voteOpts, service.WithVoteLinks(linkSigner, linkBaseURL))

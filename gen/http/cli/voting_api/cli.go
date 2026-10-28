@@ -291,8 +291,8 @@ func voteUsage() {
 	fmt.Fprintln(os.Stderr, `    create-vote-response: Submit a vote response (proxies to ITX POST /voting/vote)`)
 	fmt.Fprintln(os.Stderr, `    get-vote-response: Get vote response details (proxies to ITX GET /voting/vote/{vote_id})`)
 	fmt.Fprintln(os.Stderr, `    update-vote-response: Update vote response (proxies to ITX PUT /voting/vote/{vote_id})`)
-	fmt.Fprintln(os.Stderr, `    create-vote-response-by-link: Submit a vote response using a personalized vote link token, without logging in (proxies to ITX POST /voting/vote). The ballot is identified only by the token.`)
-	fmt.Fprintln(os.Stderr, `    update-vote-response-by-link: Update a vote response using a personalized vote link token, without logging in (proxies to ITX PUT /voting/vote/{vote_id}). The ballot is identified only by the token. Omitting comment_responses preserves existing comments; including it (even empty) replaces them.`)
+	fmt.Fprintln(os.Stderr, `    create-vote-response-by-link: Submit a vote response using a personalized vote link token, without logging in (proxies to ITX POST /voting/vote). The ballot is identified only by the token. External callers send no Authorization header: the gateway (Heimdall) admits the request anonymously and supplies the JWT shown in this spec's security requirement.`)
+	fmt.Fprintln(os.Stderr, `    update-vote-response-by-link: Update a vote response using a personalized vote link token, without logging in (proxies to ITX PUT /voting/vote/{vote_id}). The ballot is identified only by the token. External callers send no Authorization header: the gateway (Heimdall) admits the request anonymously and supplies the JWT shown in this spec's security requirement. Omitting comment_responses preserves existing comments; including it (even empty) replaces them.`)
 	fmt.Fprintln(os.Stderr, `    resend-vote-response: Resend vote email (proxies to ITX POST /voting/vote/{vote_id}/resend)`)
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Additional help:")
@@ -535,7 +535,7 @@ func voteCreateVoteResponseByLinkUsage() {
 
 	// Description
 	fmt.Fprintln(os.Stderr)
-	fmt.Fprintln(os.Stderr, `Submit a vote response using a personalized vote link token, without logging in (proxies to ITX POST /voting/vote). The ballot is identified only by the token.`)
+	fmt.Fprintln(os.Stderr, `Submit a vote response using a personalized vote link token, without logging in (proxies to ITX POST /voting/vote). The ballot is identified only by the token. External callers send no Authorization header: the gateway (Heimdall) admits the request anonymously and supplies the JWT shown in this spec's security requirement.`)
 
 	// Flags list
 	fmt.Fprintln(os.Stderr, `    -body JSON: `)
@@ -555,7 +555,7 @@ func voteUpdateVoteResponseByLinkUsage() {
 
 	// Description
 	fmt.Fprintln(os.Stderr)
-	fmt.Fprintln(os.Stderr, `Update a vote response using a personalized vote link token, without logging in (proxies to ITX PUT /voting/vote/{vote_id}). The ballot is identified only by the token. Omitting comment_responses preserves existing comments; including it (even empty) replaces them.`)
+	fmt.Fprintln(os.Stderr, `Update a vote response using a personalized vote link token, without logging in (proxies to ITX PUT /voting/vote/{vote_id}). The ballot is identified only by the token. External callers send no Authorization header: the gateway (Heimdall) admits the request anonymously and supplies the JWT shown in this spec's security requirement. Omitting comment_responses preserves existing comments; including it (even empty) replaces them.`)
 
 	// Flags list
 	fmt.Fprintln(os.Stderr, `    -body JSON: `)

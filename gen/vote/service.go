@@ -43,12 +43,16 @@ type Service interface {
 	UpdateVoteResponse(context.Context, *UpdateVoteResponsePayload) (err error)
 	// Submit a vote response using a personalized vote link token, without logging
 	// in (proxies to ITX POST /voting/vote). The ballot is identified only by the
-	// token.
+	// token. External callers send no Authorization header: the gateway (Heimdall)
+	// admits the request anonymously and supplies the JWT shown in this spec's
+	// security requirement.
 	CreateVoteResponseByLink(context.Context, *CreateVoteResponseByLinkPayload) (err error)
 	// Update a vote response using a personalized vote link token, without logging
 	// in (proxies to ITX PUT /voting/vote/{vote_id}). The ballot is identified
-	// only by the token. Omitting comment_responses preserves existing comments;
-	// including it (even empty) replaces them.
+	// only by the token. External callers send no Authorization header: the
+	// gateway (Heimdall) admits the request anonymously and supplies the JWT shown
+	// in this spec's security requirement. Omitting comment_responses preserves
+	// existing comments; including it (even empty) replaces them.
 	UpdateVoteResponseByLink(context.Context, *UpdateVoteResponseByLinkPayload) (err error)
 	// Resend vote email (proxies to ITX POST /voting/vote/{vote_id}/resend)
 	ResendVoteResponse(context.Context, *ResendVoteResponsePayload) (err error)

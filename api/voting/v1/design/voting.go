@@ -429,7 +429,9 @@ var _ = Service("vote", func() {
 
 	Method("create_vote_response_by_link", func() {
 		Description("Submit a vote response using a personalized vote link token, without logging in " +
-			"(proxies to ITX POST /voting/vote). The ballot is identified only by the token.")
+			"(proxies to ITX POST /voting/vote). The ballot is identified only by the token. " +
+			"External callers send no Authorization header: the gateway (Heimdall) admits the request " +
+			"anonymously and supplies the JWT shown in this spec's security requirement.")
 
 		// Heimdall admits this route anonymously and still mints its JWT (principal
 		// "_anonymous"); JWTAuth only proves the request came through the gateway. No
@@ -459,6 +461,8 @@ var _ = Service("vote", func() {
 	Method("update_vote_response_by_link", func() {
 		Description("Update a vote response using a personalized vote link token, without logging in " +
 			"(proxies to ITX PUT /voting/vote/{vote_id}). The ballot is identified only by the token. " +
+			"External callers send no Authorization header: the gateway (Heimdall) admits the request " +
+			"anonymously and supplies the JWT shown in this spec's security requirement. " +
 			"Omitting comment_responses preserves existing comments; including it (even empty) replaces them.")
 
 		// Heimdall admits this route anonymously and still mints its JWT (principal
