@@ -1402,6 +1402,8 @@ The ballot is identified **only** by the token. The body has no `vote_response_u
 ```json
 {
   "vote_uid": "8f3c2a1e-4b5d-4e6f-9a7b-1c2d3e4f5a6b",
+  "project_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
+  "project_slug": "cncf",
   "name": "TSC election",
   "description": "Pick one",
   "status": "active",
@@ -1427,12 +1429,13 @@ The ballot is identified **only** by the token. The body has no `vote_response_u
 
 - `ballot.abstained`, `ballot.poll_answers` and `ballot.comment_responses` are present only after voting, and never on pseudo-anonymous votes. If ITX omits `pseudo_anonymity` or returns `null`, the vote is treated (and reported) as pseudo-anonymous.
 - Optional vote fields (`end_time_timezone`, `early_end_time`, `num_winners`, `poll_comment_prompts`) follow the same rules as `GET /votes/{vote_uid}`.
+- `project_uid` is the v2 project UID. `project_slug` is ITX's poll `project_name`, which holds the slug, and is omitted when empty. Use the query service for other project details.
 
-**Errors**: 404 `invalid voting link` (bad token, or the ballot isn't part of the token's vote), 404 from ITX (deleted vote or ballot), 503 (not configured or ITX unavailable).
+**Errors**: 404 `invalid voting link` (bad token, or the ballot isn't part of the token's vote), 404 from ITX (deleted vote or ballot), 503 (not configured, ITX unavailable, or the project ID can't be mapped).
 
 ### ITX Service API (Underlying)
 
-`GET /v2/voting/vote/{vote_id}` (ballot from the token's `r`), then `GET /v2/voting/poll/{poll_id}` (vote from the token's `v`). The ITX vote response's `voter_removed` field is mapped to `ballot.voter_removed`.
+`GET /v2/voting/vote/{vote_id}` (ballot from the token's `r`), then `GET /v2/voting/poll/{poll_id}` (vote from the token's `v`). The ITX vote response's `voter_removed` field is mapped to `ballot.voter_removed`. The poll's `project_id` (SFID) is mapped to `project_uid` via `lfx.lookup_v1_mapping`.
 
 ---
 

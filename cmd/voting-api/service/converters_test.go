@@ -337,7 +337,7 @@ func voteLinkBallotFixture(pseudo bool, status string) *service.VoteLinkBallot {
 	return &service.VoteLinkBallot{
 		Poll: &itx.PollResponse{
 			PollID: "vote-1", Name: "TSC election", Description: "Pick two", Status: "active",
-			EndTime: "2026-12-01T00:00:00Z", ProjectID: "a0941000002wBz4AAE", CommitteeID: "c1",
+			EndTime: "2026-12-01T00:00:00Z", ProjectID: "a0941000002wBz4AAE", ProjectName: "cncf", CommitteeID: "c1",
 			CommitteeName: "TSC", TotalVotingRequestInvitations: 9, NumResponseReceived: 4,
 			PseudoAnonymity: pseudo, PseudoAnonymityKnown: true, PollType: "generic", AllowAbstain: true,
 			PollQuestions: []itx.PollQuestionOutput{{QuestionID: "q1", Prompt: "Who?", Type: "single_choice",
@@ -348,6 +348,7 @@ func voteLinkBallotFixture(pseudo bool, status string) *service.VoteLinkBallot {
 			PollAnswers:      []itx.PollAnswer{{QuestionID: "q1", Prompt: "Who?", Type: "single_choice", UserChoice: []itx.PollChoiceAnswer{{ChoiceID: "c-a", ChoiceText: "Alice"}}}},
 			CommentResponses: []itx.CommentResponse{{PromptID: "p1", CommentText: "Great"}},
 		},
+		ProjectUID:            "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
 		IncludeBallotContents: !pseudo,
 	}
 }
@@ -406,7 +407,25 @@ func TestConvertVoteLinkBallotToResult(t *testing.T) {
 		}
 	})
 
-	t.Run("no project, committee, counts or PII in the JSON", func(t *testing.T) {
+	t.Run("returns project UID and slug", func(t *testing.T) {
+		got := ConvertVoteLinkBallotToResult(voteLinkBallotFixture(false, "responded"))
+		if got.ProjectUID != "7cad5a8d-19d0-41a4-81a6-043453daf9ee" {
+			t.Errorf("ProjectUID = %q, want the mapped v2 UID", got.ProjectUID)
+		}
+		if got.ProjectSlug == nil || *got.ProjectSlug != "cncf" {
+			t.Errorf("ProjectSlug = %v, want ITX project_name (the slug)", got.ProjectSlug)
+		}
+	})
+
+	t.Run("empty project slug is omitted", func(t *testing.T) {
+		fixture := voteLinkBallotFixture(false, "responded")
+		fixture.Poll.ProjectName = ""
+		if got := ConvertVoteLinkBallotToResult(fixture).ProjectSlug; got != nil {
+			t.Errorf("ProjectSlug = %q, want nil", *got)
+		}
+	})
+
+	t.Run("no project SFID, committee, counts or PII in the JSON", func(t *testing.T) {
 		raw, err := json.Marshal(ConvertVoteLinkBallotToResult(voteLinkBallotFixture(false, "responded")))
 		if err != nil {
 			t.Fatal(err)

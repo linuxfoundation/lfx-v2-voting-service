@@ -250,8 +250,8 @@ func (d domainStatus) StatusCode() int {
 
 // TestVoteLinkBallotContract drives POST /vote_links/ballot through the generated transport,
 // service, real HMAC signer and proxy client against a fake ITX: the token's ids select the
-// ballot and the vote, the response carries only ballot fields, and pseudo-anonymous votes
-// never return ballot contents.
+// ballot and the vote, the response carries only ballot fields plus the project's UID and slug,
+// and pseudo-anonymous votes never return ballot contents.
 func TestVoteLinkBallotContract(t *testing.T) {
 	signer, err := votelink.NewHMACSigner(map[string][]byte{"k1": []byte(strings.Repeat("s", votelink.MinKeyLength))}, "k1")
 	if err != nil {
@@ -284,7 +284,7 @@ func TestVoteLinkBallotContract(t *testing.T) {
 						`"poll_answers":[{"question_id":"q1","prompt":"Who?","type":"single_choice","user_choice":[{"choice_id":"c-a","choice_text":"Alice"}]}],"comment_responses":[]}`)
 				case "/v2/voting/poll/" + linkVoteUID:
 					_, _ = io.WriteString(w, `{"poll_id":"`+linkVoteUID+`","name":"TSC election","description":"Pick one","status":"active","end_time":"2030-01-01T00:00:00Z",`+
-						`"project_id":"a0941000002wBz4AAE","committee_id":"c1","total_voting_request_invitations":9,"num_response_received":4,`+tc.pseudoField+
+						`"project_id":"a0941000002wBz4AAE","project_name":"cncf","committee_id":"c1","total_voting_request_invitations":9,"num_response_received":4,`+tc.pseudoField+
 						`"allow_abstain":true,"poll_type":"generic","poll_questions":[{"question_id":"q1","prompt":"Who?","type":"single_choice","choices":[{"choice_id":"c-a","choice_text":"Alice"}]}]}`)
 				default:
 					w.WriteHeader(http.StatusNotFound)
@@ -327,12 +327,16 @@ func TestVoteLinkBallotContract(t *testing.T) {
 			if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 				t.Fatal(err)
 			}
-			for _, key := range []string{"vote_uid", "name", "status", "poll_questions", "ballot"} {
+			for _, key := range []string{"vote_uid", "project_uid", "project_slug", "name", "status", "poll_questions", "ballot"} {
 				if _, ok := body[key]; !ok {
 					t.Errorf("missing %s: %s", key, rec.Body)
 				}
 			}
-			for _, leak := range []string{"project", "committee", "num_response_received", "total_voting_request_invitations", "voter@example.org", linkBallotUID} {
+			// methodContractIDMapper passes IDs through, so project_uid echoes the poll's project_id.
+			if string(body["project_uid"]) != `"a0941000002wBz4AAE"` || string(body["project_slug"]) != `"cncf"` {
+				t.Errorf("project_uid = %s, project_slug = %s", body["project_uid"], body["project_slug"])
+			}
+			for _, leak := range []string{"project_name", "committee", "num_response_received", "total_voting_request_invitations", "voter@example.org", linkBallotUID} {
 				if strings.Contains(rec.Body.String(), leak) {
 					t.Errorf("response leaks %q: %s", leak, rec.Body)
 				}

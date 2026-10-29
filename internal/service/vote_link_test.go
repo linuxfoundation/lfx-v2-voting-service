@@ -267,11 +267,19 @@ func (r *ballotPollReader) GetPoll(_ context.Context, pollID string) (*itx.PollR
 	return r.poll, r.err
 }
 
+// prefixProjectIDMapper maps a v1 project SFID to "uid-<sfid>", so tests can tell a mapped
+// UID from the raw SFID.
+type prefixProjectIDMapper struct{ identityIDMapper }
+
+func (prefixProjectIDMapper) MapProjectV1ToV2(_ context.Context, v1SFID string) (string, error) {
+	return "uid-" + v1SFID, nil
+}
+
 func TestGetBallotByLink_ReturnsVoteAndBallotFromToken(t *testing.T) {
 	for _, pseudo := range []bool{false, true} {
 		votes := &ballotVoteClient{ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: "responded"}}
-		polls := &ballotPollReader{poll: &itx.PollResponse{PollID: "vote-1", PseudoAnonymity: pseudo, PseudoAnonymityKnown: true}}
-		svc := NewVoteResponseService(nil, votes, identityIDMapper{}, discardLogger(),
+		polls := &ballotPollReader{poll: &itx.PollResponse{PollID: "vote-1", ProjectID: "sfid-1", PseudoAnonymity: pseudo, PseudoAnonymityKnown: true}}
+		svc := NewVoteResponseService(nil, votes, prefixProjectIDMapper{}, discardLogger(),
 			WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(polls))
 
 		got, err := svc.GetBallotByLink(context.Background(), "tok:vote-1:ballot-1")
@@ -283,6 +291,9 @@ func TestGetBallotByLink_ReturnsVoteAndBallotFromToken(t *testing.T) {
 		}
 		if got.IncludeBallotContents == pseudo {
 			t.Errorf("pseudo=%v: IncludeBallotContents = %v, want %v", pseudo, got.IncludeBallotContents, !pseudo)
+		}
+		if got.ProjectUID != "uid-sfid-1" {
+			t.Errorf("pseudo=%v: ProjectUID = %q, want the UID mapped from the poll's project SFID", pseudo, got.ProjectUID)
 		}
 	}
 }
@@ -297,6 +308,7 @@ func TestGetBallotByLink_Errors(t *testing.T) {
 		ballot   *itx.VoteResponse
 		voteErr  error
 		pollErr  error
+		mapper   domain.IDMapper
 		want     domain.ErrorType
 		noUpcall bool
 	}{
@@ -352,6 +364,15 @@ func TestGetBallotByLink_Errors(t *testing.T) {
 			pollErr: domain.NewUnavailableError("ITX down"),
 			want:    domain.ErrorTypeUnavailable,
 		},
+		{
+			name: "project ID mapping fails",
+			opts: func(p *ballotPollReader) []VoteResponseServiceOption {
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(p)}
+			},
+			token:  "tok:vote-1:ballot-1",
+			mapper: &failingIDMapper{err: domain.NewUnavailableError("NATS down")},
+			want:   domain.ErrorTypeUnavailable,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -361,7 +382,11 @@ func TestGetBallotByLink_Errors(t *testing.T) {
 			}
 			votes := &ballotVoteClient{ballot: ballot, err: tc.voteErr}
 			polls := &ballotPollReader{poll: okPoll, err: tc.pollErr}
-			svc := NewVoteResponseService(nil, votes, identityIDMapper{}, discardLogger(), tc.opts(polls)...)
+			var mapper domain.IDMapper = identityIDMapper{}
+			if tc.mapper != nil {
+				mapper = tc.mapper
+			}
+			svc := NewVoteResponseService(nil, votes, mapper, discardLogger(), tc.opts(polls)...)
 
 			_, err := svc.GetBallotByLink(context.Background(), tc.token)
 			assertErrorType(t, err, tc.want)

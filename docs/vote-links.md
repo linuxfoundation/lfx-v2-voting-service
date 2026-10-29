@@ -63,7 +63,8 @@ v1.<kid>.<base64url(payload)>.<base64url(HMAC-SHA256(key[kid], "v1.<kid>.<payloa
 
 `POST /vote_links/ballot { vote_token }` returns what the ballot page needs:
 
-- The vote: name, description, status, end time, poll type, number of winners, whether abstaining is allowed, questions with choices, and comment prompts. It never returns project, committee, creator or response counts.
+- The vote: name, description, status, end time, poll type, number of winners, whether abstaining is allowed, questions with choices, and comment prompts. It never returns committee, creator or response counts.
+- The vote's project: `project_uid` (the v2 UID, mapped from ITX's project SFID) and `project_slug` (ITX stores the slug in the poll's `project_name`; omitted when empty). The page looks up anything else about the project, such as its name, through the query service.
 - This recipient's ballot: `vote_status`, `already_voted` (so the page knows to use `PUT` to change it) and `voter_removed`. On **regular** votes, once a ballot is submitted, it also returns `abstained`, `poll_answers` and `comment_responses`, so the page can prefill them. On **pseudo-anonymous** votes these are never returned, because a forwarded link must not reveal how someone voted. This fails closed: if ITX omits `pseudo_anonymity` or returns `null`, the vote is treated as pseudo-anonymous and reported as `pseudo_anonymity: true`.
 
 Both IDs come from the verified token. The service fetches the ballot first and returns `404 invalid voting link` unless it belongs to the token's vote. It then fetches the vote. No ID mapping is involved.

@@ -188,6 +188,8 @@ paths:
                                       question_id: 2c8b2f39-3843-4bbf-98ed-e66d5cdd2021
                                       type: single_choice
                                 poll_type: condorcet_irv
+                                project_slug: cncf
+                                project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 pseudo_anonymity: true
                                 status: active
                                 vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
@@ -5689,6 +5691,15 @@ components:
                         - condorcet_irv
                         - meek_stv
                         - instant_runoff_vote
+                project_slug:
+                    type: string
+                    description: LFX project slug. Absent when no slug is stored upstream.
+                    example: cncf
+                project_uid:
+                    type: string
+                    description: LFX project UID the vote belongs to
+                    example: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
+                    format: uuid
                 pseudo_anonymity:
                     type: boolean
                     description: Whether the vote is pseudo-anonymous; if so, ballot contents are never returned
@@ -5783,11 +5794,14 @@ components:
                       question_id: 5de700c1-f574-4766-9ebf-bca757ef9343
                       type: single_choice
                 poll_type: generic
+                project_slug: cncf
+                project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 pseudo_anonymity: false
                 status: active
                 vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
             required:
                 - vote_uid
+                - project_uid
                 - name
                 - description
                 - status
