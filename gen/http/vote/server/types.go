@@ -572,6 +572,10 @@ type GetVoteResponseResponseBody struct {
 type GetVoteBallotByLinkResponseBody struct {
 	// Vote identifier
 	VoteUID string `form:"vote_uid" json:"vote_uid" xml:"vote_uid"`
+	// LFX project UID the vote belongs to
+	ProjectUID string `form:"project_uid" json:"project_uid" xml:"project_uid"`
+	// LFX project slug. Absent when no slug is stored upstream.
+	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
 	// Vote name
 	Name string `form:"name" json:"name" xml:"name"`
 	// Vote description
@@ -2279,6 +2283,8 @@ func NewGetVoteResponseResponseBody(res *vote.VoteResponseResult) *GetVoteRespon
 func NewGetVoteBallotByLinkResponseBody(res *vote.VoteLinkBallotResult) *GetVoteBallotByLinkResponseBody {
 	body := &GetVoteBallotByLinkResponseBody{
 		VoteUID:         res.VoteUID,
+		ProjectUID:      res.ProjectUID,
+		ProjectSlug:     res.ProjectSlug,
 		Name:            res.Name,
 		Description:     res.Description,
 		Status:          res.Status,

@@ -454,13 +454,21 @@ var VoteResponseResult = Type("VoteResponseResult", func() {
 })
 
 // VoteLinkBallotResult is what a personalized vote link holder may see: the vote's ballot
-// fields (no project, committee, creator or response counts) and their own ballot's state.
+// fields, the project's UID and slug (no committee, creator or response counts) and their own
+// ballot's state.
 var VoteLinkBallotResult = Type("VoteLinkBallotResult", func() {
 	Description("The vote and the link holder's ballot, as returned to a personalized vote link")
 
 	Attribute("vote_uid", String, "Vote identifier", func() {
 		Format(FormatUUID)
 		Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
+	})
+	Attribute("project_uid", String, "LFX project UID the vote belongs to", func() {
+		Format(FormatUUID)
+		Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+	})
+	Attribute("project_slug", String, "LFX project slug. Absent when no slug is stored upstream.", func() {
+		Example("cncf")
 	})
 	Attribute("name", String, "Vote name")
 	Attribute("description", String, "Vote description")
@@ -487,7 +495,7 @@ var VoteLinkBallotResult = Type("VoteLinkBallotResult", func() {
 	Attribute("poll_comment_prompts", ArrayOf(PollCommentPrompt), "Comment prompts for the vote")
 	Attribute("ballot", VoteLinkBallot, "The link holder's own ballot")
 
-	Required("vote_uid", "name", "description", "status", "pseudo_anonymity", "ballot")
+	Required("vote_uid", "project_uid", "name", "description", "status", "pseudo_anonymity", "ballot")
 })
 
 // VoteLinkBallot is the link holder's own ballot state.

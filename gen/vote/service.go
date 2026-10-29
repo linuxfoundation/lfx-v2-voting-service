@@ -713,6 +713,10 @@ type VoteLinkBallot struct {
 type VoteLinkBallotResult struct {
 	// Vote identifier
 	VoteUID string
+	// LFX project UID the vote belongs to
+	ProjectUID string
+	// LFX project slug. Absent when no slug is stored upstream.
+	ProjectSlug *string
 	// Vote name
 	Name string
 	// Vote description

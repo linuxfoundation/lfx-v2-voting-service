@@ -44,10 +44,12 @@ func WithVoteLinkPolls(polls domain.PollClient) VoteResponseServiceOption {
 
 // VoteLinkBallot is what a personalized vote link holder may see: the vote and their own
 // ballot. IncludeBallotContents is false on pseudo-anonymous votes, where the ballot's
-// answers, comments and abstention must not be returned.
+// answers, comments and abstention must not be returned. ProjectUID is the v2 UID mapped from
+// the poll's v1 project SFID.
 type VoteLinkBallot struct {
 	Poll                  *itx.PollResponse
 	Ballot                *itx.VoteResponse
+	ProjectUID            string
 	IncludeBallotContents bool
 }
 
@@ -274,9 +276,16 @@ func (s *VoteResponseService) GetBallotByLink(ctx context.Context, token string)
 		return nil, err
 	}
 
+	projectUID, err := s.idMapper.MapProjectV1ToV2(ctx, poll.ProjectID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to map project SFID to UID", "error", err, "v1_sfid", poll.ProjectID)
+		return nil, err
+	}
+
 	return &VoteLinkBallot{
-		Poll:   poll,
-		Ballot: ballot,
+		Poll:       poll,
+		Ballot:     ballot,
+		ProjectUID: projectUID,
 		// Fail closed: ballot contents only when ITX explicitly said the vote is not
 		// pseudo-anonymous; a missing or null flag is treated as pseudo-anonymous.
 		IncludeBallotContents: poll.PseudoAnonymityKnown && !poll.PseudoAnonymity,

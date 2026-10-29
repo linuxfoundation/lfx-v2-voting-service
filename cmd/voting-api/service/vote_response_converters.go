@@ -270,13 +270,14 @@ func convertCommentResponsesToResult(comments []itx.CommentResponse) []*votesvc.
 }
 
 // ConvertVoteLinkBallotToResult converts the vote and ballot visible to a personalized vote
-// link holder to the Goa result. Only ballot-related vote fields are returned (no project,
-// committee, creator or response counts), and the ballot's answers, comments and abstention
-// only when the service allows it (never on pseudo-anonymous votes).
+// link holder to the Goa result. Only ballot-related vote fields and the project's UID and slug
+// are returned (no committee, creator or response counts), and the ballot's answers, comments
+// and abstention only when the service allows it (never on pseudo-anonymous votes).
 func ConvertVoteLinkBallotToResult(b *service.VoteLinkBallot) *votesvc.VoteLinkBallotResult {
 	poll := b.Poll
 	result := &votesvc.VoteLinkBallotResult{
 		VoteUID:      poll.PollID,
+		ProjectUID:   b.ProjectUID,
 		Name:         poll.Name,
 		Description:  poll.Description,
 		Status:       poll.Status,
@@ -292,6 +293,10 @@ func ConvertVoteLinkBallotToResult(b *service.VoteLinkBallot) *votesvc.VoteLinkB
 			AlreadyVoted: itx.IsSubmittedVoteStatus(b.Ballot.VoteStatus),
 			VoterRemoved: b.Ballot.VoterRemoved,
 		},
+	}
+	// ITX stores the project slug in the poll's project_name.
+	if poll.ProjectName != "" {
+		result.ProjectSlug = utils.StringPtr(poll.ProjectName)
 	}
 	if poll.EndTime != "" {
 		result.EndTime = utils.StringPtr(poll.EndTime)

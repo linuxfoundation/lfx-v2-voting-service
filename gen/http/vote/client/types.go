@@ -572,6 +572,10 @@ type GetVoteResponseResponseBody struct {
 type GetVoteBallotByLinkResponseBody struct {
 	// Vote identifier
 	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
+	// LFX project UID the vote belongs to
+	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	// LFX project slug. Absent when no slug is stored upstream.
+	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
 	// Vote name
 	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
 	// Vote description
@@ -3536,6 +3540,8 @@ func NewUpdateVoteResponseByLinkUnauthorized(body *UpdateVoteResponseByLinkUnaut
 func NewGetVoteBallotByLinkVoteLinkBallotResultOK(body *GetVoteBallotByLinkResponseBody) *vote.VoteLinkBallotResult {
 	v := &vote.VoteLinkBallotResult{
 		VoteUID:         *body.VoteUID,
+		ProjectUID:      *body.ProjectUID,
+		ProjectSlug:     body.ProjectSlug,
 		Name:            *body.Name,
 		Description:     *body.Description,
 		Status:          *body.Status,
@@ -4134,6 +4140,9 @@ func ValidateGetVoteBallotByLinkResponseBody(body *GetVoteBallotByLinkResponseBo
 	if body.VoteUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
 	}
+	if body.ProjectUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("project_uid", "body"))
+	}
 	if body.Name == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
 	}
@@ -4151,6 +4160,9 @@ func ValidateGetVoteBallotByLinkResponseBody(body *GetVoteBallotByLinkResponseBo
 	}
 	if body.VoteUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))
+	}
+	if body.ProjectUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
 	}
 	if body.Status != nil {
 		if !(*body.Status == "disabled" || *body.Status == "active" || *body.Status == "ended") {
