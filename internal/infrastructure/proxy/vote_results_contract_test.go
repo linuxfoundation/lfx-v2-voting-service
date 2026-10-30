@@ -12,6 +12,7 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 
 	converters "github.com/linuxfoundation/lfx-v2-voting-service/cmd/voting-api/service"
@@ -205,9 +206,28 @@ func TestVoteResultsMethodContract(t *testing.T) {
 	})
 
 	t.Run("supplied values are still validated by the generated client", func(t *testing.T) {
-		response := serve(t, `{"num_recipients":1,"num_votes_cast":1,"poll_end_time":"2030-01-01T00:00:00Z","comment_results":[{"prompt":{"prompt_id":"c1","prompt":"Why?"},"responses":[{"vote_id":"not-a-uuid","comment_text":"x"}]}]}`)
-		if _, err := voteclient.DecodeGetVoteResultsResponse(goahttp.ResponseDecoder, false)(response); err == nil {
-			t.Error("a supplied non-UUID vote_id must still fail client validation")
+		tests := []struct {
+			name      string
+			voteID    string
+			wantError bool
+		}{
+			{name: "valid vote_id", voteID: voteID},
+			{name: "invalid vote_id", voteID: "not-a-uuid", wantError: true},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				response := serve(t, `{"num_recipients":1,"num_votes_cast":1,"poll_end_time":"2030-01-01T00:00:00Z","comment_results":[{"prompt":{"prompt_id":"`+prompt1+`","prompt":"Why?"},"responses":[{"vote_id":"`+tt.voteID+`","comment_text":"x"}]}]}`)
+				_, err := voteclient.DecodeGetVoteResultsResponse(goahttp.ResponseDecoder, false)(response)
+				if !tt.wantError {
+					if err != nil {
+						t.Fatalf("valid control must decode successfully: %v", err)
+					}
+					return
+				}
+				if err == nil || !strings.Contains(err.Error(), "body.vote_id") {
+					t.Fatalf("want vote_id validation error, got %v", err)
+				}
+			})
 		}
 	})
 }
