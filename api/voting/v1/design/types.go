@@ -596,8 +596,8 @@ var VoteResultsResult = Type("VoteResultsResult", func() {
 	Description("Aggregated poll/vote results")
 
 	Attribute("results_held", Boolean, "True when the results are withheld because the vote is pseudo-anonymous "+
-		"and has not ended. Absent when results are available; clients must not treat absence as a held or final state "+
-		"on its own. While held, only the participation counts and poll_end_time are returned.")
+		"and has not ended. An explicit false from ITX is preserved as-is; clients must not treat absence as a held "+
+		"or final state on its own. While held, only the participation counts and poll_end_time are returned.")
 	Attribute("poll_results", ArrayOf(PollResultItem), "Poll results data. Absent while results are held.")
 	Attribute("comment_results", ArrayOf(CommentResultItem), "Comment results. Absent while results are held.")
 	Attribute("num_recipients", Int, "Number of recipients")

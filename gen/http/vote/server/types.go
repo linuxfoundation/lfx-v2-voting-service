@@ -487,8 +487,8 @@ type EndVoteResponseBody struct {
 // "get_vote_results" endpoint HTTP response body.
 type GetVoteResultsResponseBody struct {
 	// True when the results are withheld because the vote is pseudo-anonymous and
-	// has not ended. Absent when results are available; clients must not treat
-	// absence as a held or final state on its own. While held, only the
+	// has not ended. An explicit false from ITX is preserved as-is; clients must
+	// not treat absence as a held or final state on its own. While held, only the
 	// participation counts and poll_end_time are returned.
 	ResultsHeld *bool `form:"results_held,omitempty" json:"results_held,omitempty" xml:"results_held,omitempty"`
 	// Poll results data. Absent while results are held.
