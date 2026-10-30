@@ -8,7 +8,7 @@ go 1.26.0
 require (
 	github.com/auth0/go-auth0 v1.32.1
 	github.com/auth0/go-jwt-middleware/v2 v2.3.0
-	github.com/go-chi/chi/v5 v5.3.0
+	github.com/go-chi/chi/v5 v5.4.0
 	github.com/google/uuid v1.6.0
 	github.com/linuxfoundation/lfx-v2-fga-sync v0.2.17
 	github.com/linuxfoundation/lfx-v2-indexer-service v0.4.14
