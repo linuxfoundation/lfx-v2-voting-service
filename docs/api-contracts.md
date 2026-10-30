@@ -1018,6 +1018,57 @@ Authorization: Bearer <heimdall-jwt-token>
 }
 ```
 
+#### Held and final pseudo-anonymous results
+
+For a pseudo-anonymous vote (`pseudo_anonymity: true`), ITX withholds results until the vote ends. V2 forwards what ITX supplies and does not decide, infer or enforce the hold itself.
+
+Held response (synthetic example) — only the flag, participation counts and deadline are returned:
+
+```json
+{
+  "results_held": true,
+  "num_recipients": 25,
+  "num_votes_cast": 18,
+  "poll_end_time": "2030-02-15T23:59:59Z",
+  "poll_end_time_timezone": "America/New_York"
+}
+```
+
+Final response for an ended pseudo-anonymous vote (synthetic example) — comments carry text only, in the order ITX returned them, and duplicate text is not merged:
+
+```json
+{
+  "num_recipients": 25,
+  "num_votes_cast": 18,
+  "num_abstained": 2,
+  "poll_end_time": "2030-02-15T23:59:59Z",
+  "comment_results": [
+    {
+      "prompt": {"prompt_id": "c02bdbaf-53b1-4d47-bc04-dd7e459dd308", "prompt": "Any additional comments?"},
+      "responses": [
+        {"comment_text": "No objections."},
+        {"comment_text": "No objections."}
+      ]
+    }
+  ]
+}
+```
+
+Field presence:
+
+| Field | Meaning when present | Meaning when absent |
+| --- | --- | --- |
+| `results_held` | `true`: results are withheld. `false`: supplied explicitly by ITX and preserved as-is. | Not a held or final signal on its own. V2 never fills in `false`. Clients must not treat absence as a final state independently of the vote's own status. |
+| `poll_results`, `num_abstained`, `comment_results` | Result data ITX supplied. An explicit `num_abstained: 0` is preserved. | Not available (for example while results are held). Clients must not substitute zero counts. |
+| `comment_results[].responses[].vote_id`, `vote_creation_time`, `abstained` | Supplied for named votes, including `abstained: false`. | Omitted for ended pseudo-anonymous comments. Clients must not rely on them for tracking. |
+| `comment_results[].responses[].user_id`, `user_name`, `profile_picture` | Supplied for named votes. | Omitted for pseudo-anonymous votes. |
+
+Named-vote results are unchanged: ballot identifiers, legitimate zero counts and explicit `abstained` true/false values are preserved. Only comment response identifiers in `comment_results[].responses[]` are affected; ballot identifiers used for ballot submission, personal responses and manager views are not removed.
+
+Optional top-level arrays (`poll_results`, `comment_results`) follow the standard Goa encoder, so an empty array is omitted rather than serialized as `[]`; an exact `[]` versus absent distinction is not guaranteed. The per-prompt `responses` array remains required and is always an array.
+
+**Callers and rollout**: Direct V2 callers must honor `results_held` and the optional fields above; Self Serve normalizes its own held response arrays but that handling does not apply to other clients. Because these fields are now optional in the published schema, clients generated from an earlier schema may reject held or text-only responses until regenerated. The backend privacy restriction comes from ITX (ITX #3920, tracked with Self Serve #3913/#3916) and must be deployed there; V2 alone stays compatible with legacy full results but does not independently withhold data.
+
 **Note**: `ranked_choice_votes`, `irv_round_summary`, and `meek_stv_round_summary` are populated only for the corresponding `poll_type` values (`condorcet_irv`, `instant_runoff_vote`, `meek_stv`). For `generic` polls, only `generic_choice_votes` is populated. Unpopulated optional keys are omitted from the response entirely (never serialized as `null` or `[]`), which is why the example above has no `ranked_choice_votes` / `irv_round_summary` / `meek_stv_round_summary` keys. `ranked_choice_winner_info` is always present (ITX emits it for every poll type), with `poll_choices: []` when no winner has been determined (the HTTP encoder normalizes nil choices to an empty array). On comment responses, `user_id`, `user_name`, and `profile_picture` are absent entirely when the poll has `pseudo_anonymity` enabled.
 
 ---
@@ -1033,7 +1084,7 @@ Authorization: Bearer <oauth2-m2m-token>
 x-scope: manage:voting
 ```
 
-**Response**: Same structure — results are passed through from ITX without field transformation.
+**Response**: Same structure — results are passed through from ITX without field transformation. Optional fields ITX omits (`results_held`, `num_abstained`, comment `vote_id`/`vote_creation_time`/`abstained`) stay absent in the V2 response.
 
 ---
 

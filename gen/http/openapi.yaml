@@ -1258,10 +1258,8 @@ paths:
                     schema:
                         $ref: '#/definitions/VoteResultsResult'
                         required:
-                            - poll_results
                             - num_recipients
                             - num_votes_cast
-                            - num_abstained
                 "400":
                     description: Bad Request response.
                     schema:
@@ -1335,16 +1333,16 @@ definitions:
             comment_text:
                 type: string
                 description: The voter's free-text response
-                example: Quia id id animi.
+                example: Id animi ut autem est.
             prompt_id:
                 type: string
                 description: The comment prompt this response answers
-                example: 4dbd3923-33da-41a4-89de-8c24534ae442
+                example: d71d697f-fafb-45ec-867f-4c229436a8e0
                 format: uuid
         description: A voter's free-text response to a comment prompt
         example:
-            comment_text: Consequatur earum iste inventore qui.
-            prompt_id: ca8f05a3-c779-4afb-99f5-d0d4c5a9ad1b
+            comment_text: Iste inventore.
+            prompt_id: 519273af-2d1c-4e50-ab47-717ffd85de7f
         required:
             - prompt_id
             - comment_text
@@ -1354,7 +1352,7 @@ definitions:
         properties:
             abstained:
                 type: boolean
-                description: Whether the voter who submitted this comment abstained from voting on the poll
+                description: Whether the voter who submitted this comment abstained from voting on the poll. Absent for comments on an ended pseudo-anonymous poll.
                 example: true
             comment_text:
                 type: string
@@ -1374,12 +1372,12 @@ definitions:
                 example: Ipsam recusandae commodi vitae molestiae.
             vote_creation_time:
                 type: string
-                description: The time the voter submitted this comment (their vote_creation_time)
+                description: The time the voter submitted this comment (their vote_creation_time). Absent for comments on an ended pseudo-anonymous poll.
                 example: "2003-03-07T14:06:15Z"
                 format: date-time
             vote_id:
                 type: string
-                description: The vote that submitted this comment
+                description: The vote that submitted this comment. Absent for comments on an ended pseudo-anonymous poll, which carry the comment text only.
                 example: e06d9849-ed2b-409b-aa2e-130f42acf345
                 format: uuid
         description: A voter's free-text comment response, with attribution
@@ -1392,10 +1390,7 @@ definitions:
             vote_creation_time: "2008-05-08T11:04:47Z"
             vote_id: a7c2b4de-5b9c-4b20-aa81-c1947f5d2549
         required:
-            - vote_id
             - comment_text
-            - vote_creation_time
-            - abstained
     CommentResultItem:
         title: CommentResultItem
         type: object
@@ -2000,11 +1995,11 @@ definitions:
             prompt:
                 type: string
                 description: Question prompt
-                example: Voluptatum et praesentium rerum qui officiis ea.
+                example: Et praesentium rerum qui officiis ea.
             question_id:
                 type: string
                 description: Question identifier
-                example: 59db8687-528f-4d4d-bfd4-e3b667ab1614
+                example: 59dbd4e3-b667-4b16-9414-73261c21aa24
                 format: uuid
             type:
                 type: string
@@ -2921,7 +2916,7 @@ definitions:
                 type: array
                 items:
                     type: string
-                    example: Eos unde inventore eius ab.
+                    example: Unde inventore eius ab quas consectetur.
                 description: Selected choice IDs
                 example:
                     - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
@@ -2946,10 +2941,6 @@ definitions:
                 - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
             question_id: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
             ranked_choices:
-                - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
-                  choice_rank: 1
-                - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
-                  choice_rank: 1
                 - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                   choice_rank: 1
                 - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
@@ -3285,7 +3276,7 @@ definitions:
                 type: boolean
                 description: Whether to abstain from voting
                 default: false
-                example: false
+                example: true
             comment_responses:
                 type: array
                 items:
@@ -3794,7 +3785,7 @@ definitions:
             abstained:
                 type: boolean
                 description: Whether the voter abstained
-                example: true
+                example: false
             allow_abstain:
                 type: boolean
                 description: Whether abstention is allowed
@@ -3868,7 +3859,7 @@ definitions:
             project_uid:
                 type: string
                 description: Project identifier
-                example: Fugit dolorum iure magnam.
+                example: Minus fugit.
             ses_bounce_subtype:
                 type: string
                 description: SES bounce subtype
@@ -3928,7 +3919,7 @@ definitions:
             user_name:
                 type: string
                 description: Voter name
-                example: Quia aut.
+                example: Voluptas quia aut.
             user_org_id:
                 type: string
                 description: User organization ID
@@ -3948,7 +3939,7 @@ definitions:
             vote_creation_time:
                 type: string
                 description: Vote creation time
-                example: "2001-08-31T20:00:32Z"
+                example: "1987-10-14T19:07:31Z"
                 format: date-time
             vote_response_uid:
                 type: string
@@ -4336,7 +4327,7 @@ definitions:
                 type: array
                 items:
                     $ref: '#/definitions/CommentResultItem'
-                description: Comment results
+                description: Comment results. Absent while results are held.
                 example:
                     - prompt:
                         prompt: Please provide any additional feedback
@@ -4404,7 +4395,7 @@ definitions:
                           vote_id: 24253725-5ed4-4d86-8202-5414cc643f46
             num_abstained:
                 type: integer
-                description: Number who abstained
+                description: Number who abstained. Absent while results are held.
                 example: 7412575301013239509
                 format: int64
             num_recipients:
@@ -4430,7 +4421,7 @@ definitions:
                 type: array
                 items:
                     $ref: '#/definitions/PollResultItem'
-                description: Poll results data
+                description: Poll results data. Absent while results are held.
                 example:
                     - generic_choice_votes:
                         - choice_id: 0db9aa63-626b-4d77-8a15-cbb0291e5c09
@@ -5146,6 +5137,10 @@ definitions:
                               choice_text: John Doe
                             - choice_id: 47d45cea-e20e-44c2-bed6-b2236dea600d
                               choice_text: John Doe
+            results_held:
+                type: boolean
+                description: True when the results are withheld because the vote is pseudo-anonymous and has not ended. Absent when results are available; clients must not treat absence as a held or final state on its own. While held, only the participation counts and poll_end_time are returned.
+                example: false
         example:
             comment_results:
                 - prompt:
@@ -5212,42 +5207,10 @@ definitions:
                       user_name: Recusandae non et aut voluptatum ducimus.
                       vote_creation_time: "1970-10-31T08:18:17Z"
                       vote_id: 24253725-5ed4-4d86-8202-5414cc643f46
-                - prompt:
-                    prompt: Please provide any additional feedback
-                    prompt_id: 6cd10337-018f-4c74-aafb-55fef13263a2
-                  responses:
-                    - abstained: false
-                      comment_text: Ut doloribus veniam ratione aspernatur eveniet quos.
-                      profile_picture: Perferendis nisi veniam alias ea voluptas.
-                      user_id: Nesciunt nemo sequi qui sint est amet.
-                      user_name: Recusandae non et aut voluptatum ducimus.
-                      vote_creation_time: "1970-10-31T08:18:17Z"
-                      vote_id: 24253725-5ed4-4d86-8202-5414cc643f46
-                    - abstained: false
-                      comment_text: Ut doloribus veniam ratione aspernatur eveniet quos.
-                      profile_picture: Perferendis nisi veniam alias ea voluptas.
-                      user_id: Nesciunt nemo sequi qui sint est amet.
-                      user_name: Recusandae non et aut voluptatum ducimus.
-                      vote_creation_time: "1970-10-31T08:18:17Z"
-                      vote_id: 24253725-5ed4-4d86-8202-5414cc643f46
-                    - abstained: false
-                      comment_text: Ut doloribus veniam ratione aspernatur eveniet quos.
-                      profile_picture: Perferendis nisi veniam alias ea voluptas.
-                      user_id: Nesciunt nemo sequi qui sint est amet.
-                      user_name: Recusandae non et aut voluptatum ducimus.
-                      vote_creation_time: "1970-10-31T08:18:17Z"
-                      vote_id: 24253725-5ed4-4d86-8202-5414cc643f46
-                    - abstained: false
-                      comment_text: Ut doloribus veniam ratione aspernatur eveniet quos.
-                      profile_picture: Perferendis nisi veniam alias ea voluptas.
-                      user_id: Nesciunt nemo sequi qui sint est amet.
-                      user_name: Recusandae non et aut voluptatum ducimus.
-                      vote_creation_time: "1970-10-31T08:18:17Z"
-                      vote_id: 24253725-5ed4-4d86-8202-5414cc643f46
-            num_abstained: 7811434918023118853
-            num_recipients: 3794633173921444710
-            num_votes_cast: 4709494181802204408
-            poll_end_time: "2011-06-08T20:28:18Z"
+            num_abstained: 3632166887084243807
+            num_recipients: 4709494181802204408
+            num_votes_cast: 7811434918023118853
+            poll_end_time: "1987-09-24T06:46:22Z"
             poll_end_time_timezone: America/New_York
             poll_results:
                 - generic_choice_votes:
@@ -6321,11 +6284,10 @@ definitions:
                           choice_text: John Doe
                         - choice_id: 47d45cea-e20e-44c2-bed6-b2236dea600d
                           choice_text: John Doe
+            results_held: true
         required:
-            - poll_results
             - num_recipients
             - num_votes_cast
-            - num_abstained
     VoteUpdateVoteRequestBody:
         title: VoteUpdateVoteRequestBody
         type: object
