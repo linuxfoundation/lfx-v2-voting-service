@@ -2950,6 +2950,9 @@ func unmarshalPollCommentPromptResponseBodyToVotePollCommentPrompt(v *PollCommen
 // unmarshalPollResultItemResponseBodyToVotePollResultItem builds a value of
 // type *vote.PollResultItem from a value of type *PollResultItemResponseBody.
 func unmarshalPollResultItemResponseBodyToVotePollResultItem(v *PollResultItemResponseBody) *vote.PollResultItem {
+	if v == nil {
+		return nil
+	}
 	res := &vote.PollResultItem{}
 	res.Question = unmarshalPollQuestionDetailResponseBodyToVotePollQuestionDetail(v.Question)
 	if v.GenericChoiceVotes != nil {
@@ -3288,13 +3291,13 @@ func unmarshalCommentResultItemResponseBodyToVoteCommentResultItem(v *CommentRes
 // *CommentResponseWithUserResponseBody.
 func unmarshalCommentResponseWithUserResponseBodyToVoteCommentResponseWithUser(v *CommentResponseWithUserResponseBody) *vote.CommentResponseWithUser {
 	res := &vote.CommentResponseWithUser{
-		VoteID:           *v.VoteID,
+		VoteID:           v.VoteID,
 		UserID:           v.UserID,
 		CommentText:      *v.CommentText,
 		UserName:         v.UserName,
 		ProfilePicture:   v.ProfilePicture,
-		VoteCreationTime: *v.VoteCreationTime,
-		Abstained:        *v.Abstained,
+		VoteCreationTime: v.VoteCreationTime,
+		Abstained:        v.Abstained,
 	}
 
 	return res

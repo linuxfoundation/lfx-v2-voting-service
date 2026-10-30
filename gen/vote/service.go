@@ -123,8 +123,9 @@ type CommentResponse struct {
 
 // A voter's free-text comment response, with attribution
 type CommentResponseWithUser struct {
-	// The vote that submitted this comment
-	VoteID string
+	// The vote that submitted this comment. Absent for comments on an ended
+	// pseudo-anonymous poll, which carry the comment text only.
+	VoteID *string
 	// The LFX identifier of the voter who submitted this comment. Absent entirely
 	// when the poll has pseudo_anonymity enabled.
 	UserID *string
@@ -136,11 +137,12 @@ type CommentResponseWithUser struct {
 	// URL of the voter's profile picture. Absent entirely when the poll has
 	// pseudo_anonymity enabled.
 	ProfilePicture *string
-	// The time the voter submitted this comment (their vote_creation_time)
-	VoteCreationTime string
+	// The time the voter submitted this comment (their vote_creation_time). Absent
+	// for comments on an ended pseudo-anonymous poll.
+	VoteCreationTime *string
 	// Whether the voter who submitted this comment abstained from voting on the
-	// poll
-	Abstained bool
+	// poll. Absent for comments on an ended pseudo-anonymous poll.
+	Abstained *bool
 }
 
 // Results for a single comment prompt, grouped with every response to it.
@@ -871,16 +873,21 @@ type VoteResult struct {
 // VoteResultsResult is the result type of the vote service get_vote_results
 // method.
 type VoteResultsResult struct {
-	// Poll results data
+	// True when the results are withheld because the vote is pseudo-anonymous and
+	// has not ended. An explicit false from ITX is preserved as-is; clients must
+	// not treat absence as a held or final state on its own. While held, only the
+	// participation counts and poll_end_time are returned.
+	ResultsHeld *bool
+	// Poll results data. Absent while results are held.
 	PollResults []*PollResultItem
-	// Comment results
+	// Comment results. Absent while results are held.
 	CommentResults []*CommentResultItem
 	// Number of recipients
 	NumRecipients int
 	// Number of votes cast
 	NumVotesCast int
-	// Number who abstained
-	NumAbstained int
+	// Number who abstained. Absent while results are held.
+	NumAbstained *int
 	// Poll end time
 	PollEndTime *string
 	// IANA timezone name used to interpret poll_end_time (e.g.

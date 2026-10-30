@@ -203,3 +203,109 @@ func TestEndPoll(t *testing.T) {
 		})
 	}
 }
+
+// TestGetPollResults protects the ITX results request shape and the decoding of held,
+// unlocked, text-only and named results without inventing zero/false metadata.
+func TestGetPollResults(t *testing.T) {
+	serve := func(t *testing.T, status int, body string) (*Client, *[2]string) {
+		t.Helper()
+		var seen [2]string // method+path, scope+accept
+		upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			seen[0] = r.Method + " " + r.URL.Path
+			seen[1] = r.Header.Get("x-scope") + "|" + r.Header.Get("Accept")
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(status)
+			_, _ = io.WriteString(w, body)
+		}))
+		t.Cleanup(upstream.Close)
+		return NewContractTestClient(upstream.Client(), upstream.URL+"/"), &seen
+	}
+
+	t.Run("held response keeps the flag and counts without result data", func(t *testing.T) {
+		c, seen := serve(t, http.StatusOK, `{"results_held":true,"num_recipients":10,"num_votes_cast":4,"poll_end_time":"2030-01-01T00:00:00Z","poll_end_time_timezone":"UTC"}`)
+		got, err := c.GetPollResults(context.Background(), "poll-1")
+		if err != nil {
+			t.Fatalf("GetPollResults returned error: %v", err)
+		}
+		if seen[0] != "GET /v2/voting/poll/poll-1/results" || seen[1] != "manage:voting|application/json" {
+			t.Errorf("unexpected request: %v", *seen)
+		}
+		if got.ResultsHeld == nil || !*got.ResultsHeld {
+			t.Errorf("results_held must be preserved as true: %+v", got.ResultsHeld)
+		}
+		if got.NumAbstained != nil || got.PollResults != nil || got.CommentResults != nil {
+			t.Errorf("held response must not gain result data: %+v", got)
+		}
+		if got.NumRecipients != 10 || got.NumVotesCast != 4 || got.PollEndTime != "2030-01-01T00:00:00Z" {
+			t.Errorf("participation or deadline lost: %+v", got)
+		}
+	})
+
+	t.Run("explicit false and zero survive", func(t *testing.T) {
+		c, _ := serve(t, http.StatusOK, `{"results_held":false,"num_abstained":0,"num_votes_cast":2}`)
+		got, err := c.GetPollResults(context.Background(), "poll-1")
+		if err != nil {
+			t.Fatalf("GetPollResults returned error: %v", err)
+		}
+		if got.ResultsHeld == nil || *got.ResultsHeld {
+			t.Errorf("explicit results_held=false must stay present: %+v", got.ResultsHeld)
+		}
+		if got.NumAbstained == nil || *got.NumAbstained != 0 {
+			t.Errorf("explicit num_abstained=0 must stay present: %+v", got.NumAbstained)
+		}
+	})
+
+	t.Run("text-only anonymous comments stay in upstream order", func(t *testing.T) {
+		c, _ := serve(t, http.StatusOK, `{"num_abstained":1,"comment_results":[{"prompt":{"prompt_id":"c1"},"responses":[{"comment_text":"zeta"},{"comment_text":"alpha"},{"comment_text":"alpha"}]}]}`)
+		got, err := c.GetPollResults(context.Background(), "poll-1")
+		if err != nil {
+			t.Fatalf("GetPollResults returned error: %v", err)
+		}
+		if got.ResultsHeld != nil {
+			t.Errorf("missing results_held must stay absent: %v", *got.ResultsHeld)
+		}
+		responses := got.CommentResults[0].Responses
+		if len(responses) != 3 || responses[0].CommentText != "zeta" || responses[1].CommentText != "alpha" || responses[2].CommentText != "alpha" {
+			t.Fatalf("comment order or duplicates changed: %+v", responses)
+		}
+		for i, r := range responses {
+			if r.VoteID != nil || r.VoteCreationTime != nil || r.Abstained != nil {
+				t.Errorf("response %d gained metadata: %+v", i, r)
+			}
+		}
+	})
+
+	t.Run("named comments keep ids, times and abstained values", func(t *testing.T) {
+		c, _ := serve(t, http.StatusOK, `{"comment_results":[{"responses":[{"vote_id":"v1","comment_text":"a","vote_creation_time":"2030-01-01T00:00:00Z","abstained":false}]}]}`)
+		got, err := c.GetPollResults(context.Background(), "poll-1")
+		if err != nil {
+			t.Fatalf("GetPollResults returned error: %v", err)
+		}
+		r := got.CommentResults[0].Responses[0]
+		if r.VoteID == nil || *r.VoteID != "v1" || r.VoteCreationTime == nil || r.Abstained == nil || *r.Abstained {
+			t.Errorf("named metadata lost: %+v", r)
+		}
+	})
+
+	t.Run("wrong scalar type is a parse error", func(t *testing.T) {
+		c, _ := serve(t, http.StatusOK, `{"results_held":"yes"}`)
+		_, err := c.GetPollResults(context.Background(), "poll-1")
+		if err == nil {
+			t.Fatal("expected an error")
+		}
+		if got := domain.GetErrorType(err); got != domain.ErrorTypeInternal {
+			t.Errorf("want ErrorTypeInternal, got %d", got)
+		}
+	})
+
+	t.Run("404 maps to not found", func(t *testing.T) {
+		c, _ := serve(t, http.StatusNotFound, `{"message":"poll not found"}`)
+		_, err := c.GetPollResults(context.Background(), "poll-1")
+		if err == nil {
+			t.Fatal("expected an error")
+		}
+		if got := domain.GetErrorType(err); got != domain.ErrorTypeNotFound {
+			t.Errorf("want ErrorTypeNotFound, got %d", got)
+		}
+	})
+}

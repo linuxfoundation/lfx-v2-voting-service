@@ -595,11 +595,14 @@ var RankedChoiceInput = Type("RankedChoiceInput", func() {
 var VoteResultsResult = Type("VoteResultsResult", func() {
 	Description("Aggregated poll/vote results")
 
-	Attribute("poll_results", ArrayOf(PollResultItem), "Poll results data")
-	Attribute("comment_results", ArrayOf(CommentResultItem), "Comment results")
+	Attribute("results_held", Boolean, "True when the results are withheld because the vote is pseudo-anonymous "+
+		"and has not ended. An explicit false from ITX is preserved as-is; clients must not treat absence as a held "+
+		"or final state on its own. While held, only the participation counts and poll_end_time are returned.")
+	Attribute("poll_results", ArrayOf(PollResultItem), "Poll results data. Absent while results are held.")
+	Attribute("comment_results", ArrayOf(CommentResultItem), "Comment results. Absent while results are held.")
 	Attribute("num_recipients", Int, "Number of recipients")
 	Attribute("num_votes_cast", Int, "Number of votes cast")
-	Attribute("num_abstained", Int, "Number who abstained")
+	Attribute("num_abstained", Int, "Number who abstained. Absent while results are held.")
 	Attribute("poll_end_time", String, "Poll end time", func() {
 		Format(FormatDateTime)
 	})
@@ -608,7 +611,7 @@ var VoteResultsResult = Type("VoteResultsResult", func() {
 		Example("America/New_York")
 	})
 
-	Required("poll_results", "num_recipients", "num_votes_cast", "num_abstained")
+	Required("num_recipients", "num_votes_cast")
 })
 
 // PollResultItem represents results for a single poll question
@@ -784,7 +787,8 @@ var CommentResultItem = Type("CommentResultItem", func() {
 var CommentResponseWithUser = Type("CommentResponseWithUser", func() {
 	Description("A voter's free-text comment response, with attribution")
 
-	Attribute("vote_id", String, "The vote that submitted this comment", func() {
+	Attribute("vote_id", String, "The vote that submitted this comment. Absent for comments on an ended "+
+		"pseudo-anonymous poll, which carry the comment text only.", func() {
 		Format(FormatUUID)
 	})
 	Attribute("user_id", String, "The LFX identifier of the voter who submitted this comment. Absent "+
@@ -794,10 +798,12 @@ var CommentResponseWithUser = Type("CommentResponseWithUser", func() {
 		"entirely when the poll has pseudo_anonymity enabled.")
 	Attribute("profile_picture", String, "URL of the voter's profile picture. Absent "+
 		"entirely when the poll has pseudo_anonymity enabled.")
-	Attribute("vote_creation_time", String, "The time the voter submitted this comment (their vote_creation_time)", func() {
+	Attribute("vote_creation_time", String, "The time the voter submitted this comment (their vote_creation_time). "+
+		"Absent for comments on an ended pseudo-anonymous poll.", func() {
 		Format(FormatDateTime)
 	})
-	Attribute("abstained", Boolean, "Whether the voter who submitted this comment abstained from voting on the poll")
+	Attribute("abstained", Boolean, "Whether the voter who submitted this comment abstained from voting on the poll. "+
+		"Absent for comments on an ended pseudo-anonymous poll.")
 
-	Required("vote_id", "comment_text", "vote_creation_time", "abstained")
+	Required("comment_text")
 })

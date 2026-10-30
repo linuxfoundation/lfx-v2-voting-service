@@ -486,15 +486,20 @@ type EndVoteResponseBody struct {
 // GetVoteResultsResponseBody is the type of the "vote" service
 // "get_vote_results" endpoint HTTP response body.
 type GetVoteResultsResponseBody struct {
-	// Poll results data
+	// True when the results are withheld because the vote is pseudo-anonymous and
+	// has not ended. An explicit false from ITX is preserved as-is; clients must
+	// not treat absence as a held or final state on its own. While held, only the
+	// participation counts and poll_end_time are returned.
+	ResultsHeld *bool `form:"results_held,omitempty" json:"results_held,omitempty" xml:"results_held,omitempty"`
+	// Poll results data. Absent while results are held.
 	PollResults []*PollResultItemResponseBody `form:"poll_results,omitempty" json:"poll_results,omitempty" xml:"poll_results,omitempty"`
-	// Comment results
+	// Comment results. Absent while results are held.
 	CommentResults []*CommentResultItemResponseBody `form:"comment_results,omitempty" json:"comment_results,omitempty" xml:"comment_results,omitempty"`
 	// Number of recipients
 	NumRecipients *int `form:"num_recipients,omitempty" json:"num_recipients,omitempty" xml:"num_recipients,omitempty"`
 	// Number of votes cast
 	NumVotesCast *int `form:"num_votes_cast,omitempty" json:"num_votes_cast,omitempty" xml:"num_votes_cast,omitempty"`
-	// Number who abstained
+	// Number who abstained. Absent while results are held.
 	NumAbstained *int `form:"num_abstained,omitempty" json:"num_abstained,omitempty" xml:"num_abstained,omitempty"`
 	// Poll end time
 	PollEndTime *string `form:"poll_end_time,omitempty" json:"poll_end_time,omitempty" xml:"poll_end_time,omitempty"`
@@ -1777,7 +1782,8 @@ type CommentResultItemResponseBody struct {
 // CommentResponseWithUserResponseBody is used to define fields on response
 // body types.
 type CommentResponseWithUserResponseBody struct {
-	// The vote that submitted this comment
+	// The vote that submitted this comment. Absent for comments on an ended
+	// pseudo-anonymous poll, which carry the comment text only.
 	VoteID *string `form:"vote_id,omitempty" json:"vote_id,omitempty" xml:"vote_id,omitempty"`
 	// The LFX identifier of the voter who submitted this comment. Absent entirely
 	// when the poll has pseudo_anonymity enabled.
@@ -1790,10 +1796,11 @@ type CommentResponseWithUserResponseBody struct {
 	// URL of the voter's profile picture. Absent entirely when the poll has
 	// pseudo_anonymity enabled.
 	ProfilePicture *string `form:"profile_picture,omitempty" json:"profile_picture,omitempty" xml:"profile_picture,omitempty"`
-	// The time the voter submitted this comment (their vote_creation_time)
+	// The time the voter submitted this comment (their vote_creation_time). Absent
+	// for comments on an ended pseudo-anonymous poll.
 	VoteCreationTime *string `form:"vote_creation_time,omitempty" json:"vote_creation_time,omitempty" xml:"vote_creation_time,omitempty"`
 	// Whether the voter who submitted this comment abstained from voting on the
-	// poll
+	// poll. Absent for comments on an ended pseudo-anonymous poll.
 	Abstained *bool `form:"abstained,omitempty" json:"abstained,omitempty" xml:"abstained,omitempty"`
 }
 
@@ -3035,19 +3042,22 @@ func NewBulkResendVoteUnauthorized(body *BulkResendVoteUnauthorizedResponseBody)
 // "get_vote_results" endpoint result from a HTTP "OK" response.
 func NewGetVoteResultsVoteResultsResultOK(body *GetVoteResultsResponseBody) *vote.VoteResultsResult {
 	v := &vote.VoteResultsResult{
+		ResultsHeld:         body.ResultsHeld,
 		NumRecipients:       *body.NumRecipients,
 		NumVotesCast:        *body.NumVotesCast,
-		NumAbstained:        *body.NumAbstained,
+		NumAbstained:        body.NumAbstained,
 		PollEndTime:         body.PollEndTime,
 		PollEndTimeTimezone: body.PollEndTimeTimezone,
 	}
-	v.PollResults = make([]*vote.PollResultItem, len(body.PollResults))
-	for i, val := range body.PollResults {
-		if val == nil {
-			v.PollResults[i] = nil
-			continue
+	if body.PollResults != nil {
+		v.PollResults = make([]*vote.PollResultItem, len(body.PollResults))
+		for i, val := range body.PollResults {
+			if val == nil {
+				v.PollResults[i] = nil
+				continue
+			}
+			v.PollResults[i] = unmarshalPollResultItemResponseBodyToVotePollResultItem(val)
 		}
-		v.PollResults[i] = unmarshalPollResultItemResponseBodyToVotePollResultItem(val)
 	}
 	if body.CommentResults != nil {
 		v.CommentResults = make([]*vote.CommentResultItem, len(body.CommentResults))
@@ -4058,17 +4068,11 @@ func ValidateEndVoteResponseBody(body *EndVoteResponseBody) (err error) {
 // ValidateGetVoteResultsResponseBody runs the validations defined on
 // get_vote_results_response_body
 func ValidateGetVoteResultsResponseBody(body *GetVoteResultsResponseBody) (err error) {
-	if body.PollResults == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("poll_results", "body"))
-	}
 	if body.NumRecipients == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("num_recipients", "body"))
 	}
 	if body.NumVotesCast == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("num_votes_cast", "body"))
-	}
-	if body.NumAbstained == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("num_abstained", "body"))
 	}
 	for _, e := range body.PollResults {
 		if e != nil {
@@ -5842,17 +5846,8 @@ func ValidateCommentResultItemResponseBody(body *CommentResultItemResponseBody) 
 // ValidateCommentResponseWithUserResponseBody runs the validations defined on
 // CommentResponseWithUserResponseBody
 func ValidateCommentResponseWithUserResponseBody(body *CommentResponseWithUserResponseBody) (err error) {
-	if body.VoteID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_id", "body"))
-	}
 	if body.CommentText == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("comment_text", "body"))
-	}
-	if body.VoteCreationTime == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_creation_time", "body"))
-	}
-	if body.Abstained == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("abstained", "body"))
 	}
 	if body.VoteID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_id", *body.VoteID, goa.FormatUUID))

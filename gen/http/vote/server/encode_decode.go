@@ -2504,6 +2504,9 @@ func marshalVotePollCommentPromptToPollCommentPromptResponseBody(v *vote.PollCom
 // marshalVotePollResultItemToPollResultItemResponseBody builds a value of type
 // *PollResultItemResponseBody from a value of type *vote.PollResultItem.
 func marshalVotePollResultItemToPollResultItemResponseBody(v *vote.PollResultItem) *PollResultItemResponseBody {
+	if v == nil {
+		return nil
+	}
 	res := &PollResultItemResponseBody{}
 	if v.Question != nil {
 		res.Question = marshalVotePollQuestionDetailToPollQuestionDetailResponseBody(v.Question)

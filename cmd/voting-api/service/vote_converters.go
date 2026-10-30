@@ -207,6 +207,7 @@ func ConvertVoteResultsToResult(results *itx.VoteResults) *votesvc.VoteResultsRe
 		NumRecipients: results.NumRecipients,
 		NumVotesCast:  results.NumVotesCast,
 		NumAbstained:  results.NumAbstained,
+		ResultsHeld:   results.ResultsHeld,
 		PollEndTime:   &results.PollEndTime,
 	}
 	if results.PollEndTimeTimezone != "" {

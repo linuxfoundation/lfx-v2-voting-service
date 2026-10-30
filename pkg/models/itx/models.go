@@ -276,12 +276,17 @@ type RankedPollChoiceAnswer struct {
 }
 
 // VoteResults represents the aggregated results of a poll/vote from ITX
+//
+// ResultsHeld and NumAbstained are pointers so an absent field stays absent: ITX omits
+// results_held once results are unlocked and omits num_abstained (with the per-option
+// totals and comments) while pseudo-anonymous results are held.
 type VoteResults struct {
-	PollResults         []PollResult    `json:"poll_results"`
-	CommentResults      []CommentResult `json:"comment_results"`
+	PollResults         []PollResult    `json:"poll_results,omitempty"`
+	CommentResults      []CommentResult `json:"comment_results,omitempty"`
+	ResultsHeld         *bool           `json:"results_held,omitempty"`
 	NumRecipients       int             `json:"num_recipients"`
 	NumVotesCast        int             `json:"num_votes_cast"`
-	NumAbstained        int             `json:"num_abstained"`
+	NumAbstained        *int            `json:"num_abstained,omitempty"`
 	PollEndTime         string          `json:"poll_end_time"`
 	PollEndTimeTimezone string          `json:"poll_end_time_timezone,omitempty"`
 }
@@ -394,12 +399,14 @@ type CommentResult struct {
 
 // CommentResponseWithUser represents a voter's comment response with attribution, as returned in results.
 // UserID, UserName, and ProfilePicture are omitted by ITX when the poll has pseudo_anonymity enabled.
+// For ended pseudo-anonymous polls ITX also omits VoteID, VoteCreationTime and Abstained, so those
+// are pointers: a supplied false/empty value stays present and a missing one stays absent.
 type CommentResponseWithUser struct {
-	VoteID           string `json:"vote_id"`
-	UserID           string `json:"user_id,omitempty"`
-	CommentText      string `json:"comment_text"`
-	UserName         string `json:"user_name,omitempty"`
-	ProfilePicture   string `json:"profile_picture,omitempty"`
-	VoteCreationTime string `json:"vote_creation_time"`
-	Abstained        bool   `json:"abstained"`
+	VoteID           *string `json:"vote_id,omitempty"`
+	UserID           string  `json:"user_id,omitempty"`
+	CommentText      string  `json:"comment_text"`
+	UserName         string  `json:"user_name,omitempty"`
+	ProfilePicture   string  `json:"profile_picture,omitempty"`
+	VoteCreationTime *string `json:"vote_creation_time,omitempty"`
+	Abstained        *bool   `json:"abstained,omitempty"`
 }

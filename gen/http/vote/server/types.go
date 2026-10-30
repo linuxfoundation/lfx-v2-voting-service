@@ -486,16 +486,21 @@ type EndVoteResponseBody struct {
 // GetVoteResultsResponseBody is the type of the "vote" service
 // "get_vote_results" endpoint HTTP response body.
 type GetVoteResultsResponseBody struct {
-	// Poll results data
-	PollResults []*PollResultItemResponseBody `form:"poll_results" json:"poll_results" xml:"poll_results"`
-	// Comment results
+	// True when the results are withheld because the vote is pseudo-anonymous and
+	// has not ended. An explicit false from ITX is preserved as-is; clients must
+	// not treat absence as a held or final state on its own. While held, only the
+	// participation counts and poll_end_time are returned.
+	ResultsHeld *bool `form:"results_held,omitempty" json:"results_held,omitempty" xml:"results_held,omitempty"`
+	// Poll results data. Absent while results are held.
+	PollResults []*PollResultItemResponseBody `form:"poll_results,omitempty" json:"poll_results,omitempty" xml:"poll_results,omitempty"`
+	// Comment results. Absent while results are held.
 	CommentResults []*CommentResultItemResponseBody `form:"comment_results,omitempty" json:"comment_results,omitempty" xml:"comment_results,omitempty"`
 	// Number of recipients
 	NumRecipients int `form:"num_recipients" json:"num_recipients" xml:"num_recipients"`
 	// Number of votes cast
 	NumVotesCast int `form:"num_votes_cast" json:"num_votes_cast" xml:"num_votes_cast"`
-	// Number who abstained
-	NumAbstained int `form:"num_abstained" json:"num_abstained" xml:"num_abstained"`
+	// Number who abstained. Absent while results are held.
+	NumAbstained *int `form:"num_abstained,omitempty" json:"num_abstained,omitempty" xml:"num_abstained,omitempty"`
 	// Poll end time
 	PollEndTime *string `form:"poll_end_time,omitempty" json:"poll_end_time,omitempty" xml:"poll_end_time,omitempty"`
 	// IANA timezone name used to interpret poll_end_time (e.g.
@@ -1750,8 +1755,9 @@ type CommentResultItemResponseBody struct {
 // CommentResponseWithUserResponseBody is used to define fields on response
 // body types.
 type CommentResponseWithUserResponseBody struct {
-	// The vote that submitted this comment
-	VoteID string `form:"vote_id" json:"vote_id" xml:"vote_id"`
+	// The vote that submitted this comment. Absent for comments on an ended
+	// pseudo-anonymous poll, which carry the comment text only.
+	VoteID *string `form:"vote_id,omitempty" json:"vote_id,omitempty" xml:"vote_id,omitempty"`
 	// The LFX identifier of the voter who submitted this comment. Absent entirely
 	// when the poll has pseudo_anonymity enabled.
 	UserID *string `form:"user_id,omitempty" json:"user_id,omitempty" xml:"user_id,omitempty"`
@@ -1763,11 +1769,12 @@ type CommentResponseWithUserResponseBody struct {
 	// URL of the voter's profile picture. Absent entirely when the poll has
 	// pseudo_anonymity enabled.
 	ProfilePicture *string `form:"profile_picture,omitempty" json:"profile_picture,omitempty" xml:"profile_picture,omitempty"`
-	// The time the voter submitted this comment (their vote_creation_time)
-	VoteCreationTime string `form:"vote_creation_time" json:"vote_creation_time" xml:"vote_creation_time"`
+	// The time the voter submitted this comment (their vote_creation_time). Absent
+	// for comments on an ended pseudo-anonymous poll.
+	VoteCreationTime *string `form:"vote_creation_time,omitempty" json:"vote_creation_time,omitempty" xml:"vote_creation_time,omitempty"`
 	// Whether the voter who submitted this comment abstained from voting on the
-	// poll
-	Abstained bool `form:"abstained" json:"abstained" xml:"abstained"`
+	// poll. Absent for comments on an ended pseudo-anonymous poll.
+	Abstained *bool `form:"abstained,omitempty" json:"abstained,omitempty" xml:"abstained,omitempty"`
 }
 
 // VoteAnswerResponseBody is used to define fields on response body types.
@@ -2190,6 +2197,7 @@ func NewEndVoteResponseBody(res *vote.VoteResult) *EndVoteResponseBody {
 // of the "get_vote_results" endpoint of the "vote" service.
 func NewGetVoteResultsResponseBody(res *vote.VoteResultsResult) *GetVoteResultsResponseBody {
 	body := &GetVoteResultsResponseBody{
+		ResultsHeld:         res.ResultsHeld,
 		NumRecipients:       res.NumRecipients,
 		NumVotesCast:        res.NumVotesCast,
 		NumAbstained:        res.NumAbstained,
@@ -2205,8 +2213,6 @@ func NewGetVoteResultsResponseBody(res *vote.VoteResultsResult) *GetVoteResultsR
 			}
 			body.PollResults[i] = marshalVotePollResultItemToPollResultItemResponseBody(val)
 		}
-	} else {
-		body.PollResults = []*PollResultItemResponseBody{}
 	}
 	if res.CommentResults != nil {
 		body.CommentResults = make([]*CommentResultItemResponseBody, len(res.CommentResults))
