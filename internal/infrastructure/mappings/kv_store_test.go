@@ -70,16 +70,3 @@ func TestKVStore_ReadErrorReportsAbsent(t *testing.T) {
 	store := NewKVStore(bucket)
 	assert.Equal(t, domain.MappingAbsent, store.State(context.Background(), domain.MappingKindVote, "u1"))
 }
-
-func TestMemoryStore(t *testing.T) {
-	ctx := context.Background()
-	store := NewMemoryStore()
-	assert.Equal(t, domain.MappingAbsent, store.State(ctx, domain.MappingKindVote, "u1"))
-	require.NoError(t, store.MarkSynced(ctx, domain.MappingKindVote, "u1"))
-	assert.Equal(t, domain.MappingSynced, store.State(ctx, domain.MappingKindVote, "u1"))
-	require.NoError(t, store.MarkTombstoned(ctx, domain.MappingKindVote, "u1"))
-	assert.Equal(t, domain.MappingTombstoned, store.State(ctx, domain.MappingKindVote, "u1"))
-
-	store.PutErr = errors.New("put failed")
-	assert.Error(t, store.MarkSynced(ctx, domain.MappingKindVote, "u2"))
-}

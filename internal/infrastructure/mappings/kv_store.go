@@ -7,7 +7,6 @@ package mappings
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/nats-io/nats.go/jetstream"
@@ -60,52 +59,4 @@ func (s *KVStore) MarkSynced(ctx context.Context, kind domain.MappingKind, uid s
 func (s *KVStore) MarkTombstoned(ctx context.Context, kind domain.MappingKind, uid string) error {
 	_, err := s.kv.Put(ctx, mappingKey(kind, uid), []byte(TombstoneMarker))
 	return err
-}
-
-// MemoryStore is an in-memory domain.MappingStore. It is the second adapter at the
-// mapping-store seam, used by tests of modules that depend on the interface.
-type MemoryStore struct {
-	mu     sync.Mutex
-	states map[string]domain.MappingState
-	// PutErr, when set, is returned by MarkSynced and MarkTombstoned.
-	PutErr error
-}
-
-// NewMemoryStore creates an empty in-memory mapping store.
-func NewMemoryStore() *MemoryStore {
-	return &MemoryStore{states: map[string]domain.MappingState{}}
-}
-
-// State implements domain.MappingStore.
-func (s *MemoryStore) State(_ context.Context, kind domain.MappingKind, uid string) domain.MappingState {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.states[mappingKey(kind, uid)]
-}
-
-// MarkSynced implements domain.MappingStore.
-func (s *MemoryStore) MarkSynced(_ context.Context, kind domain.MappingKind, uid string) error {
-	return s.set(kind, uid, domain.MappingSynced)
-}
-
-// MarkTombstoned implements domain.MappingStore.
-func (s *MemoryStore) MarkTombstoned(_ context.Context, kind domain.MappingKind, uid string) error {
-	return s.set(kind, uid, domain.MappingTombstoned)
-}
-
-// Seed sets a resource's state directly, for test setup.
-func (s *MemoryStore) Seed(kind domain.MappingKind, uid string, state domain.MappingState) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.states[mappingKey(kind, uid)] = state
-}
-
-func (s *MemoryStore) set(kind domain.MappingKind, uid string, state domain.MappingState) error {
-	if s.PutErr != nil {
-		return s.PutErr
-	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.states[mappingKey(kind, uid)] = state
-	return nil
 }

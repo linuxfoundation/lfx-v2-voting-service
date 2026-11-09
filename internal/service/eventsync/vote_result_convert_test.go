@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
-	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/idmapper"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -81,7 +80,7 @@ func TestConvertMapToPollResultData(t *testing.T) {
 			},
 		}
 
-		idMapper := idmapper.NewNoOpMapper()
+		idMapper := &mockIDMapper{}
 		ctx := context.Background()
 		logger := slog.Default()
 
@@ -120,7 +119,7 @@ func TestConvertMapToPollResultData(t *testing.T) {
 			"status":  "Open",
 		}
 
-		idMapper := idmapper.NewNoOpMapper()
+		idMapper := &mockIDMapper{}
 		ctx := context.Background()
 		logger := slog.Default()
 
@@ -152,7 +151,7 @@ func TestConvertMapToPollResultData(t *testing.T) {
 			},
 		}
 
-		idMapper := idmapper.NewNoOpMapper()
+		idMapper := &mockIDMapper{}
 		ctx := context.Background()
 		logger := slog.Default()
 
@@ -182,7 +181,7 @@ func TestConvertMapToPollResultData(t *testing.T) {
 			},
 		}
 
-		idMapper := idmapper.NewNoOpMapper()
+		idMapper := &mockIDMapper{}
 		ctx := context.Background()
 		logger := slog.Default()
 
@@ -197,7 +196,7 @@ func TestConvertMapToPollResultData(t *testing.T) {
 			"poll_id": make(chan int), // cannot be marshaled
 		}
 
-		idMapper := idmapper.NewNoOpMapper()
+		idMapper := &mockIDMapper{}
 		ctx := context.Background()
 		logger := slog.Default()
 

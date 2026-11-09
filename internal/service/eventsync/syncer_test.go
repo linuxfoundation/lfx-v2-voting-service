@@ -10,8 +10,6 @@ import (
 	"testing"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
-	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/idmapper"
-	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/mappings"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -80,7 +78,7 @@ func (s *stubInviter) MaybeInvite(_ context.Context, _ *slog.Logger, voteRespons
 // harness wires a Syncer to recording test adapters.
 type harness struct {
 	pub     *mockEventPublisher
-	store   *mappings.MemoryStore
+	store   *memoryStore
 	polls   *stubPolls
 	inviter *stubInviter
 	syncer  *Syncer
@@ -95,13 +93,13 @@ func newHarness(t *testing.T, opts ...func(*Deps)) *harness {
 
 	h := &harness{
 		pub:     &mockEventPublisher{},
-		store:   mappings.NewMemoryStore(),
+		store:   newMemoryStore(),
 		polls:   &stubPolls{},
 		inviter: &stubInviter{},
 	}
 	deps := Deps{
 		Publisher: h.pub,
-		IDMapper:  idmapper.NewNoOpMapper(),
+		IDMapper:  &mockIDMapper{},
 		Mappings:  h.store,
 		Polls:     h.polls,
 		Inviter:   h.inviter,

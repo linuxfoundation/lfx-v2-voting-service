@@ -14,7 +14,7 @@ adapters for the poll-privacy read and the invite hook.
 
 - **Do not add sync logic to `cmd/voting-api/eventing/`.** Decisions, conversion and ordering belong in `internal/service/eventsync`.
 - **Do not add infrastructure wiring here beyond the adapters.** Wire dependencies in `cmd/voting-api/main.go` and `NewEventProcessor`.
-- `internal/service/eventsync` imports `internal/domain` only. No NATS or JetStream types.
+- `internal/service/eventsync` imports `internal/domain` and shared `pkg/` models and utilities only. No `internal/infrastructure`, NATS or JetStream types, in production code or tests.
 
 ## Patterns you must follow
 

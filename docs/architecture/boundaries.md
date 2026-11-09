@@ -170,7 +170,7 @@ Business logic belongs in `internal/service/`, with `cmd/` containing only wirin
 ### Current state
 
 The v1→v2 sync logic lives in `internal/service/eventsync`. It is one module with one interface,
-`Syncer.Sync(ctx, Entry) Outcome`, and it imports `internal/domain` only. Behind that interface:
+`Syncer.Sync(ctx, Entry) Outcome`. It imports `internal/domain` and shared `pkg/` models and utilities only; it imports no `internal/infrastructure`, NATS or JetStream types. Behind that interface:
 
 - Payload decoding (JSON or msgpack) and soft-delete detection
 - Routing by key prefix
@@ -188,7 +188,7 @@ the adapters for the poll-privacy read and the invite hook, which read `v1-objec
 
 | Seam | Interface | Adapters |
 |---|---|---|
-| Sync state | `domain.MappingStore` | `mappings.KVStore` (NATS KV), `mappings.MemoryStore` (tests) |
+| Sync state | `domain.MappingStore` | `mappings.KVStore` (NATS KV), an in-memory store in the `eventsync` tests |
 | Poll privacy | `eventsync.PollPrivacyReader` | `pollPrivacyReader` (v1-objects) |
 | Invite | `eventsync.VoteResponseInviter` | `VoteResponseInviteHandler` |
 | Publishing | `domain.EventPublisher` | `eventing.NATSPublisher` |

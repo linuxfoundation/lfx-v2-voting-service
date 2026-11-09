@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
-	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/idmapper"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -52,7 +51,7 @@ func TestConvertMapToVoteData(t *testing.T) {
 			},
 		}
 
-		idMapper := idmapper.NewNoOpMapper()
+		idMapper := &mockIDMapper{}
 		ctx := context.Background()
 
 		logger := slog.Default()
@@ -89,7 +88,7 @@ func TestConvertMapToVoteData(t *testing.T) {
 			"project_id": "project-sfid",
 		}
 
-		idMapper := idmapper.NewNoOpMapper()
+		idMapper := &mockIDMapper{}
 		ctx := context.Background()
 
 		logger := slog.Default()
@@ -115,7 +114,7 @@ func TestConvertMapToVoteData(t *testing.T) {
 			"early_end_time": "0001-01-01T00:00:00Z",
 		}
 
-		idMapper := idmapper.NewNoOpMapper()
+		idMapper := &mockIDMapper{}
 		ctx := context.Background()
 
 		logger := slog.Default()
@@ -133,7 +132,7 @@ func TestConvertMapToVoteData(t *testing.T) {
 			"total_voting_request_invitations": "invalid",
 		}
 
-		idMapper := idmapper.NewNoOpMapper()
+		idMapper := &mockIDMapper{}
 		ctx := context.Background()
 
 		logger := slog.Default()
@@ -148,7 +147,7 @@ func TestConvertMapToVoteData(t *testing.T) {
 			"poll_id": make(chan int), // Channels can't be marshaled to JSON
 		}
 
-		idMapper := idmapper.NewNoOpMapper()
+		idMapper := &mockIDMapper{}
 		ctx := context.Background()
 
 		logger := slog.Default()

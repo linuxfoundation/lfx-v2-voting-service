@@ -98,7 +98,7 @@ prefixXxx: xxxResource(),
 
 ### Step 6 — Write tests
 
-Test through `Syncer.Sync` with `mappings.MemoryStore` (seed and inspect state) and a mock publisher:
+Test through `Syncer.Sync` with the in-memory store helper in `internal/service/eventsync` (`memory_store_test.go`: seed and inspect state) and a mock publisher. Do not import `internal/infrastructure` from these tests:
 
 - `TestConvertMapToXxxData` — full conversion, missing optional fields, invalid numeric string, invalid JSON
 - Update — happy path (`ActionCreated` vs `ActionUpdated` from mapping state), conversion error, missing UID, parent not yet synced, transient publish error

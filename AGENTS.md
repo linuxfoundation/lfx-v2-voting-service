@@ -44,7 +44,7 @@ Dependencies flow **inward only**. Never import infrastructure from service or d
 | Service | `internal/service/` | Business logic — call domain interfaces only |
 | Infrastructure | `internal/infrastructure/` | External systems — never imported by service/domain |
 | App wiring | `cmd/voting-api/` | Handlers, converters, dependency injection |
-| Event sync | `internal/service/eventsync/` | v1→v2 sync logic behind `Syncer.Sync` — domain interfaces only |
+| Event sync | `internal/service/eventsync/` | v1→v2 sync logic behind `Syncer.Sync` — `internal/domain` and shared `pkg/` only, no infrastructure imports |
 | Event processing | `cmd/voting-api/eventing/` | NATS adapter only (consumer, ACK/NAK, backoff) — no sync logic |
 
 See `docs/architecture/boundaries.md` for the full boundary map including known violations.

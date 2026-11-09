@@ -513,7 +513,7 @@ internal/service/eventsync/            # v1 -> v2 sync module
 └── vote_result.go                     # Vote result spec + converter
 
 internal/infrastructure/mappings/
-└── kv_store.go                        # MappingStore: NATS KV and in-memory adapters
+└── kv_store.go                        # MappingStore: NATS KV adapter
 
 internal/domain/
 ├── event_models.go                    # v1 and v2 data models
