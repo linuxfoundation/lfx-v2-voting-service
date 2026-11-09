@@ -163,34 +163,40 @@ coupling noted in Boundary 2's violation).
 
 ## Boundary 6 — Business Logic ↔ Event Processing
 
-### Intended boundary
+### Boundary
 
-Per standard LFX service architecture, business logic belongs in `internal/service/` or
-`internal/domain/`, with `cmd/` containing only wiring/entry-point code.
+Business logic belongs in `internal/service/`, with `cmd/` containing only wiring and entry-point code.
 
-### Actual state — **VIOLATION**
+### Current state
 
-`cmd/voting-api/eventing/` contains substantial business logic:
+The v1→v2 sync logic lives in `internal/service/eventsync`. It is one module with one interface,
+`Syncer.Sync(ctx, Entry) Outcome`, and it imports `internal/domain` only. Behind that interface:
 
+- Payload decoding (JSON or msgpack) and soft-delete detection
+- Routing by key prefix
 - ID mapping and v1→v2 data transformation
-- Deduplication logic (checking `v1-mappings` KV)
-- Orphan prevention logic (checking parent vote existence)
-- Invite eligibility rules
+- Deduplication and tombstoning, through `domain.MappingStore`
+- Orphan prevention (parent vote must be synced before its responses and results)
+- Invite eligibility, through `eventsync.VoteResponseInviter`
 - Error classification (transient vs. permanent)
 
-This logic is not in `internal/` and is not independently testable without the `cmd` package.
+`cmd/voting-api/eventing/` is the NATS adapter: it builds the consumer, turns a JetStream message into an
+`eventsync.Entry`, and ACKs or NAKs it (with exponential backoff) from the returned `Outcome`. It also holds
+the adapters for the poll-privacy read and the invite hook, which read `v1-objects` and `v1-mappings` directly.
 
-### Impact
+### Seams
 
-- The event handlers cannot be imported or tested from outside `cmd/voting-api/eventing/`
-  without going through the command package
-- Adding a new event type requires work inside `cmd/` rather than `internal/`
+| Seam | Interface | Adapters |
+|---|---|---|
+| Sync state | `domain.MappingStore` | `mappings.KVStore` (NATS KV), `mappings.MemoryStore` (tests) |
+| Poll privacy | `eventsync.PollPrivacyReader` | `pollPrivacyReader` (v1-objects) |
+| Invite | `eventsync.VoteResponseInviter` | `VoteResponseInviteHandler` |
+| Publishing | `domain.EventPublisher` | `eventing.NATSPublisher` |
 
 ### Evidence
 
-`cmd/voting-api/eventing/vote_event_handler.go`, `vote_response_event_handler.go`,
-`vote_result_event_handler.go`, `vote_response_invite.go` — all contain non-trivial logic that
-ideally belongs in `internal/service/`. Moving it there is a known future refactoring task.
+`internal/service/eventsync/syncer.go`, `resource.go`, `vote.go`, `vote_response.go`, `vote_result.go`;
+`internal/infrastructure/mappings/kv_store.go`; `cmd/voting-api/eventing/kv_handler.go`.
 
 ---
 
@@ -277,6 +283,6 @@ acceptable because OpenTelemetry defines its own standard configuration env var 
 | Service ↔ infrastructure | Followed | — |
 | HTTP path ↔ event path | Followed | — |
 | Application ↔ domain interfaces | Followed | — |
-| Business logic in `internal/` | **Violated** | `cmd/voting-api/eventing/` contains logic |
+| Business logic in `internal/` | Followed | Sync logic is in `internal/service/eventsync/` |
 | v2 IDs ↔ v1 IDs seam | Partially followed | Proxy interface accepts/returns ITX types |
 | Configuration entry point | Followed | `main.go:loadConfig()` |

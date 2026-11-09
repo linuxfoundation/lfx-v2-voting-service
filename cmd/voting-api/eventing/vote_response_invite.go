@@ -11,9 +11,9 @@ import (
 	"net/url"
 	"strings"
 
-	indexerConstants "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/constants"
 	inviteapi "github.com/linuxfoundation/lfx-v2-invite-service/pkg/api"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/service/eventsync"
 	votingconstants "github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -41,9 +41,9 @@ func voteResponseLFIDInviteSentKey(voteResponseUID string) string {
 	return fmt.Sprintf(voteResponseLFIDInviteSentKeyFmt, voteResponseUID)
 }
 
-// maybeSendInvite performs a best-effort LFID invite for a new vote-response participant
+// MaybeInvite performs a best-effort LFID invite for a new vote-response participant
 // who has no username. All errors are logged and swallowed.
-func (h *VoteResponseInviteHandler) maybeSendInvite(
+func (h *VoteResponseInviteHandler) MaybeInvite(
 	ctx context.Context,
 	logger *slog.Logger,
 	voteResponseUID, email, displayName, pollID string,
@@ -82,7 +82,7 @@ func (h *VoteResponseInviteHandler) maybeSendInvite(
 	var voteName string
 	pollKey := fmt.Sprintf("itx-poll.%s", pollID)
 	if entry, kvErr := h.v1ObjectsKV.Get(ctx, pollKey); kvErr == nil {
-		if data, decErr := decodeKVEntryData(entry.Value()); decErr == nil {
+		if data, decErr := eventsync.DecodeRecord(entry.Value()); decErr == nil {
 			if name, ok := data["name"].(string); ok {
 				voteName = strings.TrimSpace(name)
 			}
@@ -130,11 +130,4 @@ func (h *VoteResponseInviteHandler) maybeSendInvite(
 		"invite_uid", result.InviteUID,
 		"expires_at", result.ExpiresAt,
 	)
-}
-
-// shouldSendVoteResponseInvite reports whether a new no-LFID vote response should trigger an invite.
-func shouldSendVoteResponseInvite(indexerAction indexerConstants.MessageAction, username, email string) bool {
-	return indexerAction == indexerConstants.ActionCreated &&
-		strings.TrimSpace(username) == "" &&
-		strings.TrimSpace(email) != ""
 }

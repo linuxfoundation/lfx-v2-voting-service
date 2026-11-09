@@ -7,7 +7,8 @@
 | `api/voting/v1/design/` | Goa DSL — API contract source of truth |
 | `gen/` | **Generated** — never edit directly |
 | `cmd/voting-api/` | Application entry point, handlers, wiring, converters |
-| `cmd/voting-api/eventing/` | NATS KV event processing (asynchronous path) |
+| `cmd/voting-api/eventing/` | NATS KV consumer adapter (asynchronous path) |
+| `internal/service/eventsync/` | v1→v2 sync of votes, vote responses and vote results |
 | `internal/domain/` | Interfaces and models — no external imports allowed |
 | `internal/service/` | Business logic |
 | `internal/infrastructure/` | ITX proxy, NATS publisher, ID mapper, auth |
@@ -43,7 +44,8 @@ Dependencies flow **inward only**. Never import infrastructure from service or d
 | Service | `internal/service/` | Business logic — call domain interfaces only |
 | Infrastructure | `internal/infrastructure/` | External systems — never imported by service/domain |
 | App wiring | `cmd/voting-api/` | Handlers, converters, dependency injection |
-| Event processing | `cmd/voting-api/eventing/` | Known tech debt: contains business logic that belongs in service layer — do not add more here |
+| Event sync | `internal/service/eventsync/` | v1→v2 sync logic behind `Syncer.Sync` — domain interfaces only |
+| Event processing | `cmd/voting-api/eventing/` | NATS adapter only (consumer, ACK/NAK, backoff) — no sync logic |
 
 See `docs/architecture/boundaries.md` for the full boundary map including known violations.
 
@@ -98,7 +100,7 @@ To test without a live ITX connection, mock the domain interfaces in `internal/d
 ## Dangerous Operations
 
 - **Auth middleware** (`internal/middleware/`) — changes affect every request; must be its own PR
-- **NATS event schemas** (indexer and FGA events in `cmd/voting-api/eventing/`) — downstream services depend on the exact format; see `docs/indexer-contract.md` and `docs/fga-contract.md`
+- **NATS event schemas** (indexer and FGA events in `internal/infrastructure/eventing/`, produced by `internal/service/eventsync/`) — downstream services depend on the exact format; see `docs/indexer-contract.md` and `docs/fga-contract.md`
 - **ITX API field mappings** — mismatches cause silent data corruption; see `docs/api-contracts.md`
 - **`internal/domain/` interface changes** — break all infrastructure implementations that implement them
 - **`make clean`** removes `gen/`; run `make generate` before the next build

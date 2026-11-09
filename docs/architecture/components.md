@@ -212,16 +212,18 @@ NATS connection (`NATS_URL`). A 5-second request timeout is hardcoded.
 ## 7. Event Processor
 
 **Location:** `cmd/voting-api/eventing/`  
-**Files:** `event_processor.go`, `kv_handler.go`, `vote_event_handler.go`,
-`vote_response_event_handler.go`, `vote_result_event_handler.go`,
-`invite_accepted_subscriber.go`, `vote_response_invite.go`
+**Files:** `event_processor.go`, `kv_handler.go`, `invite_accepted_subscriber.go`,
+`vote_response_invite.go`, `vote_response_privacy.go`
+
+The sync logic itself is the `internal/service/eventsync` module (`Syncer.Sync`);
+`cmd/voting-api/eventing/` is its NATS adapter.
 
 ### Responsibility
 
 Processes NATS JetStream KV change events from the `v1-objects` bucket:
 
 - Creates and manages a durable JetStream consumer on stream `KV_v1-objects`
-- Routes KV messages by key prefix to per-entity handlers
+- Hands each KV message to `eventsync.Syncer`, which routes by key prefix to per-entity specs, and ACKs or NAKs from the returned `Outcome`
 - Transforms v1 data (string numerics, SFIDs) to v2 format (typed numerics, UUIDs)
 - Uses the ID mapper to translate project/committee IDs
 - Calls `domain.EventPublisher` to forward events to indexer-service and fga-sync

@@ -10,6 +10,7 @@ import (
 	"log/slog"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/service/eventsync"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
@@ -31,11 +32,22 @@ func pollIsPseudoAnonymous(ctx context.Context, objectsKV jetstream.KeyValue, po
 		return false, fmt.Errorf("failed to read parent poll %s: %w", pollKey, err)
 	}
 
-	data, err := decodeKVEntryData(entry.Value())
+	data, err := eventsync.DecodeRecord(entry.Value())
 	if err != nil {
 		logger.WarnContext(ctx, "undecodable parent poll record, treating as pseudo-anonymous", "poll_key", pollKey, errKey, err)
 		return true, nil
 	}
 
 	return domain.PollRecordIsPseudoAnonymous(data), nil
+}
+
+// pollPrivacyReader adapts the v1-objects bucket to eventsync.PollPrivacyReader.
+type pollPrivacyReader struct {
+	objectsKV jetstream.KeyValue
+	logger    *slog.Logger
+}
+
+// IsPseudoAnonymous implements eventsync.PollPrivacyReader.
+func (r pollPrivacyReader) IsPseudoAnonymous(ctx context.Context, pollID string) (bool, error) {
+	return pollIsPseudoAnonymous(ctx, r.objectsKV, pollID, r.logger)
 }

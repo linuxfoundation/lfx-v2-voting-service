@@ -17,7 +17,7 @@ Read these before writing any code:
 - `docs/event-processing.md` — full pipeline: ACK/NAK semantics, tombstone pattern, exponential backoff, deduplication, `v1-mappings` bucket purpose.
 - `docs/indexer-contract.md` — `IndexingConfig` field meanings (`AccessCheckObject`, `HistoryCheckObject`, `ParentRefs`, `Tags`). Wrong values here cause broken search or access checks.
 - `docs/fga-contract.md` — FGA message shapes. Determine whether the new entity needs FGA tuples. (Example: `vote_result` does NOT emit FGA messages; `vote` and `vote_response` do.)
-- Existing handler trio as the pattern: `vote_event_handler.go`, `vote_response_event_handler.go`, `vote_result_event_handler.go`.
+- Existing resource specs as the pattern: `internal/service/eventsync/vote.go`, `vote_response.go`, `vote_result.go`.
 
 ---
 
@@ -58,69 +58,51 @@ IndexXxxSubject = "lfx.index.xxx"
 - Decide on FGA: does the indexer need a matching access tuple? If yes, call `sendXxxAccessMessage` (build `fgatypes.GenericFGAMessage` with `ObjectType`, `Operation: "update_access"`, relations, references). If no (read-only child), skip FGA.
 - For delete: call `sendIndexerDeleteMessage` and `sendDeleteAccessMessage` (if FGA is involved).
 
-### Step 4 — Add KV prefix routing
+### Step 4 — Add a mapping kind
 
-In `cmd/voting-api/eventing/kv_handler.go`:
+In `internal/domain/mapping_store.go`, add a `MappingKindXxx` constant. Its string value is the
+prefix of the `v1-mappings` key (`"xxx.<uid>"`), which is an on-disk format: pick it once.
 
-In `handleKVPut` switch statement:
-```go
-case "itx-xxx":
-    return handleXxxUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, logger)
-```
+### Step 5 — Add a resource spec to the sync module
 
-In `handleResourceDelete` switch statement:
-```go
-case "itx-xxx":
-    return handleXxxDelete(ctx, uid, publisher, mappingsKV, logger)
-```
+> **Architecture:** v1→v2 sync logic lives in `internal/service/eventsync`, behind one
+> interface, `Syncer.Sync`. `cmd/voting-api/eventing/` is only the NATS adapter (consumer,
+> ACK/NAK, backoff). Do not add sync logic to `cmd/`.
 
-### Step 5 — Create the event handler file
+Create `internal/service/eventsync/xxx.go` with:
 
-> **Architecture boundary:** `cmd/voting-api/eventing/` is known tech debt — business logic
-> has accumulated here instead of in `internal/service/`. **Do not add new business logic here.**
-> The handler file below is intentionally thin: it decodes the raw NATS payload, maps NATS-format
-> field names to domain types (tight coupling to the wire format is acceptable here), and then
-> delegates to `publisher` for the side-effects. Any substantive decision-making, enrichment, or
-> validation beyond "is this field present?" belongs in `internal/service/` instead.
-> See `AGENTS.md` and `.cursor/rules/eventing-boundary.mdc` for the full rule.
-
-Create `cmd/voting-api/eventing/xxx_event_handler.go` with:
-
-**`convertMapToXxxData`** — thin adapter: converts `map[string]interface{}` (raw NATS payload)
-to `*domain.XxxData` (domain type). Acceptable here because the mapping is tightly coupled to
-the wire format of the KV message; it is **not** business logic:
+**`convertMapToXxxData`** — converts the decoded `map[string]interface{}` to `*domain.XxxData`.
+Tightly coupled to the wire format, so it stays a thin adapter:
 1. `json.Marshal` the map to bytes
 2. `json.Unmarshal` into `XxxDBRaw`
 3. Build `XxxData`, copying field names and coercing types (e.g. string → int)
 4. Call `idMapper.MapProjectV1ToV2` / `MapCommitteeV1ToV2` for SFID → UUID translation
 
-Do **not** add conditional logic, enrichment, or validation beyond presence checks here.
+**`xxxResource()`** — returns a `*resource[domain.XxxData]`. The shared update and delete flows in
+`resource.go` already handle conversion errors, the UID check, create-vs-update detection,
+publishing, mapping writes and tombstone-before-delete. The spec only states what differs:
+- `label`, `handlerName`, `kind`, `uidLogKey`, `convert`, `uid`, `missingUIDMessage`
+- `retryOnConvertError` — retry transient conversion errors, or treat every one as permanent
+- `prepare` — the resource's own rules before publishing: required fields, parent ordering
+  (`s.deps.Mappings.State(ctx, parentKind, parentUID)`; return `outcome(Retry)` until the parent is
+  synced). Return `nil` to continue
+- `tombstoneIsCreate` — whether a tombstoned mapping counts as a create or an update
+- `publish` — calls the `domain.EventPublisher` method for the entity
+- `afterPublish` — optional best-effort follow-up
+- `deleteItem` — the minimal `XxxData{UID: uid}` published for a delete
 
-**`handleXxxUpdate`** — ACK/NAK router:
-1. `convertMapToXxxData` — on error, apply `isTransientError`, return NAK or ACK accordingly
-2. Validate required fields (UID must be non-empty) — ACK on permanent invalid data
-3. Check `mappingsKV.Get(ctx, "xxx."+uid)` to determine `ActionCreated` vs `ActionUpdated`
-4. `publisher.PublishXxxEvent(ctx, action, data)` — on transient error return `true` (NAK), on permanent error return `false` (ACK)
-5. `mappingsKV.Put(ctx, "xxx."+uid, []byte("1"))` to record the tracking key (warn on failure, don't retry)
-6. Return `false` (success ACK)
-
-**`handleXxxDelete`** — tombstone-aware delete handler:
-1. Check tombstone: `mappingsKV.Get(ctx, "xxx."+uid)` — if value is `"!del"`, return `false` (already processed)
-2. Build minimal `XxxData{UID: uid}` for the delete event
-3. `publisher.PublishXxxEvent(ctx, string(ActionDeleted), data)` — on transient error return `true`
-4. `mappingsKV.Put(ctx, "xxx."+uid, []byte(tombstoneMarker))` to prevent duplicate deletes
-
-**Why the tombstone matters:** The JetStream consumer can redeliver delete operations. Without the tombstone check, a redelivered delete publishes a second delete event to the indexer, which it handles incorrectly.
+Then register the key prefix in `New` (`syncer.go`) with a `prefixXxx` constant:
+```go
+prefixXxx: xxxResource(),
+```
 
 ### Step 6 — Write tests
 
-Create `cmd/voting-api/eventing/xxx_event_handler_test.go` with table-driven tests:
+Test through `Syncer.Sync` with `mappings.MemoryStore` (seed and inspect state) and a mock publisher:
 
-- `TestConvertMapToXxxData` — cover: full conversion, missing optional fields, invalid numeric string, invalid JSON
-- `TestHandleXxxUpdate` — cover: happy path (verify `ActionCreated` vs `ActionUpdated` from mapping state), conversion error, missing UID, transient publish error
-- `TestHandleXxxDelete` — cover: happy path, already-tombstoned (no publish), transient publish error
-
-Use the mock pattern from `mock_kv_test.go` and the inline `eventPublisher` mock in existing test files.
+- `TestConvertMapToXxxData` — full conversion, missing optional fields, invalid numeric string, invalid JSON
+- Update — happy path (`ActionCreated` vs `ActionUpdated` from mapping state), conversion error, missing UID, parent not yet synced, transient publish error
+- Delete — happy path, already-tombstoned (no publish), transient publish error, soft delete (`_sdc_deleted_at`)
 
 ### Step 7 — Update documentation
 
@@ -139,9 +121,9 @@ make ci
 
 Before marking the work done:
 
-- [ ] `handleXxxDelete` checks the tombstone **before** publishing
-- [ ] `handleXxxUpdate` uses `mappingsKV.Get` to distinguish `created` vs `updated`
-- [ ] `isTransientError` is called on all publish/ID-mapping errors
+- [ ] The spec's `kind` is a new `MappingKind` whose value is the `v1-mappings` key prefix
+- [ ] `tombstoneIsCreate` is set deliberately, and `prepare` waits on the parent where one exists
+- [ ] Publish errors go through the shared flow (`retryIfTransient`); do not re-implement ACK/NAK
 - [ ] `IndexingConfig.AccessCheckObject` uses the correct FGA object type string
 - [ ] FGA message is emitted only when appropriate (not for read-only child entities like `vote_result`)
 - [ ] New tests cover the tombstone path and transient error path

@@ -12,7 +12,9 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/eventing"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/mappings"
 	infraNATS "github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/nats"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/service/eventsync"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 )
@@ -23,17 +25,14 @@ const (
 
 // EventProcessor handles NATS KV bucket event processing
 type EventProcessor struct {
-	natsConn      *nats.Conn
-	jsInstance    jetstream.JetStream
-	consumer      jetstream.Consumer
-	consumeCtx    jetstream.ConsumeContext
-	publisher     domain.EventPublisher
-	idMapper      domain.IDMapper
-	mappingsKV    jetstream.KeyValue
-	v1ObjectsKV   jetstream.KeyValue
-	inviteHandler *VoteResponseInviteHandler
-	logger        *slog.Logger
-	config        eventing.Config
+	natsConn   *nats.Conn
+	jsInstance jetstream.JetStream
+	consumer   jetstream.Consumer
+	consumeCtx jetstream.ConsumeContext
+	publisher  domain.EventPublisher
+	syncer     *eventsync.Syncer
+	logger     *slog.Logger
+	config     eventing.Config
 }
 
 // NewEventProcessor creates a new event processor
@@ -98,16 +97,26 @@ func NewEventProcessor(
 		}
 	}
 
+	deps := eventsync.Deps{
+		Publisher: publisher,
+		IDMapper:  idMapper,
+		Mappings:  mappings.NewKVStore(mappingsKV),
+		Polls:     pollPrivacyReader{objectsKV: v1ObjectsKV, logger: logger},
+		Logger:    logger,
+	}
+	// Only set the inviter when invites are enabled; a typed-nil handler in the interface
+	// would not compare equal to nil.
+	if inviteHandler != nil {
+		deps.Inviter = inviteHandler
+	}
+
 	return &EventProcessor{
-		natsConn:      conn,
-		jsInstance:    jsContext,
-		publisher:     publisher,
-		idMapper:      idMapper,
-		mappingsKV:    mappingsKV,
-		v1ObjectsKV:   v1ObjectsKV,
-		inviteHandler: inviteHandler,
-		logger:        logger,
-		config:        cfg,
+		natsConn:   conn,
+		jsInstance: jsContext,
+		publisher:  publisher,
+		syncer:     eventsync.New(deps),
+		logger:     logger,
+		config:     cfg,
 	}, nil
 }
 
@@ -134,7 +143,7 @@ func (ep *EventProcessor) Start(ctx context.Context) error {
 
 	// Start consuming messages
 	consumeCtx, err := consumer.Consume(func(msg jetstream.Msg) {
-		kvMessageHandler(ctx, msg, ep.publisher, ep.idMapper, ep.mappingsKV, ep.v1ObjectsKV, ep.inviteHandler, ep.logger)
+		kvMessageHandler(ctx, msg, ep.syncer, ep.logger)
 	}, jetstream.ConsumeErrHandler(func(_ jetstream.ConsumeContext, err error) {
 		ep.logger.With("error", err).Error("KV consumer error encountered")
 	}))

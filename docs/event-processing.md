@@ -480,10 +480,10 @@ The event processing code includes comprehensive unit tests:
 make test
 
 # Run only event processing tests
-go test ./cmd/voting-api/eventing/... -v
+go test ./cmd/voting-api/eventing/... ./internal/service/eventsync/... -v
 
 # Run with coverage
-go test ./cmd/voting-api/eventing/... -coverprofile=coverage.out
+go test ./cmd/voting-api/eventing/... ./internal/service/eventsync/... -coverprofile=coverage.out
 go tool cover -html=coverage.out
 ```
 
@@ -499,15 +499,21 @@ go tool cover -html=coverage.out
 ### Code Structure
 
 ```
-cmd/voting-api/eventing/
+cmd/voting-api/eventing/               # NATS adapter
 ├── event_processor.go                 # Lifecycle management
-├── event_processor_test.go            # Lifecycle tests
-├── kv_handler.go                      # Event routing by key prefix
-├── kv_handler_test.go                 # Routing tests
-├── vote_event_handler.go              # Vote transformation logic
-├── vote_event_handler_test.go         # Vote tests
-├── vote_response_event_handler.go     # Response transformation logic
-└── vote_response_event_handler_test.go # Response tests
+├── kv_handler.go                      # JetStream message -> Entry; ACK/NAK with backoff
+├── vote_response_privacy.go           # Poll-privacy adapter (reads v1-objects)
+└── vote_response_invite.go            # Invite adapter
+
+internal/service/eventsync/            # v1 -> v2 sync module
+├── syncer.go                          # Syncer.Sync: decode, soft delete, routing
+├── resource.go                        # Shared update/delete flow, error classification
+├── vote.go                            # Vote spec + converter
+├── vote_response.go                   # Vote response spec + converter
+└── vote_result.go                     # Vote result spec + converter
+
+internal/infrastructure/mappings/
+└── kv_store.go                        # MappingStore: NATS KV and in-memory adapters
 
 internal/domain/
 ├── event_models.go                    # v1 and v2 data models
@@ -522,11 +528,11 @@ internal/infrastructure/eventing/
 
 To add processing for new entity types:
 
-1. Create handler in `cmd/voting-api/eventing/{entity}_event_handler.go`
-2. Add routing logic in `kv_handler.go`
-3. Define v2 model in `internal/domain/event_models.go`
-4. Add publisher method in `internal/infrastructure/eventing/nats_publisher.go`
-5. Create test file `{entity}_event_handler_test.go`
+1. Define v2 model in `internal/domain/event_models.go`
+2. Add publisher method in `internal/infrastructure/eventing/nats_publisher.go`
+3. Add a `MappingKind` in `internal/domain/mapping_store.go`
+4. Add a resource spec and converter in `internal/service/eventsync/{entity}.go`, and register its prefix in `eventsync.New`
+5. Test through `Syncer.Sync` in `internal/service/eventsync/`
 6. Update documentation
 
 ## Message Formats
