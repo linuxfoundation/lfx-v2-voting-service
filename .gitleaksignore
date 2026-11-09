@@ -8,3 +8,15 @@
 c788dd3a6aad787ebf852ff4f09c5865f82fd6f1:docs/api-contracts.md:generic-api-key:879
 abaffe12894a1bc98d352fbd35ace9a9b018cbc4:docs/api-contracts.md:generic-api-key:879
 abaffe12894a1bc98d352fbd35ace9a9b018cbc4:docs/api-contracts.md:generic-api-key:1304
+
+# Test fixtures in the eventsync tests use v1-objects KV keys such as
+# "itx-poll-vote.vote-123". They are record identifiers, not credentials, but
+# match the generic-api-key rule because of the `Key`/`key` names.
+# Ignore only these findings; keep scanning all other content and commits.
+9c0880a465a9950885589db325d2528e94c3570e:internal/service/eventsync/syncer_test.go:generic-api-key:214
+9c0880a465a9950885589db325d2528e94c3570e:internal/service/eventsync/syncer_test.go:generic-api-key:303
+9c0880a465a9950885589db325d2528e94c3570e:internal/service/eventsync/vote_response_test.go:generic-api-key:38
+9c0880a465a9950885589db325d2528e94c3570e:internal/service/eventsync/vote_response_test.go:generic-api-key:264
+9c0880a465a9950885589db325d2528e94c3570e:internal/service/eventsync/vote_response_test.go:generic-api-key:330
+9c0880a465a9950885589db325d2528e94c3570e:internal/service/eventsync/vote_result_test.go:generic-api-key:25
+9c0880a465a9950885589db325d2528e94c3570e:internal/service/eventsync/vote_result_test.go:generic-api-key:130

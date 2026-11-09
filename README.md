@@ -34,7 +34,7 @@ lfx-v2-voting-service/
 │       ├── values.yaml       # Default Helm values
 │       └── values.local.example.yaml  # Local dev values template
 ├── cmd/voting-api/           # Application entry point
-│   ├── eventing/             # Event processing handlers
+│   ├── eventing/             # NATS KV consumer adapter (ACK/NAK, backoff)
 │   ├── service/              # Request/response converters
 │   ├── api.go                # Goa interface implementation (votes)
 │   ├── api_votes.go          # Vote handler helpers
@@ -51,12 +51,14 @@ lfx-v2-voting-service/
 ├── internal/
 │   ├── domain/               # Interfaces and domain models
 │   ├── service/              # Business logic layer
+│   │   ├── eventsync/        # v1→v2 sync of votes, vote responses and vote results
 │   │   ├── vote_service.go
 │   │   └── vote_response_service.go
 │   ├── infrastructure/       # External system integrations
 │   │   ├── auth/             # JWT authentication (Heimdall)
 │   │   ├── eventing/         # NATS event publisher
 │   │   ├── idmapper/         # NATS-based v1↔v2 ID mapping
+│   │   ├── mappings/         # v1-mappings KV store (sync state)
 │   │   └── proxy/            # ITX HTTP client
 │   ├── middleware/           # HTTP middleware (auth, request ID, logger)
 │   └── logging/              # Logging configuration

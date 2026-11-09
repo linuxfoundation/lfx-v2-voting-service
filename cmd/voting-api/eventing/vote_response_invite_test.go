@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	indexerConstants "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/constants"
 	inviteapi "github.com/linuxfoundation/lfx-v2-invite-service/pkg/api"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	votingconstants "github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
@@ -19,7 +18,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/vmihailenco/msgpack/v5"
 )
 
 type stubVoteInviteUserReader struct {
@@ -47,43 +45,7 @@ func (s *stubVoteInviteSender) SendInvite(_ context.Context, req inviteapi.SendI
 	return s.result, nil
 }
 
-func TestDecodeKVData(t *testing.T) {
-	t.Run("decodes JSON", func(t *testing.T) {
-		payload := map[string]any{"name": "Board Election"}
-		raw, err := json.Marshal(payload)
-		require.NoError(t, err)
-
-		got, err := decodeKVEntryData(raw)
-		require.NoError(t, err)
-		assert.Equal(t, "Board Election", got["name"])
-	})
-
-	t.Run("decodes msgpack", func(t *testing.T) {
-		payload := map[string]any{"name": "Board Election"}
-		raw, err := msgpack.Marshal(payload)
-		require.NoError(t, err)
-
-		got, err := decodeKVEntryData(raw)
-		require.NoError(t, err)
-		assert.Equal(t, "Board Election", got["name"])
-	})
-
-	t.Run("returns combined error when both decoders fail", func(t *testing.T) {
-		_, err := decodeKVEntryData([]byte("not-json-or-msgpack"))
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "json:")
-		assert.Contains(t, err.Error(), "msgpack:")
-	})
-}
-
-func TestShouldSendVoteResponseInvite(t *testing.T) {
-	assert.True(t, shouldSendVoteResponseInvite(indexerConstants.ActionCreated, "", "guest@example.com"))
-	assert.False(t, shouldSendVoteResponseInvite(indexerConstants.ActionUpdated, "", "guest@example.com"))
-	assert.False(t, shouldSendVoteResponseInvite(indexerConstants.ActionCreated, "existing", "guest@example.com"))
-	assert.False(t, shouldSendVoteResponseInvite(indexerConstants.ActionCreated, "", ""))
-}
-
-func TestMaybeSendInvite(t *testing.T) {
+func TestMaybeInvite(t *testing.T) {
 	const (
 		voteResponseUID = "vote-123"
 		pollID          = "poll-456"
@@ -183,7 +145,7 @@ func TestMaybeSendInvite(t *testing.T) {
 				selfServeBaseURL: "https://app.dev.lfx.dev",
 			}
 
-			h.maybeSendInvite(context.Background(), slog.Default(), voteResponseUID, email, "Guest", pollID)
+			h.MaybeInvite(context.Background(), slog.Default(), voteResponseUID, email, "Guest", pollID)
 
 			assert.Equal(t, tt.wantCalled, sender.called)
 			if tt.wantCalled {

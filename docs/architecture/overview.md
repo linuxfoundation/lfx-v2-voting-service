@@ -29,7 +29,8 @@ in the NATS `v1-mappings` KV bucket. Its responsibilities are:
 | Vote response service | `internal/service/vote_response_service.go` | Ballot submission business logic |
 | ITX proxy client | `internal/infrastructure/proxy/client.go` | All outbound ITX HTTP calls |
 | ID mapper | `internal/infrastructure/idmapper/` | v1 SFID ↔ v2 UUID via NATS |
-| Event processor | `cmd/voting-api/eventing/` | NATS KV consumer + per-entity handlers |
+| Event processor | `cmd/voting-api/eventing/` | NATS KV consumer adapter |
+| Event sync | `internal/service/eventsync/` | v1→v2 sync of votes, vote responses and vote results |
 | NATS publisher | `internal/infrastructure/eventing/nats_publisher.go` | Publishes to indexer + fga-sync |
 | JWT authenticator | `internal/infrastructure/auth/jwt.go` | Heimdall JWKS token validation |
 | Domain interfaces | `internal/domain/` | Contracts between layers |

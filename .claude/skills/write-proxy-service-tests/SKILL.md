@@ -178,6 +178,6 @@ go test ./internal/infrastructure/proxy/... -v -race
 
 ## Further reading
 
-- `cmd/voting-api/eventing/vote_event_handler_test.go` — best mock pattern reference
+- `internal/service/eventsync/syncer_test.go` — best mock pattern reference (test harness with a mock publisher, stub dependencies and an in-memory store)
 - `internal/domain/errors.go` — error types to assert in error-path tests
 - `internal/infrastructure/eventing/indexing_contract_test.go` — example of contract-verification tests asserting field values against documentation
