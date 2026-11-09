@@ -136,13 +136,12 @@ func voteResponseResource() *resource[domain.VoteResponseData] {
 		convert:           convertMapToVoteResponseData,
 		uid:               func(v *domain.VoteResponseData) string { return v.UID },
 		missingUIDMessage: "missing or invalid uid in vote response data",
+		logAttrs:          func(v *domain.VoteResponseData) []any { return []any{"poll_id", v.PollID} },
 		prepare: func(ctx context.Context, s *Syncer, logger *slog.Logger, v *domain.VoteResponseData) *Outcome {
 			if v.PollID == "" {
 				logger.ErrorContext(ctx, "vote response missing required parent vote ID")
 				return outcome(Ack) // permanent: ACK and skip
 			}
-			logger = logger.With("poll_id", v.PollID)
-
 			if s.deps.Mappings.State(ctx, domain.MappingKindVote, v.PollID) == domain.MappingAbsent {
 				logger.InfoContext(ctx, "parent vote not found in mappings, will retry vote response sync")
 				return outcome(Retry) // parent vote hasn't been processed yet

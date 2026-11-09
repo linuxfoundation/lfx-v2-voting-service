@@ -48,6 +48,9 @@ type resource[T any] struct {
 	uid func(*T) string
 	// missingUIDMessage is logged when uid returns empty.
 	missingUIDMessage string
+	// logAttrs returns extra log attributes for converted data, such as the parent ID.
+	// They are added to every later log line of the update. Optional.
+	logAttrs func(*T) []any
 
 	// prepare runs the resource's own rules after the UID check and before the
 	// create-vs-update decision: parent ordering, privacy, required fields. A non-nil
@@ -90,6 +93,9 @@ func (r *resource[T]) update(ctx context.Context, s *Syncer, key string, v1Data 
 		return Ack
 	}
 	logger = logger.With(r.uidLogKey, uid)
+	if r.logAttrs != nil {
+		logger = logger.With(r.logAttrs(item)...)
+	}
 
 	if o := r.prepare(ctx, s, logger, item); o != nil {
 		return *o
