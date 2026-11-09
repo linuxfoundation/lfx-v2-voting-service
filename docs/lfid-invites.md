@@ -33,7 +33,7 @@ shouldSendVoteResponseInvite?
   • email != ""
         │ yes
         ▼
-VoteResponseInviteHandler.maybeSendInvite
+VoteResponseInviteHandler.MaybeInvite
   1. Check invite-sent marker  ──── already sent? → skip
      (v1-mappings: v1_vote_response_lfid_invite_sent.{uid})
   2. UsernameByEmail via NATS  ──── has LFID? → skip

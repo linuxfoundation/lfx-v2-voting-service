@@ -311,6 +311,7 @@ Defines the contracts between the service layer and infrastructure:
 | `EventPublisher` | `event_publisher.go` | `infrastructure/eventing.NATSPublisher` |
 | `InviteSender` | `invite_sender.go` | `infrastructure/nats.InviteSender` |
 | `UserReader` | `user_reader.go` | `infrastructure/nats.UserReader` |
+| `MappingStore` | `mapping_store.go` | `infrastructure/mappings.KVStore` |
 
 Also defines:
 - `DomainError` + `ErrorType` enum (`errors.go`) — the error pattern for the whole service

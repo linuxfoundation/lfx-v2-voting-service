@@ -47,7 +47,7 @@ The voting service implements NATS KV bucket event processing to automatically s
    - `itx-poll.*` - Vote (poll) data (`$KV.v1-objects.itx-poll.>`)
    - `itx-poll-vote.*` - Vote response data (`$KV.v1-objects.itx-poll-vote.>`)
 
-   > **Note on encoding**: KV entries from v1 may be encoded as either JSON or msgpack. The handler attempts JSON deserialization first; if that fails, it falls back to msgpack. Both formats are supported transparently.
+   > **Note on encoding**: KV entries from v1 may be encoded as either JSON or msgpack. The sync module (`eventsync.DecodeRecord`) attempts JSON deserialization first; if that fails, it falls back to msgpack. Both formats are supported transparently.
 
 2. **Transform**: Converts v1 format to v2 format:
    - String fields → proper types (strings to ints)
@@ -342,7 +342,9 @@ The service uses the `v1-mappings` KV bucket to track processed events:
 
 - Votes: `vote.<poll_id>`
 - Vote Responses: `vote_response.<vote_id>`
+- Vote Results: `vote_result.<poll_id>`
 
+The key format and the `!del` marker are an on-disk contract, owned by `internal/infrastructure/mappings` (`domain.MappingStore`).
 **Value**:
 
 - `1` — resource has been synced at least once (live mapping)
@@ -350,8 +352,8 @@ The service uses the `v1-mappings` KV bucket to track processed events:
 
 **Logic**:
 
-- If mapping missing or tombstoned → **CREATE** operation
-- If mapping exists (live) → **UPDATE** operation
+- Votes and vote responses: if the mapping is missing → **CREATE**; if it exists, live **or tombstoned** → **UPDATE**
+- Vote results: if the mapping is missing **or tombstoned** → **CREATE**; if it is live → **UPDATE**
 - After successful sync → store/update mapping with value `1`
 - After successful delete → overwrite mapping with `!del` (tombstone)
 
@@ -365,7 +367,12 @@ KV PUT operations that include a non-empty `_sdc_deleted_at` field are treated a
 
 **Orphan prevention**:
 
-When processing a vote response, the handler checks that the parent vote mapping exists and is not tombstoned. If the parent mapping is missing or tombstoned (i.e., the vote was deleted), the response event is NAKed for retry rather than being synced to downstream services.
+Child records wait for their parent vote to be synced, and the rule differs by resource:
+
+- **Vote response**: NAKed for retry while the parent vote has no mapping. A tombstoned parent counts as present.
+- **Vote result**: NAKed for retry unless the parent vote mapping exists and is not tombstoned.
+
+These per-resource rules (and the create/update rule above) are explicit policy in `internal/service/eventsync` (`resource` specs), each pinned by a `policy:` test.
 
 ## Performance Considerations
 
@@ -491,8 +498,8 @@ go tool cover -html=coverage.out
 
 - Event processor lifecycle (Start/Stop)
 - KV message handling and routing
-- Vote event handlers (create/update/delete)
-- Vote response event handlers
+- Vote, vote response and vote result sync (create/update/delete) through `eventsync.Syncer.Sync`
+- Per-resource policy (tombstones, parent ordering, retry rules)
 - Data transformations (v1 to v2)
 - Error handling (transient vs permanent)
 

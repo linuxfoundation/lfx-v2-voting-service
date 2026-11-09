@@ -59,7 +59,7 @@ NATS is used for four distinct purposes, each with different interaction pattern
 | | |
 |---|---|
 | **Purpose** | Receives change events from the legacy v1 DynamoDB (mirrored via Meltano) |
-| **Used by** | `cmd/voting-api/eventing/event_processor.go` |
+| **Used by** | `cmd/voting-api/eventing/event_processor.go` (consumer); `internal/service/eventsync` (sync logic) |
 | **Stream** | `KV_v1-objects` (env var `EVENT_STREAM_NAME`) |
 | **Consumer** | Durable, `DeliverLastPerSubjectPolicy`, filter on `$KV.v1-objects.itx-poll.>`, `itx-poll-vote.>`, `itx-poll-results.>` |
 | **KV bucket** | `v1-objects` |
