@@ -63,7 +63,7 @@ type operation struct {
 	name        string
 	method      string
 	path        string
-	reqBody     string // expected JSON request body; empty when the request has none
+	reqBody     string // complete expected JSON request body; empty when the request has none
 	okStatus    int
 	okBody      string                        // response body for the success case
 	invoke      func(c *Client) error         // calls the method, discarding any result
@@ -78,7 +78,7 @@ func operations() []operation {
 	return []operation{
 		{
 			name: "CreatePoll", method: http.MethodPost, path: "/v2/voting/poll",
-			reqBody: `"name":"Board Vote"`, okStatus: http.StatusCreated, okBody: pollJSON, parsesBody: true,
+			reqBody: `{"name":"Board Vote","description":"","end_time":"","project_id":"","committee_id":"","poll_questions":null,"pseudo_anonymity":false,"allow_abstain":false}`, okStatus: http.StatusCreated, okBody: pollJSON, parsesBody: true,
 			invoke: func(c *Client) error {
 				_, err := c.CreatePoll(ctx, &itx.CreatePollRequest{Name: "Board Vote"})
 				return err
@@ -104,10 +104,19 @@ func operations() []operation {
 		},
 		{
 			name: "UpdatePoll", method: http.MethodPut, path: "/v2/voting/poll/poll-1",
-			reqBody: `"name":"Renamed"`, okStatus: http.StatusOK, okBody: pollJSON, parsesBody: true,
+			reqBody: `{"name":"Renamed","description":"","end_time":"","project_id":"","committee_id":"","poll_questions":null,"pseudo_anonymity":false,"allow_abstain":false}`, okStatus: http.StatusOK, okBody: pollJSON, parsesBody: true,
 			invoke: func(c *Client) error {
 				_, err := c.UpdatePoll(ctx, "poll-1", &itx.UpdatePollRequest{Name: "Renamed"})
 				return err
+			},
+			checkResult: func(t *testing.T, c *Client) {
+				got, err := c.UpdatePoll(ctx, "poll-1", &itx.UpdatePollRequest{Name: "Renamed"})
+				require.NoError(t, err)
+				assert.Equal(t, "poll-1", got.PollID)
+				assert.Equal(t, "Board Vote", got.Name)
+				assert.Equal(t, "active", got.Status)
+				assert.Equal(t, "proj-1", got.ProjectID)
+				assert.Equal(t, "comm-1", got.CommitteeID)
 			},
 		},
 		{
@@ -117,7 +126,7 @@ func operations() []operation {
 		},
 		{
 			name: "ExtendPoll", method: http.MethodPost, path: "/v2/voting/poll/poll-1/extend",
-			reqBody:  `"end_time":"2026-03-01T00:00:00Z","end_time_timezone":"America/New_York"`,
+			reqBody:  `{"end_time":"2026-03-01T00:00:00Z","end_time_timezone":"America/New_York"}`,
 			okStatus: http.StatusOK, okBody: pollJSON, parsesBody: true,
 			invoke: func(c *Client) error {
 				_, err := c.ExtendPoll(ctx, "poll-1", &itx.ExtendPollRequest{EndTime: "2026-03-01T00:00:00Z", EndTimeTimezone: "America/New_York"})
@@ -136,7 +145,7 @@ func operations() []operation {
 		},
 		{
 			name: "BulkResendPoll", method: http.MethodPost, path: "/v2/voting/poll/poll-1/bulk_resend",
-			reqBody: `"recipient_ids":["vote-1","vote-2"]`, okStatus: http.StatusNoContent,
+			reqBody: `{"recipient_ids":["vote-1","vote-2"]}`, okStatus: http.StatusNoContent,
 			invoke: func(c *Client) error {
 				return c.BulkResendPoll(ctx, "poll-1", &itx.BulkResendRequest{RecipientIDs: []string{"vote-1", "vote-2"}})
 			},
@@ -151,13 +160,14 @@ func operations() []operation {
 				require.NoError(t, err)
 				assert.Equal(t, 20, got.NumRecipients)
 				assert.Equal(t, 15, got.NumVotesCast)
-				assert.Equal(t, 2, got.NumAbstained)
+				require.NotNil(t, got.NumAbstained)
+				assert.Equal(t, 2, *got.NumAbstained)
 				assert.Equal(t, "2026-02-01T00:00:00Z", got.PollEndTime)
 			},
 		},
 		{
 			name: "CreateVote", method: http.MethodPost, path: "/v2/voting/vote",
-			reqBody: `"vote_id":"vote-1"`, okStatus: http.StatusCreated,
+			reqBody: `{"vote_id":"vote-1","user_vote_content":null,"abstain":false}`, okStatus: http.StatusCreated,
 			invoke: func(c *Client) error { return c.CreateVote(ctx, &itx.CreateVoteRequest{VoteID: "vote-1"}) },
 		},
 		{
@@ -176,7 +186,7 @@ func operations() []operation {
 		},
 		{
 			name: "UpdateVote", method: http.MethodPut, path: "/v2/voting/vote/vote-1",
-			reqBody: `"abstain":true`, okStatus: http.StatusOK,
+			reqBody: `{"user_vote_content":null,"abstain":true}`, okStatus: http.StatusOK,
 			invoke: func(c *Client) error { return c.UpdateVote(ctx, "vote-1", &itx.UpdateVoteRequest{Abstain: true}) },
 		},
 		{
@@ -206,7 +216,7 @@ func TestClient_SendsExpectedRequest(t *testing.T) {
 				assert.Empty(t, got.Body)
 				return
 			}
-			assert.Contains(t, got.Body, op.reqBody)
+			assert.JSONEq(t, op.reqBody, got.Body)
 			assert.Equal(t, "application/json", got.ContentType)
 		})
 	}
