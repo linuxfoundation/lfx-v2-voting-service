@@ -94,3 +94,29 @@ func TestPollIsPseudoAnonymous(t *testing.T) {
 		})
 	}
 }
+
+func TestPollPrivacyReader_IsPseudoAnonymous(t *testing.T) {
+	const pollKey = "itx-poll.poll-1"
+	logger := slog.New(slog.NewTextHandler(bytes.NewBuffer(nil), nil))
+
+	t.Run("delegates to the poll record in the objects bucket", func(t *testing.T) {
+		kv := &mockKeyValue{}
+		kv.On("Get", mock.Anything, pollKey).
+			Return(mockKeyValueEntry{key: pollKey, value: []byte(`{"poll_id":"poll-1","pseudo_anonymity":false}`)}, nil)
+
+		got, err := pollPrivacyReader{objectsKV: kv, logger: logger}.IsPseudoAnonymous(context.Background(), "poll-1")
+
+		require.NoError(t, err)
+		assert.False(t, got)
+		kv.AssertExpectations(t)
+	})
+
+	t.Run("a read error is surfaced so the sync retries", func(t *testing.T) {
+		kv := &mockKeyValue{}
+		kv.On("Get", mock.Anything, pollKey).Return(nil, errors.New("nats timeout"))
+
+		_, err := pollPrivacyReader{objectsKV: kv, logger: logger}.IsPseudoAnonymous(context.Background(), "poll-1")
+
+		require.Error(t, err)
+	})
+}
