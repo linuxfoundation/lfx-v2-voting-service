@@ -46,4 +46,4 @@ For complex repeated workflows, use the skills in `.claude/skills/`:
 - `add-kv-event-type` — new NATS KV entity type in the event pipeline
 - `add-domain-interface` — new external dependency with no-op for local dev
 - `add-configuration-variable` — new env var wired through all required locations
-- `write-proxy-service-tests` — tests for the currently untested proxy/service path
+- `write-proxy-service-tests` — tests for the proxy client, service and converter layers

@@ -133,23 +133,17 @@ Cover both directions: payload → service request AND service response (ITX res
 
 ### Proxy client tests (`internal/infrastructure/proxy/`)
 
-These require an HTTP test server. Use `net/http/httptest`:
+`client_http_test.go` already drives every ITX operation through a fake server. It provides:
 
-```go
-func TestProxyClient_CreatePoll(t *testing.T) {
-    ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        // assert request shape
-        assert.Equal(t, "POST", r.Method)
-        w.Header().Set("Content-Type", "application/json")
-        json.NewEncoder(w).Encode(&itx.PollResponse{PollID: "poll-123"})
-    }))
-    defer ts.Close()
-    // construct client pointing at ts.URL
-    // call method, assert response
-}
-```
+- `newTestClient(t, status, body)` — a `Client` pointed at an `httptest` server that replies with the given status and body, plus a `capturedRequest` (method, path, body, `x-scope`, `Content-Type`). The OAuth2 transport is bypassed on purpose, so these tests cover request building and response handling, not token acquisition.
+- `unreachableClient(t)` — a `Client` whose server is already shut down, for transport-failure cases.
+- `operations()` — one table row per ITX operation: expected method, path, complete JSON request body (compared with `assert.JSONEq`), success status/body, an `invoke` function, and an optional `checkResult` that asserts the parsed response.
 
-Cover the error mapping: return a 404 from the mock server and verify the client returns `domain.ErrorTypeNotFound`.
+**When you add a proxy method, add a row to `operations()`.** The shared tests then check, for free: the request shape and `x-scope: manage:voting` header, ITX status codes mapped to the right `domain.ErrorType` (with the ITX message kept), an unreachable ITX mapped to unavailable, and (when `parsesBody` is true) a malformed success body mapped to an internal error. Set `parsesBody` and `checkResult` for any method that returns a body, and assert the fields from the fixture so an empty decoded response can't pass.
+
+Add a separate test only for behavior the table can't express (for example `TestMapHTTPError`, or `NewClient` config validation).
+
+`NewClient`'s Auth0 token source is not unit tested; it needs a live Auth0 endpoint.
 
 ---
 

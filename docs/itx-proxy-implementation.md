@@ -576,7 +576,7 @@ Authorization is handled by Heimdall with OpenFGA checks:
 
 2. **Proxy Client Tests** (with mock HTTP server)
    - Test HTTP request construction
-   - Test OAuth2 token addition
+   - Test the `x-scope` header (the OAuth2 transport is bypassed in unit tests; token acquisition against Auth0 is not unit tested)
    - Test error mapping from HTTP status codes
    - Test response parsing
 
