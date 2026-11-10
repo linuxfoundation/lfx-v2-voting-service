@@ -50,8 +50,16 @@ type accessMsg struct {
 	} `json:"data"`
 }
 
+// barrierSubject carries the sentinel that seen() uses to know the recorder has caught up.
+const barrierSubject = "test.recorder.barrier"
+
 // newRecordingPublisher starts an embedded NATS server, records everything published on
 // it, and returns a publisher plus a function that returns the messages seen so far.
+//
+// The returned function is deterministic: it publishes a sentinel from the same connection
+// and waits for the recorder to receive it. NATS delivers a connection's messages to a
+// subscription in order, so once the sentinel arrives every earlier message has been
+// recorded. No sleeping is involved.
 func newRecordingPublisher(t *testing.T, opts ...PublisherOption) (*NATSPublisher, *nats.Conn, func() []published) {
 	t.Helper()
 
@@ -67,7 +75,12 @@ func newRecordingPublisher(t *testing.T, opts ...PublisherOption) (*NATSPublishe
 
 	var mu sync.Mutex
 	var seen []published
+	barrier := make(chan struct{}, 1)
 	_, err = conn.Subscribe(">", func(m *nats.Msg) {
+		if m.Subject == barrierSubject {
+			barrier <- struct{}{}
+			return
+		}
 		mu.Lock()
 		defer mu.Unlock()
 		seen = append(seen, published{Subject: m.Subject, Raw: append([]byte(nil), m.Data...)})
@@ -76,8 +89,12 @@ func newRecordingPublisher(t *testing.T, opts ...PublisherOption) (*NATSPublishe
 	require.NoError(t, conn.Flush())
 
 	return NewNATSPublisher(conn, slog.Default(), opts...), conn, func() []published {
-		require.NoError(t, conn.Flush())
-		time.Sleep(100 * time.Millisecond)
+		require.NoError(t, conn.Publish(barrierSubject, nil))
+		select {
+		case <-barrier:
+		case <-time.After(5 * time.Second):
+			t.Fatal("timed out waiting for the message recorder to catch up")
+		}
 		mu.Lock()
 		defer mu.Unlock()
 		return append([]published(nil), seen...)

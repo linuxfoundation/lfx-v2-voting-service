@@ -124,35 +124,35 @@ func TestNATSMapper_Mappings(t *testing.T) {
 		"project.sfid.a0A000000000001":                     "00000000-0000-0000-0000-000000000001",
 		"committee.sfid.a0B000000000001":                   "00000000-0000-0000-0000-000000000002",
 	}
-	mapper, responder := newMapperWithResponder(t, replies)
 
 	t.Run("MapProjectV2ToV1 uses the project.uid key", func(t *testing.T) {
+		mapper, responder := newMapperWithResponder(t, replies)
+
 		got, err := mapper.MapProjectV2ToV1(ctx, "00000000-0000-0000-0000-000000000001")
 
 		require.NoError(t, err)
 		assert.Equal(t, "a0A000000000001", got)
+		assert.Equal(t, []string{"project.uid.00000000-0000-0000-0000-000000000001"}, responder.asked())
 	})
 
 	t.Run("MapProjectV1ToV2 uses the project.sfid key", func(t *testing.T) {
+		mapper, responder := newMapperWithResponder(t, replies)
+
 		got, err := mapper.MapProjectV1ToV2(ctx, "a0A000000000001")
 
 		require.NoError(t, err)
 		assert.Equal(t, "00000000-0000-0000-0000-000000000001", got)
+		assert.Equal(t, []string{"project.sfid.a0A000000000001"}, responder.asked())
 	})
 
 	t.Run("MapCommitteeV1ToV2 uses the committee.sfid key", func(t *testing.T) {
+		mapper, responder := newMapperWithResponder(t, replies)
+
 		got, err := mapper.MapCommitteeV1ToV2(ctx, "a0B000000000001")
 
 		require.NoError(t, err)
 		assert.Equal(t, "00000000-0000-0000-0000-000000000002", got)
-	})
-
-	t.Run("each mapping sent exactly the documented key", func(t *testing.T) {
-		assert.Equal(t, []string{
-			"project.uid.00000000-0000-0000-0000-000000000001",
-			"project.sfid.a0A000000000001",
-			"committee.sfid.a0B000000000001",
-		}, responder.asked())
+		assert.Equal(t, []string{"committee.sfid.a0B000000000001"}, responder.asked())
 	})
 }
 
