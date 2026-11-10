@@ -150,6 +150,24 @@ func TestParsePrincipal_ValidateToken(t *testing.T) {
 		assert.Empty(t, principal)
 	})
 
+	t.Run("token signed by an untrusted key is rejected", func(t *testing.T) {
+		otherKey, err := rsa.GenerateKey(rand.Reader, 2048)
+		require.NoError(t, err)
+		// Same key ID as the trusted JWKS entry, so only the signature differs.
+		forger, err := jose.NewSigner(
+			jose.SigningKey{Algorithm: jose.PS256, Key: jose.JSONWebKey{Key: otherKey, KeyID: testKeyID}},
+			(&jose.SignerOptions{}).WithType("JWT"),
+		)
+		require.NoError(t, err)
+		token, err := jwt.Signed(forger).Claims(validClaims()).Claims(HeimdallClaims{Principal: "mallory"}).CompactSerialize()
+		require.NoError(t, err)
+
+		principal, err := j.ParsePrincipal(context.Background(), token, discardLogger)
+
+		require.Error(t, err)
+		assert.Empty(t, principal)
+	})
+
 	t.Run("expired token is rejected", func(t *testing.T) {
 		claims := validClaims()
 		claims.Expiry = jwt.NewNumericDate(time.Now().Add(-time.Hour))

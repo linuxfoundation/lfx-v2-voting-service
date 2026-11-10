@@ -36,7 +36,11 @@ func TestAppendCtx(t *testing.T) {
 	})
 
 	t.Run("appending to a shared parent does not mutate siblings", func(t *testing.T) {
-		parent := AppendCtx(context.Background(), slog.String("base", "x"))
+		// Seed the parent with spare capacity so that a plain append(v, attr) in
+		// AppendCtx would write both children into the same backing array.
+		shared := make([]slog.Attr, 1, 2)
+		shared[0] = slog.String("base", "x")
+		parent := context.WithValue(context.Background(), slogFields, shared)
 		childA := AppendCtx(parent, slog.String("a", "1"))
 		childB := AppendCtx(parent, slog.String("b", "2"))
 
