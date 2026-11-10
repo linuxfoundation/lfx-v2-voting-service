@@ -92,7 +92,7 @@ To test without a live ITX connection, mock the domain interfaces in `internal/d
 1. Define endpoint in `api/voting/v1/design/voting.go`
 2. Add types in `api/voting/v1/design/types.go` if needed
 3. `make generate` — commit the `gen/` changes
-4. Add proxy method in `internal/infrastructure/proxy/client.go`
+4. Add proxy method in `internal/infrastructure/proxy/client.go` and a row for it in `operations()` in `internal/infrastructure/proxy/client_http_test.go`
 5. Add service method in `internal/service/`
 6. Add converters in `cmd/voting-api/service/`
 7. Implement Goa handler in `cmd/voting-api/api.go`

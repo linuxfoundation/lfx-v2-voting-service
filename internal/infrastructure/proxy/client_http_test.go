@@ -308,3 +308,9 @@ func TestClient_PathIDsAreEmbeddedVerbatim(t *testing.T) {
 
 	assert.Equal(t, "/v2/voting/vote/00000000-0000-0000-0000-000000000001/resend", got.Path)
 }
+
+func TestNewClient_RequiresPrivateKey(t *testing.T) {
+	assert.PanicsWithValue(t, "ITX_CLIENT_PRIVATE_KEY is required but not set", func() {
+		NewClient(Config{Auth0Domain: "auth.example.com", ClientID: "client-1", Audience: "itx"})
+	})
+}
