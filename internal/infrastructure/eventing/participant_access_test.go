@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"sync"
 	"testing"
 	"time"
 
@@ -41,36 +42,49 @@ func newCapturingPublisher(t *testing.T, opts ...PublisherOption) (*NATSPublishe
 	require.NoError(t, err)
 	t.Cleanup(conn.Close)
 
-	msgs := make(chan fgaMessage, 16)
-	handler := func(m *nats.Msg) {
+	// One wildcard subscription so everything is handled by a single callback, in publish
+	// order. drain publishes a sentinel and waits for it, which guarantees every message
+	// published before it has already been recorded (no sleeping).
+	fgaSubjects := map[string]bool{
+		fgaconstants.GenericUpdateAccessSubject: true,
+		fgaconstants.GenericDeleteAccessSubject: true,
+		fgaconstants.GenericMemberPutSubject:    true,
+		fgaconstants.GenericMemberRemoveSubject: true,
+	}
+	const barrierSubject = "test.fga.barrier"
+	var mu sync.Mutex
+	var seen []fgaMessage
+	barrier := make(chan struct{}, 1)
+	_, err = conn.Subscribe(">", func(m *nats.Msg) {
+		if m.Subject == barrierSubject {
+			barrier <- struct{}{}
+			return
+		}
+		if !fgaSubjects[m.Subject] {
+			return
+		}
 		var msg fgaMessage
 		require.NoError(t, json.Unmarshal(m.Data, &msg))
 		msg.Subject = m.Subject
-		msgs <- msg
-	}
-	for _, subject := range []string{
-		fgaconstants.GenericUpdateAccessSubject,
-		fgaconstants.GenericDeleteAccessSubject,
-		fgaconstants.GenericMemberPutSubject,
-		fgaconstants.GenericMemberRemoveSubject,
-	} {
-		_, err := conn.Subscribe(subject, handler)
-		require.NoError(t, err)
-	}
+		mu.Lock()
+		seen = append(seen, msg)
+		mu.Unlock()
+	})
+	require.NoError(t, err)
 	require.NoError(t, conn.Flush())
 
 	drain := func() []fgaMessage {
-		require.NoError(t, conn.Flush())
-		time.Sleep(100 * time.Millisecond)
-		var out []fgaMessage
-		for {
-			select {
-			case m := <-msgs:
-				out = append(out, m)
-			default:
-				return out
-			}
+		require.NoError(t, conn.Publish(barrierSubject, nil))
+		select {
+		case <-barrier:
+		case <-time.After(5 * time.Second):
+			t.Fatal("timed out waiting for the fga message recorder to catch up")
 		}
+		mu.Lock()
+		defer mu.Unlock()
+		out := seen
+		seen = nil
+		return out
 	}
 	return NewNATSPublisher(conn, slog.Default(), opts...), drain
 }
