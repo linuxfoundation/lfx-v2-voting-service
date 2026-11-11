@@ -4,6 +4,12 @@
 package main
 
 import (
+	"encoding/base64"
+	"io"
+	"log/slog"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -150,6 +156,110 @@ func TestResolveSelfServeBaseURL(t *testing.T) {
 			t.Setenv("LFX_ENVIRONMENT", env)
 
 			assert.Equal(t, want, resolveSelfServeBaseURL())
+		})
+	}
+}
+
+func TestParseBoolEnv(t *testing.T) {
+	const key = "VOTE_PARTICIPANT_GRANTS_ENABLED_TEST"
+
+	tests := []struct {
+		name  string
+		value string
+		set   bool
+		want  bool
+	}{
+		{name: "unset is off", set: false, want: false},
+		{name: "empty is off", set: true, value: "", want: false},
+		{name: "true", set: true, value: "true", want: true},
+		{name: "1", set: true, value: "1", want: true},
+		{name: "yes", set: true, value: "YES", want: true},
+		{name: "false", set: true, value: "false", want: false},
+		// A typo must never switch a gated behaviour on.
+		{name: "unrecognised is off", set: true, value: "enabled-please", want: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.set {
+				t.Setenv(key, tt.value)
+			}
+			assert.Equal(t, tt.want, parseBoolEnv(key, slog.Default()))
+		})
+	}
+}
+
+// parseInviteConfig shares parseBoolEnv, so it accepts the same values and a typo is off.
+func TestParseInviteConfig_UsesTheSharedBoolParsing(t *testing.T) {
+	tests := map[string]bool{"true": true, "1": true, "yes": true, "false": false, "": false, "enabled-please": false}
+	for value, want := range tests {
+		t.Run("INVITES_ENABLED="+value, func(t *testing.T) {
+			t.Setenv("INVITES_ENABLED", value)
+			t.Setenv("LFX_SELF_SERVE_BASE_URL", "https://app.example.test")
+			assert.Equal(t, want, parseInviteConfig(slog.Default()).Enabled)
+		})
+	}
+}
+
+func TestLimitVoteLinkBody(t *testing.T) {
+	var readErr error
+	handler := limitVoteLinkBody(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, readErr = io.ReadAll(r.Body)
+	}))
+	oversized := strings.Repeat("a", maxVoteLinkBodyBytes+1)
+
+	tests := []struct {
+		path    string
+		wantErr bool
+	}{
+		{path: "/vote_links/responses", wantErr: true},
+		{path: "/vote_responses", wantErr: false},
+		{path: "/votes/x/bulk_resend", wantErr: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			readErr = nil
+			handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, tt.path, strings.NewReader(oversized)))
+			if (readErr != nil) != tt.wantErr {
+				t.Errorf("read error = %v, wantErr %v", readErr, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestNewVoteLinkSigner(t *testing.T) {
+	key := func(fill string) string { return base64.StdEncoding.EncodeToString([]byte(strings.Repeat(fill, 32))) }
+
+	tests := []struct {
+		name       string
+		cfg        config
+		wantNil    bool
+		wantErr    bool
+		wantActive string
+	}{
+		{name: "unset disables the feature", cfg: config{}, wantNil: true},
+		{name: "single key is active", cfg: config{VoteLinkSigningKeys: "k1:" + key("a")}, wantActive: "k1"},
+		{name: "first listed key is active by default", cfg: config{VoteLinkSigningKeys: "k2:" + key("b") + ",k1:" + key("a")}, wantActive: "k2"},
+		{name: "explicit active kid wins", cfg: config{VoteLinkSigningKeys: "k2:" + key("b") + ",k1:" + key("a"), VoteLinkActiveKID: "k1"}, wantActive: "k1"},
+		{name: "unknown active kid fails", cfg: config{VoteLinkSigningKeys: "k1:" + key("a"), VoteLinkActiveKID: "k9"}, wantErr: true},
+		{name: "malformed keys fail", cfg: config{VoteLinkSigningKeys: "nocolon"}, wantErr: true},
+		{name: "short key fails", cfg: config{VoteLinkSigningKeys: "k1:" + base64.StdEncoding.EncodeToString([]byte("short"))}, wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			signer, err := newVoteLinkSigner(tt.cfg)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("err = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantErr {
+				return
+			}
+			if (signer == nil) != tt.wantNil {
+				t.Fatalf("signer nil = %v, want %v", signer == nil, tt.wantNil)
+			}
+			if signer != nil && signer.ActiveKeyID() != tt.wantActive {
+				t.Errorf("active key = %q, want %q", signer.ActiveKeyID(), tt.wantActive)
+			}
 		})
 	}
 }
