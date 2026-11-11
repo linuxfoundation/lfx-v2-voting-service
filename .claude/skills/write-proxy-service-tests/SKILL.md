@@ -14,10 +14,10 @@ Guide writing tests for the HTTP proxy path — the service layer (`internal/ser
 
 ## Context you need first
 
-- `internal/service/vote_service_error_test.go` — existing service tests; use as style reference for auth guard, proxy error, and ID mapping tests
+- `internal/service/vote_service_test.go` — existing service tests; use as style reference for auth guard, proxy error, and ID mapping tests
 - `internal/service/vote_response_service_test.go` — coverage for all four vote-response service methods
 - `cmd/voting-api/eventing/*_test.go` — richer mock patterns (table-driven, mock interfaces, mock KV); the best style reference even though it tests a different layer
-- `internal/service/vote_service_error_test.go` — defines `identityIDMapper` (echo mapper for happy-path tests) and `failingIDMapper` (returns configured error for error-path tests); use these patterns rather than importing infrastructure packages
+- `internal/service/vote_service_test.go` — defines `identityIDMapper` (echo mapper for happy-path tests) and `failingIDMapper` (returns configured error for error-path tests); use these patterns rather than importing infrastructure packages
 
 ---
 
@@ -133,7 +133,7 @@ Cover both directions: payload → service request AND service response (ITX res
 
 ### Proxy client tests (`internal/infrastructure/proxy/`)
 
-`client_http_test.go` already drives every ITX operation through a fake server. It provides:
+`client_test.go` already drives every ITX operation through a fake server. It provides:
 
 - `newTestClient(t, status, body)` — a `Client` pointed at an `httptest` server that replies with the given status and body, plus a `capturedRequest` (method, path, body, `x-scope`, `Content-Type`). The OAuth2 transport is bypassed on purpose, so these tests cover request building and response handling, not token acquisition.
 - `unreachableClient(t)` — a `Client` whose server is already shut down, for transport-failure cases.
@@ -174,4 +174,4 @@ go test ./internal/infrastructure/proxy/... -v -race
 
 - `internal/service/eventsync/syncer_test.go` — best mock pattern reference (test harness with a mock publisher, stub dependencies and an in-memory store)
 - `internal/domain/errors.go` — error types to assert in error-path tests
-- `internal/infrastructure/eventing/indexing_contract_test.go` — example of contract-verification tests asserting field values against documentation
+- `internal/infrastructure/eventing/nats_publisher_test.go` — example of contract-verification tests asserting field values against documentation

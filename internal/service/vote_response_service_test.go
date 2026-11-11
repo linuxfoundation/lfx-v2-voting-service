@@ -5,7 +5,7 @@ package service
 
 // Tests for VoteResponseService — the service layer for ballot submissions.
 //
-// Patterns mirrored from vote_service_error_test.go: principal guard on every
+// Patterns mirrored from vote_service_test.go: principal guard on every
 // method + proxy error propagation + response ID mapping. VoteResponseService
 // was previously 0% covered.
 
@@ -15,7 +15,11 @@ import (
 	"testing"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	goaauth "goa.design/goa/v3/security"
 )
 
 // ---- VoteResponseClient fakes -----------------------------------------------
@@ -240,4 +244,325 @@ type captureVoteResponseClient struct {
 func (c *captureVoteResponseClient) UpdateVote(_ context.Context, _ string, req *itx.UpdateVoteRequest) error {
 	c.lastUpdateReq = req
 	return nil
+}
+
+func TestCreateVoteResponseByLink_UsesBallotFromToken(t *testing.T) {
+	client := &captureLinkVoteClient{}
+	svc := NewVoteResponseService(nil, client, identityIDMapper{}, discardLogger(), WithVoteLinkVerifier(fakeLinkSigner{}))
+
+	req := &CreateVoteResponseRequest{
+		VoteID:  "attacker-chosen-ballot",
+		Abstain: true,
+	}
+	// No principal in context: link requests are authorized by the token alone.
+	if err := svc.CreateVoteResponseByLink(context.Background(), "tok:vote-1:ballot-1", req); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if client.createReq.VoteID != "ballot-1" {
+		t.Errorf("ITX vote_id = %q, want ballot-1 from the token", client.createReq.VoteID)
+	}
+	if !client.createReq.Abstain {
+		t.Error("abstain not forwarded")
+	}
+}
+
+func TestUpdateVoteResponseByLink_UsesBallotFromToken(t *testing.T) {
+	client := &captureLinkVoteClient{}
+	svc := NewVoteResponseService(nil, client, identityIDMapper{}, discardLogger(), WithVoteLinkVerifier(fakeLinkSigner{}))
+
+	comments := []CommentResponseRequest{}
+	req := &UpdateVoteResponseRequest{CommentResponses: &comments}
+	if err := svc.UpdateVoteResponseByLink(context.Background(), "tok:vote-1:ballot-1", req); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if client.updateVoteID != "ballot-1" {
+		t.Errorf("ITX vote_id = %q, want ballot-1", client.updateVoteID)
+	}
+	if client.updateReq.CommentResponses == nil || len(*client.updateReq.CommentResponses) != 0 {
+		t.Error("an explicit empty comment_responses must be forwarded as [] (replace), not omitted")
+	}
+}
+
+func TestVoteResponseByLink_Errors(t *testing.T) {
+	itxErr := domain.NewValidationError("poll has ended")
+	cases := []struct {
+		name   string
+		opts   []VoteResponseServiceOption
+		token  string
+		itxErr error
+		want   domain.ErrorType
+	}{
+		{"not configured", nil, "tok:vote-1:ballot-1", nil, domain.ErrorTypeUnavailable},
+		{"invalid token", []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{})}, "forged", nil, domain.ErrorTypeNotFound},
+		{"ITX rejects", []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{})}, "tok:vote-1:ballot-1", itxErr, domain.ErrorTypeValidation},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name+"/create", func(t *testing.T) {
+			client := &captureLinkVoteClient{err: tc.itxErr}
+			svc := NewVoteResponseService(nil, client, identityIDMapper{}, discardLogger(), tc.opts...)
+			err := svc.CreateVoteResponseByLink(context.Background(), tc.token, &CreateVoteResponseRequest{})
+			assertErrorType(t, err, tc.want)
+			if tc.itxErr == nil && client.createReq != nil {
+				t.Error("ITX must not be called for a rejected token")
+			}
+		})
+		t.Run(tc.name+"/update", func(t *testing.T) {
+			client := &captureLinkVoteClient{err: tc.itxErr}
+			svc := NewVoteResponseService(nil, client, identityIDMapper{}, discardLogger(), tc.opts...)
+			err := svc.UpdateVoteResponseByLink(context.Background(), tc.token, &UpdateVoteResponseRequest{})
+			assertErrorType(t, err, tc.want)
+			if tc.itxErr == nil && client.updateReq != nil {
+				t.Error("ITX must not be called for a rejected token")
+			}
+		})
+	}
+}
+
+// ballotVoteClient returns a fixed ballot from GetVote and records the requested ID.
+type ballotVoteClient struct {
+	domain.VoteResponseClient
+	ballot    *itx.VoteResponse
+	err       error
+	requested string
+}
+
+// ballotPollReader returns a fixed poll from GetPoll and records the requested ID.
+type ballotPollReader struct {
+	domain.PollClient
+	poll      *itx.PollResponse
+	err       error
+	requested string
+}
+
+func TestGetBallotByLink_ReturnsVoteAndBallotFromToken(t *testing.T) {
+	for _, pseudo := range []bool{false, true} {
+		votes := &ballotVoteClient{ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: "responded"}}
+		polls := &ballotPollReader{poll: &itx.PollResponse{PollID: "vote-1", ProjectID: "sfid-1", PseudoAnonymity: pseudo, PseudoAnonymityKnown: true}}
+		svc := NewVoteResponseService(nil, votes, prefixProjectIDMapper{}, discardLogger(),
+			WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(polls))
+
+		got, err := svc.GetBallotByLink(context.Background(), "tok:vote-1:ballot-1")
+		if err != nil {
+			t.Fatalf("pseudo=%v: unexpected error: %v", pseudo, err)
+		}
+		if votes.requested != "ballot-1" || polls.requested != "vote-1" {
+			t.Errorf("pseudo=%v: ITX called with ballot %q, poll %q; want ids from the token", pseudo, votes.requested, polls.requested)
+		}
+		if got.IncludeBallotContents == pseudo {
+			t.Errorf("pseudo=%v: IncludeBallotContents = %v, want %v", pseudo, got.IncludeBallotContents, !pseudo)
+		}
+		if got.ProjectUID != "uid-sfid-1" {
+			t.Errorf("pseudo=%v: ProjectUID = %q, want the UID mapped from the poll's project SFID", pseudo, got.ProjectUID)
+		}
+	}
+}
+
+func TestGetBallotByLink_Errors(t *testing.T) {
+	okBallot := &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1"}
+	okPoll := &itx.PollResponse{PollID: "vote-1"}
+	cases := []struct {
+		name     string
+		opts     func(*ballotPollReader) []VoteResponseServiceOption
+		token    string
+		ballot   *itx.VoteResponse
+		voteErr  error
+		pollErr  error
+		mapper   domain.IDMapper
+		want     domain.ErrorType
+		noUpcall bool
+	}{
+		{
+			name:     "not configured",
+			opts:     func(*ballotPollReader) []VoteResponseServiceOption { return nil },
+			token:    "tok:vote-1:ballot-1",
+			want:     domain.ErrorTypeUnavailable,
+			noUpcall: true,
+		},
+		{
+			name: "no poll reader",
+			opts: func(*ballotPollReader) []VoteResponseServiceOption {
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{})}
+			},
+			token:    "tok:vote-1:ballot-1",
+			want:     domain.ErrorTypeUnavailable,
+			noUpcall: true,
+		},
+		{
+			name: "invalid token",
+			opts: func(p *ballotPollReader) []VoteResponseServiceOption {
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(p)}
+			},
+			token:    "forged",
+			want:     domain.ErrorTypeNotFound,
+			noUpcall: true,
+		},
+		{
+			name: "ballot belongs to another vote",
+			opts: func(p *ballotPollReader) []VoteResponseServiceOption {
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(p)}
+			},
+			token:  "tok:vote-1:ballot-1",
+			ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-2"},
+			want:   domain.ErrorTypeNotFound,
+		},
+		{
+			name: "ITX ballot not found",
+			opts: func(p *ballotPollReader) []VoteResponseServiceOption {
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(p)}
+			},
+			token:   "tok:vote-1:ballot-1",
+			voteErr: domain.NewNotFoundError("vote not found"),
+			want:    domain.ErrorTypeNotFound,
+		},
+		{
+			name: "ITX poll unavailable",
+			opts: func(p *ballotPollReader) []VoteResponseServiceOption {
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(p)}
+			},
+			token:   "tok:vote-1:ballot-1",
+			pollErr: domain.NewUnavailableError("ITX down"),
+			want:    domain.ErrorTypeUnavailable,
+		},
+		{
+			name: "project ID mapping fails",
+			opts: func(p *ballotPollReader) []VoteResponseServiceOption {
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(p)}
+			},
+			token:  "tok:vote-1:ballot-1",
+			mapper: &failingIDMapper{err: domain.NewUnavailableError("NATS down")},
+			want:   domain.ErrorTypeUnavailable,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ballot := tc.ballot
+			if ballot == nil {
+				ballot = okBallot
+			}
+			votes := &ballotVoteClient{ballot: ballot, err: tc.voteErr}
+			polls := &ballotPollReader{poll: okPoll, err: tc.pollErr}
+			var mapper domain.IDMapper = identityIDMapper{}
+			if tc.mapper != nil {
+				mapper = tc.mapper
+			}
+			svc := NewVoteResponseService(nil, votes, mapper, discardLogger(), tc.opts(polls)...)
+
+			_, err := svc.GetBallotByLink(context.Background(), tc.token)
+			assertErrorType(t, err, tc.want)
+			if tc.noUpcall && (votes.requested != "" || polls.requested != "") {
+				t.Error("ITX must not be called")
+			}
+		})
+	}
+}
+
+func TestGetBallotByLink_UnknownPseudoAnonymityFailsClosed(t *testing.T) {
+	votes := &ballotVoteClient{ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: "responded"}}
+	polls := &ballotPollReader{poll: &itx.PollResponse{PollID: "vote-1", PseudoAnonymity: false, PseudoAnonymityKnown: false}}
+	svc := NewVoteResponseService(nil, votes, identityIDMapper{}, discardLogger(),
+		WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(polls))
+
+	got, err := svc.GetBallotByLink(context.Background(), "tok:vote-1:ballot-1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got.IncludeBallotContents {
+		t.Error("ballot contents must not be returned when pseudo_anonymity is unknown")
+	}
+}
+
+// createCaptureClient records the CreateVote request and returns a configurable error.
+type createCaptureClient struct {
+	domain.VoteResponseClient
+	last *itx.CreateVoteRequest
+	err  error
+}
+
+func (c *createCaptureClient) CreateVote(_ context.Context, req *itx.CreateVoteRequest) error {
+	c.last = req
+	return c.err
+}
+
+func TestVoteResponseService_CreateVoteResponse_MapsBallotToITX(t *testing.T) {
+	client := &createCaptureClient{}
+	svc := newResponseSvc(client, identityIDMapper{})
+
+	err := svc.CreateVoteResponse(ctxWithPrincipal("alice"), &CreateVoteResponseRequest{
+		VoteID: "vote-response-1",
+		UserVoteContent: []VoteAnswerRequest{
+			{QuestionID: "q1", ChoiceIDs: []string{"yes"}},
+			{QuestionID: "q2", RankedChoices: []RankedChoiceRequest{{ChoiceID: "a", ChoiceRank: 1}, {ChoiceID: "b", ChoiceRank: 2}}},
+		},
+		Abstain: true,
+		CommentResponses: []CommentResponseRequest{
+			{PromptID: "p1", CommentText: "Looks good"},
+		},
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, client.last)
+	assert.Equal(t, "vote-response-1", client.last.VoteID)
+	assert.True(t, client.last.Abstain)
+
+	require.Len(t, client.last.UserVoteContent, 2)
+	assert.Equal(t, "q1", client.last.UserVoteContent[0].QuestionID)
+	assert.Equal(t, []string{"yes"}, client.last.UserVoteContent[0].ChoiceIDs)
+	assert.Empty(t, client.last.UserVoteContent[0].RankedChoices)
+	assert.Equal(t, "q2", client.last.UserVoteContent[1].QuestionID)
+	require.Len(t, client.last.UserVoteContent[1].RankedChoices, 2)
+	assert.Equal(t, itx.RankedChoiceInput{ChoiceID: "a", ChoiceRank: 1}, client.last.UserVoteContent[1].RankedChoices[0])
+	assert.Equal(t, itx.RankedChoiceInput{ChoiceID: "b", ChoiceRank: 2}, client.last.UserVoteContent[1].RankedChoices[1])
+
+	require.Len(t, client.last.CommentResponses, 1)
+	assert.Equal(t, itx.CommentResponse{PromptID: "p1", CommentText: "Looks good"}, client.last.CommentResponses[0])
+}
+
+func TestVoteResponseService_CreateVoteResponse_EmptyBallot(t *testing.T) {
+	client := &createCaptureClient{}
+	svc := newResponseSvc(client, identityIDMapper{})
+
+	require.NoError(t, svc.CreateVoteResponse(ctxWithPrincipal("alice"), &CreateVoteResponseRequest{VoteID: "r1", Abstain: true}))
+
+	require.NotNil(t, client.last)
+	assert.NotNil(t, client.last.UserVoteContent, "always a list on the wire, never null")
+	assert.Empty(t, client.last.UserVoteContent)
+	assert.NotNil(t, client.last.CommentResponses)
+	assert.Empty(t, client.last.CommentResponses)
+	assert.True(t, client.last.Abstain)
+}
+
+func TestVoteResponseService_CreateVoteResponse_ITXErrorIsReturnedUnchanged(t *testing.T) {
+	client := &createCaptureClient{err: domain.NewConflictError("ballot already submitted")}
+	svc := newResponseSvc(client, identityIDMapper{})
+
+	err := svc.CreateVoteResponse(ctxWithPrincipal("alice"), &CreateVoteResponseRequest{VoteID: "r1"})
+
+	require.Error(t, err)
+	assert.Equal(t, domain.ErrorTypeConflict, domain.GetErrorType(err))
+	assert.Equal(t, "ballot already submitted", err.Error())
+}
+
+func TestVoteResponseService_JWTAuth(t *testing.T) {
+	scheme := &goaauth.JWTScheme{}
+
+	t.Run("a valid token stores the principal in the context", func(t *testing.T) {
+		svc := NewVoteResponseService(&mockAuthenticator{principal: "alice"}, nil, identityIDMapper{}, discardLogger())
+
+		ctx, err := svc.JWTAuth(context.Background(), "token", scheme)
+
+		require.NoError(t, err)
+		assert.Equal(t, "alice", ctx.Value(constants.PrincipalContextID))
+	})
+
+	t.Run("an invalid token is a validation error and leaves no principal", func(t *testing.T) {
+		cause := errors.New("signature invalid")
+		svc := NewVoteResponseService(&mockAuthenticator{err: cause}, nil, identityIDMapper{}, discardLogger())
+
+		ctx, err := svc.JWTAuth(context.Background(), "token", scheme)
+
+		require.Error(t, err)
+		assert.Equal(t, domain.ErrorTypeValidation, domain.GetErrorType(err))
+		assert.ErrorIs(t, err, cause)
+		assert.Nil(t, ctx.Value(constants.PrincipalContextID))
+	})
 }

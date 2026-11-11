@@ -64,6 +64,12 @@ Use `#` prefix for YAML, Makefile, and shell files. CI enforces this on all file
 
 > **Why ITX 401/403 maps to `ErrorTypeInternal`**: When the proxy receives a 401 or 403 from ITX it means the service's own M2M token is invalid or expired — an infrastructure problem, not a client-auth failure. There is deliberately no `ErrorTypeForbidden`. See the comment in `internal/domain/errors.go` for the full rationale.
 
+**Test file naming** — a `_test.go` file must have a matching implementation file: `foo_test.go` tests `foo.go` in the same directory. Never add `foo_gaps_test.go`, `foo_coverage_test.go`, `foo_contract_test.go` or a test file named after a feature or theme; add the tests to the existing `foo_test.go` (create it only if `foo.go` exists). If a test covers a function, put it in the test file of the file that defines that function. The only exceptions are shared test support files with no production counterpart: fakes/mocks (`mock_*_test.go`, e.g. `mock_kv_test.go`) and shared helpers (`helpers_test.go`, `memory_store_test.go`). Check with:
+
+```bash
+find . -name '*_test.go' ! -path './gen/*' | while read f; do [ -f "${f%_test.go}.go" ] || echo "$f"; done
+```
+
 **Doc comments** — all exported functions and types must have Go doc comments.
 
 **Terminology** — "vote" = a poll/election (what ITX calls a "poll"); "vote response" = a ballot submission. See `docs/glossary.md`.
@@ -92,7 +98,7 @@ To test without a live ITX connection, mock the domain interfaces in `internal/d
 1. Define endpoint in `api/voting/v1/design/voting.go`
 2. Add types in `api/voting/v1/design/types.go` if needed
 3. `make generate` — commit the `gen/` changes
-4. Add proxy method in `internal/infrastructure/proxy/client.go` and a row for it in `operations()` in `internal/infrastructure/proxy/client_http_test.go`
+4. Add proxy method in `internal/infrastructure/proxy/client.go` and a row for it in `operations()` in `internal/infrastructure/proxy/client_test.go`
 5. Add service method in `internal/service/`
 6. Add converters in `cmd/voting-api/service/`
 7. Implement Goa handler in `cmd/voting-api/api.go`
