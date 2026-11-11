@@ -39,6 +39,7 @@ type PollDBRaw struct {
 	PseudoAnonymity               bool                          `json:"pseudo_anonymity"`
 	NumWinners                    int                           `json:"num_winners"`
 	AllowAbstain                  bool                          `json:"allow_abstain"`
+	AllowVoteChange               *bool                         `json:"allow_vote_change"` // nil for legacy polls; resolve with itx.VoteChangeAllowed
 }
 
 // UnmarshalJSON implements custom unmarshaling to handle both string and int inputs for numeric fields.
@@ -68,6 +69,7 @@ func (p *PollDBRaw) UnmarshalJSON(data []byte) error {
 		PseudoAnonymity               bool                          `json:"pseudo_anonymity"`
 		NumWinners                    interface{}                   `json:"num_winners"`
 		AllowAbstain                  bool                          `json:"allow_abstain"`
+		AllowVoteChange               *bool                         `json:"allow_vote_change"`
 	}{}
 
 	if err := json.Unmarshal(data, &tmp); err != nil {
@@ -156,6 +158,7 @@ func (p *PollDBRaw) UnmarshalJSON(data []byte) error {
 	p.PollType = tmp.PollType
 	p.PseudoAnonymity = tmp.PseudoAnonymity
 	p.AllowAbstain = tmp.AllowAbstain
+	p.AllowVoteChange = tmp.AllowVoteChange
 
 	return nil
 }
@@ -464,6 +467,7 @@ type VoteData struct {
 	PseudoAnonymity               bool                          `json:"pseudo_anonymity"`
 	NumWinners                    int                           `json:"num_winners"` // Int in v2
 	AllowAbstain                  bool                          `json:"allow_abstain"`
+	AllowVoteChange               bool                          `json:"allow_vote_change"` // resolved: legacy polls without the setting index as true
 }
 
 // VoteResponseData represents v2 vote response data after transformation

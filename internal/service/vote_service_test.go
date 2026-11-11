@@ -239,6 +239,74 @@ func TestExtendVoteOmitsEndTimeTimezone(t *testing.T) {
 	assertKeyAbsent(t, client.lastExtend, "end_time_timezone")
 }
 
+// assertAllowVoteChangeWire checks the allow_vote_change key on a captured ITX request:
+// nil must stay off the wire (ITX defaults on create, preserves on update), while an
+// explicit true or false must be sent as-is.
+func assertAllowVoteChangeWire(t *testing.T, req any, want *bool) {
+	t.Helper()
+	if want == nil {
+		assertKeyAbsent(t, req, "allow_vote_change")
+		return
+	}
+	payload, err := json.Marshal(req)
+	if err != nil {
+		t.Fatalf("marshal request: %v", err)
+	}
+	var wire map[string]any
+	if err := json.Unmarshal(payload, &wire); err != nil {
+		t.Fatalf("unmarshal request: %v", err)
+	}
+	if got, ok := wire["allow_vote_change"]; !ok || got != *want {
+		t.Fatalf("expected allow_vote_change %v on the wire, got %s", *want, payload)
+	}
+}
+
+// TestCreateVoteForwardsAllowVoteChange guards the create hop: an omitted setting must not
+// reach ITX (so ITX applies its default of true), and an explicit value must be forwarded.
+func TestCreateVoteForwardsAllowVoteChange(t *testing.T) {
+	allowed, locked := true, false
+	for name, value := range map[string]*bool{"omitted": nil, "true": &allowed, "false": &locked} {
+		t.Run(name, func(t *testing.T) {
+			client := &capturePollClient{}
+			svc := NewVoteService(nil, client, identityIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+			ctx := context.WithValue(context.Background(), constants.PrincipalContextID, "test-user")
+			req := &CreateVoteRequest{Name: "poll", ProjectUID: "project-uid", AllowVoteChange: value}
+			if _, err := svc.CreateVote(ctx, req); err != nil {
+				t.Fatalf("CreateVote returned error: %v", err)
+			}
+
+			if client.lastCreate == nil {
+				t.Fatal("expected CreatePoll to be called")
+			}
+			assertAllowVoteChangeWire(t, client.lastCreate, value)
+		})
+	}
+}
+
+// TestUpdateVoteForwardsAllowVoteChange guards the update hop: an omitted setting must not
+// reach ITX, or a stored false would be overwritten; an explicit value must be forwarded.
+func TestUpdateVoteForwardsAllowVoteChange(t *testing.T) {
+	allowed, locked := true, false
+	for name, value := range map[string]*bool{"omitted": nil, "true": &allowed, "false": &locked} {
+		t.Run(name, func(t *testing.T) {
+			client := &capturePollClient{}
+			svc := NewVoteService(nil, client, identityIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+			ctx := context.WithValue(context.Background(), constants.PrincipalContextID, "test-user")
+			req := &UpdateVoteRequest{Name: "poll", ProjectUID: "project-uid", AllowVoteChange: value}
+			if _, err := svc.UpdateVote(ctx, "poll-1", req); err != nil {
+				t.Fatalf("UpdateVote returned error: %v", err)
+			}
+
+			if client.lastUpdate == nil {
+				t.Fatal("expected UpdatePoll to be called")
+			}
+			assertAllowVoteChangeWire(t, client.lastUpdate, value)
+		})
+	}
+}
+
 // Guards the CreateVote authentication check at the service layer so a future
 // refactor that drops or bypasses the principal guard fails this test, not just
 // the creatorFromPrincipal unit test.

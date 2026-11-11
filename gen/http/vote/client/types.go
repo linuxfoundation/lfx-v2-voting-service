@@ -49,6 +49,10 @@ type CreateVoteRequestBody struct {
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow voters to abstain
 	AllowAbstain bool `form:"allow_abstain" json:"allow_abstain" xml:"allow_abstain"`
+	// Allow voters to change a submitted ballot (choices, comments or abstention)
+	// until the vote ends. Omitted on create means allowed; omitted on update
+	// preserves the stored value.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
 	// Quorum percentage required
 	QuorumPercentage *int `form:"quorum_percentage,omitempty" json:"quorum_percentage,omitempty" xml:"quorum_percentage,omitempty"`
 	// Winning threshold percentage
@@ -89,6 +93,10 @@ type UpdateVoteRequestBody struct {
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow voters to abstain
 	AllowAbstain bool `form:"allow_abstain" json:"allow_abstain" xml:"allow_abstain"`
+	// Allow voters to change a submitted ballot (choices, comments or abstention)
+	// until the vote ends. Omitted on create means allowed; omitted on update
+	// preserves the stored value.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
 	// Quorum percentage required
 	QuorumPercentage *int `form:"quorum_percentage,omitempty" json:"quorum_percentage,omitempty" xml:"quorum_percentage,omitempty"`
 	// Winning threshold percentage
@@ -257,6 +265,9 @@ type CreateVoteResponseBody struct {
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Whether voters may change a submitted ballot until the vote ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
 }
 
 // GetVoteResponseBody is the type of the "vote" service "get_vote" endpoint
@@ -313,6 +324,9 @@ type GetVoteResponseBody struct {
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Whether voters may change a submitted ballot until the vote ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
 }
 
 // UpdateVoteResponseBody is the type of the "vote" service "update_vote"
@@ -369,6 +383,9 @@ type UpdateVoteResponseBody struct {
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Whether voters may change a submitted ballot until the vote ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
 }
 
 // ExtendVoteResponseBody is the type of the "vote" service "extend_vote"
@@ -425,6 +442,9 @@ type ExtendVoteResponseBody struct {
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Whether voters may change a submitted ballot until the vote ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
 }
 
 // EndVoteResponseBody is the type of the "vote" service "end_vote" endpoint
@@ -481,6 +501,9 @@ type EndVoteResponseBody struct {
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Whether voters may change a submitted ballot until the vote ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
 }
 
 // GetVoteResultsResponseBody is the type of the "vote" service
@@ -523,6 +546,12 @@ type GetVoteResponseResponseBody struct {
 	Abstained *bool `form:"abstained,omitempty" json:"abstained,omitempty" xml:"abstained,omitempty"`
 	// Whether abstention is allowed
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Whether the vote lets voters change a submitted ballot until it ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
+	// Whether this submitted ballot can still be changed with PUT
+	// /vote_responses/{vote_response_uid}. Omitted when ITX does not report it.
+	CanChangeVote *bool `form:"can_change_vote,omitempty" json:"can_change_vote,omitempty" xml:"can_change_vote,omitempty"`
 	// Vote creation time
 	VoteCreationTime *string `form:"vote_creation_time,omitempty" json:"vote_creation_time,omitempty" xml:"vote_creation_time,omitempty"`
 	// Voter name
@@ -602,6 +631,9 @@ type GetVoteBallotByLinkResponseBody struct {
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Whether abstaining is allowed
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Whether the vote lets voters change a submitted ballot until it ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
 	// Whether the vote is pseudo-anonymous; if so, ballot contents are never
 	// returned
 	PseudoAnonymity *bool `form:"pseudo_anonymity,omitempty" json:"pseudo_anonymity,omitempty" xml:"pseudo_anonymity,omitempty"`
@@ -1250,6 +1282,15 @@ type UpdateVoteResponseBadRequestResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
+// UpdateVoteResponseConflictResponseBody is the type of the "vote" service
+// "update_vote_response" endpoint HTTP response body for the "Conflict" error.
+type UpdateVoteResponseConflictResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
 // UpdateVoteResponseForbiddenResponseBody is the type of the "vote" service
 // "update_vote_response" endpoint HTTP response body for the "Forbidden" error.
 type UpdateVoteResponseForbiddenResponseBody struct {
@@ -1880,6 +1921,10 @@ type VoteLinkBallotResponseBody struct {
 	AlreadyVoted *bool `form:"already_voted,omitempty" json:"already_voted,omitempty" xml:"already_voted,omitempty"`
 	// True when the recipient was removed from the vote and can no longer vote
 	VoterRemoved *bool `form:"voter_removed,omitempty" json:"voter_removed,omitempty" xml:"voter_removed,omitempty"`
+	// Whether this submitted ballot can still be changed with PUT
+	// /vote_links/responses. Returned on pseudo-anonymous votes too; omitted when
+	// ITX does not report it.
+	CanChangeVote *bool `form:"can_change_vote,omitempty" json:"can_change_vote,omitempty" xml:"can_change_vote,omitempty"`
 	// Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.
 	Abstained *bool `form:"abstained,omitempty" json:"abstained,omitempty" xml:"abstained,omitempty"`
 	// The submitted answers. Omitted on pseudo-anonymous votes and before voting.
@@ -1902,6 +1947,7 @@ func NewCreateVoteRequestBody(p *vote.CreateVotePayload) *CreateVoteRequestBody 
 		PollType:                   p.PollType,
 		NumWinners:                 p.NumWinners,
 		AllowAbstain:               p.AllowAbstain,
+		AllowVoteChange:            p.AllowVoteChange,
 		QuorumPercentage:           p.QuorumPercentage,
 		WinningThresholdPercentage: p.WinningThresholdPercentage,
 	}
@@ -1974,6 +2020,7 @@ func NewUpdateVoteRequestBody(p *vote.UpdateVotePayload) *UpdateVoteRequestBody 
 		PollType:                   p.PollType,
 		NumWinners:                 p.NumWinners,
 		AllowAbstain:               p.AllowAbstain,
+		AllowVoteChange:            p.AllowVoteChange,
 		QuorumPercentage:           p.QuorumPercentage,
 		WinningThresholdPercentage: p.WinningThresholdPercentage,
 	}
@@ -2212,6 +2259,7 @@ func NewCreateVoteVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResu
 		NumResponseReceived:           body.NumResponseReceived,
 		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+		AllowVoteChange:               body.AllowVoteChange,
 	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
@@ -2350,6 +2398,7 @@ func NewGetVoteVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
 		NumResponseReceived:           body.NumResponseReceived,
 		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+		AllowVoteChange:               body.AllowVoteChange,
 	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
@@ -2475,6 +2524,7 @@ func NewUpdateVoteVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
 		NumResponseReceived:           body.NumResponseReceived,
 		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+		AllowVoteChange:               body.AllowVoteChange,
 	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
@@ -2668,6 +2718,7 @@ func NewExtendVoteVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
 		NumResponseReceived:           body.NumResponseReceived,
 		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+		AllowVoteChange:               body.AllowVoteChange,
 	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
@@ -2795,6 +2846,7 @@ func NewEndVoteVoteResultOK(body *EndVoteResponseBody) *vote.VoteResult {
 		NumResponseReceived:           body.NumResponseReceived,
 		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+		AllowVoteChange:               body.AllowVoteChange,
 	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
@@ -3215,6 +3267,8 @@ func NewGetVoteResponseVoteResponseResultOK(body *GetVoteResponseResponseBody) *
 		VoteStatus:             *body.VoteStatus,
 		Abstained:              body.Abstained,
 		AllowAbstain:           body.AllowAbstain,
+		AllowVoteChange:        body.AllowVoteChange,
+		CanChangeVote:          body.CanChangeVote,
 		VoteCreationTime:       body.VoteCreationTime,
 		UserName:               body.UserName,
 		ProfilePicture:         body.ProfilePicture,
@@ -3329,6 +3383,17 @@ func NewGetVoteResponseUnauthorized(body *GetVoteResponseUnauthorizedResponseBod
 // endpoint BadRequest error.
 func NewUpdateVoteResponseBadRequest(body *UpdateVoteResponseBadRequestResponseBody) *vote.BadRequestError {
 	v := &vote.BadRequestError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateVoteResponseConflict builds a vote service update_vote_response
+// endpoint Conflict error.
+func NewUpdateVoteResponseConflict(body *UpdateVoteResponseConflictResponseBody) *vote.ConflictError {
+	v := &vote.ConflictError{
 		Code:    *body.Code,
 		Message: *body.Message,
 	}
@@ -3560,6 +3625,7 @@ func NewGetVoteBallotByLinkVoteLinkBallotResultOK(body *GetVoteBallotByLinkRespo
 		EarlyEndTime:    body.EarlyEndTime,
 		NumWinners:      body.NumWinners,
 		AllowAbstain:    body.AllowAbstain,
+		AllowVoteChange: body.AllowVoteChange,
 		PseudoAnonymity: *body.PseudoAnonymity,
 	}
 	if body.PollType != nil {
@@ -5030,6 +5096,18 @@ func ValidateGetVoteResponseUnauthorizedResponseBody(body *GetVoteResponseUnauth
 // ValidateUpdateVoteResponseBadRequestResponseBody runs the validations
 // defined on update_vote_response_BadRequest_response_body
 func ValidateUpdateVoteResponseBadRequestResponseBody(body *UpdateVoteResponseBadRequestResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateVoteResponseConflictResponseBody runs the validations defined
+// on update_vote_response_Conflict_response_body
+func ValidateUpdateVoteResponseConflictResponseBody(body *UpdateVoteResponseConflictResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
 	}

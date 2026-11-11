@@ -61,6 +61,7 @@ These fields are indexed and queryable via `filters` or `cel_filter` in the quer
 | `pseudo_anonymity` | bool | Whether responses are pseudo-anonymous |
 | `num_winners` | int | Number of winners — stored for `meek_stv` polls only; 0 for all other poll types |
 | `allow_abstain` | bool | Whether abstaining is allowed |
+| `allow_vote_change` | bool | Whether voters may change a submitted ballot; legacy polls without the setting index as `true` |
 
 #### Poll Question Schema
 

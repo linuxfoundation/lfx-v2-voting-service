@@ -98,6 +98,7 @@ Content-Type: application/json
   "pseudo_anonymity": false,
   "poll_type": "generic",
   "allow_abstain": false,
+  "allow_vote_change": true,
   "quorum_percentage": 50,
   "winning_threshold_percentage": 50
 }
@@ -106,6 +107,8 @@ Content-Type: application/json
 `end_time_timezone` is required: an IANA timezone name (e.g., `America/New_York`) that ITX uses to interpret `end_time` exactly as sent. Omitting it fails contract validation with a 400 before ITX is called. The proxy passes the value through untouched and performs no validation of its own; ITX rejects invalid timezone names with a 400, which the proxy surfaces as a 400.
 
 **Create defaults:** `POST /votes` defaults an omitted `poll_type` to `generic`. An omitted `num_winners` defaults to two only for `meek_stv` creates; other poll types forward a winner count only when explicitly provided ([#2922](https://github.com/linuxfoundation/lfx-self-serve/issues/2922)). Explicit values retain the enum and count range (2–10) constraints. ITX [PR #285](https://github.com/linuxfoundation-it/itx-service-voting/pull/285) additionally validates Meek STV winner counts on creation: the count must not exceed the choices in any question; an incompatible count returns 400, not a silently reduced count.
+
+**Vote change setting:** `allow_vote_change` is optional and has no V2 default. When omitted (or `null`), the proxy leaves it out of the ITX request and ITX creates the vote with changes allowed (`true`). An explicit `false` locks submitted ballots: voters cannot change their choices, comments or abstention afterwards. Every vote read returns a resolved boolean; votes created before this setting existed report `true`.
 
 **Response** (201 Created):
 
@@ -128,6 +131,7 @@ Content-Type: application/json
   "total_voting_request_invitations": 0,
   "num_response_received": 0,
   "allow_abstain": false,
+  "allow_vote_change": true,
   "poll_questions": [
     {
       "question_id": "q1-uuid",
@@ -194,6 +198,7 @@ x-scope: manage:voting
   "pseudo_anonymity": false,
   "poll_type": "generic",
   "allow_abstain": false,
+  "allow_vote_change": true,
   "quorum_percentage": 50,
   "winning_threshold_percentage": 50
 }
@@ -229,6 +234,7 @@ configured MyProfile/OpenProfile voter link and the PCC results link for creator
   "total_voting_request_invitations": 0,
   "num_response_received": 0,
   "allow_abstain": false,
+  "allow_vote_change": true,
   "poll_questions": [
     {
       "question_id": "q1-uuid",
@@ -294,6 +300,7 @@ Authorization: Bearer <heimdall-jwt-token>
   "total_voting_request_invitations": 25,
   "num_response_received": 10,
   "allow_abstain": false,
+  "allow_vote_change": true,
   "poll_questions": [...]
 }
 ```
@@ -347,6 +354,7 @@ x-scope: manage:voting
   "total_voting_request_invitations": 25,
   "num_response_received": 10,
   "allow_abstain": false,
+  "allow_vote_change": true,
   "poll_questions": [...]
 }
 ```
@@ -399,6 +407,7 @@ Content-Type: application/json
   ],
   "pseudo_anonymity": true,
   "allow_abstain": true,
+  "allow_vote_change": true,
   "quorum_percentage": 60,
   "winning_threshold_percentage": 60
 }
@@ -407,6 +416,8 @@ Content-Type: application/json
 `end_time_timezone` is required, as on create. Omitting it fails contract validation with a 400 before ITX is called, so ITX always receives an explicit timezone on every update. As on create, ITX rejects invalid timezone names with a 400, surfaced as a 400.
 
 **Update method/count contract:** `PUT /votes/{uid}` keeps `poll_type` and `num_winners` optional. Omitted values remain absent from the upstream ITX request; neither the HTTP decoder, generated client/CLI nor converter supplies create defaults. The public OpenAPI contract permits omission, not JSON `null`; callers must omit these fields to retain existing settings. The current decoder also treats `null` as omission, but spec-validating clients or gateways may reject it. Explicit valid values are intentional replacements, including an explicit `generic` type. Empty/unknown types and counts outside 2–10 fail voting-service validation with 400 before ITX is called. This is not a general PATCH/merge API: the other required replacement fields remain required.
+
+**Update vote change setting:** `allow_vote_change` is optional on `PUT /votes/{uid}` too. Omitting it (or sending `null`) leaves it out of the ITX request, so ITX keeps the stored value; an explicit `true` or `false` replaces it.
 
 Stored-value preservation is owned by ITX [#3428](https://github.com/linuxfoundation/lfx-self-serve/issues/3428), with the following update precedence:
 
@@ -486,6 +497,7 @@ x-scope: manage:voting
   "pseudo_anonymity": true,
   "poll_type": "generic",
   "allow_abstain": true,
+  "allow_vote_change": true,
   "quorum_percentage": 60,
   "winning_threshold_percentage": 60
 }
@@ -570,6 +582,7 @@ x-scope: manage:voting
 | `committee_uid` | `committee_id` | UUID format |
 | `committee_uids` | `committee_ids` | Array of UUIDs |
 | `poll_questions[].choices[].choice_text` | `choices[]` | Flattened to string array in ITX request |
+| `allow_vote_change` | `allow_vote_change` | Optional; sent only when provided. Omitted → ITX defaults to `true` on create and keeps the stored value on update |
 
 ### Response Fields (ITX → LFXv2)
 
@@ -579,6 +592,8 @@ x-scope: manage:voting
 | `project_id` | `project_uid` | Salesforce ID |
 | `committee_id` | `committee_uid` | UUID |
 | `choices[]` | `poll_questions[].choices[]` | Expanded to objects with `choice_id` and `choice_text` |
+| `allow_vote_change` | `allow_vote_change` | Always a boolean on vote, ballot and vote-link reads; absent upstream (legacy) → `true` |
+| `can_change_vote` | `can_change_vote` (ballot reads), `ballot.can_change_vote` (vote-link ballot) | Passed through; omitted when ITX omits it, never computed by the proxy |
 
 ---
 
@@ -601,7 +616,7 @@ HTTP Status Codes:
 - `401` - Unauthorized (invalid/missing JWT)
 - `403` - Forbidden (insufficient permissions)
 - `404` - Not Found (vote does not exist)
-- `409` - Conflict (business rule violation)
+- `409` - Conflict (business rule violation). Ballot updates (`PUT /vote_responses/{vote_response_uid}`, `PUT /vote_links/responses`) return 409 with ITX's message `this poll does not allow changing a submitted vote` when the vote's `allow_vote_change` is `false`
 - `500` - Internal Server Error
 - `503` - Service Unavailable (ITX service down)
 
@@ -728,6 +743,7 @@ Content-Type: application/json
   "total_voting_request_invitations": 25,
   "num_response_received": 10,
   "allow_abstain": false,
+  "allow_vote_change": true,
   "poll_questions": [...]
 }
 ```
@@ -1223,6 +1239,8 @@ Authorization: Bearer <heimdall-jwt-token>
   "vote_status": "voted",
   "abstained": false,
   "allow_abstain": false,
+  "allow_vote_change": true,
+  "can_change_vote": true,
   "vote_creation_time": "2026-01-25T14:30:00Z",
   "user_name": "Alice Johnson",
   "profile_picture": "https://example.com/alice.jpg",
@@ -1260,6 +1278,8 @@ Authorization: Bearer <heimdall-jwt-token>
 ```
 
 **Note**: The `ses_*` fields reflect email delivery and engagement tracking from AWS SES. `project_uid` is mapped from the ITX v1 Salesforce ID back to a LFXv2 UUID.
+
+**Vote change fields**: `allow_vote_change` is inherited from the vote and always present; votes created before the setting existed report `true`. `can_change_vote` is ITX's answer to whether this ballot can still be changed with `PUT /vote_responses/{vote_response_uid}`: `true` only when the ballot has been submitted, the voter has not been removed, the vote allows changes, and the vote is active and before its end time. The proxy passes it through unchanged and omits it when ITX does not report it; it never computes or defaults the value.
 
 ---
 
@@ -1316,6 +1336,14 @@ Content-Type: application/json
 ```
 (empty body)
 ```
+
+**Errors**: `409` with ITX's message when the vote's `allow_vote_change` is `false` and a ballot was already submitted:
+
+```json
+{ "code": "409", "message": "this poll does not allow changing a submitted vote" }
+```
+
+An ended vote still returns ITX's `400` first. A repeated first submission keeps ITX's existing `400`.
 
 ---
 
@@ -1461,6 +1489,7 @@ The ballot is identified **only** by the token. The body has no `vote_response_u
   "end_time": "2026-12-01T23:59:59Z",
   "poll_type": "generic",
   "allow_abstain": true,
+  "allow_vote_change": true,
   "pseudo_anonymity": false,
   "poll_questions": [
     { "question_id": "q1", "prompt": "Who?", "type": "single_choice",
@@ -1470,6 +1499,7 @@ The ballot is identified **only** by the token. The body has no `vote_response_u
     "vote_status": "responded",
     "already_voted": true,
     "voter_removed": false,
+    "can_change_vote": true,
     "abstained": false,
     "poll_answers": [ { "question_id": "q1", "prompt": "Who?", "type": "single_choice",
       "user_choice": [ { "choice_id": "c-a", "choice_text": "Alice" } ] } ],
@@ -1481,6 +1511,7 @@ The ballot is identified **only** by the token. The body has no `vote_response_u
 - `ballot.abstained`, `ballot.poll_answers` and `ballot.comment_responses` are present only after voting, and never on pseudo-anonymous votes. If ITX omits `pseudo_anonymity` or returns `null`, the vote is treated (and reported) as pseudo-anonymous.
 - Optional vote fields (`end_time_timezone`, `early_end_time`, `num_winners`, `poll_comment_prompts`) follow the same rules as `GET /votes/{vote_uid}`.
 - `project_uid` is the v2 project UID. `project_slug` is ITX's poll `project_name`, which holds the slug, and is omitted when empty. Use the query service for other project details.
+- `allow_vote_change` (from the vote; legacy votes report `true`) and `ballot.can_change_vote` (passed through from ITX, omitted when ITX omits it) are returned on regular and pseudo-anonymous votes alike. Neither reveals ballot contents.
 
 **Errors**: 404 `invalid voting link` (bad token, or the ballot isn't part of the token's vote), 404 from ITX (deleted vote or ballot), 503 (not configured, ITX unavailable, or the project ID can't be mapped).
 
@@ -1500,7 +1531,7 @@ The ballot is identified **only** by the token. The body has no `vote_response_u
 
 **Request Body**: same fields as `POST /vote_links/responses`. As with `PUT /vote_responses/{vote_response_uid}`, omitting `comment_responses` preserves existing comments; including it (even as `[]`) replaces them.
 
-**Response** (204 No Content). Errors are as for `POST /vote_links/responses`; ITX returns 400 when no ballot has been submitted yet (`vote_status != responded`).
+**Response** (204 No Content). Errors are as for `POST /vote_links/responses`; ITX returns 400 when no ballot has been submitted yet (`vote_status != responded`), and 409 `this poll does not allow changing a submitted vote` when the vote's `allow_vote_change` is `false`.
 
 ### ITX Service API (Underlying)
 

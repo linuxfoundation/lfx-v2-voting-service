@@ -174,6 +174,14 @@ func AllowAbstainAttribute() {
 	})
 }
 
+// AllowVoteChangeAttribute is the DSL attribute for allowing voters to change a submitted ballot.
+// Deliberately no Default: an omitted value must stay omitted so ITX applies its create
+// default (true) and preserves the stored value on update instead of overwriting it.
+func AllowVoteChangeAttribute() {
+	Attribute("allow_vote_change", Boolean, "Allow voters to change a submitted ballot (choices, comments or abstention) "+
+		"until the vote ends. Omitted on create means allowed; omitted on update preserves the stored value.")
+}
+
 // CommitteeUIDsAttribute is the DSL attribute for multiple committee UIDs.
 func CommitteeUIDsAttribute() {
 	Attribute("committee_uids", ArrayOf(String), "Multiple committee UIDs", func() {
@@ -266,6 +274,8 @@ var VoteResult = Type("VoteResult", func() {
 	})
 	Attribute("num_winners", Int, "Number of winners. Absent when no winner count is stored upstream.")
 	Attribute("allow_abstain", Boolean, "Allow abstain")
+	Attribute("allow_vote_change", Boolean, "Whether voters may change a submitted ballot until the vote ends. "+
+		"Votes created before this setting existed report true.")
 
 	Required("uid", "name", "description", "status", "project_uid", "committee_uid")
 })
@@ -422,6 +432,10 @@ var VoteResponseResult = Type("VoteResponseResult", func() {
 	})
 	Attribute("abstained", Boolean, "Whether the voter abstained")
 	Attribute("allow_abstain", Boolean, "Whether abstention is allowed")
+	Attribute("allow_vote_change", Boolean, "Whether the vote lets voters change a submitted ballot until it ends. "+
+		"Votes created before this setting existed report true.")
+	Attribute("can_change_vote", Boolean, "Whether this submitted ballot can still be changed with "+
+		"PUT /vote_responses/{vote_response_uid}. Omitted when ITX does not report it.")
 	Attribute("vote_creation_time", String, "Vote creation time", func() {
 		Format(FormatDateTime)
 	})
@@ -490,6 +504,8 @@ var VoteLinkBallotResult = Type("VoteLinkBallotResult", func() {
 	})
 	Attribute("num_winners", Int, "Number of winners. Absent when no winner count is stored upstream.")
 	Attribute("allow_abstain", Boolean, "Whether abstaining is allowed")
+	Attribute("allow_vote_change", Boolean, "Whether the vote lets voters change a submitted ballot until it ends. "+
+		"Votes created before this setting existed report true.")
 	Attribute("pseudo_anonymity", Boolean, "Whether the vote is pseudo-anonymous; if so, ballot contents are never returned")
 	Attribute("poll_questions", ArrayOf(PollQuestion), "Vote questions with their choices")
 	Attribute("poll_comment_prompts", ArrayOf(PollCommentPrompt), "Comment prompts for the vote")
@@ -508,6 +524,8 @@ var VoteLinkBallot = Type("VoteLinkBallot", func() {
 	Attribute("already_voted", Boolean, "True when a ballot has been submitted (vote_status responded, or ended after "+
 		"voting), so changes use PUT /vote_links/responses while the vote is active")
 	Attribute("voter_removed", Boolean, "True when the recipient was removed from the vote and can no longer vote")
+	Attribute("can_change_vote", Boolean, "Whether this submitted ballot can still be changed with "+
+		"PUT /vote_links/responses. Returned on pseudo-anonymous votes too; omitted when ITX does not report it.")
 	Attribute("abstained", Boolean, "Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.")
 	Attribute("poll_answers", ArrayOf(VoteAnswer), "The submitted answers. Omitted on pseudo-anonymous votes and before voting.")
 	Attribute("comment_responses", ArrayOf(CommentResponse), "The submitted comments. Omitted on pseudo-anonymous votes and before voting.")

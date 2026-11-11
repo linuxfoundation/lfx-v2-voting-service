@@ -127,6 +127,7 @@ func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*
 		PollType:                   req.PollType,
 		NumWinners:                 resolveNumWinners(req.PollType, req.NumWinners),
 		AllowAbstain:               req.AllowAbstain,
+		AllowVoteChange:            req.AllowVoteChange,
 		QuorumPercentage:           req.QuorumPercentage,
 		WinningThresholdPercentage: req.WinningThresholdPercentage,
 	}
@@ -252,6 +253,7 @@ func (s *VoteService) UpdateVote(ctx context.Context, voteID string, req *Update
 		PollType:                   req.PollType,
 		NumWinners:                 req.NumWinners,
 		AllowAbstain:               req.AllowAbstain,
+		AllowVoteChange:            req.AllowVoteChange,
 		QuorumPercentage:           req.QuorumPercentage,
 		WinningThresholdPercentage: req.WinningThresholdPercentage,
 	}
@@ -632,6 +634,7 @@ type CreateVoteRequest struct {
 	PollType                   string
 	NumWinners                 *int
 	AllowAbstain               bool
+	AllowVoteChange            *bool // nil is not sent: ITX defaults to true on create, preserves on update
 	QuorumPercentage           *int
 	WinningThresholdPercentage *int
 }
@@ -669,6 +672,7 @@ type UpdateVoteRequest struct {
 	PollType                   string
 	NumWinners                 *int
 	AllowAbstain               bool
+	AllowVoteChange            *bool // nil is not sent: ITX defaults to true on create, preserves on update
 	QuorumPercentage           *int
 	WinningThresholdPercentage *int
 }

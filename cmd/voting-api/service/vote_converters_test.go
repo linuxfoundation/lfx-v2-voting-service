@@ -143,6 +143,53 @@ func TestConvertPollResponseToVoteResultNumWinners(t *testing.T) {
 	})
 }
 
+// TestConvertCreateVotePayloadToDomainAllowVoteChange guards the create hop: the pointer is
+// copied as-is so an omitted setting stays nil (ITX defaults it to true) and an explicit
+// value survives.
+func TestConvertCreateVotePayloadToDomainAllowVoteChange(t *testing.T) {
+	for name, value := range map[string]*bool{"omitted": nil, "true": utils.BoolPtr(true), "false": utils.BoolPtr(false)} {
+		t.Run(name, func(t *testing.T) {
+			req := ConvertCreateVotePayloadToDomain(&votesvc.CreateVotePayload{AllowVoteChange: value})
+
+			assert.Equal(t, value, req.AllowVoteChange)
+		})
+	}
+}
+
+// TestConvertUpdateVotePayloadToDomainAllowVoteChange guards the update hop: an omitted
+// setting must stay nil so ITX preserves the stored value instead of overwriting it.
+func TestConvertUpdateVotePayloadToDomainAllowVoteChange(t *testing.T) {
+	for name, value := range map[string]*bool{"omitted": nil, "true": utils.BoolPtr(true), "false": utils.BoolPtr(false)} {
+		t.Run(name, func(t *testing.T) {
+			req := ConvertUpdateVotePayloadToDomain(&votesvc.UpdateVotePayload{AllowVoteChange: value})
+
+			assert.Equal(t, value, req.AllowVoteChange)
+		})
+	}
+}
+
+// TestConvertPollResponseToVoteResultAllowVoteChange guards the read hop: the result always
+// carries a resolved boolean, and polls created before the setting existed read as allowed.
+func TestConvertPollResponseToVoteResultAllowVoteChange(t *testing.T) {
+	tests := []struct {
+		name  string
+		value *bool
+		want  bool
+	}{
+		{name: "legacy absent reads as allowed", want: true},
+		{name: "explicit true", value: utils.BoolPtr(true), want: true},
+		{name: "explicit false", value: utils.BoolPtr(false), want: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertPollResponseToVoteResult(&itx.PollResponse{AllowVoteChange: tt.value})
+
+			require.NotNil(t, result.AllowVoteChange)
+			assert.Equal(t, tt.want, *result.AllowVoteChange)
+		})
+	}
+}
+
 // TestConvertVoteResultsToResultPresence guards optional-field presence on the results hop:
 // held and anonymous shapes must not gain zero/false/empty metadata, and named results
 // must keep legitimate zero and false values.

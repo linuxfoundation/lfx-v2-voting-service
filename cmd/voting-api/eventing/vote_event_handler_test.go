@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"testing"
 
@@ -139,6 +140,40 @@ func TestConvertMapToVoteData(t *testing.T) {
 		assert.Equal(t, 0, result.NumResponseReceived)
 		assert.Empty(t, result.EarlyEndTime)
 		assert.Empty(t, result.EndTimeTimezone)
+	})
+
+	t.Run("resolves allow_vote_change, indexing legacy polls as allowed", func(t *testing.T) {
+		tests := []struct {
+			name  string
+			value interface{}
+			set   bool
+			want  bool
+		}{
+			{name: "absent", want: true},
+			{name: "false", value: false, set: true, want: false},
+			{name: "true", value: true, set: true, want: true},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				v1Data := map[string]interface{}{
+					"poll_id":    "poll-change",
+					"name":       "Locked Vote",
+					"status":     "active",
+					"project_id": "project-sfid",
+				}
+				if tt.set {
+					v1Data["allow_vote_change"] = tt.value
+				}
+
+				result, err := convertMapToVoteData(context.Background(), v1Data, idmapper.NewNoOpMapper(), slog.Default())
+				require.NoError(t, err)
+				assert.Equal(t, tt.want, result.AllowVoteChange)
+
+				raw, err := json.Marshal(result)
+				require.NoError(t, err)
+				assert.Contains(t, string(raw), fmt.Sprintf(`"allow_vote_change":%t`, tt.want))
+			})
+		}
 	})
 
 	t.Run("drops zero-value early_end_time from raw DynamoDB", func(t *testing.T) {

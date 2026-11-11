@@ -209,6 +209,38 @@ func TestConvertVoteResponseToResult_FieldRenames(t *testing.T) {
 	}
 }
 
+// TestConvertVoteResponseToResult_VoteChangeFlags guards the ballot read: allow_vote_change is
+// always resolved (legacy absent → true) and can_change_vote is passed through, staying nil
+// when ITX does not report it rather than being computed or fabricated as false.
+func TestConvertVoteResponseToResult_VoteChangeFlags(t *testing.T) {
+	locked := false
+	tests := []struct {
+		name       string
+		resp       *itx.VoteResponse
+		wantAllow  bool
+		wantChange *bool
+	}{
+		{name: "legacy absent", resp: &itx.VoteResponse{}, wantAllow: true},
+		{name: "locked and final", resp: &itx.VoteResponse{AllowVoteChange: &locked, CanChangeVote: &locked}, wantAllow: false, wantChange: &locked},
+		{name: "allowed and changeable", resp: &itx.VoteResponse{AllowVoteChange: utils.BoolPtr(true), CanChangeVote: utils.BoolPtr(true)}, wantAllow: true, wantChange: utils.BoolPtr(true)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertVoteResponseToResult(tt.resp)
+
+			if result.AllowVoteChange == nil || *result.AllowVoteChange != tt.wantAllow {
+				t.Errorf("AllowVoteChange = %v, want %v", result.AllowVoteChange, tt.wantAllow)
+			}
+			switch {
+			case tt.wantChange == nil && result.CanChangeVote != nil:
+				t.Errorf("CanChangeVote = %v, want omitted", *result.CanChangeVote)
+			case tt.wantChange != nil && (result.CanChangeVote == nil || *result.CanChangeVote != *tt.wantChange):
+				t.Errorf("CanChangeVote = %v, want %v", result.CanChangeVote, *tt.wantChange)
+			}
+		})
+	}
+}
+
 // ---- Null comment_responses validation --------------------------------------
 
 // TestConvertCreateVoteResponsePayloadToDomain_NullCommentEntryIsRejected guards the
@@ -422,6 +454,37 @@ func TestConvertVoteLinkBallotToResult(t *testing.T) {
 		fixture.Poll.ProjectName = ""
 		if got := ConvertVoteLinkBallotToResult(fixture).ProjectSlug; got != nil {
 			t.Errorf("ProjectSlug = %q, want nil", *got)
+		}
+	})
+
+	t.Run("legacy vote reads as allowed and omits can_change_vote", func(t *testing.T) {
+		for _, pseudo := range []bool{false, true} {
+			got := ConvertVoteLinkBallotToResult(voteLinkBallotFixture(pseudo, "responded"))
+			if got.AllowVoteChange == nil || !*got.AllowVoteChange {
+				t.Errorf("pseudo=%v: AllowVoteChange = %v, want true for a legacy vote", pseudo, got.AllowVoteChange)
+			}
+			if got.Ballot.CanChangeVote != nil {
+				t.Errorf("pseudo=%v: CanChangeVote = %v, want omitted when ITX omits it", pseudo, *got.Ballot.CanChangeVote)
+			}
+		}
+	})
+
+	t.Run("locked vote reports its setting and ballot finality", func(t *testing.T) {
+		for _, pseudo := range []bool{false, true} {
+			fixture := voteLinkBallotFixture(pseudo, "responded")
+			fixture.Poll.AllowVoteChange = utils.BoolPtr(false)
+			fixture.Ballot.AllowVoteChange = utils.BoolPtr(false)
+			fixture.Ballot.CanChangeVote = utils.BoolPtr(false)
+			got := ConvertVoteLinkBallotToResult(fixture)
+			if got.AllowVoteChange == nil || *got.AllowVoteChange {
+				t.Errorf("pseudo=%v: AllowVoteChange = %v, want false", pseudo, got.AllowVoteChange)
+			}
+			if got.Ballot.CanChangeVote == nil || *got.Ballot.CanChangeVote {
+				t.Errorf("pseudo=%v: CanChangeVote = %v, want false", pseudo, got.Ballot.CanChangeVote)
+			}
+			if pseudo && (got.Ballot.Abstained != nil || got.Ballot.PollAnswers != nil || got.Ballot.CommentResponses != nil) {
+				t.Errorf("pseudo-anonymous ballot leaked contents: %+v", got.Ballot)
+			}
 		}
 	})
 

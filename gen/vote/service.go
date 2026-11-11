@@ -43,7 +43,8 @@ type Service interface {
 	CreateVoteResponse(context.Context, *CreateVoteResponsePayload) (err error)
 	// Get vote response details (proxies to ITX GET /voting/vote/{vote_id})
 	GetVoteResponse(context.Context, *GetVoteResponsePayload) (res *VoteResponseResult, err error)
-	// Update vote response (proxies to ITX PUT /voting/vote/{vote_id})
+	// Update vote response (proxies to ITX PUT /voting/vote/{vote_id}). Returns
+	// 409 when the vote does not allow changing a submitted ballot.
 	UpdateVoteResponse(context.Context, *UpdateVoteResponsePayload) (err error)
 	// Submit a vote response using a personalized vote link token, without logging
 	// in (proxies to ITX POST /voting/vote). The ballot is identified only by the
@@ -56,7 +57,8 @@ type Service interface {
 	// only by the token. External callers send no Authorization header: the
 	// gateway (Heimdall) admits the request anonymously and supplies the JWT shown
 	// in this spec's security requirement. Omitting comment_responses preserves
-	// existing comments; including it (even empty) replaces them.
+	// existing comments; including it (even empty) replaces them. Returns 409 when
+	// the vote does not allow changing a submitted ballot.
 	UpdateVoteResponseByLink(context.Context, *UpdateVoteResponseByLinkPayload) (err error)
 	// Get the vote's questions and the link holder's own ballot using a
 	// personalized vote link token, without logging in. The vote and ballot are
@@ -211,6 +213,10 @@ type CreateVotePayload struct {
 	NumWinners *int
 	// Allow voters to abstain
 	AllowAbstain bool
+	// Allow voters to change a submitted ballot (choices, comments or abstention)
+	// until the vote ends. Omitted on create means allowed; omitted on update
+	// preserves the stored value.
+	AllowVoteChange *bool
 	// Quorum percentage required
 	QuorumPercentage *int
 	// Winning threshold percentage
@@ -601,6 +607,10 @@ type UpdateVotePayload struct {
 	NumWinners *int
 	// Allow voters to abstain
 	AllowAbstain bool
+	// Allow voters to change a submitted ballot (choices, comments or abstention)
+	// until the vote ends. Omitted on create means allowed; omitted on update
+	// preserves the stored value.
+	AllowVoteChange *bool
 	// Quorum percentage required
 	QuorumPercentage *int
 	// Winning threshold percentage
@@ -702,6 +712,10 @@ type VoteLinkBallot struct {
 	AlreadyVoted bool
 	// True when the recipient was removed from the vote and can no longer vote
 	VoterRemoved bool
+	// Whether this submitted ballot can still be changed with PUT
+	// /vote_links/responses. Returned on pseudo-anonymous votes too; omitted when
+	// ITX does not report it.
+	CanChangeVote *bool
 	// Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.
 	Abstained *bool
 	// The submitted answers. Omitted on pseudo-anonymous votes and before voting.
@@ -740,6 +754,9 @@ type VoteLinkBallotResult struct {
 	NumWinners *int
 	// Whether abstaining is allowed
 	AllowAbstain *bool
+	// Whether the vote lets voters change a submitted ballot until it ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool
 	// Whether the vote is pseudo-anonymous; if so, ballot contents are never
 	// returned
 	PseudoAnonymity bool
@@ -766,6 +783,12 @@ type VoteResponseResult struct {
 	Abstained *bool
 	// Whether abstention is allowed
 	AllowAbstain *bool
+	// Whether the vote lets voters change a submitted ballot until it ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool
+	// Whether this submitted ballot can still be changed with PUT
+	// /vote_responses/{vote_response_uid}. Omitted when ITX does not report it.
+	CanChangeVote *bool
 	// Vote creation time
 	VoteCreationTime *string
 	// Voter name
@@ -868,6 +891,9 @@ type VoteResult struct {
 	NumWinners *int
 	// Allow abstain
 	AllowAbstain *bool
+	// Whether voters may change a submitted ballot until the vote ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool
 }
 
 // VoteResultsResult is the result type of the vote service get_vote_results

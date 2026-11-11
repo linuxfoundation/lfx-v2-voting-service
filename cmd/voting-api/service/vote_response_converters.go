@@ -169,6 +169,8 @@ func ConvertVoteResponseToResult(resp *itx.VoteResponse) *votesvc.VoteResponseRe
 		VoteStatus:             resp.VoteStatus,
 		Abstained:              utils.BoolPtr(resp.Abstained),
 		AllowAbstain:           utils.BoolPtr(resp.AllowAbstain),
+		AllowVoteChange:        utils.BoolPtr(itx.VoteChangeAllowed(resp.AllowVoteChange)),
+		CanChangeVote:          resp.CanChangeVote,
 		VoteCreationTime:       &resp.VoteCreationTime,
 		UserName:               &resp.UserName,
 		ProfilePicture:         &resp.ProfilePicture,
@@ -283,6 +285,8 @@ func ConvertVoteLinkBallotToResult(b *service.VoteLinkBallot) *votesvc.VoteLinkB
 		Status:       poll.Status,
 		PollType:     poll.PollType,
 		AllowAbstain: utils.BoolPtr(poll.AllowAbstain),
+		// Legacy polls without the setting allow changes, as ITX resolves them.
+		AllowVoteChange: utils.BoolPtr(itx.VoteChangeAllowed(poll.AllowVoteChange)),
 		// An unknown flag is reported as pseudo-anonymous, matching the service's fail-closed
 		// handling of ballot contents.
 		PseudoAnonymity:    poll.PseudoAnonymity || !poll.PseudoAnonymityKnown,
@@ -292,6 +296,9 @@ func ConvertVoteLinkBallotToResult(b *service.VoteLinkBallot) *votesvc.VoteLinkB
 			VoteStatus:   b.Ballot.VoteStatus,
 			AlreadyVoted: itx.IsSubmittedVoteStatus(b.Ballot.VoteStatus),
 			VoterRemoved: b.Ballot.VoterRemoved,
+			// Eligibility, not ballot contents: returned on pseudo-anonymous votes too, and
+			// omitted (never computed) when ITX does not report it.
+			CanChangeVote: b.Ballot.CanChangeVote,
 		},
 	}
 	// ITX stores the project slug in the poll's project_name.

@@ -146,6 +146,30 @@ func TestVoteLinkContract(t *testing.T) {
 		}
 	})
 
+	t.Run("update by link on a locked vote returns ITX's 409", func(t *testing.T) {
+		upstream, paths := lockedBallotUpstream(t)
+		client := proxy.NewContractTestClient(upstream.Client(), upstream.URL+"/")
+		responses := service.NewVoteResponseService(nil, client, methodContractIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)),
+			service.WithVoteLinkVerifier(signer))
+		updateByLink := func(ctx context.Context, payload any) (any, error) {
+			p := payload.(*votesvc.UpdateVoteResponseByLinkPayload)
+			req, err := converters.ConvertUpdateVoteResponseByLinkPayloadToDomain(p)
+			if err != nil {
+				return nil, mirrorHandleError(err)
+			}
+			return nil, mirrorHandleError(responses.UpdateVoteResponseByLink(ctx, p.VoteToken, req))
+		}
+		lockedMux := goahttp.NewMuxer()
+		voteserver.MountUpdateVoteResponseByLinkHandler(lockedMux, voteserver.NewUpdateVoteResponseByLinkHandler(updateByLink, lockedMux, goahttp.RequestDecoder, goahttp.ResponseEncoder, nil, nil))
+
+		req := httptest.NewRequest(http.MethodPut, "/vote_links/responses", strings.NewReader(`{"vote_token":"`+token+`","abstain":true}`))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		lockedMux.ServeHTTP(rec, req)
+
+		assertLockedBallotConflict(t, rec, *paths, http.MethodPut+" /v2/voting/vote/"+linkBallotUID)
+	})
+
 	t.Run("tampered token is rejected before ITX", func(t *testing.T) {
 		for _, method := range []string{http.MethodPost, http.MethodPut} {
 			rec := serve(method, "/vote_links/responses", `{"vote_token":"`+token+`x","abstain":true}`)
@@ -280,12 +304,12 @@ func TestVoteLinkBallotContract(t *testing.T) {
 				w.Header().Set("Content-Type", "application/json")
 				switch r.URL.Path {
 				case "/v2/voting/vote/" + linkBallotUID:
-					_, _ = io.WriteString(w, `{"vote_id":"`+linkBallotUID+`","poll_id":"`+linkVoteUID+`","vote_status":"responded","abstained":false,"user_email":"voter@example.org","voter_removed":false,`+
+					_, _ = io.WriteString(w, `{"vote_id":"`+linkBallotUID+`","poll_id":"`+linkVoteUID+`","vote_status":"responded","abstained":false,"user_email":"voter@example.org","voter_removed":false,"allow_vote_change":false,"can_change_vote":false,`+
 						`"poll_answers":[{"question_id":"q1","prompt":"Who?","type":"single_choice","user_choice":[{"choice_id":"c-a","choice_text":"Alice"}]}],"comment_responses":[]}`)
 				case "/v2/voting/poll/" + linkVoteUID:
 					_, _ = io.WriteString(w, `{"poll_id":"`+linkVoteUID+`","name":"TSC election","description":"Pick one","status":"active","end_time":"2030-01-01T00:00:00Z",`+
 						`"project_id":"a0941000002wBz4AAE","project_name":"cncf","committee_id":"c1","total_voting_request_invitations":9,"num_response_received":4,`+tc.pseudoField+
-						`"allow_abstain":true,"poll_type":"generic","poll_questions":[{"question_id":"q1","prompt":"Who?","type":"single_choice","choices":[{"choice_id":"c-a","choice_text":"Alice"}]}]}`)
+						`"allow_abstain":true,"allow_vote_change":false,"poll_type":"generic","poll_questions":[{"question_id":"q1","prompt":"Who?","type":"single_choice","choices":[{"choice_id":"c-a","choice_text":"Alice"}]}]}`)
 				default:
 					w.WriteHeader(http.StatusNotFound)
 				}
@@ -347,6 +371,11 @@ func TestVoteLinkBallotContract(t *testing.T) {
 			}
 			if string(ballot["already_voted"]) != "true" {
 				t.Errorf("already_voted = %s", ballot["already_voted"])
+			}
+			// The setting and the ballot's finality are not ballot contents: both are returned
+			// on regular and pseudo-anonymous votes alike.
+			if string(body["allow_vote_change"]) != "false" || string(ballot["can_change_vote"]) != "false" {
+				t.Errorf("allow_vote_change = %s, ballot.can_change_vote = %s, want false/false", body["allow_vote_change"], ballot["can_change_vote"])
 			}
 			_, hasAnswers := ballot["poll_answers"]
 			if hasAnswers != tc.wantAnswers {

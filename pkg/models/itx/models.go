@@ -33,6 +33,7 @@ type CreatePollRequest struct {
 	PollType                   string              `json:"poll_type,omitempty"`
 	NumWinners                 *int                `json:"num_winners,omitempty"`
 	AllowAbstain               bool                `json:"allow_abstain"`
+	AllowVoteChange            *bool               `json:"allow_vote_change,omitempty"` // omitted: ITX defaults to true on create, preserves on update
 	QuorumPercentage           *int                `json:"quorum_percentage,omitempty"`
 	WinningThresholdPercentage *int                `json:"winning_threshold_percentage,omitempty"`
 }
@@ -63,6 +64,7 @@ type UpdatePollRequest struct {
 	PollType                   string              `json:"poll_type,omitempty"`
 	NumWinners                 *int                `json:"num_winners,omitempty"`
 	AllowAbstain               bool                `json:"allow_abstain"`
+	AllowVoteChange            *bool               `json:"allow_vote_change,omitempty"` // omitted: ITX defaults to true on create, preserves on update
 	QuorumPercentage           *int                `json:"quorum_percentage,omitempty"`
 	WinningThresholdPercentage *int                `json:"winning_threshold_percentage,omitempty"`
 }
@@ -126,6 +128,7 @@ type PollResponse struct {
 	PollType                      string                    `json:"poll_type,omitempty"`
 	NumWinners                    int                       `json:"num_winners,omitempty"`
 	AllowAbstain                  bool                      `json:"allow_abstain"`
+	AllowVoteChange               *bool                     `json:"allow_vote_change"` // nil when ITX predates the setting; see VoteChangeAllowed
 	// PseudoAnonymityKnown is true only when ITX sent pseudo_anonymity as a JSON bool. It is
 	// false when the field is missing or null, so callers that must protect ballot privacy can
 	// fail closed. Not serialized.
@@ -203,6 +206,12 @@ type RankedChoiceInput struct {
 	ChoiceRank int    `json:"choice_rank"`
 }
 
+// VoteChangeAllowed resolves an ITX allow_vote_change value. Nil means the poll predates the
+// setting, which ITX treats as allowed.
+func VoteChangeAllowed(v *bool) bool {
+	return v == nil || *v
+}
+
 // ITX vote_status values for a ballot that has been submitted.
 const (
 	// VoteStatusResponded is a submitted ballot on a poll that has not ended.
@@ -225,6 +234,8 @@ type VoteResponse struct {
 	VoteStatus             string            `json:"vote_status"`
 	Abstained              bool              `json:"abstained"`
 	AllowAbstain           bool              `json:"allow_abstain"`
+	AllowVoteChange        *bool             `json:"allow_vote_change"`         // inherited from the poll; nil when ITX predates the setting
+	CanChangeVote          *bool             `json:"can_change_vote,omitempty"` // ITX's per-ballot eligibility; nil when not reported, never computed
 	VoteCreationTime       string            `json:"vote_creation_time"`
 	UserName               string            `json:"user_name"`
 	ProfilePicture         string            `json:"profile_picture"`
