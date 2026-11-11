@@ -108,7 +108,7 @@ Content-Type: application/json
 
 **Create defaults:** `POST /votes` defaults an omitted `poll_type` to `generic`. An omitted `num_winners` defaults to two only for `meek_stv` creates; other poll types forward a winner count only when explicitly provided ([#2922](https://github.com/linuxfoundation/lfx-self-serve/issues/2922)). Explicit values retain the enum and count range (2–10) constraints. ITX [PR #285](https://github.com/linuxfoundation-it/itx-service-voting/pull/285) additionally validates Meek STV winner counts on creation: the count must not exceed the choices in any question; an incompatible count returns 400, not a silently reduced count.
 
-**Vote change setting:** `allow_vote_change` is optional and has no V2 default. When omitted (or `null`), the proxy leaves it out of the ITX request and ITX creates the vote with changes allowed (`true`). An explicit `false` locks submitted ballots: voters cannot change their choices, comments or abstention afterwards. Every vote read returns a resolved boolean; votes created before this setting existed report `true`.
+**Vote change setting:** `allow_vote_change` is optional and has no V2 default. When omitted, the proxy leaves it out of the ITX request and ITX creates the vote with changes allowed (`true`). The public OpenAPI contract permits omission, not JSON `null`; callers must omit the field to use the create default. The current decoder also treats `null` as omission, but spec-validating clients or gateways may reject it. An explicit `false` locks submitted ballots: voters cannot change their choices, comments or abstention afterwards. Every vote read returns a resolved boolean; votes created before this setting existed report `true`.
 
 **Response** (201 Created):
 
@@ -417,7 +417,7 @@ Content-Type: application/json
 
 **Update method/count contract:** `PUT /votes/{uid}` keeps `poll_type` and `num_winners` optional. Omitted values remain absent from the upstream ITX request; neither the HTTP decoder, generated client/CLI nor converter supplies create defaults. The public OpenAPI contract permits omission, not JSON `null`; callers must omit these fields to retain existing settings. The current decoder also treats `null` as omission, but spec-validating clients or gateways may reject it. Explicit valid values are intentional replacements, including an explicit `generic` type. Empty/unknown types and counts outside 2–10 fail voting-service validation with 400 before ITX is called. This is not a general PATCH/merge API: the other required replacement fields remain required.
 
-**Update vote change setting:** `allow_vote_change` is optional on `PUT /votes/{uid}` too. Omitting it (or sending `null`) leaves it out of the ITX request, so ITX keeps the stored value; an explicit `true` or `false` replaces it.
+**Update vote change setting:** `allow_vote_change` is optional on `PUT /votes/{uid}` too. Omitting it leaves it out of the ITX request, so ITX keeps the stored value; an explicit `true` or `false` replaces it. The public OpenAPI contract permits omission, not JSON `null`; callers must omit the field to retain the stored setting. The current decoder also treats `null` as omission, but spec-validating clients or gateways may reject it.
 
 Stored-value preservation is owned by ITX [#3428](https://github.com/linuxfoundation/lfx-self-serve/issues/3428), with the following update precedence:
 
