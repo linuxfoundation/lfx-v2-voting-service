@@ -306,6 +306,35 @@ func TestConvertMapToVoteData(t *testing.T) {
 		assert.Empty(t, result.EndTimeTimezone)
 	})
 
+	t.Run("resolves allow_vote_change, indexing legacy polls as allowed", func(t *testing.T) {
+		tests := []struct {
+			name  string
+			value interface{}
+			set   bool
+			want  bool
+		}{
+			{name: "absent", want: true},
+			{name: "false", value: false, set: true, want: false},
+			{name: "true", value: true, set: true, want: true},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				v1Data := votePayload("poll-change")
+				if tt.set {
+					v1Data["allow_vote_change"] = tt.value
+				}
+
+				result, err := convertMapToVoteData(context.Background(), v1Data, &mockIDMapper{}, slog.Default())
+				require.NoError(t, err)
+				assert.Equal(t, tt.want, result.AllowVoteChange)
+
+				wire := marshalVoteData(t, result)
+				assert.Contains(t, wire, "allow_vote_change")
+				assert.Equal(t, tt.want, wire["allow_vote_change"])
+			})
+		}
+	})
+
 	t.Run("drops zero-value early_end_time from raw DynamoDB", func(t *testing.T) {
 		v1Data := map[string]interface{}{
 			"poll_id":        "poll-zero",

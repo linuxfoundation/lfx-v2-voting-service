@@ -160,3 +160,87 @@ func assertPtr[T comparable](t *testing.T, field string, got, want *T) {
 		t.Errorf("%s = %v, want %v", field, *got, *want)
 	}
 }
+
+func TestVoteChangeAllowed(t *testing.T) {
+	allowed, locked := true, false
+	if !VoteChangeAllowed(nil) {
+		t.Error("VoteChangeAllowed(nil) = false, want true for legacy polls")
+	}
+	if !VoteChangeAllowed(&allowed) {
+		t.Error("VoteChangeAllowed(true) = false, want true")
+	}
+	if VoteChangeAllowed(&locked) {
+		t.Error("VoteChangeAllowed(false) = true, want false")
+	}
+}
+
+func TestVoteChangeFieldsJSON(t *testing.T) {
+	boolPtr := func(b bool) *bool { return &b }
+
+	t.Run("poll and ballot decoding keeps presence", func(t *testing.T) {
+		tests := []struct {
+			name       string
+			body       string
+			wantAllow  *bool
+			wantChange *bool
+		}{
+			{name: "absent", body: `{"poll_id":"p1"}`},
+			{name: "null", body: `{"poll_id":"p1","allow_vote_change":null,"can_change_vote":null}`},
+			{name: "true", body: `{"poll_id":"p1","allow_vote_change":true,"can_change_vote":true}`, wantAllow: boolPtr(true), wantChange: boolPtr(true)},
+			{name: "false", body: `{"poll_id":"p1","allow_vote_change":false,"can_change_vote":false}`, wantAllow: boolPtr(false), wantChange: boolPtr(false)},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				var poll PollResponse
+				if err := json.Unmarshal([]byte(tt.body), &poll); err != nil {
+					t.Fatalf("unmarshal poll: %v", err)
+				}
+				assertPtr(t, "PollResponse.AllowVoteChange", poll.AllowVoteChange, tt.wantAllow)
+
+				var ballot VoteResponse
+				if err := json.Unmarshal([]byte(tt.body), &ballot); err != nil {
+					t.Fatalf("unmarshal ballot: %v", err)
+				}
+				assertPtr(t, "VoteResponse.AllowVoteChange", ballot.AllowVoteChange, tt.wantAllow)
+				assertPtr(t, "VoteResponse.CanChangeVote", ballot.CanChangeVote, tt.wantChange)
+			})
+		}
+	})
+
+	t.Run("requests send the setting only when provided", func(t *testing.T) {
+		tests := []struct {
+			name    string
+			value   *bool
+			wantKey bool
+			want    string
+		}{
+			{name: "nil omitted", value: nil},
+			{name: "false sent", value: boolPtr(false), wantKey: true, want: "false"},
+			{name: "true sent", value: boolPtr(true), wantKey: true, want: "true"},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				for kind, req := range map[string]any{
+					"create": CreatePollRequest{AllowVoteChange: tt.value},
+					"update": UpdatePollRequest{AllowVoteChange: tt.value},
+				} {
+					body, err := json.Marshal(req)
+					if err != nil {
+						t.Fatalf("%s marshal: %v", kind, err)
+					}
+					var fields map[string]json.RawMessage
+					if err := json.Unmarshal(body, &fields); err != nil {
+						t.Fatalf("%s unmarshal: %v", kind, err)
+					}
+					got, ok := fields["allow_vote_change"]
+					if ok != tt.wantKey {
+						t.Fatalf("%s allow_vote_change present = %v, want %v (body %s)", kind, ok, tt.wantKey, body)
+					}
+					if ok && string(got) != tt.want {
+						t.Errorf("%s allow_vote_change = %s, want %s", kind, got, tt.want)
+					}
+				}
+			})
+		}
+	})
+}

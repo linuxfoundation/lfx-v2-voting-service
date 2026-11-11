@@ -1726,6 +1726,19 @@ func EncodeUpdateVoteResponseError(encoder func(context.Context, http.ResponseWr
 			w.Header().Set("goa-error", res.GoaErrorName())
 			w.WriteHeader(http.StatusBadRequest)
 			return enc.Encode(body)
+		case "Conflict":
+			var res *vote.ConflictError
+			errors.As(v, &res)
+			enc := encoder(ctx, w)
+			var body any
+			if formatter != nil {
+				body = formatter(ctx, res)
+			} else {
+				body = NewUpdateVoteResponseConflictResponseBody(res)
+			}
+			w.Header().Set("goa-error", res.GoaErrorName())
+			w.WriteHeader(http.StatusConflict)
+			return enc.Encode(body)
 		case "Forbidden":
 			var res *vote.ForbiddenError
 			errors.As(v, &res)
@@ -3024,10 +3037,11 @@ func marshalVoteCommentResponseToCommentResponseResponseBody(v *vote.CommentResp
 // *VoteLinkBallotResponseBody from a value of type *vote.VoteLinkBallot.
 func marshalVoteVoteLinkBallotToVoteLinkBallotResponseBody(v *vote.VoteLinkBallot) *VoteLinkBallotResponseBody {
 	res := &VoteLinkBallotResponseBody{
-		VoteStatus:   v.VoteStatus,
-		AlreadyVoted: v.AlreadyVoted,
-		VoterRemoved: v.VoterRemoved,
-		Abstained:    v.Abstained,
+		VoteStatus:    v.VoteStatus,
+		AlreadyVoted:  v.AlreadyVoted,
+		VoterRemoved:  v.VoterRemoved,
+		CanChangeVote: v.CanChangeVote,
+		Abstained:     v.Abstained,
 	}
 	if v.PollAnswers != nil {
 		res.PollAnswers = make([]*VoteAnswerResponseBody, len(v.PollAnswers))

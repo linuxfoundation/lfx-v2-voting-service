@@ -747,6 +747,30 @@ func TestVoteLinkContract(t *testing.T) {
 		}
 	})
 
+	t.Run("update by link on a locked vote returns ITX's 409", func(t *testing.T) {
+		upstream, paths := lockedBallotUpstream(t)
+		client := NewContractTestClient(upstream.Client(), upstream.URL+"/")
+		responses := service.NewVoteResponseService(nil, client, methodContractIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)),
+			service.WithVoteLinkVerifier(signer))
+		updateByLink := func(ctx context.Context, payload any) (any, error) {
+			p := payload.(*votesvc.UpdateVoteResponseByLinkPayload)
+			req, err := converters.ConvertUpdateVoteResponseByLinkPayloadToDomain(p)
+			if err != nil {
+				return nil, mirrorHandleError(err)
+			}
+			return nil, mirrorHandleError(responses.UpdateVoteResponseByLink(ctx, p.VoteToken, req))
+		}
+		lockedMux := goahttp.NewMuxer()
+		voteserver.MountUpdateVoteResponseByLinkHandler(lockedMux, voteserver.NewUpdateVoteResponseByLinkHandler(updateByLink, lockedMux, goahttp.RequestDecoder, goahttp.ResponseEncoder, nil, nil))
+
+		req := httptest.NewRequest(http.MethodPut, "/vote_links/responses", strings.NewReader(`{"vote_token":"`+token+`","abstain":true}`))
+		req.Header.Set("Content-Type", "application/json")
+		rec := httptest.NewRecorder()
+		lockedMux.ServeHTTP(rec, req)
+
+		assertLockedBallotConflict(t, rec, *paths, http.MethodPut+" /v2/voting/vote/"+linkBallotUID)
+	})
+
 	t.Run("tampered token is rejected before ITX", func(t *testing.T) {
 		for _, method := range []string{http.MethodPost, http.MethodPut} {
 			rec := serve(method, "/vote_links/responses", `{"vote_token":"`+token+`x","abstain":true}`)
@@ -881,12 +905,12 @@ func TestVoteLinkBallotContract(t *testing.T) {
 				w.Header().Set("Content-Type", "application/json")
 				switch r.URL.Path {
 				case "/v2/voting/vote/" + linkBallotUID:
-					_, _ = io.WriteString(w, `{"vote_id":"`+linkBallotUID+`","poll_id":"`+linkVoteUID+`","vote_status":"responded","abstained":false,"user_email":"voter@example.org","voter_removed":false,`+
+					_, _ = io.WriteString(w, `{"vote_id":"`+linkBallotUID+`","poll_id":"`+linkVoteUID+`","vote_status":"responded","abstained":false,"user_email":"voter@example.org","voter_removed":false,"allow_vote_change":false,"can_change_vote":false,`+
 						`"poll_answers":[{"question_id":"q1","prompt":"Who?","type":"single_choice","user_choice":[{"choice_id":"c-a","choice_text":"Alice"}]}],"comment_responses":[]}`)
 				case "/v2/voting/poll/" + linkVoteUID:
 					_, _ = io.WriteString(w, `{"poll_id":"`+linkVoteUID+`","name":"TSC election","description":"Pick one","status":"active","end_time":"2030-01-01T00:00:00Z",`+
 						`"project_id":"a0941000002wBz4AAE","project_name":"cncf","committee_id":"c1","total_voting_request_invitations":9,"num_response_received":4,`+tc.pseudoField+
-						`"allow_abstain":true,"poll_type":"generic","poll_questions":[{"question_id":"q1","prompt":"Who?","type":"single_choice","choices":[{"choice_id":"c-a","choice_text":"Alice"}]}]}`)
+						`"allow_abstain":true,"allow_vote_change":false,"poll_type":"generic","poll_questions":[{"question_id":"q1","prompt":"Who?","type":"single_choice","choices":[{"choice_id":"c-a","choice_text":"Alice"}]}]}`)
 				default:
 					w.WriteHeader(http.StatusNotFound)
 				}
@@ -949,6 +973,11 @@ func TestVoteLinkBallotContract(t *testing.T) {
 			if string(ballot["already_voted"]) != "true" {
 				t.Errorf("already_voted = %s", ballot["already_voted"])
 			}
+			// The setting and the ballot's finality are not ballot contents: both are returned
+			// on regular and pseudo-anonymous votes alike.
+			if string(body["allow_vote_change"]) != "false" || string(ballot["can_change_vote"]) != "false" {
+				t.Errorf("allow_vote_change = %s, ballot.can_change_vote = %s, want false/false", body["allow_vote_change"], ballot["can_change_vote"])
+			}
 			_, hasAnswers := ballot["poll_answers"]
 			if hasAnswers != tc.wantAnswers {
 				t.Errorf("poll_answers present = %v, want %v: %s", hasAnswers, tc.wantAnswers, body["ballot"])
@@ -986,6 +1015,7 @@ func TestVoteMethodContract(t *testing.T) {
 		extra       string
 		wantType    string
 		wantWinners string
+		wantChange  string
 		invalid     string
 	}{
 		{name: "update omitted", method: http.MethodPut},
@@ -1001,6 +1031,9 @@ func TestVoteMethodContract(t *testing.T) {
 		{name: "update zero count", method: http.MethodPut, extra: `,"poll_type":"meek_stv","num_winners":0`, invalid: "num_winners"},
 		{name: "update one count", method: http.MethodPut, extra: `,"poll_type":"meek_stv","num_winners":1`, invalid: "num_winners"},
 		{name: "update count above maximum", method: http.MethodPut, extra: `,"num_winners":11`, invalid: "num_winners"},
+		{name: "update allow_vote_change null", method: http.MethodPut, extra: `,"allow_vote_change":null`},
+		{name: "update allow_vote_change false", method: http.MethodPut, extra: `,"allow_vote_change":false`, wantChange: "false"},
+		{name: "update allow_vote_change true", method: http.MethodPut, extra: `,"allow_vote_change":true`, wantChange: "true"},
 		{name: "create omitted", method: http.MethodPost, wantType: `"generic"`},
 		{name: "create generic omitted count", method: http.MethodPost, extra: `,"poll_type":"generic"`, wantType: `"generic"`},
 		{name: "create condorcet omitted count", method: http.MethodPost, extra: `,"poll_type":"condorcet_irv"`, wantType: `"condorcet_irv"`},
@@ -1008,6 +1041,8 @@ func TestVoteMethodContract(t *testing.T) {
 		{name: "create generic explicit count", method: http.MethodPost, extra: `,"poll_type":"generic","num_winners":4`, wantType: `"generic"`, wantWinners: "4"},
 		{name: "create STV omitted count", method: http.MethodPost, extra: `,"poll_type":"meek_stv"`, wantType: `"meek_stv"`, wantWinners: "2"},
 		{name: "create STV explicit count", method: http.MethodPost, extra: `,"poll_type":"meek_stv","num_winners":4`, wantType: `"meek_stv"`, wantWinners: "4"},
+		{name: "create allow_vote_change false", method: http.MethodPost, extra: `,"allow_vote_change":false`, wantType: `"generic"`, wantChange: "false"},
+		{name: "create allow_vote_change true", method: http.MethodPost, extra: `,"allow_vote_change":true`, wantType: `"generic"`, wantChange: "true"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1045,7 +1080,7 @@ func TestVoteMethodContract(t *testing.T) {
 				t.Helper()
 				select {
 				case got := <-wire:
-					for key, want := range map[string]string{"poll_type": tt.wantType, "num_winners": tt.wantWinners} {
+					for key, want := range map[string]string{"poll_type": tt.wantType, "num_winners": tt.wantWinners, "allow_vote_change": tt.wantChange} {
 						value, present := got[key]
 						if want == "" && present {
 							t.Errorf("%s must be absent, got %s", key, value)
@@ -1058,6 +1093,15 @@ func TestVoteMethodContract(t *testing.T) {
 				}
 			}
 			assertWire(t)
+			// The fake ITX response carries no allow_vote_change, like a legacy poll: the
+			// result must still report the resolved setting.
+			var result map[string]json.RawMessage
+			if err := json.Unmarshal(response.Body.Bytes(), &result); err != nil {
+				t.Fatalf("decode response: %v", err)
+			}
+			if string(result["allow_vote_change"]) != "true" {
+				t.Errorf("allow_vote_change: want true for a legacy poll, got %s", result["allow_vote_change"])
+			}
 			if tt.method == http.MethodPut {
 				t.Run("generated CLI and client body", func(t *testing.T) {
 					payload, err := voteclient.BuildUpdateVotePayload(body, uid, "")
@@ -1166,6 +1210,83 @@ func TestEndVoteMethodContract(t *testing.T) {
 			}
 		}
 	})
+}
+
+// lockedBallotMessage is the ITX message for a change to a submitted ballot on a poll whose
+// allow_vote_change is false.
+const lockedBallotMessage = "this poll does not allow changing a submitted vote"
+
+// lockedBallotUpstream fakes ITX rejecting every ballot update with its 409 body and records
+// the request paths it received.
+func lockedBallotUpstream(t *testing.T) (*httptest.Server, *[]string) {
+	t.Helper()
+	var paths []string
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.Method+" "+r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = io.WriteString(w, `{"code":"409","message":"`+lockedBallotMessage+`"}`)
+	}))
+	t.Cleanup(upstream.Close)
+	return upstream, &paths
+}
+
+// mirrorHandleError mirrors cmd/voting-api handleError for the conflict path: a domain
+// conflict becomes the Goa ConflictError, which the generated encoder renders only when the
+// method declares a Conflict response.
+func mirrorHandleError(err error) error {
+	if domain.GetErrorType(err) == domain.ErrorTypeConflict {
+		return &votesvc.ConflictError{Code: "409", Message: err.Error()}
+	}
+	return err
+}
+
+// assertLockedBallotConflict checks that a ballot update rejected by ITX reached ITX once and
+// was returned to the client as 409 with ITX's message.
+func assertLockedBallotConflict(t *testing.T, response *httptest.ResponseRecorder, paths []string, wantPath string) {
+	t.Helper()
+	if response.Code != http.StatusConflict {
+		t.Fatalf("HTTP status: want 409, got %d: %s", response.Code, response.Body)
+	}
+	var body struct{ Code, Message string }
+	if err := json.Unmarshal(response.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode response: %v: %s", err, response.Body)
+	}
+	if body.Code != "409" || body.Message != lockedBallotMessage {
+		t.Errorf("error body: want code 409 and ITX's message, got %s", response.Body)
+	}
+	if len(paths) != 1 || paths[0] != wantPath {
+		t.Errorf("upstream calls: want [%s], got %v", wantPath, paths)
+	}
+}
+
+// TestUpdateVoteResponseConflictContract drives PUT /vote_responses/{uid} through the generated
+// server transport (with the production nil formatter), converters and service to the proxy's
+// HTTP serialization. ITX's 409 for a locked ballot must reach the client as 409 with ITX's
+// message rather than falling through to the default 500.
+func TestUpdateVoteResponseConflictContract(t *testing.T) {
+	const ballotUID = "b03cdbaf-53b1-4d47-bc04-dd7e459dd309"
+	upstream, paths := lockedBallotUpstream(t)
+	client := NewContractTestClient(upstream.Client(), upstream.URL+"/")
+	responses := service.NewVoteResponseService(nil, client, methodContractIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	update := func(ctx context.Context, payload any) (any, error) {
+		ctx = context.WithValue(ctx, constants.PrincipalContextID, "synthetic-contract-user")
+		p := payload.(*votesvc.UpdateVoteResponsePayload)
+		req, err := converters.ConvertUpdateVoteResponsePayloadToDomain(p)
+		if err != nil {
+			return nil, mirrorHandleError(err)
+		}
+		return nil, mirrorHandleError(responses.UpdateVoteResponse(ctx, p.VoteResponseUID, req))
+	}
+	mux := goahttp.NewMuxer()
+	voteserver.MountUpdateVoteResponseHandler(mux, voteserver.NewUpdateVoteResponseHandler(update, mux, goahttp.RequestDecoder, goahttp.ResponseEncoder, nil, nil))
+
+	request := httptest.NewRequest(http.MethodPut, "/vote_responses/"+ballotUID, strings.NewReader(`{"abstain":true}`))
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+	mux.ServeHTTP(response, request)
+
+	assertLockedBallotConflict(t, response, *paths, http.MethodPut+" /v2/voting/vote/"+ballotUID)
 }
 
 func voteMethodContractMux(t *testing.T, wire chan<- map[string]json.RawMessage) http.Handler {

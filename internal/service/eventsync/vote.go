@@ -65,6 +65,7 @@ func convertMapToVoteData(
 		PseudoAnonymity:               pollDB.PseudoAnonymity,
 		NumWinners:                    pollDB.NumWinners,
 		AllowAbstain:                  pollDB.AllowAbstain,
+		AllowVoteChange:               itx.VoteChangeAllowed(pollDB.AllowVoteChange),
 	}
 
 	// Map v1 project ID (SFID) to v2 project UID

@@ -72,6 +72,7 @@ var _ = Service("vote", func() {
 			PollTypeAttribute(true)
 			NumWinnersAttribute()
 			AllowAbstainAttribute()
+			AllowVoteChangeAttribute()
 			QuorumPercentageAttribute()
 			WinningThresholdPercentageAttribute()
 
@@ -148,6 +149,7 @@ var _ = Service("vote", func() {
 			PollTypeAttribute(false)
 			NumWinnersAttribute()
 			AllowAbstainAttribute()
+			AllowVoteChangeAttribute()
 			QuorumPercentageAttribute()
 			WinningThresholdPercentageAttribute()
 
@@ -422,7 +424,8 @@ var _ = Service("vote", func() {
 	})
 
 	Method("update_vote_response", func() {
-		Description("Update vote response (proxies to ITX PUT /voting/vote/{vote_id})")
+		Description("Update vote response (proxies to ITX PUT /voting/vote/{vote_id}). " +
+			"Returns 409 when the vote does not allow changing a submitted ballot.")
 
 		Security(JWTAuth, func() {
 			Scope("manage:projects")
@@ -449,6 +452,7 @@ var _ = Service("vote", func() {
 			Response("Unauthorized", StatusUnauthorized)
 			Response("Forbidden", StatusForbidden)
 			Response("NotFound", StatusNotFound)
+			Response("Conflict", StatusConflict)
 			Response("InternalServerError", StatusInternalServerError)
 			Response("ServiceUnavailable", StatusServiceUnavailable)
 		})
@@ -493,7 +497,8 @@ var _ = Service("vote", func() {
 			"(proxies to ITX PUT /voting/vote/{vote_id}). The ballot is identified only by the token. " +
 			"External callers send no Authorization header: the gateway (Heimdall) admits the request " +
 			"anonymously and supplies the JWT shown in this spec's security requirement. " +
-			"Omitting comment_responses preserves existing comments; including it (even empty) replaces them.")
+			"Omitting comment_responses preserves existing comments; including it (even empty) replaces them. " +
+			"Returns 409 when the vote does not allow changing a submitted ballot.")
 
 		// Heimdall admits this route anonymously and still mints its JWT (principal
 		// "_anonymous"); JWTAuth only proves the request came through the gateway. No

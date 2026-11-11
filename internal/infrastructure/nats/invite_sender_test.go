@@ -22,7 +22,7 @@ import (
 func TestNATSInviteSender_SendInvite(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	expires := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
-	req := inviteapi.SendInviteRequest{RecipientEmail: "alice@example.com", RecipientName: "Alice Example"}
+	req := inviteapi.SendInviteRequest{Recipient: &inviteapi.Recipient{Email: "alice@example.com", Name: "Alice Example"}}
 
 	reply := func(v any) *natsgo.Msg {
 		b, err := json.Marshal(v)

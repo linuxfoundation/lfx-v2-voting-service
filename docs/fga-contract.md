@@ -64,6 +64,8 @@ _(none set by the vote message itself)_
 
 > The update message is skipped entirely if both `ProjectUID` and `CommitteeUID` are empty.
 
+> `allow_vote_change` is not an access-control input: it adds no relations, references or tuples. Who may update a ballot is still decided by the `owner` check on `vote_response` (or a personalized link token), and ITX enforces ballot finality.
+
 ### Vote Participant
 
 `vote#viewer` is `[user:*] or auditor or participant`, and both `GET /votes/{uid}` and the indexed `vote_response` rows (`AccessCheckObject: vote:{uid}`, `AccessCheckRelation: viewer`) are gated on it. An invitee's `owner` tuple on their own `vote_response` does not grant `viewer` on the vote, so every invitee with a username is made a `participant` of the vote.

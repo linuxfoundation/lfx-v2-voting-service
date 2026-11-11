@@ -2001,6 +2001,7 @@ func EncodeUpdateVoteResponseRequest(encoder func(*http.Request) goahttp.Encoder
 // response body should be restored after having been read.
 // DecodeUpdateVoteResponseResponse may return the following errors:
 //   - "BadRequest" (type *vote.BadRequestError): http.StatusBadRequest
+//   - "Conflict" (type *vote.ConflictError): http.StatusConflict
 //   - "Forbidden" (type *vote.ForbiddenError): http.StatusForbidden
 //   - "InternalServerError" (type *vote.InternalServerError): http.StatusInternalServerError
 //   - "NotFound" (type *vote.NotFoundError): http.StatusNotFound
@@ -2038,6 +2039,20 @@ func DecodeUpdateVoteResponseResponse(decoder func(*http.Response) goahttp.Decod
 				return nil, goahttp.ErrValidationError("vote", "update_vote_response", err)
 			}
 			return nil, NewUpdateVoteResponseBadRequest(&body)
+		case http.StatusConflict:
+			var (
+				body UpdateVoteResponseConflictResponseBody
+				err  error
+			)
+			err = decoder(resp).Decode(&body)
+			if err != nil {
+				return nil, goahttp.ErrDecodingError("vote", "update_vote_response", err)
+			}
+			err = ValidateUpdateVoteResponseConflictResponseBody(&body)
+			if err != nil {
+				return nil, goahttp.ErrValidationError("vote", "update_vote_response", err)
+			}
+			return nil, NewUpdateVoteResponseConflict(&body)
 		case http.StatusForbidden:
 			var (
 				body UpdateVoteResponseForbiddenResponseBody
@@ -3500,10 +3515,11 @@ func unmarshalCommentResponseResponseBodyToVoteCommentResponse(v *CommentRespons
 // type *vote.VoteLinkBallot from a value of type *VoteLinkBallotResponseBody.
 func unmarshalVoteLinkBallotResponseBodyToVoteVoteLinkBallot(v *VoteLinkBallotResponseBody) *vote.VoteLinkBallot {
 	res := &vote.VoteLinkBallot{
-		VoteStatus:   *v.VoteStatus,
-		AlreadyVoted: *v.AlreadyVoted,
-		VoterRemoved: *v.VoterRemoved,
-		Abstained:    v.Abstained,
+		VoteStatus:    *v.VoteStatus,
+		AlreadyVoted:  *v.AlreadyVoted,
+		VoterRemoved:  *v.VoterRemoved,
+		CanChangeVote: v.CanChangeVote,
+		Abstained:     v.Abstained,
 	}
 	if v.PollAnswers != nil {
 		res.PollAnswers = make([]*vote.VoteAnswer, len(v.PollAnswers))
