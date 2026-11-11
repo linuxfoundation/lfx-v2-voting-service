@@ -1,30 +1,32 @@
 ---
 description: Architectural guidance for the eventing package
-globs: cmd/voting-api/eventing/**
+globs: cmd/voting-api/eventing/**,internal/service/eventsync/**
 alwaysApply: false
 ---
 
-# Eventing Package — Architecture Boundary
+# Eventing — Architecture Boundary
 
-`cmd/voting-api/eventing/` contains **known technical debt**: business logic that belongs in `internal/service/` has accumulated here instead.
+v1→v2 sync logic lives in `internal/service/eventsync`, behind one interface: `Syncer.Sync(ctx, Entry) Outcome`.
+`cmd/voting-api/eventing/` is only the NATS adapter: consumer lifecycle, ACK/NAK with backoff, and the
+adapters for the poll-privacy read and the invite hook.
 
 ## Do not make it worse
 
-- **Do not add new business logic here.** If you are adding substantive transformation or decision-making, place it in `internal/service/` and call it from the handler.
-- **Do not add new infrastructure wiring here.** Wire dependencies in `cmd/voting-api/main.go`.
-- The correct long-term location for event handler business logic is `internal/service/`. The KV subscription plumbing stays in `cmd/voting-api/eventing/`; move decision-making and data transformation out to the service layer.
+- **Do not add sync logic to `cmd/voting-api/eventing/`.** Decisions, conversion and ordering belong in `internal/service/eventsync`.
+- **Do not add infrastructure wiring here beyond the adapters.** Wire dependencies in `cmd/voting-api/main.go` and `NewEventProcessor`.
+- `internal/service/eventsync` imports `internal/domain` and shared `pkg/` models and utilities only. No `internal/infrastructure`, NATS or JetStream types, in production code or tests.
 
-## Patterns you must follow when touching this package
+## Patterns you must follow
 
-**ACK/NAK semantics** — every handler returns `bool`:
-- `true` → NAK (retry with exponential backoff)
-- `false` → ACK (done, even on permanent errors)
+**Outcome semantics** — `Sync` returns `Retry` (NAK with exponential backoff) or `Ack` (done, even on permanent errors).
 
-**Tombstone before delete** — `handleXxxDelete` must check `isTombstonedMapping` before publishing. Skipping this causes duplicate delete events on redelivery.
+**Tombstone before delete** — the shared delete flow in `resource.go` skips a mapping that is already tombstoned. Skipping this causes duplicate delete events on redelivery.
 
-**Transient vs permanent errors** — call `isTransientError(err)` on ID-mapping and publish errors. Return `true` (NAK) for transient, `false` (ACK) for permanent.
+**Transient vs permanent errors** — the shared flow uses `isTransientError` on publish errors. A resource decides in its spec whether conversion errors may be retried (`retryOnConvertError`).
 
-**KV prefix routing** — new entity types are added to the `switch prefix` in `handleKVPut` and `handleResourceDelete` in `kv_handler.go`.
+**Mapping state** — read and write through `domain.MappingStore`, never raw `v1-mappings` keys. The key format and `!del` marker are an on-disk contract kept in `internal/infrastructure/mappings`.
+
+**New entity types** — add a `MappingKind`, a resource spec, and register the prefix in `eventsync.New`.
 
 ## Further reading
 

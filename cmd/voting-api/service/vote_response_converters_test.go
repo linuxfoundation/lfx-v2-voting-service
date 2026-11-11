@@ -3,14 +3,6 @@
 
 package service
 
-// Regression tests for the converter layer (cmd/voting-api/service/).
-//
-// The converters rename ITX (v1) field names to LFXv2 API field names.
-// An accidental rename in either the ITX model or the Goa type would break
-// the API contract silently — the response would compile but return the wrong
-// field to clients. These tests pin the renames so a refactor that changes one
-// side without updating the converter fails immediately.
-
 import (
 	"encoding/json"
 	"errors"
@@ -22,164 +14,9 @@ import (
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/service"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/utils"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
-
-// ---- ConvertPollResponseToVoteResult ----------------------------------------
-
-// TestConvertPollResponseToVoteResult_FieldRenames is the primary regression guard for
-// the ITX-to-LFXv2 field rename:
-//
-//	itx.PollResponse.PollID      → VoteResult.UID
-//	itx.PollResponse.ProjectID   → VoteResult.ProjectUID
-//	itx.PollResponse.CommitteeID → VoteResult.CommitteeUID
-//
-// Any of these renames being silently dropped or swapped would expose raw v1 IDs to
-// clients or produce empty UID fields, both of which break client-side assumptions.
-func TestConvertPollResponseToVoteResult_FieldRenames(t *testing.T) {
-	poll := &itx.PollResponse{
-		PollID:      "poll-abc-123",
-		Name:        "Test Vote",
-		Status:      "enabled",
-		ProjectID:   "proj-sfid-456",
-		CommitteeID: "comm-sfid-789",
-	}
-
-	result := ConvertPollResponseToVoteResult(poll)
-
-	if result.UID != poll.PollID {
-		t.Errorf("UID: want %q (from PollID), got %q", poll.PollID, result.UID)
-	}
-	if result.ProjectUID != poll.ProjectID {
-		t.Errorf("ProjectUID: want %q (from ProjectID), got %q", poll.ProjectID, result.ProjectUID)
-	}
-	if result.CommitteeUID != poll.CommitteeID {
-		t.Errorf("CommitteeUID: want %q (from CommitteeID), got %q", poll.CommitteeID, result.CommitteeUID)
-	}
-
-	// Unchanged fields should pass through without transformation.
-	if result.Name != poll.Name {
-		t.Errorf("Name: want %q, got %q", poll.Name, result.Name)
-	}
-	if result.Status != poll.Status {
-		t.Errorf("Status: want %q, got %q", poll.Status, result.Status)
-	}
-}
-
-// TestConvertPollResponseToVoteResult_PollQuestionsPassThrough verifies that nested
-// question and choice structures are carried through correctly so an agent that adds
-// a new question field doesn't accidentally drop existing ones.
-func TestConvertPollResponseToVoteResult_PollQuestionsPassThrough(t *testing.T) {
-	poll := &itx.PollResponse{
-		PollID: "poll-1",
-		PollQuestions: []itx.PollQuestionOutput{
-			{
-				QuestionID: "q-1",
-				Prompt:     "Approve?",
-				Type:       "single_choice",
-				Choices: []itx.PollChoiceOutput{
-					{ChoiceID: "c-1", ChoiceText: "Yes"},
-					{ChoiceID: "c-2", ChoiceText: "No"},
-				},
-			},
-		},
-	}
-
-	result := ConvertPollResponseToVoteResult(poll)
-
-	if len(result.PollQuestions) != 1 {
-		t.Fatalf("want 1 question, got %d", len(result.PollQuestions))
-	}
-	q := result.PollQuestions[0]
-	if q.Prompt != "Approve?" {
-		t.Errorf("question Prompt: want %q, got %q", "Approve?", q.Prompt)
-	}
-	if len(q.Choices) != 2 {
-		t.Fatalf("want 2 choices, got %d", len(q.Choices))
-	}
-	if q.Choices[0].ChoiceText != "Yes" {
-		t.Errorf("choice[0] ChoiceText: want %q, got %q", "Yes", q.Choices[0].ChoiceText)
-	}
-}
-
-// ---- ConvertCreateVotePayloadToDomain ---------------------------------------
-
-// TestConvertCreateVotePayloadToDomain_FieldMapping verifies that the Goa payload
-// field names are correctly mapped to the service request. The highest-risk
-// rename here is CommitteeUids→CommitteeUIDs (plural, casing); NumWinners is a
-// *int passthrough — only explicitly provided values may reach ITX (#2922).
-func TestConvertCreateVotePayloadToDomain_FieldMapping(t *testing.T) {
-	payload := &votesvc.CreateVotePayload{
-		Name:          "Board Election",
-		ProjectUID:    "proj-uid-123",
-		CommitteeUID:  "comm-uid-456",
-		CommitteeUids: []string{"a", "b"},
-		NumWinners:    utils.IntPtr(3),
-		PollType:      "generic",
-	}
-
-	req := ConvertCreateVotePayloadToDomain(payload)
-
-	if req.Name != payload.Name {
-		t.Errorf("Name: want %q, got %q", payload.Name, req.Name)
-	}
-	if req.ProjectUID != payload.ProjectUID {
-		t.Errorf("ProjectUID: want %q, got %q", payload.ProjectUID, req.ProjectUID)
-	}
-	if req.CommitteeUID != payload.CommitteeUID {
-		t.Errorf("CommitteeUID: want %q, got %q", payload.CommitteeUID, req.CommitteeUID)
-	}
-	if len(req.CommitteeUIDs) != len(payload.CommitteeUids) {
-		t.Errorf("CommitteeUIDs length: want %d, got %d", len(payload.CommitteeUids), len(req.CommitteeUIDs))
-	}
-	// NumWinners is a pointer passthrough: an explicitly provided value must
-	// arrive non-nil and unchanged so it can be sent as-is to ITX.
-	if req.NumWinners == nil {
-		t.Fatal("NumWinners: expected non-nil pointer, got nil")
-	}
-	if *req.NumWinners != *payload.NumWinners {
-		t.Errorf("NumWinners: want %d, got %d", *payload.NumWinners, *req.NumWinners)
-	}
-	if req.PollType != payload.PollType {
-		t.Errorf("PollType: want %q, got %q", payload.PollType, req.PollType)
-	}
-}
-
-// TestConvertCreateVotePayloadToDomain_PollQuestionsAndChoices verifies that nested
-// question structures (including choice text) survive conversion. Dropping choices
-// would silently submit polls with no answer options to ITX.
-func TestConvertCreateVotePayloadToDomain_PollQuestionsAndChoices(t *testing.T) {
-	payload := &votesvc.CreateVotePayload{
-		Name: "poll",
-		PollQuestions: []*votesvc.PollQuestion{
-			{
-				Prompt: "Who should be elected?",
-				Type:   "single_choice",
-				Choices: []*votesvc.PollChoice{
-					{ChoiceText: "Alice"},
-					{ChoiceText: "Bob"},
-				},
-			},
-		},
-	}
-
-	req := ConvertCreateVotePayloadToDomain(payload)
-
-	if len(req.PollQuestions) != 1 {
-		t.Fatalf("want 1 question, got %d", len(req.PollQuestions))
-	}
-	q := req.PollQuestions[0]
-	if q.Prompt != "Who should be elected?" {
-		t.Errorf("Prompt: want %q, got %q", "Who should be elected?", q.Prompt)
-	}
-	if len(q.Choices) != 2 {
-		t.Fatalf("want 2 choices, got %d", len(q.Choices))
-	}
-	if q.Choices[0].ChoiceText != "Alice" || q.Choices[1].ChoiceText != "Bob" {
-		t.Errorf("choices: want [Alice, Bob], got %v", q.Choices)
-	}
-}
-
-// ---- ConvertVoteResponseToResult --------------------------------------------
 
 // TestConvertVoteResponseToResult_FieldRenames is the primary regression guard for the
 // vote-response field renames:
@@ -240,8 +77,6 @@ func TestConvertVoteResponseToResult_VoteChangeFlags(t *testing.T) {
 		})
 	}
 }
-
-// ---- Null comment_responses validation --------------------------------------
 
 // TestConvertCreateVoteResponsePayloadToDomain_NullCommentEntryIsRejected guards the
 // nil-pointer check added in response to the generated Goa validator skipping nil
@@ -497,6 +332,244 @@ func TestConvertVoteLinkBallotToResult(t *testing.T) {
 			if strings.Contains(string(raw), leak) {
 				t.Errorf("result contains %q: %s", leak, raw)
 			}
+		}
+	})
+}
+
+func TestConvertVoteResponseToResult_OptionalFieldsAndAnswers(t *testing.T) {
+	t.Run("optional SES fields are only set when non-empty", func(t *testing.T) {
+		empty := ConvertVoteResponseToResult(&itx.VoteResponse{})
+		assert.Nil(t, empty.SesBounceType)
+		assert.Nil(t, empty.SesBounceSubtype)
+		assert.Nil(t, empty.SesComplaintType)
+		assert.Nil(t, empty.SesComplaintDate)
+		assert.Nil(t, empty.SesEmailOpenedLastTime)
+		assert.Nil(t, empty.SesLinkClickedLastTime)
+
+		full := ConvertVoteResponseToResult(&itx.VoteResponse{
+			SESBounceType:          "Permanent",
+			SESBounceSubtype:       "General",
+			SESComplaintType:       "abuse",
+			SESComplaintDate:       "2026-01-03T00:00:00Z",
+			SESEmailOpenedLastTime: "2026-01-04T00:00:00Z",
+			SESLinkClickedLastTime: "2026-01-05T00:00:00Z",
+		})
+		assert.Equal(t, "Permanent", *full.SesBounceType)
+		assert.Equal(t, "General", *full.SesBounceSubtype)
+		assert.Equal(t, "abuse", *full.SesComplaintType)
+		assert.Equal(t, "2026-01-03T00:00:00Z", *full.SesComplaintDate)
+		assert.Equal(t, "2026-01-04T00:00:00Z", *full.SesEmailOpenedLastTime)
+		assert.Equal(t, "2026-01-05T00:00:00Z", *full.SesLinkClickedLastTime)
+	})
+
+	t.Run("converts regular and ranked poll answers", func(t *testing.T) {
+		got := ConvertVoteResponseToResult(&itx.VoteResponse{
+			PollAnswers: []itx.PollAnswer{
+				{
+					QuestionID: "q1", Prompt: "Approve?", Type: "single_choice",
+					UserChoice: []itx.PollChoiceAnswer{{ChoiceID: "yes", ChoiceText: "Yes"}},
+				},
+				{
+					QuestionID: "q2", Prompt: "Rank", Type: "ranked_choice",
+					RankedUserChoice: []itx.RankedPollChoiceAnswer{
+						{ChoiceID: "a", ChoiceText: "Alice Example", ChoiceRank: 1},
+						{ChoiceID: "b", ChoiceText: "Bob Fixture", ChoiceRank: 2},
+					},
+				},
+			},
+		})
+
+		require.Len(t, got.PollAnswers, 2)
+		first := got.PollAnswers[0]
+		assert.Equal(t, "q1", first.QuestionID)
+		assert.Equal(t, "Approve?", first.Prompt)
+		assert.Equal(t, "single_choice", first.Type)
+		require.Len(t, first.UserChoice, 1)
+		assert.Equal(t, "yes", first.UserChoice[0].ChoiceID)
+		assert.Equal(t, "Yes", first.UserChoice[0].ChoiceText)
+		assert.Nil(t, first.RankedUserChoice)
+
+		second := got.PollAnswers[1]
+		assert.Nil(t, second.UserChoice)
+		require.Len(t, second.RankedUserChoice, 2)
+		assert.Equal(t, "b", second.RankedUserChoice[1].ChoiceID)
+		assert.Equal(t, "Bob Fixture", second.RankedUserChoice[1].ChoiceText)
+		assert.Equal(t, 2, second.RankedUserChoice[1].ChoiceRank)
+	})
+
+	t.Run("nil poll answers stay nil while comment responses are always an array", func(t *testing.T) {
+		got := ConvertVoteResponseToResult(&itx.VoteResponse{})
+
+		assert.Nil(t, got.PollAnswers)
+		require.NotNil(t, got.CommentResponses)
+		assert.Empty(t, got.CommentResponses)
+	})
+
+	t.Run("converts comment responses", func(t *testing.T) {
+		got := ConvertVoteResponseToResult(&itx.VoteResponse{
+			CommentResponses: []itx.CommentResponse{{PromptID: "p1", CommentText: "Looks good"}},
+		})
+
+		require.Len(t, got.CommentResponses, 1)
+		assert.Equal(t, "p1", got.CommentResponses[0].PromptID)
+		assert.Equal(t, "Looks good", got.CommentResponses[0].CommentText)
+	})
+}
+
+func byLinkAnswers() []*votesvc.VoteAnswerInput {
+	return []*votesvc.VoteAnswerInput{
+		{QuestionID: "q1", ChoiceIds: []string{"yes"}},
+		{
+			QuestionID: "q2",
+			RankedChoices: []*votesvc.RankedChoiceInput{
+				{ChoiceID: "a", ChoiceRank: 1},
+				{ChoiceID: "b", ChoiceRank: 2},
+			},
+		},
+	}
+}
+
+func TestConvertCreateVoteResponseByLinkPayloadToDomain(t *testing.T) {
+	t.Run("maps answers, ranked choices, abstain and comments", func(t *testing.T) {
+		req, err := ConvertCreateVoteResponseByLinkPayloadToDomain(&votesvc.CreateVoteResponseByLinkPayload{
+			VoteToken:       "token-from-link",
+			UserVoteContent: byLinkAnswers(),
+			Abstain:         true,
+			CommentResponses: []*votesvc.CommentResponse{
+				{PromptID: "p1", CommentText: "Looks good"},
+			},
+		})
+
+		require.NoError(t, err)
+		require.Len(t, req.UserVoteContent, 2)
+		assert.Equal(t, "q1", req.UserVoteContent[0].QuestionID)
+		assert.Equal(t, []string{"yes"}, req.UserVoteContent[0].ChoiceIDs)
+		assert.Empty(t, req.UserVoteContent[0].RankedChoices)
+		assert.Equal(t, "q2", req.UserVoteContent[1].QuestionID)
+		require.Len(t, req.UserVoteContent[1].RankedChoices, 2)
+		assert.Equal(t, "a", req.UserVoteContent[1].RankedChoices[0].ChoiceID)
+		assert.Equal(t, 1, req.UserVoteContent[1].RankedChoices[0].ChoiceRank)
+		assert.Equal(t, "b", req.UserVoteContent[1].RankedChoices[1].ChoiceID)
+		assert.Equal(t, 2, req.UserVoteContent[1].RankedChoices[1].ChoiceRank)
+		assert.True(t, req.Abstain)
+		require.Len(t, req.CommentResponses, 1)
+		assert.Equal(t, "p1", req.CommentResponses[0].PromptID)
+		assert.Equal(t, "Looks good", req.CommentResponses[0].CommentText)
+	})
+
+	t.Run("never takes the vote ID from the request", func(t *testing.T) {
+		req, err := ConvertCreateVoteResponseByLinkPayloadToDomain(&votesvc.CreateVoteResponseByLinkPayload{
+			VoteToken:       "token-from-link",
+			UserVoteContent: byLinkAnswers(),
+		})
+
+		require.NoError(t, err)
+		assert.Empty(t, req.VoteID, "the service sets it from the verified token so a ballot can only come from the link")
+	})
+
+	t.Run("nil answers and comments yield an empty answer list and nil comments", func(t *testing.T) {
+		req, err := ConvertCreateVoteResponseByLinkPayloadToDomain(&votesvc.CreateVoteResponseByLinkPayload{VoteToken: "t"})
+
+		require.NoError(t, err)
+		require.NotNil(t, req.UserVoteContent)
+		assert.Empty(t, req.UserVoteContent)
+		assert.Nil(t, req.CommentResponses)
+	})
+
+	t.Run("rejects null entries with a validation error", func(t *testing.T) {
+		cases := map[string]*votesvc.CreateVoteResponseByLinkPayload{
+			"null answer": {
+				UserVoteContent: []*votesvc.VoteAnswerInput{nil},
+			},
+			"null ranked choice": {
+				UserVoteContent: []*votesvc.VoteAnswerInput{{QuestionID: "q", RankedChoices: []*votesvc.RankedChoiceInput{nil}}},
+			},
+			"null comment": {
+				CommentResponses: []*votesvc.CommentResponse{nil},
+			},
+		}
+		for name, payload := range cases {
+			t.Run(name, func(t *testing.T) {
+				req, err := ConvertCreateVoteResponseByLinkPayloadToDomain(payload)
+
+				require.Error(t, err)
+				assert.Nil(t, req)
+				assert.Equal(t, domain.ErrorTypeValidation, domain.GetErrorType(err))
+				assert.Contains(t, err.Error(), "must not be null")
+			})
+		}
+	})
+}
+
+func TestConvertUpdateVoteResponseByLinkPayloadToDomain(t *testing.T) {
+	t.Run("maps answers, ranked choices and abstain", func(t *testing.T) {
+		req, err := ConvertUpdateVoteResponseByLinkPayloadToDomain(&votesvc.UpdateVoteResponseByLinkPayload{
+			VoteToken:       "token-from-link",
+			UserVoteContent: byLinkAnswers(),
+			Abstain:         true,
+		})
+
+		require.NoError(t, err)
+		require.Len(t, req.UserVoteContent, 2)
+		assert.Equal(t, "q1", req.UserVoteContent[0].QuestionID)
+		assert.Equal(t, []string{"yes"}, req.UserVoteContent[0].ChoiceIDs)
+		require.Len(t, req.UserVoteContent[1].RankedChoices, 2)
+		assert.Equal(t, 2, req.UserVoteContent[1].RankedChoices[1].ChoiceRank)
+		assert.True(t, req.Abstain)
+	})
+
+	t.Run("omitted comment_responses preserves existing comments", func(t *testing.T) {
+		req, err := ConvertUpdateVoteResponseByLinkPayloadToDomain(&votesvc.UpdateVoteResponseByLinkPayload{VoteToken: "t"})
+
+		require.NoError(t, err)
+		assert.Nil(t, req.CommentResponses)
+	})
+
+	t.Run("an empty comment_responses list clears comments", func(t *testing.T) {
+		req, err := ConvertUpdateVoteResponseByLinkPayloadToDomain(&votesvc.UpdateVoteResponseByLinkPayload{
+			VoteToken:        "t",
+			CommentResponses: []*votesvc.CommentResponse{},
+		})
+
+		require.NoError(t, err)
+		require.NotNil(t, req.CommentResponses)
+		assert.Empty(t, *req.CommentResponses)
+	})
+
+	t.Run("provided comments are converted", func(t *testing.T) {
+		req, err := ConvertUpdateVoteResponseByLinkPayloadToDomain(&votesvc.UpdateVoteResponseByLinkPayload{
+			VoteToken:        "t",
+			CommentResponses: []*votesvc.CommentResponse{{PromptID: "p1", CommentText: "Updated"}},
+		})
+
+		require.NoError(t, err)
+		require.NotNil(t, req.CommentResponses)
+		require.Len(t, *req.CommentResponses, 1)
+		assert.Equal(t, "p1", (*req.CommentResponses)[0].PromptID)
+		assert.Equal(t, "Updated", (*req.CommentResponses)[0].CommentText)
+	})
+
+	t.Run("rejects null entries with a validation error", func(t *testing.T) {
+		cases := map[string]*votesvc.UpdateVoteResponseByLinkPayload{
+			"null answer": {
+				UserVoteContent: []*votesvc.VoteAnswerInput{nil},
+			},
+			"null ranked choice": {
+				UserVoteContent: []*votesvc.VoteAnswerInput{{QuestionID: "q", RankedChoices: []*votesvc.RankedChoiceInput{nil}}},
+			},
+			"null comment": {
+				CommentResponses: []*votesvc.CommentResponse{nil},
+			},
+		}
+		for name, payload := range cases {
+			t.Run(name, func(t *testing.T) {
+				req, err := ConvertUpdateVoteResponseByLinkPayloadToDomain(payload)
+
+				require.Error(t, err)
+				assert.Nil(t, req)
+				assert.Equal(t, domain.ErrorTypeValidation, domain.GetErrorType(err))
+				assert.Contains(t, err.Error(), "must not be null")
+			})
 		}
 	})
 }

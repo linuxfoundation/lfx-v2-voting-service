@@ -17,13 +17,13 @@ This feature mirrors the pattern used by the meeting service ([LFXV2-1831](https
 
 ### Path 1 — Outbound invite (during KV event processing)
 
-Triggered when `handleVoteResponseUpdate` processes an `itx-poll-vote.*` KV entry for the first time (i.e. `ActionCreated`) and the vote response has no username but does have an email address.
+Triggered when the vote response sync (`internal/service/eventsync/vote_response.go`) processes an `itx-poll-vote.*` KV entry for the first time (i.e. `ActionCreated`) and the vote response has no username but does have an email address.
 
 ```
 v1-objects KV (itx-poll-vote.*)
         │
         ▼
-handleVoteResponseUpdate
+eventsync vote response update
   [index + FGA sync]
         │
         ▼
@@ -33,7 +33,7 @@ shouldSendVoteResponseInvite?
   • email != ""
         │ yes
         ▼
-VoteResponseInviteHandler.maybeSendInvite
+VoteResponseInviteHandler.MaybeInvite
   1. Check invite-sent marker  ──── already sent? → skip
      (v1-mappings: v1_vote_response_lfid_invite_sent.{uid})
   2. UsernameByEmail via NATS  ──── has LFID? → skip

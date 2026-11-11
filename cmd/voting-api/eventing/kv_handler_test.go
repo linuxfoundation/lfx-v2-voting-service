@@ -5,588 +5,208 @@ package eventing
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
+	"io"
 	"log/slog"
 	"testing"
+	"time"
 
-	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/idmapper"
-	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"github.com/vmihailenco/msgpack/v5"
+
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/service/eventsync"
 )
 
-func setupTestKV(t *testing.T) (jetstream.KeyValue, func()) {
-	ns, natsURL := startTestNATSServer(t)
+// fakeMsg is a jetstream.Msg that records how the handler settled it.
+type fakeMsg struct {
+	subject string
+	data    []byte
+	headers nats.Header
 
-	nc, err := nats.Connect(natsURL)
-	require.NoError(t, err)
+	metadata    *jetstream.MsgMetadata
+	metadataErr error
+	ackErr      error
+	nakErr      error
 
-	js, err := jetstream.New(nc)
-	require.NoError(t, err)
+	acked    int
+	nakDelay []time.Duration
+}
 
-	// Create the KV bucket
-	_, err = js.CreateKeyValue(context.Background(), jetstream.KeyValueConfig{
-		Bucket: V1MappingsBucket,
+func (m *fakeMsg) Metadata() (*jetstream.MsgMetadata, error) { return m.metadata, m.metadataErr }
+func (m *fakeMsg) Data() []byte                              { return m.data }
+func (m *fakeMsg) Headers() nats.Header                      { return m.headers }
+func (m *fakeMsg) Subject() string                           { return m.subject }
+func (m *fakeMsg) Reply() string                             { return "" }
+func (m *fakeMsg) Ack() error                                { m.acked++; return m.ackErr }
+func (m *fakeMsg) DoubleAck(context.Context) error           { return nil }
+func (m *fakeMsg) Nak() error                                { return nil }
+func (m *fakeMsg) NakWithDelay(d time.Duration) error {
+	m.nakDelay = append(m.nakDelay, d)
+	return m.nakErr
+}
+func (m *fakeMsg) InProgress() error           { return nil }
+func (m *fakeMsg) Term() error                 { return nil }
+func (m *fakeMsg) TermWithReason(string) error { return nil }
+
+// absentMappings reports every resource as not yet synced, so a vote response always
+// waits for its parent vote and the syncer asks for a retry.
+type absentMappings struct{}
+
+func (absentMappings) State(context.Context, domain.MappingKind, string) domain.MappingState {
+	return domain.MappingAbsent
+}
+func (absentMappings) MarkSynced(context.Context, domain.MappingKind, string) error     { return nil }
+func (absentMappings) MarkTombstoned(context.Context, domain.MappingKind, string) error { return nil }
+
+type echoIDMapper struct{}
+
+func (echoIDMapper) MapProjectV2ToV1(_ context.Context, id string) (string, error)   { return id, nil }
+func (echoIDMapper) MapProjectV1ToV2(_ context.Context, id string) (string, error)   { return id, nil }
+func (echoIDMapper) MapCommitteeV2ToV1(_ context.Context, id string) (string, error) { return id, nil }
+func (echoIDMapper) MapCommitteeV1ToV2(_ context.Context, id string) (string, error) { return id, nil }
+
+func newTestSyncer() *eventsync.Syncer {
+	return eventsync.New(eventsync.Deps{
+		IDMapper: echoIDMapper{},
+		Mappings: absentMappings{},
+		Logger:   slog.New(slog.NewTextHandler(io.Discard, nil)),
 	})
-	require.NoError(t, err)
+}
 
-	mappingsKV, err := js.KeyValue(context.Background(), V1MappingsBucket)
-	require.NoError(t, err)
+const (
+	// A vote response whose parent vote is not yet synced: the syncer returns Retry.
+	retrySubject = "$KV.v1-objects.itx-poll-vote.vote-1"
+	retryBody    = `{"vote_id":"vote-1","poll_id":"poll-1"}`
 
-	cleanup := func() {
-		nc.Close()
-		ns.Shutdown()
+	// A record of a type the syncer does not handle: the syncer returns Ack.
+	ackSubject = "$KV.v1-objects.itx-unknown.thing-1"
+	ackBody    = `{"id":"thing-1"}`
+)
+
+func handle(t *testing.T, msg *fakeMsg) {
+	t.Helper()
+	kvMessageHandler(context.Background(), msg, newTestSyncer(), slog.New(slog.NewTextHandler(io.Discard, nil)))
+}
+
+func TestKVMessageHandler_Ack(t *testing.T) {
+	t.Run("acknowledges a finished entry and does not NAK", func(t *testing.T) {
+		msg := &fakeMsg{subject: ackSubject, data: []byte(ackBody), headers: nats.Header{}}
+
+		handle(t, msg)
+
+		assert.Equal(t, 1, msg.acked)
+		assert.Empty(t, msg.nakDelay)
+	})
+
+	t.Run("a failed ack is logged, not fatal", func(t *testing.T) {
+		msg := &fakeMsg{subject: ackSubject, data: []byte(ackBody), headers: nats.Header{}, ackErr: errors.New("ack timeout")}
+
+		assert.NotPanics(t, func() { handle(t, msg) })
+		assert.Equal(t, 1, msg.acked)
+	})
+
+	t.Run("a subject shorter than the bucket prefix yields an empty key and is acknowledged", func(t *testing.T) {
+		msg := &fakeMsg{subject: "$KV.v1-objects.", data: []byte(ackBody), headers: nats.Header{}}
+
+		handle(t, msg)
+
+		assert.Equal(t, 1, msg.acked)
+		assert.Empty(t, msg.nakDelay)
+	})
+}
+
+func TestKVMessageHandler_RetryBackoff(t *testing.T) {
+	tests := []struct {
+		name      string
+		delivered uint64
+		want      time.Duration
+	}{
+		{name: "first delivery retries after 2s", delivered: 1, want: 2 * time.Second},
+		{name: "second delivery retries after 10s", delivered: 2, want: 10 * time.Second},
+		{name: "third delivery retries after 20s", delivered: 3, want: 20 * time.Second},
+		{name: "later deliveries stay at 20s", delivered: 9, want: 20 * time.Second},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			msg := &fakeMsg{
+				subject: retrySubject, data: []byte(retryBody), headers: nats.Header{},
+				metadata: &jetstream.MsgMetadata{NumDelivered: tt.delivered},
+			}
+
+			handle(t, msg)
+
+			assert.Equal(t, []time.Duration{tt.want}, msg.nakDelay)
+			assert.Zero(t, msg.acked, "a retried message must not also be acknowledged")
+		})
 	}
 
-	return mappingsKV, cleanup
-}
-
-func TestKvHandler(t *testing.T) {
-	logging.InitStructureLogConfig()
-
-	t.Run("handles PUT operation for vote", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "itx-poll.poll-123",
-			value:     []byte(`{"poll_id":"poll-123","name":"Test","project_id":"proj-1","poll_questions":[]}`),
-			operation: jetstream.KeyValuePut,
+	t.Run("unreadable metadata falls back to the first-retry delay", func(t *testing.T) {
+		msg := &fakeMsg{
+			subject: retrySubject, data: []byte(retryBody), headers: nats.Header{},
+			metadataErr: errors.New("not a JetStream message"),
 		}
 
-		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
+		handle(t, msg)
 
-		logger := slog.Default()
-		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
-
-		assert.False(t, shouldRetry)
-		assert.Len(t, mockPublisher.publishedVotes, 1)
+		assert.Equal(t, []time.Duration{2 * time.Second}, msg.nakDelay)
+		assert.Zero(t, msg.acked)
 	})
 
-	t.Run("handles PUT operation for vote response", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		ctx := context.Background()
-
-		// Store parent vote in mappings
-		_, err := mappingsKV.Put(ctx, "vote.poll-456", []byte("1"))
-		require.NoError(t, err)
-
-		entry := &kvEntry{
-			key:       "itx-poll-vote.vote-123",
-			value:     []byte(`{"vote_id":"vote-123","poll_id":"poll-456","project_id":"proj-1","poll_answers":[]}`),
-			operation: jetstream.KeyValuePut,
+	t.Run("a failed NAK is logged, not fatal", func(t *testing.T) {
+		msg := &fakeMsg{
+			subject: retrySubject, data: []byte(retryBody), headers: nats.Header{},
+			metadata: &jetstream.MsgMetadata{NumDelivered: 1}, nakErr: errors.New("nak failed"),
 		}
 
-		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
-
-		logger := slog.Default()
-		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
-
-		assert.False(t, shouldRetry)
-		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
-	})
-
-	t.Run("handles DELETE operation for vote", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "itx-poll.poll-123",
-			value:     []byte{},
-			operation: jetstream.KeyValueDelete,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
-
-		logger := slog.Default()
-		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
-
-		assert.False(t, shouldRetry)
-		assert.Len(t, mockPublisher.publishedVotes, 1)
-	})
-
-	t.Run("handles DELETE operation for vote response", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "itx-poll-vote.vote-123",
-			value:     []byte{},
-			operation: jetstream.KeyValueDelete,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
-
-		logger := slog.Default()
-		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
-
-		assert.False(t, shouldRetry)
-		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
-	})
-
-	t.Run("ignores unsupported key prefix", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "unsupported-prefix.some-id",
-			value:     []byte(`{}`),
-			operation: jetstream.KeyValuePut,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
-
-		logger := slog.Default()
-		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
-
-		assert.False(t, shouldRetry) // ACK unsupported types
-		assert.Len(t, mockPublisher.publishedVotes, 0)
-		assert.Len(t, mockPublisher.publishedVoteResponses, 0)
-	})
-
-	t.Run("ignores unknown operation", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "itx-poll.poll-123",
-			value:     []byte(`{}`),
-			operation: jetstream.KeyValueOp(99), // Invalid operation
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
-
-		logger := slog.Default()
-		shouldRetry := kvHandler(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
-
-		assert.False(t, shouldRetry) // ACK unknown operations
-		assert.Len(t, mockPublisher.publishedVotes, 0)
+		assert.NotPanics(t, func() { handle(t, msg) })
+		assert.Len(t, msg.nakDelay, 1)
 	})
 }
 
-func TestHandleKVPut(t *testing.T) {
-	logging.InitStructureLogConfig()
+func TestKVMessageHandler_Operation(t *testing.T) {
+	// A key with the vote-response prefix but no UID separates the two operations: a put
+	// is routed to the vote-response handler (parent not synced, so retry), while a delete
+	// cannot extract a UID and is acknowledged.
+	const noUIDSubject = "$KV.v1-objects.itx-poll-vote"
 
-	t.Run("routes to vote handler for itx-poll prefix", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "itx-poll.poll-123",
-			value:     []byte(`{"poll_id":"poll-123","name":"Test","project_id":"proj-1","poll_questions":[]}`),
-			operation: jetstream.KeyValuePut,
+	t.Run("no KV-Operation header is handled as a put", func(t *testing.T) {
+		msg := &fakeMsg{
+			subject: noUIDSubject, data: []byte(retryBody), headers: nats.Header{},
+			metadata: &jetstream.MsgMetadata{NumDelivered: 1},
 		}
 
-		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
+		handle(t, msg)
 
-		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
-
-		assert.False(t, shouldRetry)
-		assert.Len(t, mockPublisher.publishedVotes, 1)
+		assert.Len(t, msg.nakDelay, 1)
+		assert.Zero(t, msg.acked)
 	})
 
-	t.Run("routes to vote response handler for itx-poll-vote prefix", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		ctx := context.Background()
-
-		// Store parent vote in mappings
-		_, err := mappingsKV.Put(ctx, "vote.poll-456", []byte("1"))
-		require.NoError(t, err)
-
-		entry := &kvEntry{
-			key:       "itx-poll-vote.vote-123",
-			value:     []byte(`{"vote_id":"vote-123","poll_id":"poll-456","project_id":"proj-1","poll_answers":[]}`),
-			operation: jetstream.KeyValuePut,
+	t.Run("an explicit PUT is handled as a put", func(t *testing.T) {
+		msg := &fakeMsg{
+			subject: noUIDSubject, data: []byte(retryBody),
+			headers:  nats.Header{"KV-Operation": []string{"PUT"}},
+			metadata: &jetstream.MsgMetadata{NumDelivered: 1},
 		}
 
-		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
+		handle(t, msg)
 
-		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
-
-		assert.False(t, shouldRetry)
-		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
+		assert.Len(t, msg.nakDelay, 1)
 	})
 
-	t.Run("decodes msgpack-encoded itx-poll entry and routes to vote handler", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		payload := map[string]any{
-			"poll_id":        "poll-123",
-			"name":           "Test",
-			"project_id":     "proj-1",
-			"poll_questions": []any{},
-		}
-		encoded, err := msgpack.Marshal(payload)
-		require.NoError(t, err)
-
-		// Verify msgpack bytes are not valid JSON (ensuring fallback path is exercised)
-		var jsonCheck map[string]any
-		assert.Error(t, json.Unmarshal(encoded, &jsonCheck), "msgpack bytes should not be valid JSON")
-
-		entry := &kvEntry{
-			key:       "itx-poll.poll-123",
-			value:     encoded,
-			operation: jetstream.KeyValuePut,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
-
-		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
-
-		assert.False(t, shouldRetry)
-		assert.Len(t, mockPublisher.publishedVotes, 1)
-	})
-
-	t.Run("decodes msgpack-encoded itx-poll-vote entry and routes to vote response handler", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		ctx := context.Background()
-
-		// Store parent vote in mappings
-		_, err := mappingsKV.Put(ctx, "vote.poll-456", []byte("1"))
-		require.NoError(t, err)
-
-		payload := map[string]any{
-			"vote_id":      "vote-123",
-			"poll_id":      "poll-456",
-			"project_id":   "proj-1",
-			"poll_answers": []any{},
-		}
-		encoded, err := msgpack.Marshal(payload)
-		require.NoError(t, err)
-
-		entry := &kvEntry{
-			key:       "itx-poll-vote.vote-123",
-			value:     encoded,
-			operation: jetstream.KeyValuePut,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
-
-		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
-
-		assert.False(t, shouldRetry)
-		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
-	})
-
-	t.Run("returns false when both JSON and msgpack decoding fail", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "itx-poll.poll-123",
-			value:     []byte(`invalid json`),
-			operation: jetstream.KeyValuePut,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
-
-		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
-
-		assert.False(t, shouldRetry) // Permanent error, ACK
-		assert.Len(t, mockPublisher.publishedVotes, 0)
-	})
-
-	t.Run("returns false for unsupported prefix", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "other-prefix.id-123",
-			value:     []byte(`{}`),
-			operation: jetstream.KeyValuePut,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
-
-		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
-
-		assert.False(t, shouldRetry) // ACK unsupported types
-	})
-
-	t.Run("soft delete: non-empty _sdc_deleted_at on itx-poll triggers vote delete", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "itx-poll.poll-123",
-			value:     []byte(`{"poll_id":"poll-123","name":"Test","project_id":"proj-1","_sdc_deleted_at":"2024-01-01T00:00:00Z"}`),
-			operation: jetstream.KeyValuePut,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
-
-		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
-
-		assert.False(t, shouldRetry)
-		// Should publish a delete event, not an upsert
-		assert.Len(t, mockPublisher.publishedVotes, 1)
-		assert.Len(t, mockPublisher.publishedVoteResponses, 0)
-	})
-
-	t.Run("soft delete: non-empty _sdc_deleted_at on itx-poll-vote triggers vote response delete", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "itx-poll-vote.vote-123",
-			value:     []byte(`{"vote_id":"vote-123","poll_id":"poll-456","project_id":"proj-1","_sdc_deleted_at":"2024-01-01T00:00:00Z"}`),
-			operation: jetstream.KeyValuePut,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
-
-		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
-
-		assert.False(t, shouldRetry)
-		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
-		assert.Len(t, mockPublisher.publishedVotes, 0)
-	})
-
-	t.Run("soft delete of a vote response carries the voter so the participant can be removed", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "itx-poll-vote.vote-123",
-			value:     []byte(`{"vote_id":"vote-123","poll_id":"poll-456","username":"nickcoai","_sdc_deleted_at":"2024-01-01T00:00:00Z"}`),
-			operation: jetstream.KeyValuePut,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		shouldRetry := kvHandler(context.Background(), entry, mockPublisher, idmapper.NewNoOpMapper(), mappingsKV, nil, nil, slog.Default())
-
-		assert.False(t, shouldRetry)
-		require.Len(t, mockPublisher.publishedVoteResponses, 1)
-		assert.Equal(t, "deleted", mockPublisher.publishedVoteResponseActions[0])
-		assert.Equal(t, "vote-123", mockPublisher.publishedVoteResponses[0].UID)
-		assert.Equal(t, "poll-456", mockPublisher.publishedVoteResponses[0].VoteUID)
-		assert.Equal(t, "nickcoai", mockPublisher.publishedVoteResponses[0].Username)
-	})
-
-	t.Run("hard delete of a vote response has no record, so no voter is known", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "itx-poll-vote.vote-123",
-			value:     nil, // a KV delete/purge marker has no value
-			operation: jetstream.KeyValueDelete,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		shouldRetry := kvHandler(context.Background(), entry, mockPublisher, idmapper.NewNoOpMapper(), mappingsKV, nil, nil, slog.Default())
-
-		assert.False(t, shouldRetry)
-		require.Len(t, mockPublisher.publishedVoteResponses, 1)
-		assert.Empty(t, mockPublisher.publishedVoteResponses[0].Username)
-		assert.Empty(t, mockPublisher.publishedVoteResponses[0].VoteUID)
-	})
-
-	t.Run("soft delete: null _sdc_deleted_at does not trigger delete path", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "itx-poll.poll-123",
-			value:     []byte(`{"poll_id":"poll-123","name":"Test","project_id":"proj-1","poll_questions":[],"_sdc_deleted_at":null}`),
-			operation: jetstream.KeyValuePut,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
-
-		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
-
-		assert.False(t, shouldRetry)
-		// Should be treated as a normal upsert, not a delete
-		assert.Len(t, mockPublisher.publishedVotes, 1)
-	})
-
-	t.Run("soft delete: empty string _sdc_deleted_at does not trigger delete path", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "itx-poll.poll-123",
-			value:     []byte(`{"poll_id":"poll-123","name":"Test","project_id":"proj-1","poll_questions":[],"_sdc_deleted_at":""}`),
-			operation: jetstream.KeyValuePut,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		idMapper := idmapper.NewNoOpMapper()
-		ctx := context.Background()
-
-		logger := slog.Default()
-		shouldRetry := handleKVPut(ctx, entry, mockPublisher, idMapper, mappingsKV, nil, nil, logger)
-
-		assert.False(t, shouldRetry)
-		// Should be treated as a normal upsert, not a delete
-		assert.Len(t, mockPublisher.publishedVotes, 1)
-	})
-}
-
-func TestHandleKVDelete(t *testing.T) {
-	logging.InitStructureLogConfig()
-
-	t.Run("routes to vote delete handler for itx-poll prefix", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "itx-poll.poll-123",
-			value:     []byte{},
-			operation: jetstream.KeyValueDelete,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		ctx := context.Background()
-
-		logger := slog.Default()
-		shouldRetry := handleKVDelete(ctx, entry, mockPublisher, mappingsKV, logger)
-
-		assert.False(t, shouldRetry)
-		assert.Len(t, mockPublisher.publishedVotes, 1)
-	})
-
-	t.Run("routes to vote response delete handler for itx-poll-vote prefix", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "itx-poll-vote.vote-123",
-			value:     []byte{},
-			operation: jetstream.KeyValueDelete,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		ctx := context.Background()
-
-		logger := slog.Default()
-		shouldRetry := handleKVDelete(ctx, entry, mockPublisher, mappingsKV, logger)
-
-		assert.False(t, shouldRetry)
-		assert.Len(t, mockPublisher.publishedVoteResponses, 1)
-	})
-
-	t.Run("returns false for invalid key format", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "no-period-key",
-			value:     []byte{},
-			operation: jetstream.KeyValueDelete,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		ctx := context.Background()
-
-		logger := slog.Default()
-		shouldRetry := handleKVDelete(ctx, entry, mockPublisher, mappingsKV, logger)
-
-		assert.False(t, shouldRetry) // Permanent error, ACK
-	})
-
-	t.Run("returns false for unsupported prefix", func(t *testing.T) {
-		mappingsKV, cleanup := setupTestKV(t)
-		defer cleanup()
-
-		entry := &kvEntry{
-			key:       "unsupported.id-123",
-			value:     []byte{},
-			operation: jetstream.KeyValueDelete,
-		}
-
-		mockPublisher := &mockEventPublisher{}
-		ctx := context.Background()
-
-		logger := slog.Default()
-		shouldRetry := handleKVDelete(ctx, entry, mockPublisher, mappingsKV, logger)
-
-		assert.False(t, shouldRetry) // ACK unsupported types
-	})
-}
-
-func TestKvEntry(t *testing.T) {
-	t.Run("Key returns the key", func(t *testing.T) {
-		entry := &kvEntry{key: "test-key"}
-		assert.Equal(t, "test-key", entry.Key())
-	})
-
-	t.Run("Value returns the value", func(t *testing.T) {
-		value := []byte("test-value")
-		entry := &kvEntry{value: value}
-		assert.Equal(t, value, entry.Value())
-	})
-
-	t.Run("Operation returns the operation", func(t *testing.T) {
-		entry := &kvEntry{operation: jetstream.KeyValuePut}
-		assert.Equal(t, jetstream.KeyValuePut, entry.Operation())
-	})
-
-	t.Run("Bucket returns the bucket name", func(t *testing.T) {
-		entry := &kvEntry{}
-		assert.Equal(t, V1ObjectsBucket, entry.Bucket())
-	})
-
-	t.Run("Created returns a time", func(t *testing.T) {
-		entry := &kvEntry{}
-		created := entry.Created()
-		assert.False(t, created.IsZero())
-	})
-
-	t.Run("Delta returns 0", func(t *testing.T) {
-		entry := &kvEntry{}
-		assert.Equal(t, uint64(0), entry.Delta())
-	})
-
-	t.Run("Revision returns 0", func(t *testing.T) {
-		entry := &kvEntry{}
-		assert.Equal(t, uint64(0), entry.Revision())
-	})
+	for _, op := range []string{"DEL", "PURGE"} {
+		t.Run(op+" is handled as a delete", func(t *testing.T) {
+			msg := &fakeMsg{
+				subject: noUIDSubject, data: []byte(retryBody),
+				headers:  nats.Header{"KV-Operation": []string{op}},
+				metadata: &jetstream.MsgMetadata{NumDelivered: 1},
+			}
+
+			handle(t, msg)
+
+			assert.Equal(t, 1, msg.acked)
+			assert.Empty(t, msg.nakDelay)
+		})
+	}
 }

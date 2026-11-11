@@ -5,97 +5,36 @@ package eventing
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
-	"strings"
 	"time"
 
-	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/mappings"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/service/eventsync"
 	"github.com/nats-io/nats.go/jetstream"
-	"github.com/vmihailenco/msgpack/v5"
 )
+
+// errKey is the log attribute name for errors.
+const errKey = "error"
 
 const (
 	V1ObjectsBucket = "v1-objects"
 
-	// tombstoneMarker is written to a mapping key after successful deletion,
+	// TombstoneMarker is written to a v1-mappings key after successful deletion,
 	// preventing duplicate delete events if the same KV delete is redelivered.
-	tombstoneMarker = "!del"
-
-	// TombstoneMarker is the exported form of tombstoneMarker for tools that read v1-mappings.
-	TombstoneMarker = tombstoneMarker
+	// It is exported for tools that read v1-mappings.
+	TombstoneMarker = mappings.TombstoneMarker
 )
 
-// isTombstonedMapping reports whether a mapping value is a tombstone marker.
-func isTombstonedMapping(value []byte) bool {
-	return string(value) == tombstoneMarker
-}
-
-// decodeKVEntryData unmarshals KV entry bytes as JSON first, then msgpack.
-func decodeKVEntryData(data []byte) (map[string]any, error) {
-	var jsonResult map[string]any
-	jsonErr := json.Unmarshal(data, &jsonResult)
-	if jsonErr == nil {
-		return jsonResult, nil
-	}
-
-	var msgpackResult map[string]any
-	msgpackErr := msgpack.Unmarshal(data, &msgpackResult)
-	if msgpackErr == nil {
-		return msgpackResult, nil
-	}
-
-	return nil, fmt.Errorf("failed to decode KV data as JSON or msgpack: json: %w; msgpack: %w", jsonErr, msgpackErr)
-}
-
-// kvEntry implements a mock jetstream.KeyValueEntry interface for the handler
-type kvEntry struct {
-	key       string
-	value     []byte
-	operation jetstream.KeyValueOp
-}
-
-func (e *kvEntry) Key() string {
-	return e.key
-}
-
-func (e *kvEntry) Value() []byte {
-	return e.value
-}
-
-func (e *kvEntry) Operation() jetstream.KeyValueOp {
-	return e.operation
-}
-
-func (e *kvEntry) Bucket() string {
-	return V1ObjectsBucket
-}
-
-func (e *kvEntry) Created() time.Time {
-	return time.Now()
-}
-
-func (e *kvEntry) Delta() uint64 {
-	return 0
-}
-
-func (e *kvEntry) Revision() uint64 {
-	return 0
-}
-
-// kvMessageHandler processes KV update messages from the consumer
+// kvMessageHandler is the NATS adapter in front of the sync module. It turns a JetStream
+// message into an eventsync.Entry, then acknowledges the message or NAKs it with
+// exponential backoff according to the Outcome.
 func kvMessageHandler(
 	ctx context.Context,
 	msg jetstream.Msg,
-	publisher domain.EventPublisher,
-	idMapper domain.IDMapper,
-	mappingsKV jetstream.KeyValue,
-	objectsKV jetstream.KeyValue,
-	inviteHandler *VoteResponseInviteHandler,
+	syncer *eventsync.Syncer,
 	logger *slog.Logger,
 ) {
-	// Parse the message as a KV entry
 	headers := msg.Headers()
 	subject := msg.Subject()
 
@@ -106,28 +45,15 @@ func kvMessageHandler(
 	}
 
 	// Determine operation from headers
-	operation := jetstream.KeyValuePut // Default to PUT
-	if opHeader := headers.Get("KV-Operation"); opHeader != "" {
-		switch opHeader {
-		case "DEL":
-			operation = jetstream.KeyValueDelete
-		case "PURGE":
-			operation = jetstream.KeyValuePurge
-		}
+	operation := eventsync.OpPut // Default to PUT
+	switch headers.Get("KV-Operation") {
+	case "DEL", "PURGE":
+		operation = eventsync.OpDelete
 	}
 
-	// Create a mock KV entry for the handler
-	entry := &kvEntry{
-		key:       key,
-		value:     msg.Data(),
-		operation: operation,
-	}
+	outcome := syncer.Sync(ctx, eventsync.Entry{Key: key, Op: operation, Value: msg.Data()})
 
-	// Process the KV entry and check if retry is needed
-	shouldRetry := kvHandler(ctx, entry, publisher, idMapper, mappingsKV, objectsKV, inviteHandler, logger)
-
-	// Handle message acknowledgment based on retry decision
-	if shouldRetry {
+	if outcome == eventsync.Retry {
 		// Get message metadata to determine retry attempt number
 		metadata, err := msg.Metadata()
 		if err != nil {
@@ -160,143 +86,5 @@ func kvMessageHandler(
 		if err := msg.Ack(); err != nil {
 			logger.With("error", err, "key", key).Error("failed to acknowledge KV JetStream message")
 		}
-	}
-}
-
-// kvHandler routes KV entries by operation type
-// Returns true if the message should be retried (NAK), false if it should be acknowledged (ACK)
-func kvHandler(
-	ctx context.Context,
-	entry jetstream.KeyValueEntry,
-	publisher domain.EventPublisher,
-	idMapper domain.IDMapper,
-	mappingsKV jetstream.KeyValue,
-	objectsKV jetstream.KeyValue,
-	inviteHandler *VoteResponseInviteHandler,
-	logger *slog.Logger,
-) bool {
-	switch entry.Operation() {
-	case jetstream.KeyValuePut:
-		return handleKVPut(ctx, entry, publisher, idMapper, mappingsKV, objectsKV, inviteHandler, logger)
-	case jetstream.KeyValueDelete, jetstream.KeyValuePurge:
-		return handleKVDelete(ctx, entry, publisher, mappingsKV, logger)
-	default:
-		logger.With("key", entry.Key(), "operation", entry.Operation()).Debug("ignoring unknown KV operation")
-		return false // ACK unknown operations
-	}
-}
-
-// handleKVPut processes PUT operations by routing to specific handlers based on key prefix
-func handleKVPut(
-	ctx context.Context,
-	entry jetstream.KeyValueEntry,
-	publisher domain.EventPublisher,
-	idMapper domain.IDMapper,
-	mappingsKV jetstream.KeyValue,
-	objectsKV jetstream.KeyValue,
-	inviteHandler *VoteResponseInviteHandler,
-	logger *slog.Logger,
-) bool {
-	key := entry.Key()
-	value := entry.Value()
-
-	v1Data, err := decodeKVEntryData(value)
-	if err != nil {
-		logger.With(errKey, err, "key", key).ErrorContext(ctx, "failed to unmarshal KV entry data as JSON or msgpack")
-		return false
-	}
-
-	// Check if this is a soft delete (record has _sdc_deleted_at field).
-	if deletedAt, exists := v1Data["_sdc_deleted_at"]; exists && deletedAt != nil && deletedAt != "" {
-		logger.With("key", key, "_sdc_deleted_at", deletedAt).InfoContext(ctx, "processing soft delete from KV bucket")
-		return handleKVSoftDelete(ctx, entry, publisher, mappingsKV, logger)
-	}
-
-	// Extract the prefix (everything before the first period) for faster lookup.
-	prefix := key
-	if dotIndex := strings.Index(key, "."); dotIndex != -1 {
-		prefix = key[:dotIndex]
-	}
-
-	// Route to specific handlers based on prefix
-	switch prefix {
-	case "itx-poll":
-		return handleVoteUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, logger)
-	case "itx-poll-vote":
-		return handleVoteResponseUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, objectsKV, inviteHandler, logger)
-	case "itx-poll-results":
-		return handleVoteResultUpdate(ctx, key, v1Data, publisher, idMapper, mappingsKV, logger)
-	default:
-		// Not a voting-related key, ACK and skip
-		logger.With("key", key, "prefix", prefix).Debug("skipping update - unsupported type")
-		return false
-	}
-}
-
-// handleKVDelete processes DELETE and PURGE operations
-func handleKVDelete(
-	ctx context.Context,
-	entry jetstream.KeyValueEntry,
-	publisher domain.EventPublisher,
-	mappingsKV jetstream.KeyValue,
-	logger *slog.Logger,
-) bool {
-	key := entry.Key()
-	logger.With("key", key, "operation", entry.Operation()).InfoContext(ctx, "processing hard delete from KV bucket")
-	return handleResourceDelete(ctx, entry, publisher, mappingsKV, logger)
-}
-
-// handleKVSoftDelete processes a soft delete (record with _sdc_deleted_at field).
-// Returns true if the operation should be retried, false otherwise.
-func handleKVSoftDelete(ctx context.Context,
-	entry jetstream.KeyValueEntry,
-	publisher domain.EventPublisher,
-	mappingsKV jetstream.KeyValue,
-	logger *slog.Logger,
-) bool {
-	return handleResourceDelete(ctx, entry, publisher, mappingsKV, logger)
-}
-
-// handleResourceDelete handles deletion of resources by key prefix.
-// Returns true if the operation should be retried, false otherwise.
-func handleResourceDelete(ctx context.Context,
-	entry jetstream.KeyValueEntry,
-	publisher domain.EventPublisher,
-	mappingsKV jetstream.KeyValue,
-	logger *slog.Logger) bool {
-	// Extract the prefix (everything before the first period) for faster lookup.
-	key := entry.Key()
-	prefix := key
-	if dotIndex := strings.Index(key, "."); dotIndex != -1 {
-		prefix = key[:dotIndex]
-	}
-
-	// Extract UID from key (everything after the first period).
-	uid := ""
-	if dotIndex := strings.Index(key, "."); dotIndex != -1 && dotIndex < len(key)-1 {
-		uid = key[dotIndex+1:]
-	}
-
-	if uid == "" {
-		logger.With("key", key).WarnContext(ctx, "cannot extract UID from key for deletion")
-		return false
-	}
-
-	// Route to appropriate delete handler based on prefix
-	switch prefix {
-	case "itx-poll":
-		return handleVoteDelete(ctx, uid, publisher, mappingsKV, logger)
-	case "itx-poll-vote":
-		// A soft delete still carries the record (voter and vote); a hard delete or purge does not.
-		var record *voteResponseRecord
-		if rec, err := decodeVoteResponseRecord(entry.Value()); err == nil {
-			record = &rec
-		}
-		return handleVoteResponseDelete(ctx, uid, record, publisher, mappingsKV, logger)
-	case "itx-poll-results":
-		return handleVoteResultDelete(ctx, uid, publisher, mappingsKV, logger)
-	default:
-		logger.With("key", key, "prefix", prefix).Debug("skipping delete - unsupported type")
-		return false // ACK unsupported types
 	}
 }

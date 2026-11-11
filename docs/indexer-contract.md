@@ -194,7 +194,7 @@ Each element in `comment_responses` has:
 
 ### Pseudo-anonymous votes
 
-A response document must not reveal how a named person voted on a pseudo-anonymous vote. Before publishing, the handler (`handleVoteResponseUpdate`) reads the parent `itx-poll.{poll_id}` record from `v1-objects`. Unless that record's `pseudo_anonymity` is explicitly `false` (bool `false` or string `"false"`), the handler indexes the response **without** these keys:
+A response document must not reveal how a named person voted on a pseudo-anonymous vote. Before publishing, the vote response sync (`voteResponseResource` in `internal/service/eventsync/vote_response.go`) reads the parent `itx-poll.{poll_id}` record from `v1-objects`. Unless that record's `pseudo_anonymity` is explicitly `false` (bool `false` or string `"false"`), the handler indexes the response **without** these keys:
 
 - `poll_answers`
 - `comment_responses`

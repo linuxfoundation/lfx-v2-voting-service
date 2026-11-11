@@ -14,10 +14,10 @@ Guide writing tests for the HTTP proxy path — the service layer (`internal/ser
 
 ## Context you need first
 
-- `internal/service/vote_service_error_test.go` — existing service tests; use as style reference for auth guard, proxy error, and ID mapping tests
+- `internal/service/vote_service_test.go` — existing service tests; use as style reference for auth guard, proxy error, and ID mapping tests
 - `internal/service/vote_response_service_test.go` — coverage for all four vote-response service methods
 - `cmd/voting-api/eventing/*_test.go` — richer mock patterns (table-driven, mock interfaces, mock KV); the best style reference even though it tests a different layer
-- `internal/service/vote_service_error_test.go` — defines `identityIDMapper` (echo mapper for happy-path tests) and `failingIDMapper` (returns configured error for error-path tests); use these patterns rather than importing infrastructure packages
+- `internal/service/vote_service_test.go` — defines `identityIDMapper` (echo mapper for happy-path tests) and `failingIDMapper` (returns configured error for error-path tests); use these patterns rather than importing infrastructure packages
 
 ---
 
@@ -133,23 +133,17 @@ Cover both directions: payload → service request AND service response (ITX res
 
 ### Proxy client tests (`internal/infrastructure/proxy/`)
 
-These require an HTTP test server. Use `net/http/httptest`:
+`client_test.go` already drives every ITX operation through a fake server. It provides:
 
-```go
-func TestProxyClient_CreatePoll(t *testing.T) {
-    ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        // assert request shape
-        assert.Equal(t, "POST", r.Method)
-        w.Header().Set("Content-Type", "application/json")
-        json.NewEncoder(w).Encode(&itx.PollResponse{PollID: "poll-123"})
-    }))
-    defer ts.Close()
-    // construct client pointing at ts.URL
-    // call method, assert response
-}
-```
+- `newTestClient(t, status, body)` — a `Client` pointed at an `httptest` server that replies with the given status and body, plus a `capturedRequest` (method, path, body, `x-scope`, `Content-Type`). The OAuth2 transport is bypassed on purpose, so these tests cover request building and response handling, not token acquisition.
+- `unreachableClient(t)` — a `Client` whose server is already shut down, for transport-failure cases.
+- `operations()` — one table row per ITX operation: expected method, path, complete JSON request body (compared with `assert.JSONEq`), success status/body, an `invoke` function, and an optional `checkResult` that asserts the parsed response.
 
-Cover the error mapping: return a 404 from the mock server and verify the client returns `domain.ErrorTypeNotFound`.
+**When you add a proxy method, add a row to `operations()`.** The shared tests then check, for free: the request shape and `x-scope: manage:voting` header, ITX status codes mapped to the right `domain.ErrorType` (with the ITX message kept), an unreachable ITX mapped to unavailable, and (when `parsesBody` is true) a malformed success body mapped to an internal error. Set `parsesBody` and `checkResult` for any method that returns a body, and assert the fields from the fixture so an empty decoded response can't pass.
+
+Add a separate test only for behavior the table can't express (for example `TestMapHTTPError`, or `NewClient` config validation).
+
+`NewClient`'s Auth0 token source is not unit tested; it needs a live Auth0 endpoint.
 
 ---
 
@@ -178,6 +172,6 @@ go test ./internal/infrastructure/proxy/... -v -race
 
 ## Further reading
 
-- `cmd/voting-api/eventing/vote_event_handler_test.go` — best mock pattern reference
+- `internal/service/eventsync/syncer_test.go` — best mock pattern reference (test harness with a mock publisher, stub dependencies and an in-memory store)
 - `internal/domain/errors.go` — error types to assert in error-path tests
-- `internal/infrastructure/eventing/indexing_contract_test.go` — example of contract-verification tests asserting field values against documentation
+- `internal/infrastructure/eventing/nats_publisher_test.go` — example of contract-verification tests asserting field values against documentation
