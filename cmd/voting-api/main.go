@@ -201,7 +201,9 @@ func run() int {
 
 	// Initialize personalized vote links (optional; disabled when no signing keys are set)
 	var voteOpts []service.VoteServiceOption
-	var voteResponseOpts []service.VoteResponseServiceOption
+	// The signed-in ballot read reads the vote for pending ballots, so the poll reader is
+	// wired whether or not vote links are enabled.
+	voteResponseOpts := []service.VoteResponseServiceOption{service.WithPollReader(proxyClient)}
 	linkSigner, err := newVoteLinkSigner(cfg)
 	if err != nil {
 		logger.Error("Failed to initialize personalized vote links", "error", err)
@@ -218,7 +220,7 @@ func run() int {
 			return 1
 		}
 		voteOpts = append(voteOpts, service.WithVoteLinks(linkSigner, linkBaseURL))
-		voteResponseOpts = append(voteResponseOpts, service.WithVoteLinkVerifier(linkSigner), service.WithVoteLinkPolls(proxyClient))
+		voteResponseOpts = append(voteResponseOpts, service.WithVoteLinkVerifier(linkSigner))
 		logger.Info("Personalized vote links are ENABLED", "active_key_id", linkSigner.ActiveKeyID(), "base_url", linkBaseURL)
 	} else {
 		logger.Info("Personalized vote links are DISABLED - VOTE_LINK_SIGNING_KEYS is not set")

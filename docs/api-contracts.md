@@ -594,6 +594,7 @@ x-scope: manage:voting
 | `choices[]` | `poll_questions[].choices[]` | Expanded to objects with `choice_id` and `choice_text` |
 | `allow_vote_change` | `allow_vote_change` | Always a boolean on vote, ballot and vote-link reads; absent upstream (legacy) → `true` |
 | `can_change_vote` | `can_change_vote` (ballot reads), `ballot.can_change_vote` (vote-link ballot) | Passed through; omitted when ITX omits it, never computed by the proxy |
+| `num_response_received`, `total_voting_request_invitations` (poll) | `would_end_vote` (ballot reads), `ballot.would_end_vote` (vote-link ballot) | Computed by the proxy; counts never returned on vote links |
 
 ---
 
@@ -1241,6 +1242,7 @@ Authorization: Bearer <heimdall-jwt-token>
   "allow_abstain": false,
   "allow_vote_change": true,
   "can_change_vote": true,
+  "would_end_vote": false,
   "vote_creation_time": "2026-01-25T14:30:00Z",
   "user_name": "Alice Johnson",
   "profile_picture": "https://example.com/alice.jpg",
@@ -1281,11 +1283,15 @@ Authorization: Bearer <heimdall-jwt-token>
 
 **Vote change fields**: `allow_vote_change` is inherited from the vote and always present; votes created before the setting existed report `true`. `can_change_vote` is ITX's answer to whether this ballot can still be changed with `PUT /vote_responses/{vote_response_uid}`: `true` only when the ballot has been submitted, the voter has not been removed, the vote allows changes, and the vote is active and before its end time. The proxy passes it through unchanged and omits it when ITX does not report it; it never computes or defaults the value.
 
+**Last-voter signal**: `would_end_vote` is always present. It is `true` when submitting this pending ballot now would be the final response that ends the vote: the ballot's `vote_status` is `awaiting_response`, the voter has not been removed, the vote is `active`, it has at least one invitation, and `num_response_received + 1 >= total_voting_request_invitations`. This mirrors ITX's own auto-end check, which ends the vote once every invited voter has responded. The proxy computes it from ITX's poll counts. It is `false` for submitted ballots (changing a response never ends the vote), removed voters, and ended or disabled votes. It describes the moment of the read and can change if another voter responds or a voter is added or removed afterwards.
+
 ---
 
 ### ITX Service API (Underlying)
 
 **Endpoint**: `GET /v2/voting/vote/{vote_id}`
+
+For a pending ballot (`vote_status` `awaiting_response`, voter not removed), the proxy also calls `GET /v2/voting/poll/{poll_id}` to compute `would_end_vote`. If that call fails, the request fails with the ITX error (for example 404 or 503). Other ballots skip it.
 
 **Headers**:
 
@@ -1500,6 +1506,7 @@ The ballot is identified **only** by the token. The body has no `vote_response_u
     "already_voted": true,
     "voter_removed": false,
     "can_change_vote": true,
+    "would_end_vote": false,
     "abstained": false,
     "poll_answers": [ { "question_id": "q1", "prompt": "Who?", "type": "single_choice",
       "user_choice": [ { "choice_id": "c-a", "choice_text": "Alice" } ] } ],
@@ -1512,6 +1519,7 @@ The ballot is identified **only** by the token. The body has no `vote_response_u
 - Optional vote fields (`end_time_timezone`, `early_end_time`, `num_winners`, `poll_comment_prompts`) follow the same rules as `GET /votes/{vote_uid}`.
 - `project_uid` is the v2 project UID. `project_slug` is ITX's poll `project_name`, which holds the slug, and is omitted when empty. Use the query service for other project details.
 - `allow_vote_change` (from the vote; legacy votes report `true`) and `ballot.can_change_vote` (passed through from ITX, omitted when ITX omits it) are returned on regular and pseudo-anonymous votes alike. Neither reveals ballot contents.
+- `ballot.would_end_vote` is always present and follows the same rule as `would_end_vote` on [GET /vote_responses/{vote_response_uid}](#get-vote_responsesvote_response_uid-get-vote-response): `true` only when submitting this pending ballot now would be the final response that ends the vote. It is computed by the proxy from the poll's `num_response_received` and `total_voting_request_invitations`, which are never returned. It is returned on pseudo-anonymous votes too and describes the moment of the read.
 
 **Errors**: 404 `invalid voting link` (bad token, or the ballot isn't part of the token's vote), 404 from ITX (deleted vote or ballot), 503 (not configured, ITX unavailable, or the project ID can't be mapped).
 

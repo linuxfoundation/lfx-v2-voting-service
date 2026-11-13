@@ -919,7 +919,7 @@ func TestVoteLinkBallotContract(t *testing.T) {
 
 			client := NewContractTestClient(upstream.Client(), upstream.URL+"/")
 			responses := service.NewVoteResponseService(nil, client, methodContractIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)),
-				service.WithVoteLinkVerifier(signer), service.WithVoteLinkPolls(client))
+				service.WithVoteLinkVerifier(signer), service.WithPollReader(client))
 			getBallot := func(ctx context.Context, payload any) (any, error) {
 				b, err := responses.GetBallotByLink(ctx, payload.(*votesvc.GetVoteBallotByLinkPayload).VoteToken)
 				if err != nil {
@@ -973,6 +973,11 @@ func TestVoteLinkBallotContract(t *testing.T) {
 			if string(ballot["already_voted"]) != "true" {
 				t.Errorf("already_voted = %s", ballot["already_voted"])
 			}
+			// The fixture ballot is responded, so it cannot end the vote; only the yes/no is
+			// returned, never the counts it is computed from.
+			if string(ballot["would_end_vote"]) != "false" {
+				t.Errorf("would_end_vote = %s, want false", ballot["would_end_vote"])
+			}
 			// The setting and the ballot's finality are not ballot contents: both are returned
 			// on regular and pseudo-anonymous votes alike.
 			if string(body["allow_vote_change"]) != "false" || string(ballot["can_change_vote"]) != "false" {
@@ -994,7 +999,7 @@ func TestVoteLinkBallotContract(t *testing.T) {
 		defer upstream.Close()
 		client := NewContractTestClient(upstream.Client(), upstream.URL+"/")
 		responses := service.NewVoteResponseService(nil, client, methodContractIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)),
-			service.WithVoteLinkVerifier(signer), service.WithVoteLinkPolls(client))
+			service.WithVoteLinkVerifier(signer), service.WithPollReader(client))
 		_, err := responses.GetBallotByLink(context.Background(), token+"x")
 		var dErr *domain.DomainError
 		if !errors.As(err, &dErr) || dErr.Type != domain.ErrorTypeNotFound || called {
