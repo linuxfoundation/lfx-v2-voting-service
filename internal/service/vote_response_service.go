@@ -34,9 +34,11 @@ func WithVoteLinkVerifier(signer domain.VoteLinkSigner) VoteResponseServiceOptio
 	}
 }
 
-// WithVoteLinkPolls lets the personalized vote link endpoints read the vote itself (questions,
-// choices, status) from ITX. Without it, GetBallotByLink returns 503.
-func WithVoteLinkPolls(polls domain.PollClient) VoteResponseServiceOption {
+// WithPollReader lets the service read the vote itself (questions, choices, status and
+// response counts) from ITX. The personalized vote link ballot read always needs it, and the
+// authenticated ballot read (GET /vote_responses/{uid}) needs it for pending ballots. Without
+// it, GetBallotByLink and GetVoteResponse for a pending ballot return 503.
+func WithPollReader(polls domain.PollClient) VoteResponseServiceOption {
 	return func(s *VoteResponseService) {
 		s.pollReader = polls
 	}
@@ -51,6 +53,17 @@ type VoteLinkBallot struct {
 	Ballot                *itx.VoteResponse
 	ProjectUID            string
 	IncludeBallotContents bool
+	// WouldEndVote is true when submitting this pending ballot now would be the final
+	// response that ends the vote. Only this yes/no leaves the service, never the counts.
+	WouldEndVote bool
+}
+
+// VoteResponseDetails is a ballot as returned by GET /vote_responses/{uid}, which its voter or
+// a vote auditor may read. WouldEndVote is true when submitting this pending ballot now would
+// be the final response that ends the vote.
+type VoteResponseDetails struct {
+	Ballot       *itx.VoteResponse
+	WouldEndVote bool
 }
 
 // NewVoteResponseService creates a new vote response service
@@ -176,8 +189,10 @@ func (s *VoteResponseService) submitVoteResponse(ctx context.Context, req *Creat
 	return nil
 }
 
-// GetVoteResponse retrieves vote response details (proxies to ITX GET /voting/vote/{vote_id})
-func (s *VoteResponseService) GetVoteResponse(ctx context.Context, voteID string) (*itx.VoteResponse, error) {
+// GetVoteResponse retrieves vote response details (proxies to ITX GET /voting/vote/{vote_id}).
+// For a pending ballot it also reads the vote (ITX GET /voting/poll/{poll_id}) to tell whether
+// this ballot is the last one outstanding; a failed vote read fails the request.
+func (s *VoteResponseService) GetVoteResponse(ctx context.Context, voteID string) (*VoteResponseDetails, error) {
 	principal, err := requirePrincipal(ctx)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
@@ -199,9 +214,24 @@ func (s *VoteResponseService) GetVoteResponse(ctx context.Context, voteID string
 		return nil, err
 	}
 
+	details := &VoteResponseDetails{Ballot: voteResp}
+	// Submitted and removed ballots can never end the vote, so they skip the extra ITX read.
+	if isPendingBallot(voteResp) {
+		if s.pollReader == nil {
+			s.logger.WarnContext(ctx, "Pending ballot requested but no poll reader is configured")
+			return nil, domain.NewUnavailableError("vote reads are not configured")
+		}
+		poll, err := s.pollReader.GetPoll(ctx, voteResp.PollID)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to get vote from ITX", "error", err)
+			return nil, err
+		}
+		details.WouldEndVote = wouldEndVote(poll, voteResp)
+	}
+
 	s.logger.InfoContext(ctx, "Vote response retrieved successfully", "vote_id", voteResp.VoteID)
 
-	return voteResp, nil
+	return details, nil
 }
 
 // UpdateVoteResponse updates a vote response (proxies to ITX PUT /voting/vote/{vote_id})
@@ -289,7 +319,25 @@ func (s *VoteResponseService) GetBallotByLink(ctx context.Context, token string)
 		// Fail closed: ballot contents only when ITX explicitly said the vote is not
 		// pseudo-anonymous; a missing or null flag is treated as pseudo-anonymous.
 		IncludeBallotContents: poll.PseudoAnonymityKnown && !poll.PseudoAnonymity,
+		WouldEndVote:          wouldEndVote(poll, ballot),
 	}, nil
+}
+
+// isPendingBallot reports whether ballot is still waiting to be cast by a voter who has not
+// been removed. Only such a ballot can be the response that ends the vote.
+func isPendingBallot(ballot *itx.VoteResponse) bool {
+	return ballot.VoteStatus == itx.VoteStatusAwaitingResponse && !ballot.VoterRemoved
+}
+
+// wouldEndVote reports whether submitting ballot now would be the final response that ends
+// poll. It mirrors ITX's auto-end gate (status active, at least one invitation, and responses
+// >= invitations), counting this ballot's response. Changing a submitted ballot never adds a
+// response, so only a pending ballot can end the vote.
+func wouldEndVote(poll *itx.PollResponse, ballot *itx.VoteResponse) bool {
+	return isPendingBallot(ballot) &&
+		poll.Status == itx.PollStatusActive &&
+		poll.TotalVotingRequestInvitations > 0 &&
+		poll.NumResponseReceived+1 >= poll.TotalVotingRequestInvitations
 }
 
 // verifyVoteLink checks a personalized vote link token. Every invalid token yields the

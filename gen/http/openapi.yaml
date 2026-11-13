@@ -356,6 +356,7 @@ paths:
                             - project_uid
                             - vote_status
                             - comment_responses
+                            - would_end_vote
                 "400":
                     description: Bad Request response.
                     schema:
@@ -1962,9 +1963,9 @@ definitions:
                     $ref: '#/definitions/PollChoice'
                 description: Answer choices
                 example:
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
             prompt:
                 type: string
@@ -1985,9 +1986,9 @@ definitions:
         description: Vote question
         example:
             choices:
-                - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                   choice_text: John Doe
-                - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                   choice_text: John Doe
             prompt: Who should be elected to the TSC?
             question_id: e1c4167c-66be-42ef-ad4e-7557f432e17b
@@ -2006,13 +2007,13 @@ definitions:
                     $ref: '#/definitions/PollChoice'
                 description: Answer choices
                 example:
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
             prompt:
                 type: string
@@ -2030,11 +2031,11 @@ definitions:
         description: Question details
         example:
             choices:
-                - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                   choice_text: John Doe
-                - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                   choice_text: John Doe
-                - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                   choice_text: John Doe
             prompt: Cum incidunt et sequi officiis pariatur.
             question_id: 9d04d213-2b3f-4b11-ae25-856d024022ee
@@ -2615,11 +2616,11 @@ definitions:
                       vote_count: 8576775140519855437
             question:
                 choices:
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
                 prompt: Quidem molestias ex.
                 question_id: 1c830f40-7e19-4ce2-bbb8-5c1811c6bcba
@@ -2666,9 +2667,9 @@ definitions:
             ranked_choice_winner_info:
                 condorcet_irv_used_for_eliminations: false
                 poll_choices:
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
         required:
             - question
@@ -2799,19 +2800,19 @@ definitions:
                     $ref: '#/definitions/PollChoice'
                 description: Winning choices
                 example:
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
         description: Winner information for ranked choice voting
         example:
             condorcet_irv_used_for_eliminations: true
             poll_choices:
-                - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                   choice_text: John Doe
-                - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                   choice_text: John Doe
         required:
             - poll_choices
@@ -3156,44 +3157,44 @@ definitions:
                 description: Questions for the vote
                 example:
                     - choices:
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 965d9289-40d8-479a-9801-953c51dcc7b8
+                      question_id: 96b88548-0299-4523-87ee-97ff6c2d2562
                       type: single_choice
                     - choices:
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 965d9289-40d8-479a-9801-953c51dcc7b8
+                      question_id: 96b88548-0299-4523-87ee-97ff6c2d2562
                       type: single_choice
                     - choices:
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 965d9289-40d8-479a-9801-953c51dcc7b8
+                      question_id: 96b88548-0299-4523-87ee-97ff6c2d2562
                       type: single_choice
                     - choices:
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 965d9289-40d8-479a-9801-953c51dcc7b8
+                      question_id: 96b88548-0299-4523-87ee-97ff6c2d2562
                       type: single_choice
             poll_type:
                 type: string
@@ -3248,34 +3249,34 @@ definitions:
                 - prompt: Please provide any additional feedback
             poll_questions:
                 - choices:
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 965d9289-40d8-479a-9801-953c51dcc7b8
+                  question_id: 96b88548-0299-4523-87ee-97ff6c2d2562
                   type: single_choice
                 - choices:
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 965d9289-40d8-479a-9801-953c51dcc7b8
+                  question_id: 96b88548-0299-4523-87ee-97ff6c2d2562
                   type: single_choice
                 - choices:
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 965d9289-40d8-479a-9801-953c51dcc7b8
+                  question_id: 96b88548-0299-4523-87ee-97ff6c2d2562
                   type: single_choice
             poll_type: meek_stv
             project_uid: a09P000000DsCBuIRT
@@ -3427,7 +3428,7 @@ definitions:
             abstained:
                 type: boolean
                 description: Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.
-                example: true
+                example: false
             already_voted:
                 type: boolean
                 description: True when a ballot has been submitted (vote_status responded, or ended after voting), so changes use PUT /vote_links/responses while the vote is active
@@ -3442,8 +3443,6 @@ definitions:
                     $ref: '#/definitions/CommentResponse'
                 description: The submitted comments. Omitted on pseudo-anonymous votes and before voting.
                 example:
-                    - comment_text: Et voluptates quos.
-                      prompt_id: 6bf36138-5e50-4b98-8ac2-57ad3c8ca033
                     - comment_text: Et voluptates quos.
                       prompt_id: 6bf36138-5e50-4b98-8ac2-57ad3c8ca033
                     - comment_text: Et voluptates quos.
@@ -3500,6 +3499,50 @@ definitions:
                           choice_text: Et dolores delectus soluta voluptatem voluptatem asperiores.
                         - choice_id: 62294a12-9016-4ca3-ad68-4b5180b1ac39
                           choice_text: Et dolores delectus soluta voluptatem voluptatem asperiores.
+                    - prompt: Doloremque sed nobis autem minima est.
+                      question_id: 2e165633-8237-4455-a448-e4041cbd30fe
+                      ranked_user_choice:
+                        - choice_id: 29472422-5a20-4553-8797-a95493a508bd
+                          choice_rank: 9087464985166465497
+                          choice_text: Fugit modi tempora in sint earum.
+                        - choice_id: 29472422-5a20-4553-8797-a95493a508bd
+                          choice_rank: 9087464985166465497
+                          choice_text: Fugit modi tempora in sint earum.
+                        - choice_id: 29472422-5a20-4553-8797-a95493a508bd
+                          choice_rank: 9087464985166465497
+                          choice_text: Fugit modi tempora in sint earum.
+                      type: single_choice
+                      user_choice:
+                        - choice_id: 62294a12-9016-4ca3-ad68-4b5180b1ac39
+                          choice_text: Et dolores delectus soluta voluptatem voluptatem asperiores.
+                        - choice_id: 62294a12-9016-4ca3-ad68-4b5180b1ac39
+                          choice_text: Et dolores delectus soluta voluptatem voluptatem asperiores.
+                        - choice_id: 62294a12-9016-4ca3-ad68-4b5180b1ac39
+                          choice_text: Et dolores delectus soluta voluptatem voluptatem asperiores.
+                        - choice_id: 62294a12-9016-4ca3-ad68-4b5180b1ac39
+                          choice_text: Et dolores delectus soluta voluptatem voluptatem asperiores.
+                    - prompt: Doloremque sed nobis autem minima est.
+                      question_id: 2e165633-8237-4455-a448-e4041cbd30fe
+                      ranked_user_choice:
+                        - choice_id: 29472422-5a20-4553-8797-a95493a508bd
+                          choice_rank: 9087464985166465497
+                          choice_text: Fugit modi tempora in sint earum.
+                        - choice_id: 29472422-5a20-4553-8797-a95493a508bd
+                          choice_rank: 9087464985166465497
+                          choice_text: Fugit modi tempora in sint earum.
+                        - choice_id: 29472422-5a20-4553-8797-a95493a508bd
+                          choice_rank: 9087464985166465497
+                          choice_text: Fugit modi tempora in sint earum.
+                      type: single_choice
+                      user_choice:
+                        - choice_id: 62294a12-9016-4ca3-ad68-4b5180b1ac39
+                          choice_text: Et dolores delectus soluta voluptatem voluptatem asperiores.
+                        - choice_id: 62294a12-9016-4ca3-ad68-4b5180b1ac39
+                          choice_text: Et dolores delectus soluta voluptatem voluptatem asperiores.
+                        - choice_id: 62294a12-9016-4ca3-ad68-4b5180b1ac39
+                          choice_text: Et dolores delectus soluta voluptatem voluptatem asperiores.
+                        - choice_id: 62294a12-9016-4ca3-ad68-4b5180b1ac39
+                          choice_text: Et dolores delectus soluta voluptatem voluptatem asperiores.
             vote_status:
                 type: string
                 description: Ballot status from ITX, e.g. awaiting_response or responded
@@ -3508,12 +3551,20 @@ definitions:
                 type: boolean
                 description: True when the recipient was removed from the vote and can no longer vote
                 example: false
+            would_end_vote:
+                type: boolean
+                description: Whether submitting this pending ballot now would be the final response that ends the vote. False once a ballot is submitted, for removed voters, and when the vote is not active. Returned on pseudo-anonymous votes too; response counts are never returned.
+                example: true
         description: The link holder's own ballot
         example:
             abstained: true
             already_voted: false
             can_change_vote: true
             comment_responses:
+                - comment_text: Et voluptates quos.
+                  prompt_id: 6bf36138-5e50-4b98-8ac2-57ad3c8ca033
+                - comment_text: Et voluptates quos.
+                  prompt_id: 6bf36138-5e50-4b98-8ac2-57ad3c8ca033
                 - comment_text: Et voluptates quos.
                   prompt_id: 6bf36138-5e50-4b98-8ac2-57ad3c8ca033
                 - comment_text: Et voluptates quos.
@@ -3564,11 +3615,13 @@ definitions:
                     - choice_id: 62294a12-9016-4ca3-ad68-4b5180b1ac39
                       choice_text: Et dolores delectus soluta voluptatem voluptatem asperiores.
             vote_status: awaiting_response
-            voter_removed: false
+            voter_removed: true
+            would_end_vote: true
         required:
             - vote_status
             - already_voted
             - voter_removed
+            - would_end_vote
     VoteLinkBallotResult:
         title: VoteLinkBallotResult
         type: object
@@ -3628,24 +3681,28 @@ definitions:
                 description: Vote questions with their choices
                 example:
                     - choices:
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
+                          choice_text: John Doe
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 553a0874-41a3-4396-b26b-ad1b8a889b25
+                      question_id: 9135608f-4496-487a-a68e-a8443f0ef024
                       type: single_choice
                     - choices:
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
+                          choice_text: John Doe
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 553a0874-41a3-4396-b26b-ad1b8a889b25
+                      question_id: 9135608f-4496-487a-a68e-a8443f0ef024
                       type: single_choice
             poll_type:
                 type: string
@@ -3687,12 +3744,10 @@ definitions:
             allow_abstain: true
             allow_vote_change: false
             ballot:
-                abstained: false
+                abstained: true
                 already_voted: false
                 can_change_vote: true
                 comment_responses:
-                    - comment_text: Et voluptates quos.
-                      prompt_id: 6bf36138-5e50-4b98-8ac2-57ad3c8ca033
                     - comment_text: Et voluptates quos.
                       prompt_id: 6bf36138-5e50-4b98-8ac2-57ad3c8ca033
                     - comment_text: Et voluptates quos.
@@ -3790,11 +3845,12 @@ definitions:
                           choice_text: Et dolores delectus soluta voluptatem voluptatem asperiores.
                 vote_status: awaiting_response
                 voter_removed: true
-            description: Quia perspiciatis.
+                would_end_vote: false
+            description: Perspiciatis libero.
             early_end_time: "2004-05-08T22:59:02Z"
             end_time: "2026-02-15T23:59:59Z"
             end_time_timezone: America/New_York
-            name: Aliquid quia qui.
+            name: Qui et.
             num_winners: 6685073541704124371
             poll_comment_prompts:
                 - prompt: Please provide any additional feedback
@@ -3807,34 +3863,40 @@ definitions:
                   prompt_id: 2694e96c-d5fc-4613-87fe-e447fd9e6165
             poll_questions:
                 - choices:
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
+                      choice_text: John Doe
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 553a0874-41a3-4396-b26b-ad1b8a889b25
+                  question_id: 9135608f-4496-487a-a68e-a8443f0ef024
                   type: single_choice
                 - choices:
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
+                      choice_text: John Doe
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 553a0874-41a3-4396-b26b-ad1b8a889b25
+                  question_id: 9135608f-4496-487a-a68e-a8443f0ef024
                   type: single_choice
                 - choices:
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
+                      choice_text: John Doe
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 553a0874-41a3-4396-b26b-ad1b8a889b25
+                  question_id: 9135608f-4496-487a-a68e-a8443f0ef024
                   type: single_choice
             poll_type: condorcet_irv
             project_slug: cncf
@@ -4059,6 +4121,10 @@ definitions:
                 description: Vote/poll identifier
                 example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
                 format: uuid
+            would_end_vote:
+                type: boolean
+                description: Whether submitting this pending ballot now would be the final response that ends the vote. False once a ballot is submitted, for removed voters, and when the vote is not active.
+                example: false
         example:
             abstained: false
             allow_abstain: true
@@ -4139,12 +4205,14 @@ definitions:
             vote_response_uid: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
             vote_status: submitted
             vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+            would_end_vote: false
         required:
             - vote_response_uid
             - vote_uid
             - project_uid
             - vote_status
             - comment_responses
+            - would_end_vote
     VoteResult:
         title: VoteResult
         type: object
@@ -4246,44 +4314,52 @@ definitions:
                 description: Vote questions
                 example:
                     - choices:
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
+                          choice_text: John Doe
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 553a0874-41a3-4396-b26b-ad1b8a889b25
+                      question_id: 9135608f-4496-487a-a68e-a8443f0ef024
                       type: single_choice
                     - choices:
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
+                          choice_text: John Doe
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 553a0874-41a3-4396-b26b-ad1b8a889b25
+                      question_id: 9135608f-4496-487a-a68e-a8443f0ef024
                       type: single_choice
                     - choices:
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
+                          choice_text: John Doe
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 553a0874-41a3-4396-b26b-ad1b8a889b25
+                      question_id: 9135608f-4496-487a-a68e-a8443f0ef024
                       type: single_choice
                     - choices:
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
+                          choice_text: John Doe
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 553a0874-41a3-4396-b26b-ad1b8a889b25
+                      question_id: 9135608f-4496-487a-a68e-a8443f0ef024
                       type: single_choice
             poll_type:
                 type: string
@@ -4351,44 +4427,52 @@ definitions:
                   prompt_id: 2694e96c-d5fc-4613-87fe-e447fd9e6165
             poll_questions:
                 - choices:
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
+                      choice_text: John Doe
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 553a0874-41a3-4396-b26b-ad1b8a889b25
+                  question_id: 9135608f-4496-487a-a68e-a8443f0ef024
                   type: single_choice
                 - choices:
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
+                      choice_text: John Doe
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 553a0874-41a3-4396-b26b-ad1b8a889b25
+                  question_id: 9135608f-4496-487a-a68e-a8443f0ef024
                   type: single_choice
                 - choices:
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
+                      choice_text: John Doe
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 553a0874-41a3-4396-b26b-ad1b8a889b25
+                  question_id: 9135608f-4496-487a-a68e-a8443f0ef024
                   type: single_choice
                 - choices:
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
-                    - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
+                      choice_text: John Doe
+                    - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 553a0874-41a3-4396-b26b-ad1b8a889b25
+                  question_id: 9135608f-4496-487a-a68e-a8443f0ef024
                   type: single_choice
             poll_type: generic
             project_name: Labore enim sapiente ut suscipit.
@@ -4810,11 +4894,11 @@ definitions:
                               vote_count: 8576775140519855437
                       question:
                         choices:
-                            - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                            - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                               choice_text: John Doe
-                            - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                            - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                               choice_text: John Doe
-                            - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                            - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                               choice_text: John Doe
                         prompt: Quidem molestias ex.
                         question_id: 1c830f40-7e19-4ce2-bbb8-5c1811c6bcba
@@ -4861,9 +4945,9 @@ definitions:
                       ranked_choice_winner_info:
                         condorcet_irv_used_for_eliminations: false
                         poll_choices:
-                            - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                            - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                               choice_text: John Doe
-                            - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                            - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                               choice_text: John Doe
                     - generic_choice_votes:
                         - choice_id: 0db9aa63-626b-4d77-8a15-cbb0291e5c09
@@ -5167,11 +5251,11 @@ definitions:
                               vote_count: 8576775140519855437
                       question:
                         choices:
-                            - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                            - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                               choice_text: John Doe
-                            - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                            - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                               choice_text: John Doe
-                            - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                            - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                               choice_text: John Doe
                         prompt: Quidem molestias ex.
                         question_id: 1c830f40-7e19-4ce2-bbb8-5c1811c6bcba
@@ -5218,9 +5302,9 @@ definitions:
                       ranked_choice_winner_info:
                         condorcet_irv_used_for_eliminations: false
                         poll_choices:
-                            - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                            - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                               choice_text: John Doe
-                            - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                            - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                               choice_text: John Doe
                     - generic_choice_votes:
                         - choice_id: 0db9aa63-626b-4d77-8a15-cbb0291e5c09
@@ -5524,11 +5608,11 @@ definitions:
                               vote_count: 8576775140519855437
                       question:
                         choices:
-                            - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                            - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                               choice_text: John Doe
-                            - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                            - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                               choice_text: John Doe
-                            - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                            - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                               choice_text: John Doe
                         prompt: Quidem molestias ex.
                         question_id: 1c830f40-7e19-4ce2-bbb8-5c1811c6bcba
@@ -5575,9 +5659,9 @@ definitions:
                       ranked_choice_winner_info:
                         condorcet_irv_used_for_eliminations: false
                         poll_choices:
-                            - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                            - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                               choice_text: John Doe
-                            - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                            - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                               choice_text: John Doe
             results_held:
                 type: boolean
@@ -5989,11 +6073,11 @@ definitions:
                           vote_count: 8576775140519855437
                   question:
                     choices:
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
                     prompt: Quidem molestias ex.
                     question_id: 1c830f40-7e19-4ce2-bbb8-5c1811c6bcba
@@ -6040,9 +6124,9 @@ definitions:
                   ranked_choice_winner_info:
                     condorcet_irv_used_for_eliminations: false
                     poll_choices:
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
                 - generic_choice_votes:
                     - choice_id: 0db9aa63-626b-4d77-8a15-cbb0291e5c09
@@ -6346,11 +6430,11 @@ definitions:
                           vote_count: 8576775140519855437
                   question:
                     choices:
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
                     prompt: Quidem molestias ex.
                     question_id: 1c830f40-7e19-4ce2-bbb8-5c1811c6bcba
@@ -6397,9 +6481,9 @@ definitions:
                   ranked_choice_winner_info:
                     condorcet_irv_used_for_eliminations: false
                     poll_choices:
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
-                        - choice_id: c51302d2-10de-46dd-9cba-1705e48e3bab
+                        - choice_id: 49154682-1a51-40e0-84b7-868b39ccb271
                           choice_text: John Doe
             results_held: false
         required:
@@ -6490,34 +6574,34 @@ definitions:
                 description: Questions for the vote
                 example:
                     - choices:
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 965d9289-40d8-479a-9801-953c51dcc7b8
+                      question_id: 96b88548-0299-4523-87ee-97ff6c2d2562
                       type: single_choice
                     - choices:
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 965d9289-40d8-479a-9801-953c51dcc7b8
+                      question_id: 96b88548-0299-4523-87ee-97ff6c2d2562
                       type: single_choice
                     - choices:
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
-                        - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                        - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                           choice_text: John Doe
                       prompt: Who should be elected to the TSC?
-                      question_id: 965d9289-40d8-479a-9801-953c51dcc7b8
+                      question_id: 96b88548-0299-4523-87ee-97ff6c2d2562
                       type: single_choice
             poll_type:
                 type: string
@@ -6573,34 +6657,34 @@ definitions:
                 - prompt: Please provide any additional feedback
             poll_questions:
                 - choices:
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 965d9289-40d8-479a-9801-953c51dcc7b8
+                  question_id: 96b88548-0299-4523-87ee-97ff6c2d2562
                   type: single_choice
                 - choices:
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 965d9289-40d8-479a-9801-953c51dcc7b8
+                  question_id: 96b88548-0299-4523-87ee-97ff6c2d2562
                   type: single_choice
                 - choices:
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
-                    - choice_id: 85480299-3523-4e3d-96df-5093119c5b4f
+                    - choice_id: 81039fc3-3f0c-4c5b-8f55-3a0874c66863
                       choice_text: John Doe
                   prompt: Who should be elected to the TSC?
-                  question_id: 965d9289-40d8-479a-9801-953c51dcc7b8
+                  question_id: 96b88548-0299-4523-87ee-97ff6c2d2562
                   type: single_choice
             poll_type: generic
             project_uid: a09P000000DsCBuIRT

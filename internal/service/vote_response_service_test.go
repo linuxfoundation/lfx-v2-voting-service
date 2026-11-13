@@ -127,8 +127,8 @@ func TestGetVoteResponse_ResponseIDMappingPopulatesProjectUID(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.ProjectID != "uid:proj-sfid" {
-		t.Errorf("expected ProjectID %q (mapper applied), got %q", "uid:proj-sfid", result.ProjectID)
+	if result.Ballot.ProjectID != "uid:proj-sfid" {
+		t.Errorf("expected ProjectID %q (mapper applied), got %q", "uid:proj-sfid", result.Ballot.ProjectID)
 	}
 }
 
@@ -150,6 +150,106 @@ func TestGetVoteResponse_ResponseIDMappingFailurePropagates(t *testing.T) {
 	var dErr *domain.DomainError
 	if !errors.As(err, &dErr) {
 		t.Fatalf("expected *domain.DomainError, got %T: %v", err, err)
+	}
+}
+
+func TestWouldEndVote(t *testing.T) {
+	pending := &itx.VoteResponse{VoteStatus: itx.VoteStatusAwaitingResponse}
+	activePoll := func(received, total int) *itx.PollResponse {
+		return &itx.PollResponse{Status: itx.PollStatusActive, NumResponseReceived: received, TotalVotingRequestInvitations: total}
+	}
+	cases := []struct {
+		name   string
+		poll   *itx.PollResponse
+		ballot *itx.VoteResponse
+		want   bool
+	}{
+		{name: "pending last voter", poll: activePoll(8, 9), ballot: pending, want: true},
+		{name: "pending with stale over-count", poll: activePoll(9, 9), ballot: pending, want: true},
+		{name: "pending with two outstanding", poll: activePoll(7, 9), ballot: pending},
+		{name: "responded ballot", poll: activePoll(8, 9), ballot: &itx.VoteResponse{VoteStatus: itx.VoteStatusResponded}},
+		{name: "ended ballot", poll: activePoll(8, 9), ballot: &itx.VoteResponse{VoteStatus: itx.VoteStatusEnded}},
+		{name: "unsubmitted ballot on ended poll", poll: activePoll(8, 9), ballot: &itx.VoteResponse{VoteStatus: "awaiting_response_but_poll_ended"}},
+		{name: "removed voter", poll: activePoll(8, 9), ballot: &itx.VoteResponse{VoteStatus: itx.VoteStatusAwaitingResponse, VoterRemoved: true}},
+		{name: "ended poll", poll: &itx.PollResponse{Status: "ended", NumResponseReceived: 8, TotalVotingRequestInvitations: 9}, ballot: pending},
+		{name: "disabled poll", poll: &itx.PollResponse{Status: "disabled", NumResponseReceived: 0, TotalVotingRequestInvitations: 1}, ballot: pending},
+		{name: "no invitations", poll: activePoll(0, 0), ballot: pending},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := wouldEndVote(tc.poll, tc.ballot); got != tc.want {
+				t.Errorf("wouldEndVote = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestGetVoteResponse_WouldEndVote(t *testing.T) {
+	lastVoterPoll := &itx.PollResponse{PollID: "vote-1", Status: itx.PollStatusActive, NumResponseReceived: 8, TotalVotingRequestInvitations: 9}
+	cases := []struct {
+		name            string
+		ballot          *itx.VoteResponse
+		pollErr         error
+		noReader        bool
+		want            bool
+		wantUnavailable bool
+		wantPollID      string
+	}{
+		{
+			name:       "pending last voter",
+			ballot:     &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusAwaitingResponse},
+			want:       true,
+			wantPollID: "vote-1",
+		},
+		{
+			name:   "responded ballot skips the poll read",
+			ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusResponded},
+		},
+		{
+			name:   "removed voter skips the poll read",
+			ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusAwaitingResponse, VoterRemoved: true},
+		},
+		{
+			name:            "poll read fails",
+			ballot:          &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusAwaitingResponse},
+			pollErr:         domain.NewUnavailableError("ITX down"),
+			wantUnavailable: true,
+			wantPollID:      "vote-1",
+		},
+		{
+			name:            "no poll reader",
+			ballot:          &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusAwaitingResponse},
+			noReader:        true,
+			wantUnavailable: true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			polls := &ballotPollReader{poll: lastVoterPoll, err: tc.pollErr}
+			var opts []VoteResponseServiceOption
+			if !tc.noReader {
+				opts = append(opts, WithPollReader(polls))
+			}
+			svc := NewVoteResponseService(nil, &ballotVoteClient{ballot: tc.ballot}, identityIDMapper{}, discardLogger(), opts...)
+
+			got, err := svc.GetVoteResponse(ctxWithPrincipal("user"), "ballot-1")
+			if polls.requested != tc.wantPollID {
+				t.Errorf("poll requested = %q, want %q", polls.requested, tc.wantPollID)
+			}
+			if tc.wantUnavailable {
+				assertErrorType(t, err, domain.ErrorTypeUnavailable)
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got.WouldEndVote != tc.want {
+				t.Errorf("WouldEndVote = %v, want %v", got.WouldEndVote, tc.want)
+			}
+			if got.Ballot != tc.ballot {
+				t.Error("Ballot must be the ballot read from ITX")
+			}
+		})
 	}
 }
 
@@ -339,7 +439,7 @@ func TestGetBallotByLink_ReturnsVoteAndBallotFromToken(t *testing.T) {
 		votes := &ballotVoteClient{ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: "responded"}}
 		polls := &ballotPollReader{poll: &itx.PollResponse{PollID: "vote-1", ProjectID: "sfid-1", PseudoAnonymity: pseudo, PseudoAnonymityKnown: true}}
 		svc := NewVoteResponseService(nil, votes, prefixProjectIDMapper{}, discardLogger(),
-			WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(polls))
+			WithVoteLinkVerifier(fakeLinkSigner{}), WithPollReader(polls))
 
 		got, err := svc.GetBallotByLink(context.Background(), "tok:vote-1:ballot-1")
 		if err != nil {
@@ -390,7 +490,7 @@ func TestGetBallotByLink_Errors(t *testing.T) {
 		{
 			name: "invalid token",
 			opts: func(p *ballotPollReader) []VoteResponseServiceOption {
-				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(p)}
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithPollReader(p)}
 			},
 			token:    "forged",
 			want:     domain.ErrorTypeNotFound,
@@ -399,7 +499,7 @@ func TestGetBallotByLink_Errors(t *testing.T) {
 		{
 			name: "ballot belongs to another vote",
 			opts: func(p *ballotPollReader) []VoteResponseServiceOption {
-				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(p)}
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithPollReader(p)}
 			},
 			token:  "tok:vote-1:ballot-1",
 			ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-2"},
@@ -408,7 +508,7 @@ func TestGetBallotByLink_Errors(t *testing.T) {
 		{
 			name: "ITX ballot not found",
 			opts: func(p *ballotPollReader) []VoteResponseServiceOption {
-				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(p)}
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithPollReader(p)}
 			},
 			token:   "tok:vote-1:ballot-1",
 			voteErr: domain.NewNotFoundError("vote not found"),
@@ -417,7 +517,7 @@ func TestGetBallotByLink_Errors(t *testing.T) {
 		{
 			name: "ITX poll unavailable",
 			opts: func(p *ballotPollReader) []VoteResponseServiceOption {
-				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(p)}
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithPollReader(p)}
 			},
 			token:   "tok:vote-1:ballot-1",
 			pollErr: domain.NewUnavailableError("ITX down"),
@@ -426,7 +526,7 @@ func TestGetBallotByLink_Errors(t *testing.T) {
 		{
 			name: "project ID mapping fails",
 			opts: func(p *ballotPollReader) []VoteResponseServiceOption {
-				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(p)}
+				return []VoteResponseServiceOption{WithVoteLinkVerifier(fakeLinkSigner{}), WithPollReader(p)}
 			},
 			token:  "tok:vote-1:ballot-1",
 			mapper: &failingIDMapper{err: domain.NewUnavailableError("NATS down")},
@@ -460,7 +560,7 @@ func TestGetBallotByLink_UnknownPseudoAnonymityFailsClosed(t *testing.T) {
 	votes := &ballotVoteClient{ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: "responded"}}
 	polls := &ballotPollReader{poll: &itx.PollResponse{PollID: "vote-1", PseudoAnonymity: false, PseudoAnonymityKnown: false}}
 	svc := NewVoteResponseService(nil, votes, identityIDMapper{}, discardLogger(),
-		WithVoteLinkVerifier(fakeLinkSigner{}), WithVoteLinkPolls(polls))
+		WithVoteLinkVerifier(fakeLinkSigner{}), WithPollReader(polls))
 
 	got, err := svc.GetBallotByLink(context.Background(), "tok:vote-1:ballot-1")
 	if err != nil {
@@ -468,6 +568,29 @@ func TestGetBallotByLink_UnknownPseudoAnonymityFailsClosed(t *testing.T) {
 	}
 	if got.IncludeBallotContents {
 		t.Error("ballot contents must not be returned when pseudo_anonymity is unknown")
+	}
+}
+
+func TestGetBallotByLink_WouldEndVote(t *testing.T) {
+	for _, tc := range []struct {
+		status string
+		want   bool
+	}{
+		{status: itx.VoteStatusAwaitingResponse, want: true},
+		{status: itx.VoteStatusResponded, want: false},
+	} {
+		votes := &ballotVoteClient{ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: tc.status}}
+		polls := &ballotPollReader{poll: &itx.PollResponse{PollID: "vote-1", Status: itx.PollStatusActive, NumResponseReceived: 8, TotalVotingRequestInvitations: 9}}
+		svc := NewVoteResponseService(nil, votes, identityIDMapper{}, discardLogger(),
+			WithVoteLinkVerifier(fakeLinkSigner{}), WithPollReader(polls))
+
+		got, err := svc.GetBallotByLink(context.Background(), "tok:vote-1:ballot-1")
+		if err != nil {
+			t.Fatalf("%s: unexpected error: %v", tc.status, err)
+		}
+		if got.WouldEndVote != tc.want {
+			t.Errorf("%s: WouldEndVote = %v, want %v", tc.status, got.WouldEndVote, tc.want)
+		}
 	}
 }
 

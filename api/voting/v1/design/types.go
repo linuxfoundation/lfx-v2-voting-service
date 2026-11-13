@@ -436,6 +436,10 @@ var VoteResponseResult = Type("VoteResponseResult", func() {
 		"Votes created before this setting existed report true.")
 	Attribute("can_change_vote", Boolean, "Whether this submitted ballot can still be changed with "+
 		"PUT /vote_responses/{vote_response_uid}. Omitted when ITX does not report it.")
+	Attribute("would_end_vote", Boolean, "Whether submitting this pending ballot now would be the final response "+
+		"that ends the vote. False once a ballot is submitted, for removed voters, and when the vote is not active.", func() {
+		Example(false)
+	})
 	Attribute("vote_creation_time", String, "Vote creation time", func() {
 		Format(FormatDateTime)
 	})
@@ -464,7 +468,7 @@ var VoteResponseResult = Type("VoteResponseResult", func() {
 		"the poll's comment prompts. Always an array (empty if the poll has no comment prompts "+
 		"or the voter left none).")
 
-	Required("vote_response_uid", "vote_uid", "project_uid", "vote_status", "comment_responses")
+	Required("vote_response_uid", "vote_uid", "project_uid", "vote_status", "comment_responses", "would_end_vote")
 })
 
 // VoteLinkBallotResult is what a personalized vote link holder may see: the vote's ballot
@@ -526,11 +530,14 @@ var VoteLinkBallot = Type("VoteLinkBallot", func() {
 	Attribute("voter_removed", Boolean, "True when the recipient was removed from the vote and can no longer vote")
 	Attribute("can_change_vote", Boolean, "Whether this submitted ballot can still be changed with "+
 		"PUT /vote_links/responses. Returned on pseudo-anonymous votes too; omitted when ITX does not report it.")
+	Attribute("would_end_vote", Boolean, "Whether submitting this pending ballot now would be the final response "+
+		"that ends the vote. False once a ballot is submitted, for removed voters, and when the vote is not active. "+
+		"Returned on pseudo-anonymous votes too; response counts are never returned.")
 	Attribute("abstained", Boolean, "Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.")
 	Attribute("poll_answers", ArrayOf(VoteAnswer), "The submitted answers. Omitted on pseudo-anonymous votes and before voting.")
 	Attribute("comment_responses", ArrayOf(CommentResponse), "The submitted comments. Omitted on pseudo-anonymous votes and before voting.")
 
-	Required("vote_status", "already_voted", "voter_removed")
+	Required("vote_status", "already_voted", "voter_removed", "would_end_vote")
 })
 
 // VoteAnswer represents an answer to a poll question

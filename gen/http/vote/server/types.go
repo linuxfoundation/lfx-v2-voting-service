@@ -552,6 +552,10 @@ type GetVoteResponseResponseBody struct {
 	// Whether this submitted ballot can still be changed with PUT
 	// /vote_responses/{vote_response_uid}. Omitted when ITX does not report it.
 	CanChangeVote *bool `form:"can_change_vote,omitempty" json:"can_change_vote,omitempty" xml:"can_change_vote,omitempty"`
+	// Whether submitting this pending ballot now would be the final response that
+	// ends the vote. False once a ballot is submitted, for removed voters, and
+	// when the vote is not active.
+	WouldEndVote bool `form:"would_end_vote" json:"would_end_vote" xml:"would_end_vote"`
 	// Vote creation time
 	VoteCreationTime *string `form:"vote_creation_time,omitempty" json:"vote_creation_time,omitempty" xml:"vote_creation_time,omitempty"`
 	// Voter name
@@ -1872,6 +1876,11 @@ type VoteLinkBallotResponseBody struct {
 	// /vote_links/responses. Returned on pseudo-anonymous votes too; omitted when
 	// ITX does not report it.
 	CanChangeVote *bool `form:"can_change_vote,omitempty" json:"can_change_vote,omitempty" xml:"can_change_vote,omitempty"`
+	// Whether submitting this pending ballot now would be the final response that
+	// ends the vote. False once a ballot is submitted, for removed voters, and
+	// when the vote is not active. Returned on pseudo-anonymous votes too;
+	// response counts are never returned.
+	WouldEndVote bool `form:"would_end_vote" json:"would_end_vote" xml:"would_end_vote"`
 	// Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.
 	Abstained *bool `form:"abstained,omitempty" json:"abstained,omitempty" xml:"abstained,omitempty"`
 	// The submitted answers. Omitted on pseudo-anonymous votes and before voting.
@@ -2289,6 +2298,7 @@ func NewGetVoteResponseResponseBody(res *vote.VoteResponseResult) *GetVoteRespon
 		AllowAbstain:           res.AllowAbstain,
 		AllowVoteChange:        res.AllowVoteChange,
 		CanChangeVote:          res.CanChangeVote,
+		WouldEndVote:           res.WouldEndVote,
 		VoteCreationTime:       res.VoteCreationTime,
 		UserName:               res.UserName,
 		ProfilePicture:         res.ProfilePicture,

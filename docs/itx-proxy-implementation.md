@@ -401,7 +401,7 @@ Response IDs are mapped from V1 to V2:
 | `POST /votes/{id}/bulk_resend` | `POST /v2/voting/poll/{id}/bulk_resend` |
 | `GET /votes/{id}/results` | `GET /v2/voting/poll/{id}/results` |
 | `POST /vote_responses` | `POST /v2/voting/vote` |
-| `GET /vote_responses/{id}` | `GET /v2/voting/vote/{id}` |
+| `GET /vote_responses/{id}` | `GET /v2/voting/vote/{id}` (+ `GET /v2/voting/poll/{poll_id}` for pending ballots) |
 | `PUT /vote_responses/{id}` | `PUT /v2/voting/vote/{id}` |
 | `POST /vote_responses/{id}/resend` | `POST /v2/voting/vote/{id}/resend` |
 
