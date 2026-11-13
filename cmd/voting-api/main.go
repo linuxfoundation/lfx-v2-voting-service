@@ -201,8 +201,8 @@ func run() int {
 
 	// Initialize personalized vote links (optional; disabled when no signing keys are set)
 	var voteOpts []service.VoteServiceOption
-	// The signed-in ballot read reads the vote for pending ballots, so the poll reader is
-	// wired whether or not vote links are enabled.
+	// The authenticated ballot read (GET /vote_responses/{uid}) reads the vote for pending
+	// ballots, so the poll reader is wired whether or not vote links are enabled.
 	voteResponseOpts := []service.VoteResponseServiceOption{service.WithPollReader(proxyClient)}
 	linkSigner, err := newVoteLinkSigner(cfg)
 	if err != nil {

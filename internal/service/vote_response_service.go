@@ -36,8 +36,8 @@ func WithVoteLinkVerifier(signer domain.VoteLinkSigner) VoteResponseServiceOptio
 
 // WithPollReader lets the service read the vote itself (questions, choices, status and
 // response counts) from ITX. The personalized vote link ballot read always needs it, and the
-// signed-in ballot read needs it for pending ballots. Without it, GetBallotByLink and
-// GetVoteResponse for a pending ballot return 503.
+// authenticated ballot read (GET /vote_responses/{uid}) needs it for pending ballots. Without
+// it, GetBallotByLink and GetVoteResponse for a pending ballot return 503.
 func WithPollReader(polls domain.PollClient) VoteResponseServiceOption {
 	return func(s *VoteResponseService) {
 		s.pollReader = polls
@@ -58,8 +58,9 @@ type VoteLinkBallot struct {
 	WouldEndVote bool
 }
 
-// VoteResponseDetails is a ballot as returned to its signed-in voter. WouldEndVote is true
-// when submitting this pending ballot now would be the final response that ends the vote.
+// VoteResponseDetails is a ballot as returned by GET /vote_responses/{uid}, which its voter or
+// a vote auditor may read. WouldEndVote is true when submitting this pending ballot now would
+// be the final response that ends the vote.
 type VoteResponseDetails struct {
 	Ballot       *itx.VoteResponse
 	WouldEndVote bool

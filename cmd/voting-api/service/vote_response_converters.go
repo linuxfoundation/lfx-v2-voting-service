@@ -160,8 +160,9 @@ func convertCommentResponses(comments []*votesvc.CommentResponse) ([]service.Com
 	return converted, nil
 }
 
-// ConvertVoteResponseDetailsToResult converts a ballot read by its signed-in voter to the Goa
-// result, adding whether submitting the ballot now would end the vote.
+// ConvertVoteResponseDetailsToResult converts a ballot from the authenticated ballot read
+// (GET /vote_responses/{uid}) to the Goa result, adding whether submitting the ballot now
+// would end the vote.
 func ConvertVoteResponseDetailsToResult(d *service.VoteResponseDetails) *votesvc.VoteResponseResult {
 	result := ConvertVoteResponseToResult(d.Ballot)
 	result.WouldEndVote = d.WouldEndVote
