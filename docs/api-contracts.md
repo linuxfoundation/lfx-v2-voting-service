@@ -1237,7 +1237,7 @@ Authorization: Bearer <heimdall-jwt-token>
   "vote_response_uid": "vr-uuid-123",
   "vote_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
   "project_uid": "c01adbaf-53b1-4d47-bc04-dd7e459dd301",
-  "vote_status": "voted",
+  "vote_status": "responded",
   "abstained": false,
   "allow_abstain": false,
   "allow_vote_change": true,
