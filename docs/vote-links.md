@@ -67,8 +67,19 @@ v1.<kid>.<base64url(payload)>.<base64url(HMAC-SHA256(key[kid], "v1.<kid>.<payloa
 - The vote's project: `project_uid` (the v2 UID, mapped from ITX's project SFID) and `project_slug` (ITX stores the slug in the poll's `project_name`; omitted when empty). The page looks up anything else about the project, such as its name, through the query service.
 - This recipient's ballot: `vote_status`, `already_voted` (so the page knows to use `PUT` to change it) and `voter_removed`. On **regular** votes, once a ballot is submitted, it also returns `abstained`, `poll_answers` and `comment_responses`, so the page can prefill them. On **pseudo-anonymous** votes these are never returned, because a forwarded link must not reveal how someone voted. This fails closed: if ITX omits `pseudo_anonymity` or returns `null`, the vote is treated as pseudo-anonymous and reported as `pseudo_anonymity: true`.
 - Whether this ballot can still be changed: `ballot.can_change_vote`, passed through from ITX. It is `true` only when the ballot has been submitted, the voter has not been removed, the vote allows changes, and the vote is active and before its end time. It is returned on pseudo-anonymous votes too, since it reveals nothing about how someone voted, and omitted (never computed) when ITX does not report it.
-- Whether submitting this ballot now would end the vote: `ballot.would_end_vote`, always present. It is `true` only for a pending ballot (`awaiting_response`) whose voter has not been removed, on an active vote where this response is the last one outstanding, so the page can warn the voter before they submit. The service computes it from ITX's response and invitation counts, which are never returned. It is returned on pseudo-anonymous votes too, and describes the moment of the read: it can change if another voter responds or a voter is added or removed afterwards.
-- The last-voter signal is advisory, not a guarantee of closure. ITX's poll counts can lag because the vote index is eventually consistent, and its auto-end check uses a separate stored counter. An upstream counter-update failure can leave a successfully submitted vote open until its scheduled or manual end. Re-reading can reduce staleness but cannot reserve the final response; see [consistency and failure limits](api-contracts.md#get-vote_responsesvote_response_uid-get-vote-response).
+- Whether submitting this ballot now would end the vote: `ballot.would_end_vote`, always
+  present. It is `true` only for a pending ballot (`awaiting_response`) whose voter has not
+  been removed, on an active vote where this response is the last one outstanding, so the
+  page can warn the voter before they submit. The service computes it from ITX's response
+  and invitation counts, which are never returned. It is returned on pseudo-anonymous
+  votes too, and describes the moment of the read: it can change if another voter responds
+  or a voter is added or removed afterwards.
+- The last-voter signal is advisory, not a guarantee of closure. ITX's poll counts can lag
+  because the vote index is eventually consistent, and its auto-end check uses a separate
+  stored counter. An upstream counter-update failure can leave a successfully submitted
+  vote open until its scheduled or manual end. Re-reading can reduce staleness but cannot
+  reserve the final response; see
+  [consistency and failure limits](api-contracts.md#get-vote_responsesvote_response_uid-get-vote-response).
 
 Both IDs come from the verified token. The service fetches the ballot first and returns `404 invalid voting link` unless it belongs to the token's vote. It then fetches the vote. No ID mapping is involved.
 

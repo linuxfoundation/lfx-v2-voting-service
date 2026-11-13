@@ -437,7 +437,9 @@ var VoteResponseResult = Type("VoteResponseResult", func() {
 	Attribute("can_change_vote", Boolean, "Whether this submitted ballot can still be changed with "+
 		"PUT /vote_responses/{vote_response_uid}. Omitted when ITX does not report it.")
 	Attribute("would_end_vote", Boolean, "Whether submitting this pending ballot now would be the final response "+
-		"that ends the vote. False once a ballot is submitted, for removed voters, and when the vote is not active.")
+		"that ends the vote. False once a ballot is submitted, for removed voters, and when the vote is not active.", func() {
+		Example(false)
+	})
 	Attribute("vote_creation_time", String, "Vote creation time", func() {
 		Format(FormatDateTime)
 	})

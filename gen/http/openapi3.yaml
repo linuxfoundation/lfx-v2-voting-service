@@ -3947,11 +3947,11 @@ components:
                 prompt:
                     type: string
                     description: Question prompt
-                    example: Incidunt natus dolores facere iste.
+                    example: Facere iste.
                 question_id:
                     type: string
                     description: Question identifier
-                    example: 3470cf1e-ae70-4d92-90cf-4560ed5152c8
+                    example: 2f5b1b3e-6d2f-4842-8807-2640bdd6a4f8
                     format: uuid
                 type:
                     type: string
@@ -3969,7 +3969,7 @@ components:
                     - choice_id: d0256908-8155-4caf-863b-48885a0e8dbf
                       choice_text: John Doe
                 prompt: Dignissimos fugit veritatis molestiae.
-                question_id: 815f9837-7722-4148-8701-4b736c99f1d5
+                question_id: 64b37a7d-2ce9-4148-8701-4b736c99f1d5
                 type: Repellendus laboriosam.
             required:
                 - question_id
@@ -5155,7 +5155,7 @@ components:
                     type: array
                     items:
                         type: string
-                        example: Qui necessitatibus quis earum suscipit.
+                        example: Sit voluptatem dolorem voluptatem.
                     description: Selected choice IDs
                     example:
                         - b03cdbaf-53b1-4d47-bc04-dd7e459dd309
@@ -5170,6 +5170,8 @@ components:
                         $ref: '#/components/schemas/RankedChoiceInput'
                     description: Ranked choices
                     example:
+                        - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
+                          choice_rank: 1
                         - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                           choice_rank: 1
                         - choice_id: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
@@ -5238,7 +5240,7 @@ components:
                 abstained:
                     type: boolean
                     description: Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.
-                    example: false
+                    example: true
                 already_voted:
                     type: boolean
                     description: True when a ballot has been submitted (vote_status responded, or ended after voting), so changes use PUT /vote_links/responses while the vote is active
@@ -5246,7 +5248,7 @@ components:
                 can_change_vote:
                     type: boolean
                     description: Whether this submitted ballot can still be changed with PUT /vote_links/responses. Returned on pseudo-anonymous votes too; omitted when ITX does not report it.
-                    example: true
+                    example: false
                 comment_responses:
                     type: array
                     items:
@@ -5317,6 +5319,31 @@ components:
                               choice_text: Praesentium ab incidunt et et.
                             - choice_id: 76a20336-225a-4f2e-97fb-ec7d4aecd1b6
                               choice_text: Praesentium ab incidunt et et.
+                        - prompt: Expedita quia ullam omnis ut libero nulla.
+                          question_id: 0c6aef00-3c9b-46d3-8c33-1627050b13a2
+                          ranked_user_choice:
+                            - choice_id: 4a5f2ada-a18a-46e2-9c7a-4da7df70fa43
+                              choice_rank: 2498370766541200940
+                              choice_text: Doloremque minima pariatur.
+                            - choice_id: 4a5f2ada-a18a-46e2-9c7a-4da7df70fa43
+                              choice_rank: 2498370766541200940
+                              choice_text: Doloremque minima pariatur.
+                            - choice_id: 4a5f2ada-a18a-46e2-9c7a-4da7df70fa43
+                              choice_rank: 2498370766541200940
+                              choice_text: Doloremque minima pariatur.
+                            - choice_id: 4a5f2ada-a18a-46e2-9c7a-4da7df70fa43
+                              choice_rank: 2498370766541200940
+                              choice_text: Doloremque minima pariatur.
+                          type: multiple_choice
+                          user_choice:
+                            - choice_id: 76a20336-225a-4f2e-97fb-ec7d4aecd1b6
+                              choice_text: Praesentium ab incidunt et et.
+                            - choice_id: 76a20336-225a-4f2e-97fb-ec7d4aecd1b6
+                              choice_text: Praesentium ab incidunt et et.
+                            - choice_id: 76a20336-225a-4f2e-97fb-ec7d4aecd1b6
+                              choice_text: Praesentium ab incidunt et et.
+                            - choice_id: 76a20336-225a-4f2e-97fb-ec7d4aecd1b6
+                              choice_text: Praesentium ab incidunt et et.
                 vote_status:
                     type: string
                     description: Ballot status from ITX, e.g. awaiting_response or responded
@@ -5328,43 +5355,20 @@ components:
                 would_end_vote:
                     type: boolean
                     description: Whether submitting this pending ballot now would be the final response that ends the vote. False once a ballot is submitted, for removed voters, and when the vote is not active. Returned on pseudo-anonymous votes too; response counts are never returned.
-                    example: false
+                    example: true
             description: The link holder's own ballot
             example:
                 abstained: true
-                already_voted: true
-                can_change_vote: false
+                already_voted: false
+                can_change_vote: true
                 comment_responses:
                     - comment_text: Alias mollitia.
                       prompt_id: d4def251-de2f-4af5-bff1-c8a3c9c76e4a
                     - comment_text: Alias mollitia.
                       prompt_id: d4def251-de2f-4af5-bff1-c8a3c9c76e4a
+                    - comment_text: Alias mollitia.
+                      prompt_id: d4def251-de2f-4af5-bff1-c8a3c9c76e4a
                 poll_answers:
-                    - prompt: Expedita quia ullam omnis ut libero nulla.
-                      question_id: 0c6aef00-3c9b-46d3-8c33-1627050b13a2
-                      ranked_user_choice:
-                        - choice_id: 4a5f2ada-a18a-46e2-9c7a-4da7df70fa43
-                          choice_rank: 2498370766541200940
-                          choice_text: Doloremque minima pariatur.
-                        - choice_id: 4a5f2ada-a18a-46e2-9c7a-4da7df70fa43
-                          choice_rank: 2498370766541200940
-                          choice_text: Doloremque minima pariatur.
-                        - choice_id: 4a5f2ada-a18a-46e2-9c7a-4da7df70fa43
-                          choice_rank: 2498370766541200940
-                          choice_text: Doloremque minima pariatur.
-                        - choice_id: 4a5f2ada-a18a-46e2-9c7a-4da7df70fa43
-                          choice_rank: 2498370766541200940
-                          choice_text: Doloremque minima pariatur.
-                      type: multiple_choice
-                      user_choice:
-                        - choice_id: 76a20336-225a-4f2e-97fb-ec7d4aecd1b6
-                          choice_text: Praesentium ab incidunt et et.
-                        - choice_id: 76a20336-225a-4f2e-97fb-ec7d4aecd1b6
-                          choice_text: Praesentium ab incidunt et et.
-                        - choice_id: 76a20336-225a-4f2e-97fb-ec7d4aecd1b6
-                          choice_text: Praesentium ab incidunt et et.
-                        - choice_id: 76a20336-225a-4f2e-97fb-ec7d4aecd1b6
-                          choice_text: Praesentium ab incidunt et et.
                     - prompt: Expedita quia ullam omnis ut libero nulla.
                       question_id: 0c6aef00-3c9b-46d3-8c33-1627050b13a2
                       ranked_user_choice:
@@ -5442,7 +5446,7 @@ components:
                           choice_text: Praesentium ab incidunt et et.
                 vote_status: awaiting_response
                 voter_removed: false
-                would_end_vote: false
+                would_end_vote: true
             required:
                 - vote_status
                 - already_voted
@@ -5454,21 +5458,21 @@ components:
                 allow_abstain:
                     type: boolean
                     description: Whether abstaining is allowed
-                    example: true
+                    example: false
                 allow_vote_change:
                     type: boolean
                     description: Whether the vote lets voters change a submitted ballot until it ends. Votes created before this setting existed report true.
-                    example: false
+                    example: true
                 ballot:
                     $ref: '#/components/schemas/VoteLinkBallot'
                 description:
                     type: string
                     description: Vote description
-                    example: Et quis quia ut est et.
+                    example: Ut est et eveniet est.
                 early_end_time:
                     type: string
                     description: Actual close time when the poll ended before end_time, either manually or automatically after all voters responded. Absent when the poll closed on schedule or is still active. RFC3339.
-                    example: "2009-03-15T22:26:51Z"
+                    example: "1986-06-29T04:59:10Z"
                     format: date-time
                 end_time:
                     type: string
@@ -5483,11 +5487,11 @@ components:
                 name:
                     type: string
                     description: Vote name
-                    example: Fuga necessitatibus iste.
+                    example: Iste illo et quis.
                 num_winners:
                     type: integer
                     description: Number of winners. Absent when no winner count is stored upstream.
-                    example: 2606303965384525881
+                    example: 6383419277625264053
                     format: int64
                 poll_comment_prompts:
                     type: array
@@ -5495,8 +5499,6 @@ components:
                         $ref: '#/components/schemas/PollCommentPrompt'
                     description: Comment prompts for the vote
                     example:
-                        - prompt: Please provide any additional feedback
-                          prompt_id: f94a996b-a145-4ec3-badf-f5c05d1c5697
                         - prompt: Please provide any additional feedback
                           prompt_id: f94a996b-a145-4ec3-badf-f5c05d1c5697
                         - prompt: Please provide any additional feedback
@@ -5588,7 +5590,7 @@ components:
             description: The vote and the link holder's ballot, as returned to a personalized vote link
             example:
                 allow_abstain: true
-                allow_vote_change: false
+                allow_vote_change: true
                 ballot:
                     abstained: true
                     already_voted: true
@@ -5706,17 +5708,13 @@ components:
                     vote_status: awaiting_response
                     voter_removed: true
                     would_end_vote: false
-                description: Non praesentium maiores beatae.
-                early_end_time: "1973-10-03T00:18:52Z"
+                description: Eligendi aliquid et molestiae aut ut.
+                early_end_time: "2001-04-18T20:55:43Z"
                 end_time: "2026-02-15T23:59:59Z"
                 end_time_timezone: America/New_York
-                name: Ullam et fugit nobis qui ut.
-                num_winners: 30247715294935540
+                name: Qui ut consectetur non praesentium maiores beatae.
+                num_winners: 8868951551938084934
                 poll_comment_prompts:
-                    - prompt: Please provide any additional feedback
-                      prompt_id: f94a996b-a145-4ec3-badf-f5c05d1c5697
-                    - prompt: Please provide any additional feedback
-                      prompt_id: f94a996b-a145-4ec3-badf-f5c05d1c5697
                     - prompt: Please provide any additional feedback
                       prompt_id: f94a996b-a145-4ec3-badf-f5c05d1c5697
                     - prompt: Please provide any additional feedback
@@ -5742,7 +5740,7 @@ components:
                       prompt: Who should be elected to the TSC?
                       question_id: 5de700c1-f574-4766-9ebf-bca757ef9343
                       type: single_choice
-                poll_type: meek_stv
+                poll_type: condorcet_irv
                 project_slug: cncf
                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 pseudo_anonymity: true
@@ -5781,6 +5779,8 @@ components:
                         $ref: '#/components/schemas/CommentResponse'
                     description: The voter's free-text responses to the poll's comment prompts. Always an array (empty if the poll has no comment prompts or the voter left none).
                     example:
+                        - comment_text: Alias mollitia.
+                          prompt_id: d4def251-de2f-4af5-bff1-c8a3c9c76e4a
                         - comment_text: Alias mollitia.
                           prompt_id: d4def251-de2f-4af5-bff1-c8a3c9c76e4a
                         - comment_text: Alias mollitia.
@@ -5846,7 +5846,7 @@ components:
                 profile_picture:
                     type: string
                     description: Voter profile picture URL
-                    example: Corrupti odio.
+                    example: Praesentium odio quasi et et non.
                 project_uid:
                     type: string
                     description: Project identifier
@@ -5854,83 +5854,83 @@ components:
                 ses_bounce_subtype:
                     type: string
                     description: SES bounce subtype
-                    example: Non odio inventore eligendi ut ipsa.
+                    example: Minima nihil quia et perspiciatis alias.
                 ses_bounce_type:
                     type: string
                     description: SES bounce type
-                    example: Minus nemo.
+                    example: Non odio inventore eligendi ut ipsa.
                 ses_complaint_date:
                     type: string
                     description: SES complaint date
-                    example: Totam fugiat.
+                    example: Vero odit veritatis minima.
                 ses_complaint_exists:
                     type: boolean
                     description: SES complaint exists
-                    example: true
+                    example: false
                 ses_complaint_type:
                     type: string
                     description: SES complaint type
-                    example: Nihil quia et perspiciatis alias.
+                    example: Fugiat quis error id.
                 ses_delivery_successful:
                     type: boolean
                     description: SES delivery successful
-                    example: false
+                    example: true
                 ses_email_opened:
                     type: boolean
                     description: SES email opened
-                    example: true
+                    example: false
                 ses_email_opened_last_time:
                     type: string
                     description: SES email opened last time
-                    example: Quia vero.
+                    example: Aut distinctio architecto unde.
                 ses_link_clicked:
                     type: boolean
                     description: SES link clicked
-                    example: true
+                    example: false
                 ses_link_clicked_last_time:
                     type: string
                     description: SES link clicked last time
-                    example: Minima dolor voluptatibus inventore aut.
+                    example: Autem vitae doloribus et sequi.
                 ses_message_id:
                     type: string
                     description: SES message ID
-                    example: Quaerat dolorem.
+                    example: Quo esse.
                 ses_message_last_sent_time:
                     type: string
                     description: SES message last sent time
-                    example: Quo esse.
+                    example: Minus nemo.
                 user_email:
                     type: string
                     description: User email
-                    example: Numquam aspernatur repudiandae.
+                    example: Molestiae velit rerum nisi excepturi nam rerum.
                 user_id:
                     type: string
                     description: User identifier
-                    example: Praesentium odio quasi et et non.
+                    example: Numquam aspernatur repudiandae.
                 user_name:
                     type: string
                     description: Voter name
-                    example: Nisi et nemo.
+                    example: Nemo nisi et nemo provident corrupti odio.
                 user_org_id:
                     type: string
                     description: User organization ID
-                    example: Iusto aut omnis reiciendis.
+                    example: Quaerat dolorem.
                 user_org_name:
                     type: string
                     description: User organization name
-                    example: Sit sunt voluptatem in eveniet sunt voluptates.
+                    example: Iusto aut omnis reiciendis.
                 user_role:
                     type: string
                     description: User role
-                    example: Molestiae velit rerum nisi excepturi nam rerum.
+                    example: Pariatur accusamus dolorum rem eum.
                 user_voting_status:
                     type: string
                     description: User voting status
-                    example: Pariatur accusamus dolorum rem eum.
+                    example: Sit sunt voluptatem in eveniet sunt voluptates.
                 vote_creation_time:
                     type: string
                     description: Vote creation time
-                    example: "2015-11-22T23:11:52Z"
+                    example: "1971-01-19T02:11:32Z"
                     format: date-time
                 vote_response_uid:
                     type: string
@@ -5952,15 +5952,11 @@ components:
                     example: false
             description: Vote response details
             example:
-                abstained: false
+                abstained: true
                 allow_abstain: true
                 allow_vote_change: false
                 can_change_vote: true
                 comment_responses:
-                    - comment_text: Alias mollitia.
-                      prompt_id: d4def251-de2f-4af5-bff1-c8a3c9c76e4a
-                    - comment_text: Alias mollitia.
-                      prompt_id: d4def251-de2f-4af5-bff1-c8a3c9c76e4a
                     - comment_text: Alias mollitia.
                       prompt_id: d4def251-de2f-4af5-bff1-c8a3c9c76e4a
                     - comment_text: Alias mollitia.
@@ -6041,57 +6037,32 @@ components:
                           choice_text: Praesentium ab incidunt et et.
                         - choice_id: 76a20336-225a-4f2e-97fb-ec7d4aecd1b6
                           choice_text: Praesentium ab incidunt et et.
-                    - prompt: Expedita quia ullam omnis ut libero nulla.
-                      question_id: 0c6aef00-3c9b-46d3-8c33-1627050b13a2
-                      ranked_user_choice:
-                        - choice_id: 4a5f2ada-a18a-46e2-9c7a-4da7df70fa43
-                          choice_rank: 2498370766541200940
-                          choice_text: Doloremque minima pariatur.
-                        - choice_id: 4a5f2ada-a18a-46e2-9c7a-4da7df70fa43
-                          choice_rank: 2498370766541200940
-                          choice_text: Doloremque minima pariatur.
-                        - choice_id: 4a5f2ada-a18a-46e2-9c7a-4da7df70fa43
-                          choice_rank: 2498370766541200940
-                          choice_text: Doloremque minima pariatur.
-                        - choice_id: 4a5f2ada-a18a-46e2-9c7a-4da7df70fa43
-                          choice_rank: 2498370766541200940
-                          choice_text: Doloremque minima pariatur.
-                      type: multiple_choice
-                      user_choice:
-                        - choice_id: 76a20336-225a-4f2e-97fb-ec7d4aecd1b6
-                          choice_text: Praesentium ab incidunt et et.
-                        - choice_id: 76a20336-225a-4f2e-97fb-ec7d4aecd1b6
-                          choice_text: Praesentium ab incidunt et et.
-                        - choice_id: 76a20336-225a-4f2e-97fb-ec7d4aecd1b6
-                          choice_text: Praesentium ab incidunt et et.
-                        - choice_id: 76a20336-225a-4f2e-97fb-ec7d4aecd1b6
-                          choice_text: Praesentium ab incidunt et et.
-                profile_picture: Ut velit saepe id laboriosam fuga.
-                project_uid: Dolor quibusdam autem vitae doloribus et.
-                ses_bounce_subtype: Doloremque laborum quia in nam ipsum.
-                ses_bounce_type: Aut aliquam tenetur qui autem.
-                ses_complaint_date: Explicabo quasi pariatur dolorum quam consequuntur.
+                profile_picture: Quo quia est fuga enim optio cupiditate.
+                project_uid: Suscipit et ut.
+                ses_bounce_subtype: Aperiam voluptatem alias rerum vel reprehenderit.
+                ses_bounce_type: Doloremque laborum quia in nam ipsum.
+                ses_complaint_date: Dolorem dolore et.
                 ses_complaint_exists: false
-                ses_complaint_type: Voluptatem alias rerum vel.
+                ses_complaint_type: Pariatur dolorum quam consequuntur.
                 ses_delivery_successful: true
-                ses_email_opened: true
-                ses_email_opened_last_time: Et ducimus officiis impedit occaecati ut.
-                ses_link_clicked: true
-                ses_link_clicked_last_time: Rem inventore et quia eaque.
-                ses_message_id: Est eaque repellat beatae.
-                ses_message_last_sent_time: Ea omnis.
-                user_email: Illo similique cumque.
-                user_id: Quo quia est fuga enim optio cupiditate.
-                user_name: Doloribus et omnis sint.
-                user_org_id: Consequatur cum.
-                user_org_name: Aliquid natus sit.
-                user_role: Consectetur eos nihil aliquam ratione soluta asperiores.
-                user_voting_status: Qui ut repudiandae quod.
-                vote_creation_time: "1978-10-07T15:44:06Z"
+                ses_email_opened: false
+                ses_email_opened_last_time: Occaecati ut animi similique rem inventore et.
+                ses_link_clicked: false
+                ses_link_clicked_last_time: Quis pariatur.
+                ses_message_id: Ea omnis.
+                ses_message_last_sent_time: Aut aliquam tenetur qui autem.
+                user_email: Consectetur eos nihil aliquam ratione soluta asperiores.
+                user_id: Illo similique cumque.
+                user_name: Ut velit saepe id laboriosam fuga.
+                user_org_id: Est eaque repellat beatae.
+                user_org_name: Consequatur cum.
+                user_role: Qui ut repudiandae quod.
+                user_voting_status: Aliquid natus sit.
+                vote_creation_time: "1974-02-17T21:00:26Z"
                 vote_response_uid: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
                 vote_status: submitted
                 vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
-                would_end_vote: true
+                would_end_vote: false
             required:
                 - vote_response_uid
                 - vote_uid
