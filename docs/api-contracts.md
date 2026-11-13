@@ -1285,6 +1285,8 @@ Authorization: Bearer <heimdall-jwt-token>
 
 **Last-voter signal**: `would_end_vote` is always present. It is `true` when submitting this pending ballot now would be the final response that ends the vote: the ballot's `vote_status` is `awaiting_response`, the voter has not been removed, the vote is `active`, it has at least one invitation, and `num_response_received + 1 >= total_voting_request_invitations`. This mirrors ITX's own auto-end check, which ends the vote once every invited voter has responded. The proxy computes it from ITX's poll counts. It is `false` for submitted ballots (changing a response never ends the vote), removed voters, and ended or disabled votes. It describes the moment of the read and can change if another voter responds or a voter is added or removed afterwards.
 
+**Consistency and failure limits**: This is an advisory signal, not a reservation or a guarantee of closure. ITX's poll read recomputes `num_response_received` from non-removed submitted ballots through an eventually consistent vote index; auto-end uses the stored poll counter. The read can briefly lag recent submissions or membership changes, and counters that drifted before the atomic membership-update fix are not repaired by a ballot read. If ITX saves a ballot but its separate response-count increment fails, the submission still succeeds (HTTP 201 upstream), but the stored counter may prevent auto-end; the vote can remain open until its scheduled or manual end. Re-reading before submit can reduce staleness but cannot make the read and submission atomic. The V2 signal does not override ITX's final submit-time checks.
+
 ---
 
 ### ITX Service API (Underlying)
