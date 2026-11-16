@@ -74,11 +74,12 @@ v1.<kid>.<base64url(payload)>.<base64url(HMAC-SHA256(key[kid], "v1.<kid>.<payloa
   and invitation counts, which are never returned. It is returned on pseudo-anonymous
   votes too, and describes the moment of the read: it can change if another voter responds
   or a voter is added or removed afterwards.
-- The last-voter signal is advisory, not a guarantee of closure. ITX's poll counts can lag
-  because the vote index is eventually consistent, and its auto-end check uses a separate
-  stored counter. An upstream counter-update failure can leave a successfully submitted
-  vote open until its scheduled or manual end. Re-reading can reduce staleness but cannot
-  reserve the final response; see
+- The last-voter signal is advisory, not a guarantee of closure. ITX reads its poll counts
+  with strongly consistent reads and fails the read (so the ballot read returns 500) rather
+  than return a stale count, but its auto-end check uses a separate stored counter. An
+  upstream counter-update failure can leave a successfully submitted vote open until its
+  scheduled or manual end. Re-reading picks up responses made since the last read but
+  cannot reserve the final response; see
   [consistency and failure limits](api-contracts.md#get-vote_responsesvote_response_uid-get-vote-response).
 
 Both IDs come from the verified token. The service fetches the ballot first and returns `404 invalid voting link` unless it belongs to the token's vote. It then fetches the vote. No ID mapping is involved.

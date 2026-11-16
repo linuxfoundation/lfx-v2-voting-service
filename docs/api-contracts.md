@@ -1295,14 +1295,16 @@ is added or removed afterwards.
 
 **Consistency and failure limits**: This is an advisory signal, not a reservation or a
 guarantee of closure. ITX's poll read recomputes `num_response_received` from non-removed
-submitted ballots through an eventually consistent vote index; auto-end uses the stored
-poll counter. The read can briefly lag recent submissions or membership changes, and
-counters that drifted before the atomic membership-update fix are not repaired by a
-ballot read. If ITX saves a ballot but its separate response-count increment fails, the
-submission still succeeds (HTTP 201 upstream), but the stored counter may prevent auto-end;
-the vote can remain open until its scheduled or manual end. Re-reading before submit can
-reduce staleness but cannot make the read and submission atomic. The V2 signal does not
-override ITX's final submit-time checks.
+submitted ballots using strongly consistent reads, and `total_voting_request_invitations`
+excludes removed voters. If ITX cannot reconcile the invitations with the vote index, the
+poll read fails (HTTP 500) rather than returning a stale count, and so does this ballot
+read. Auto-end uses the stored poll counter instead, and counters that drifted before the
+atomic membership-update fix are not repaired by a ballot read. If ITX saves a ballot but
+its separate response-count increment fails, the submission still succeeds (HTTP 201
+upstream), but the stored counter may prevent auto-end; the vote can remain open until its
+scheduled or manual end. Re-reading before submit picks up responses made since the last
+read but cannot make the read and submission atomic. The V2 signal does not override ITX's
+final submit-time checks.
 
 ---
 
@@ -1310,7 +1312,7 @@ override ITX's final submit-time checks.
 
 **Endpoint**: `GET /v2/voting/vote/{vote_id}`
 
-For a pending ballot (`vote_status` `awaiting_response`, voter not removed), the proxy also calls `GET /v2/voting/poll/{poll_id}` to compute `would_end_vote`. If that call fails, the request fails with the ITX error (for example 404 or 503). Other ballots skip it.
+For a pending ballot (`vote_status` `awaiting_response`, voter not removed), the proxy also calls `GET /v2/voting/poll/{poll_id}` to compute `would_end_vote`. If that call fails, the request fails with the ITX error (for example 404, 500 or 503). Other ballots skip it.
 
 **Headers**:
 
@@ -1545,7 +1547,7 @@ The ballot is identified **only** by the token. The body has no `vote_response_u
   `total_voting_request_invitations`, which are never returned. It is returned on
   pseudo-anonymous votes too and describes the moment of the read.
 
-**Errors**: 404 `invalid voting link` (bad token, or the ballot isn't part of the token's vote), 404 from ITX (deleted vote or ballot), 503 (not configured, ITX unavailable, or the project ID can't be mapped).
+**Errors**: 404 `invalid voting link` (bad token, or the ballot isn't part of the token's vote), 404 from ITX (deleted vote or ballot), 500 (ITX could not read the vote's response counts), 503 (not configured, ITX unavailable, or the project ID can't be mapped).
 
 ### ITX Service API (Underlying)
 
