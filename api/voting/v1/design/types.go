@@ -532,7 +532,9 @@ var VoteLinkBallot = Type("VoteLinkBallot", func() {
 		"PUT /vote_links/responses. Returned on pseudo-anonymous votes too; omitted when ITX does not report it.")
 	Attribute("would_end_vote", Boolean, "Whether submitting this pending ballot now would be the final response "+
 		"that ends the vote. False once a ballot is submitted, for removed voters, and when the vote is not active. "+
-		"Returned on pseudo-anonymous votes too; response counts are never returned.")
+		"Returned on pseudo-anonymous votes too; response counts are never returned.", func() {
+		Example(false)
+	})
 	Attribute("abstained", Boolean, "Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.")
 	Attribute("poll_answers", ArrayOf(VoteAnswer), "The submitted answers. Omitted on pseudo-anonymous votes and before voting.")
 	Attribute("comment_responses", ArrayOf(CommentResponse), "The submitted comments. Omitted on pseudo-anonymous votes and before voting.")
