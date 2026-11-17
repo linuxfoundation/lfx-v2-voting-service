@@ -919,7 +919,7 @@ func TestVoteLinkBallotContract(t *testing.T) {
 
 			client := NewContractTestClient(upstream.Client(), upstream.URL+"/")
 			responses := service.NewVoteResponseService(nil, client, methodContractIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)),
-				service.WithVoteLinkVerifier(signer), service.WithVoteLinkPolls(client))
+				service.WithVoteLinkVerifier(signer), service.WithPollReader(client))
 			getBallot := func(ctx context.Context, payload any) (any, error) {
 				b, err := responses.GetBallotByLink(ctx, payload.(*votesvc.GetVoteBallotByLinkPayload).VoteToken)
 				if err != nil {
@@ -973,6 +973,11 @@ func TestVoteLinkBallotContract(t *testing.T) {
 			if string(ballot["already_voted"]) != "true" {
 				t.Errorf("already_voted = %s", ballot["already_voted"])
 			}
+			// The fixture ballot is responded, so it cannot end the vote; only the yes/no is
+			// returned, never the counts it is computed from.
+			if string(ballot["would_end_vote"]) != "false" {
+				t.Errorf("would_end_vote = %s, want false", ballot["would_end_vote"])
+			}
 			// The setting and the ballot's finality are not ballot contents: both are returned
 			// on regular and pseudo-anonymous votes alike.
 			if string(body["allow_vote_change"]) != "false" || string(ballot["can_change_vote"]) != "false" {
@@ -994,13 +999,129 @@ func TestVoteLinkBallotContract(t *testing.T) {
 		defer upstream.Close()
 		client := NewContractTestClient(upstream.Client(), upstream.URL+"/")
 		responses := service.NewVoteResponseService(nil, client, methodContractIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)),
-			service.WithVoteLinkVerifier(signer), service.WithVoteLinkPolls(client))
+			service.WithVoteLinkVerifier(signer), service.WithPollReader(client))
 		_, err := responses.GetBallotByLink(context.Background(), token+"x")
 		var dErr *domain.DomainError
 		if !errors.As(err, &dErr) || dErr.Type != domain.ErrorTypeNotFound || called {
 			t.Errorf("err = %v, upstream called = %v", err, called)
 		}
 	})
+}
+
+// TestLastVoterBallotContract checks both ballot reads against ITX-shaped responses.
+// The states mirror itx-service-voting's submission and membership-change tests; this
+// exercises decoding, the service rule, converters and generated HTTP serialization,
+// not real DynamoDB consistency or the ITX write path.
+func TestLastVoterBallotContract(t *testing.T) {
+	signer, err := votelink.NewHMACSigner(map[string][]byte{"k1": []byte(strings.Repeat("s", votelink.MinKeyLength))}, "k1")
+	require.NoError(t, err)
+	token, err := signer.Sign(linkVoteUID, linkBallotUID)
+	require.NoError(t, err)
+
+	cases := []struct {
+		name       string
+		voteStatus string
+		pollStatus string
+		received   int
+		total      int
+		removed    bool
+		pollFails  bool
+		want       bool
+	}{
+		{name: "last outstanding voter", voteStatus: "awaiting_response", pollStatus: "active", received: 1, total: 2, want: true},
+		{name: "multiple outstanding voters", voteStatus: "awaiting_response", pollStatus: "active", received: 1, total: 3},
+		{name: "remaining voter after an answered voter was removed", voteStatus: "awaiting_response", pollStatus: "active", received: 0, total: 1, want: true},
+		{name: "answered voter was re-added", voteStatus: "responded", pollStatus: "active", received: 2, total: 3},
+		{name: "removed voter", voteStatus: "awaiting_response", pollStatus: "active", received: 1, total: 2, removed: true},
+		{name: "ended vote", voteStatus: "awaiting_response_but_poll_ended", pollStatus: "ended", received: 1, total: 2},
+		{name: "poll ended between ballot and poll reads", voteStatus: "awaiting_response", pollStatus: "ended", received: 1, total: 2},
+		{name: "disabled vote", voteStatus: "awaiting_response", pollStatus: "disabled", received: 1, total: 2},
+		{name: "no invitations", voteStatus: "awaiting_response", pollStatus: "active"},
+		{name: "poll unavailable", voteStatus: "awaiting_response", pollFails: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, byLink := range []bool{false, true} {
+				t.Run(map[bool]string{false: "authenticated", true: "vote link"}[byLink], func(t *testing.T) {
+					var paths []string
+					upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						paths = append(paths, r.Method+" "+r.URL.Path)
+						w.Header().Set("Content-Type", "application/json")
+						switch r.URL.Path {
+						case "/v2/voting/vote/" + linkBallotUID:
+							_, _ = io.WriteString(w, `{"vote_id":"`+linkBallotUID+`","poll_id":"`+linkVoteUID+`","project_id":"synthetic-project","vote_status":"`+tc.voteStatus+`","voter_removed":`+strconv.FormatBool(tc.removed)+`,"comment_responses":[]}`)
+						case "/v2/voting/poll/" + linkVoteUID:
+							if tc.pollFails {
+								w.WriteHeader(http.StatusServiceUnavailable)
+								_, _ = io.WriteString(w, `{"message":"poll unavailable"}`)
+								return
+							}
+							_, _ = io.WriteString(w, `{"poll_id":"`+linkVoteUID+`","project_id":"synthetic-project","name":"Synthetic election","description":"Contract fixture","status":"`+tc.pollStatus+`","end_time":"2099-01-01T00:00:00Z","pseudo_anonymity":true,"total_voting_request_invitations":`+strconv.Itoa(tc.total)+`,"num_response_received":`+strconv.Itoa(tc.received)+`,"poll_questions":[]}`)
+						default:
+							w.WriteHeader(http.StatusNotFound)
+						}
+					}))
+					t.Cleanup(upstream.Close)
+					client := NewContractTestClient(upstream.Client(), upstream.URL+"/")
+					responses := service.NewVoteResponseService(nil, client, methodContractIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)),
+						service.WithPollReader(client), service.WithVoteLinkVerifier(signer))
+					getResponse := func(ctx context.Context, payload any) (any, error) {
+						if byLink {
+							ballot, err := responses.GetBallotByLink(ctx, payload.(*votesvc.GetVoteBallotByLinkPayload).VoteToken)
+							if err != nil {
+								return nil, err
+							}
+							return converters.ConvertVoteLinkBallotToResult(ballot), nil
+						}
+						ctx = context.WithValue(ctx, constants.PrincipalContextID, "synthetic-contract-user")
+						details, err := responses.GetVoteResponse(ctx, payload.(*votesvc.GetVoteResponsePayload).VoteResponseUID)
+						if err != nil {
+							return nil, err
+						}
+						return converters.ConvertVoteResponseDetailsToResult(details), nil
+					}
+					formatter := func(ctx context.Context, err error) goahttp.Statuser {
+						var dErr *domain.DomainError
+						if errors.As(err, &dErr) {
+							return domainStatus{err: dErr}
+						}
+						return goahttp.NewErrorResponse(ctx, err)
+					}
+					mux := goahttp.NewMuxer()
+					req := httptest.NewRequest(http.MethodGet, "/vote_responses/"+linkBallotUID, nil)
+					if byLink {
+						voteserver.MountGetVoteBallotByLinkHandler(mux, voteserver.NewGetVoteBallotByLinkHandler(getResponse, mux, goahttp.RequestDecoder, goahttp.ResponseEncoder, nil, formatter))
+						req = httptest.NewRequest(http.MethodPost, "/vote_links/ballot", strings.NewReader(`{"vote_token":"`+token+`"}`))
+						req.Header.Set("Content-Type", "application/json")
+					} else {
+						voteserver.MountGetVoteResponseHandler(mux, voteserver.NewGetVoteResponseHandler(getResponse, mux, goahttp.RequestDecoder, goahttp.ResponseEncoder, nil, formatter))
+					}
+					rec := httptest.NewRecorder()
+					mux.ServeHTTP(rec, req)
+
+					wantPaths := []string{"GET /v2/voting/vote/" + linkBallotUID}
+					if byLink || (tc.voteStatus == "awaiting_response" && !tc.removed) {
+						wantPaths = append(wantPaths, "GET /v2/voting/poll/"+linkVoteUID)
+					}
+					require.Equal(t, wantPaths, paths)
+					if tc.pollFails {
+						require.Equal(t, http.StatusServiceUnavailable, rec.Code, rec.Body.String())
+						return
+					}
+					require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
+					var body map[string]json.RawMessage
+					require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
+					if byLink {
+						for _, key := range []string{"num_response_received", "total_voting_request_invitations", "poll_answers", "comment_responses"} {
+							require.NotContains(t, rec.Body.String(), `"`+key+`"`, "vote links must not expose counts or pseudo-anonymous ballot contents")
+						}
+						require.NoError(t, json.Unmarshal(body["ballot"], &body))
+					}
+					require.Equal(t, strconv.FormatBool(tc.want), string(body["would_end_vote"]), "the boolean must always be serialized")
+				})
+			}
+		})
+	}
 }
 
 // TestVoteMethodContract protects omission and explicit intent across the generated

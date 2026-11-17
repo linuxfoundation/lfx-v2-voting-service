@@ -78,6 +78,19 @@ func TestConvertVoteResponseToResult_VoteChangeFlags(t *testing.T) {
 	}
 }
 
+func TestConvertVoteResponseDetailsToResult(t *testing.T) {
+	for _, want := range []bool{false, true} {
+		ballot := &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", ProjectID: "proj-1", VoteStatus: "awaiting_response"}
+		got := ConvertVoteResponseDetailsToResult(&service.VoteResponseDetails{Ballot: ballot, WouldEndVote: want})
+		if got.WouldEndVote != want {
+			t.Errorf("WouldEndVote = %v, want %v", got.WouldEndVote, want)
+		}
+		base := ConvertVoteResponseToResult(ballot)
+		base.WouldEndVote = want
+		assert.Equal(t, base, got, "other fields must match ConvertVoteResponseToResult")
+	}
+}
+
 // TestConvertCreateVoteResponsePayloadToDomain_NullCommentEntryIsRejected guards the
 // nil-pointer check added in response to the generated Goa validator skipping nil
 // array elements. A nil entry would otherwise reach the comment_text access and panic.
@@ -319,6 +332,16 @@ func TestConvertVoteLinkBallotToResult(t *testing.T) {
 			}
 			if pseudo && (got.Ballot.Abstained != nil || got.Ballot.PollAnswers != nil || got.Ballot.CommentResponses != nil) {
 				t.Errorf("pseudo-anonymous ballot leaked contents: %+v", got.Ballot)
+			}
+		}
+	})
+
+	t.Run("would_end_vote follows the service", func(t *testing.T) {
+		for _, want := range []bool{false, true} {
+			fixture := voteLinkBallotFixture(true, "awaiting_response")
+			fixture.WouldEndVote = want
+			if got := ConvertVoteLinkBallotToResult(fixture).Ballot.WouldEndVote; got != want {
+				t.Errorf("Ballot.WouldEndVote = %v, want %v", got, want)
 			}
 		}
 	})

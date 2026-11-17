@@ -47,14 +47,14 @@ func (s *VotingAPI) GetVoteResponse(ctx context.Context, payload *votesvc.GetVot
 	logger.InfoContext(ctx, "Get vote response request received", "vote_response_uid", payload.VoteResponseUID)
 
 	// Call service layer
-	voteResp, err := s.voteResponseService.GetVoteResponse(ctx, payload.VoteResponseUID)
+	details, err := s.voteResponseService.GetVoteResponse(ctx, payload.VoteResponseUID)
 	if err != nil {
 		logger.ErrorContext(ctx, "Failed to get vote response", "error", err)
 		return nil, handleError(err)
 	}
 
 	// Convert domain response to Goa result
-	result := apiservice.ConvertVoteResponseToResult(voteResp)
+	result := apiservice.ConvertVoteResponseDetailsToResult(details)
 
 	logger.InfoContext(ctx, "Vote response retrieved successfully", "vote_response_uid", result.VoteResponseUID)
 

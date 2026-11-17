@@ -3519,6 +3519,7 @@ func unmarshalVoteLinkBallotResponseBodyToVoteVoteLinkBallot(v *VoteLinkBallotRe
 		AlreadyVoted:  *v.AlreadyVoted,
 		VoterRemoved:  *v.VoterRemoved,
 		CanChangeVote: v.CanChangeVote,
+		WouldEndVote:  *v.WouldEndVote,
 		Abstained:     v.Abstained,
 	}
 	if v.PollAnswers != nil {

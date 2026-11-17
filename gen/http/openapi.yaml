@@ -356,6 +356,7 @@ paths:
                             - project_uid
                             - vote_status
                             - comment_responses
+                            - would_end_vote
                 "400":
                     description: Bad Request response.
                     schema:
@@ -3508,6 +3509,10 @@ definitions:
                 type: boolean
                 description: True when the recipient was removed from the vote and can no longer vote
                 example: false
+            would_end_vote:
+                type: boolean
+                description: Whether submitting this pending ballot now would be the final response that ends the vote. False once a ballot is submitted, for removed voters, and when the vote is not active. Returned on pseudo-anonymous votes too; response counts are never returned.
+                example: false
         description: The link holder's own ballot
         example:
             abstained: true
@@ -3565,10 +3570,12 @@ definitions:
                       choice_text: Et dolores delectus soluta voluptatem voluptatem asperiores.
             vote_status: awaiting_response
             voter_removed: false
+            would_end_vote: false
         required:
             - vote_status
             - already_voted
             - voter_removed
+            - would_end_vote
     VoteLinkBallotResult:
         title: VoteLinkBallotResult
         type: object
@@ -3790,6 +3797,7 @@ definitions:
                           choice_text: Et dolores delectus soluta voluptatem voluptatem asperiores.
                 vote_status: awaiting_response
                 voter_removed: true
+                would_end_vote: false
             description: Quia perspiciatis.
             early_end_time: "2004-05-08T22:59:02Z"
             end_time: "2026-02-15T23:59:59Z"
@@ -4059,6 +4067,10 @@ definitions:
                 description: Vote/poll identifier
                 example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
                 format: uuid
+            would_end_vote:
+                type: boolean
+                description: Whether submitting this pending ballot now would be the final response that ends the vote. False once a ballot is submitted, for removed voters, and when the vote is not active.
+                example: false
         example:
             abstained: false
             allow_abstain: true
@@ -4139,12 +4151,14 @@ definitions:
             vote_response_uid: b03cdbaf-53b1-4d47-bc04-dd7e459dd309
             vote_status: submitted
             vote_uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+            would_end_vote: false
         required:
             - vote_response_uid
             - vote_uid
             - project_uid
             - vote_status
             - comment_responses
+            - would_end_vote
     VoteResult:
         title: VoteResult
         type: object

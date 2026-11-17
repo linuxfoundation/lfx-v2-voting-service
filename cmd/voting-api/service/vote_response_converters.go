@@ -160,6 +160,15 @@ func convertCommentResponses(comments []*votesvc.CommentResponse) ([]service.Com
 	return converted, nil
 }
 
+// ConvertVoteResponseDetailsToResult converts a ballot from the authenticated ballot read
+// (GET /vote_responses/{uid}) to the Goa result, adding whether submitting the ballot now
+// would end the vote.
+func ConvertVoteResponseDetailsToResult(d *service.VoteResponseDetails) *votesvc.VoteResponseResult {
+	result := ConvertVoteResponseToResult(d.Ballot)
+	result.WouldEndVote = d.WouldEndVote
+	return result
+}
+
 // ConvertVoteResponseToResult converts ITX response to Goa result
 func ConvertVoteResponseToResult(resp *itx.VoteResponse) *votesvc.VoteResponseResult {
 	result := &votesvc.VoteResponseResult{
@@ -299,6 +308,8 @@ func ConvertVoteLinkBallotToResult(b *service.VoteLinkBallot) *votesvc.VoteLinkB
 			// Eligibility, not ballot contents: returned on pseudo-anonymous votes too, and
 			// omitted (never computed) when ITX does not report it.
 			CanChangeVote: b.Ballot.CanChangeVote,
+			// A yes/no only; response counts are never returned.
+			WouldEndVote: b.WouldEndVote,
 		},
 	}
 	// ITX stores the project slug in the poll's project_name.

@@ -552,6 +552,10 @@ type GetVoteResponseResponseBody struct {
 	// Whether this submitted ballot can still be changed with PUT
 	// /vote_responses/{vote_response_uid}. Omitted when ITX does not report it.
 	CanChangeVote *bool `form:"can_change_vote,omitempty" json:"can_change_vote,omitempty" xml:"can_change_vote,omitempty"`
+	// Whether submitting this pending ballot now would be the final response that
+	// ends the vote. False once a ballot is submitted, for removed voters, and
+	// when the vote is not active.
+	WouldEndVote *bool `form:"would_end_vote,omitempty" json:"would_end_vote,omitempty" xml:"would_end_vote,omitempty"`
 	// Vote creation time
 	VoteCreationTime *string `form:"vote_creation_time,omitempty" json:"vote_creation_time,omitempty" xml:"vote_creation_time,omitempty"`
 	// Voter name
@@ -1925,6 +1929,11 @@ type VoteLinkBallotResponseBody struct {
 	// /vote_links/responses. Returned on pseudo-anonymous votes too; omitted when
 	// ITX does not report it.
 	CanChangeVote *bool `form:"can_change_vote,omitempty" json:"can_change_vote,omitempty" xml:"can_change_vote,omitempty"`
+	// Whether submitting this pending ballot now would be the final response that
+	// ends the vote. False once a ballot is submitted, for removed voters, and
+	// when the vote is not active. Returned on pseudo-anonymous votes too;
+	// response counts are never returned.
+	WouldEndVote *bool `form:"would_end_vote,omitempty" json:"would_end_vote,omitempty" xml:"would_end_vote,omitempty"`
 	// Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.
 	Abstained *bool `form:"abstained,omitempty" json:"abstained,omitempty" xml:"abstained,omitempty"`
 	// The submitted answers. Omitted on pseudo-anonymous votes and before voting.
@@ -3269,6 +3278,7 @@ func NewGetVoteResponseVoteResponseResultOK(body *GetVoteResponseResponseBody) *
 		AllowAbstain:           body.AllowAbstain,
 		AllowVoteChange:        body.AllowVoteChange,
 		CanChangeVote:          body.CanChangeVote,
+		WouldEndVote:           *body.WouldEndVote,
 		VoteCreationTime:       body.VoteCreationTime,
 		UserName:               body.UserName,
 		ProfilePicture:         body.ProfilePicture,
@@ -4177,6 +4187,9 @@ func ValidateGetVoteResponseResponseBody(body *GetVoteResponseResponseBody) (err
 	}
 	if body.CommentResponses == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("comment_responses", "body"))
+	}
+	if body.WouldEndVote == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("would_end_vote", "body"))
 	}
 	if body.VoteResponseUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_response_uid", *body.VoteResponseUID, goa.FormatUUID))
@@ -6068,6 +6081,9 @@ func ValidateVoteLinkBallotResponseBody(body *VoteLinkBallotResponseBody) (err e
 	}
 	if body.VoterRemoved == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("voter_removed", "body"))
+	}
+	if body.WouldEndVote == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("would_end_vote", "body"))
 	}
 	for _, e := range body.PollAnswers {
 		if e != nil {

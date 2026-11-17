@@ -221,6 +221,14 @@ const (
 	VoteStatusEnded = "ended"
 )
 
+// ITX status values that decide whether a ballot is still waiting to be cast.
+const (
+	// VoteStatusAwaitingResponse is an unsubmitted ballot on a poll that has not ended.
+	VoteStatusAwaitingResponse = "awaiting_response"
+	// PollStatusActive is an open poll whose end time has not passed.
+	PollStatusActive = "active"
+)
+
 // IsSubmittedVoteStatus reports whether an ITX vote_status means the ballot was submitted.
 func IsSubmittedVoteStatus(status string) bool {
 	return status == VoteStatusResponded || status == VoteStatusEnded

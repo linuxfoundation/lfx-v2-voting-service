@@ -716,6 +716,11 @@ type VoteLinkBallot struct {
 	// /vote_links/responses. Returned on pseudo-anonymous votes too; omitted when
 	// ITX does not report it.
 	CanChangeVote *bool
+	// Whether submitting this pending ballot now would be the final response that
+	// ends the vote. False once a ballot is submitted, for removed voters, and
+	// when the vote is not active. Returned on pseudo-anonymous votes too;
+	// response counts are never returned.
+	WouldEndVote bool
 	// Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.
 	Abstained *bool
 	// The submitted answers. Omitted on pseudo-anonymous votes and before voting.
@@ -789,6 +794,10 @@ type VoteResponseResult struct {
 	// Whether this submitted ballot can still be changed with PUT
 	// /vote_responses/{vote_response_uid}. Omitted when ITX does not report it.
 	CanChangeVote *bool
+	// Whether submitting this pending ballot now would be the final response that
+	// ends the vote. False once a ballot is submitted, for removed voters, and
+	// when the vote is not active.
+	WouldEndVote bool
 	// Vote creation time
 	VoteCreationTime *string
 	// Voter name
