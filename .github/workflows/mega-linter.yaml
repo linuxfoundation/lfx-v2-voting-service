@@ -28,17 +28,19 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       # MegaLinter
       - name: MegaLinter
         id: ml
         # Use the Go flavor.
-        uses: oxsecurity/megalinter/flavors/go@8fbdead70d1409964ab3d5afa885e18ee85388bb  # 9.4.0
+        uses: oxsecurity/megalinter/flavors/go@f2fe8c1cba37091848df3e524066c8c23ef353ed  # v10.2.0
         env:
           # All available variables are described in documentation
           # https://megalinter.io/configuration/
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Allow GITHUB_TOKEN for working around rate limits (aquasecurity/trivy#7668).
           REPOSITORY_TRIVY_UNSECURED_ENV_VARIABLES: GITHUB_TOKEN
-          # Set the Go toolchain to auto so that megalinter uses the correct go version for the service.
+          # The image defaults to GOTOOLCHAIN=local with Go 1.26. This lets the
+          # Go linters download the go.mod toolchain (Go 1.27).
           GOTOOLCHAIN: auto
