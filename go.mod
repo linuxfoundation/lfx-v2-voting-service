@@ -3,7 +3,7 @@
 
 module github.com/linuxfoundation/lfx-v2-voting-service
 
-go 1.26.11
+go 1.27.4
 
 require (
 	github.com/auth0/go-auth0 v1.32.1
