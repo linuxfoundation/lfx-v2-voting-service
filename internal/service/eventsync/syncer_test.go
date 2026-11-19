@@ -209,7 +209,7 @@ func TestSync_Routing(t *testing.T) {
 
 		h := newHarness(t)
 		h.store.Seed(domain.MappingKindVote, "poll-456", domain.MappingSynced)
-		assert.Equal(t, Ack, h.sync(Entry{Key: "itx-poll-vote.vote-123", Op: OpPut, Value: encoded}))
+		assert.Equal(t, Ack, h.sync(Entry{Key: "itx-poll-vote.vote-123", Op: OpPut, Value: encoded})) // betterleaks:allow
 		assert.Len(t, h.pub.publishedVoteResponses, 1)
 	})
 
@@ -298,7 +298,7 @@ func TestSync_SoftDelete(t *testing.T) {
 
 	t.Run("a hard delete of a vote response has no record, so no voter is known", func(t *testing.T) {
 		h := newHarness(t)
-		assert.Equal(t, Ack, h.sync(Entry{Key: "itx-poll-vote.vote-123", Op: OpDelete, Value: nil}))
+		assert.Equal(t, Ack, h.sync(Entry{Key: "itx-poll-vote.vote-123", Op: OpDelete, Value: nil})) // betterleaks:allow
 		require.Len(t, h.pub.publishedVoteResponses, 1)
 		got := h.pub.publishedVoteResponses[0]
 		assert.Equal(t, "vote-123", got.UID)

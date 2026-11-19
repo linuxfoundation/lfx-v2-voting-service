@@ -29,14 +29,16 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Prepare versions and chart name
         id: prepare
         run: |
           set -euo pipefail
-          APP_VERSION=$(echo ${{ github.ref_name }} | sed 's/v//g')
+          APP_VERSION="${GITHUB_REF_NAME#v}"
           CHART_NAME="$(yq '.name' charts/*/Chart.yaml)"
-          CHART_VERSION=$(echo ${{ github.ref_name }} | sed 's/v//g')
+          CHART_VERSION="${GITHUB_REF_NAME#v}"
           {
             echo "app_version=$APP_VERSION"
             echo "chart_name=$CHART_NAME"
@@ -47,6 +49,7 @@ jobs:
         uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5  # v6.2.0
         with:
           go-version-file: go.mod
+          cache: false
 
       - name: Setup Ko
         uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d  # v0.9
@@ -54,12 +57,14 @@ jobs:
           version: v0.17.1
 
       - name: Build and publish voting-api image
+        env:
+          APP_VERSION: ${{ steps.prepare.outputs.app_version }}
         run: |
           ko build github.com/linuxfoundation/lfx-v2-voting-service/cmd/voting-api \
             -B \
             --platform linux/amd64,linux/arm64 \
-            -t ${{ github.ref_name }} \
-            -t ${{ steps.prepare.outputs.app_version }} \
+            -t "${GITHUB_REF_NAME}" \
+            -t "${APP_VERSION}" \
             -t latest \
             --sbom spdx
 
@@ -76,6 +81,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Publish Chart to GHCR
         id: publish-ghcr
@@ -105,9 +112,11 @@ jobs:
       - name: Sign the Helm chart in GHCR
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_NAME: ${{ steps.publish-ghcr.outputs.image_name }}
+          CHART_DIGEST: ${{ steps.publish-ghcr.outputs.digest }}
         run: |
           set -euo pipefail
-          cosign sign --yes '${{ steps.publish-ghcr.outputs.image_name }}@${{ steps.publish-ghcr.outputs.digest }}'
+          cosign sign --yes "${IMAGE_NAME}@${CHART_DIGEST}"
 
   create-ghcr-helm-provenance:
     needs:
@@ -116,7 +125,9 @@ jobs:
       actions: read
       id-token: write
       packages: write
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    # Tag ref required: pinning the commit SHA breaks SLSA builder ref resolution.
+    # yamllint disable-line rule:line-length
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0  # zizmor: ignore[unpinned-uses]
     with:
       image: ${{ needs.release-helm-chart.outputs.image_name }}
       digest: ${{ needs.release-helm-chart.outputs.digest }}
@@ -154,7 +165,9 @@ jobs:
         with:
           client-id: ${{ env.TRIGGER_CLIENT_ID }}
           private-key: ${{ env.TRIGGER_PRIVATE_KEY }}
-          owner: linuxfoundation
+          # zizmor flags owner plus repositories as all-repository access;
+          # repositories scopes the token, so this is a false positive.
+          owner: linuxfoundation  # zizmor: ignore[github-app]
           repositories: lfx-v2-argocd
           permission-actions: write
 

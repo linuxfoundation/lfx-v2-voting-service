@@ -76,8 +76,8 @@ deps:
 	@echo "==> Installing dependencies..."
 	@echo "==> Installing goa CLI (version pinned to go.mod)..."
 	@go install goa.design/goa/v3/cmd/goa@$(shell go list -m -f '{{.Version}}' goa.design/goa/v3)
-	@echo "==> Installing golangci-lint v2.12.2..."
-	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+	@echo "==> Installing golangci-lint v2.15.0..."
+	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
 	@echo "==> Downloading Go modules..."
 	@go mod download
 

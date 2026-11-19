@@ -41,7 +41,7 @@ func withParentVote(h *harness, pollID string) {
 }
 
 func TestSync_VoteResponseUpdate(t *testing.T) {
-	key := "itx-poll-vote.vote-123"
+	key := "itx-poll-vote.vote-123" // betterleaks:allow
 
 	t.Run("publishes a created vote response and records the mapping", func(t *testing.T) {
 		h := newHarness(t)
@@ -267,7 +267,7 @@ func TestSync_VoteResponseUpdate_PseudoAnonymous(t *testing.T) {
 }
 
 func TestSync_VoteResponseUpdate_Invite(t *testing.T) {
-	key := "itx-poll-vote.vote-123"
+	key := "itx-poll-vote.vote-123" // betterleaks:allow
 	guest := func() map[string]any {
 		data := responsePayload("vote-123", "poll-456")
 		delete(data, "username")
@@ -333,7 +333,7 @@ func TestSync_VoteResponseUpdate_Invite(t *testing.T) {
 }
 
 func TestSync_VoteResponseDelete(t *testing.T) {
-	key := "itx-poll-vote.vote-123"
+	key := "itx-poll-vote.vote-123" // betterleaks:allow
 
 	t.Run("publishes a delete and tombstones the mapping", func(t *testing.T) {
 		h := newHarness(t)
