@@ -552,7 +552,7 @@ Authorization: Bearer <heimdall-jwt-token>
 | `disabled` (draft) | Deleted: `204 No Content`; no notices are sent |
 | `active` (before `end_time`) | Cancelled: `204 No Content`; the vote and its responses are permanently removed, recipients receive a cancellation email, and ITX removes the response records asynchronously |
 | `ended` (ended early manually or automatically, or past its `end_time`) | `400 Bad Request` passed through from ITX (`ended polls cannot be deleted`) |
-| Unknown vote | `404 Not Found` |
+| Unknown or already-removed vote | `403 Forbidden` from Heimdall's `writer` check when OpenFGA is enabled (the deployed default), because the vote has no relations; `404 Not Found` passed through from ITX when OpenFGA is disabled, or for a repeated delete that arrives before the vote's relations are removed |
 
 Cancellation is irreversible. Unlike `POST /votes/{vote_uid}/end`, which preserves the vote and its results, it removes the vote. A draft past its `end_time` is still deletable, because ITX treats only non-draft votes past their `end_time` as ended. The authority is `writer` on `vote:{vote_uid}`: any user holding that relation can delete or cancel the vote, not only the user who created it, and ordinary voters cannot cancel it.
 
