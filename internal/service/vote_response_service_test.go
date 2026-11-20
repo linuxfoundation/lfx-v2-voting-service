@@ -187,13 +187,12 @@ func TestWouldEndVote(t *testing.T) {
 func TestGetVoteResponse_WouldEndVote(t *testing.T) {
 	lastVoterPoll := &itx.PollResponse{PollID: "vote-1", Status: itx.PollStatusActive, NumResponseReceived: 8, TotalVotingRequestInvitations: 9}
 	cases := []struct {
-		name            string
-		ballot          *itx.VoteResponse
-		pollErr         error
-		noReader        bool
-		want            bool
-		wantUnavailable bool
-		wantPollID      string
+		name       string
+		ballot     *itx.VoteResponse
+		pollErr    error
+		noReader   bool
+		want       bool
+		wantPollID string
 	}{
 		{
 			name:       "pending last voter",
@@ -210,17 +209,17 @@ func TestGetVoteResponse_WouldEndVote(t *testing.T) {
 			ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusAwaitingResponse, VoterRemoved: true},
 		},
 		{
-			name:            "poll read fails",
-			ballot:          &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusAwaitingResponse},
-			pollErr:         domain.NewUnavailableError("ITX down"),
-			wantUnavailable: true,
-			wantPollID:      "vote-1",
+			name:       "poll read fails",
+			ballot:     &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusAwaitingResponse},
+			pollErr:    domain.NewUnavailableError("ITX down"),
+			want:       false,
+			wantPollID: "vote-1",
 		},
 		{
-			name:            "no poll reader",
-			ballot:          &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusAwaitingResponse},
-			noReader:        true,
-			wantUnavailable: true,
+			name:     "no poll reader",
+			ballot:   &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusAwaitingResponse},
+			noReader: true,
+			want:     false,
 		},
 	}
 	for _, tc := range cases {
@@ -235,10 +234,6 @@ func TestGetVoteResponse_WouldEndVote(t *testing.T) {
 			got, err := svc.GetVoteResponse(ctxWithPrincipal("user"), "ballot-1")
 			if polls.requested != tc.wantPollID {
 				t.Errorf("poll requested = %q, want %q", polls.requested, tc.wantPollID)
-			}
-			if tc.wantUnavailable {
-				assertErrorType(t, err, domain.ErrorTypeUnavailable)
-				return
 			}
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)

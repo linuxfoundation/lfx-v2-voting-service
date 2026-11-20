@@ -761,7 +761,7 @@ type VoteLinkBallotResult struct {
 	AllowAbstain *bool
 	// Whether the vote lets voters change a submitted ballot until it ends. Votes
 	// created before this setting existed report true.
-	AllowVoteChange *bool
+	AllowVoteChange bool
 	// Whether the vote is pseudo-anonymous; if so, ballot contents are never
 	// returned
 	PseudoAnonymity bool
@@ -790,13 +790,14 @@ type VoteResponseResult struct {
 	AllowAbstain *bool
 	// Whether the vote lets voters change a submitted ballot until it ends. Votes
 	// created before this setting existed report true.
-	AllowVoteChange *bool
+	AllowVoteChange bool
 	// Whether this submitted ballot can still be changed with PUT
 	// /vote_responses/{vote_response_uid}. Omitted when ITX does not report it.
 	CanChangeVote *bool
 	// Whether submitting this pending ballot now would be the final response that
 	// ends the vote. False once a ballot is submitted, for removed voters, and
-	// when the vote is not active.
+	// when the vote is not active. Also false when the vote's response counts
+	// cannot be read; the ballot is still returned.
 	WouldEndVote bool
 	// Vote creation time
 	VoteCreationTime *string
@@ -902,7 +903,7 @@ type VoteResult struct {
 	AllowAbstain *bool
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
-	AllowVoteChange *bool
+	AllowVoteChange bool
 }
 
 // VoteResultsResult is the result type of the vote service get_vote_results

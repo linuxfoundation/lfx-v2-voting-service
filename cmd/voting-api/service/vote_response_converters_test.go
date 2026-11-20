@@ -65,7 +65,7 @@ func TestConvertVoteResponseToResult_VoteChangeFlags(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := ConvertVoteResponseToResult(tt.resp)
 
-			if result.AllowVoteChange == nil || *result.AllowVoteChange != tt.wantAllow {
+			if result.AllowVoteChange != tt.wantAllow {
 				t.Errorf("AllowVoteChange = %v, want %v", result.AllowVoteChange, tt.wantAllow)
 			}
 			switch {
@@ -308,7 +308,7 @@ func TestConvertVoteLinkBallotToResult(t *testing.T) {
 	t.Run("legacy vote reads as allowed and omits can_change_vote", func(t *testing.T) {
 		for _, pseudo := range []bool{false, true} {
 			got := ConvertVoteLinkBallotToResult(voteLinkBallotFixture(pseudo, "responded"))
-			if got.AllowVoteChange == nil || !*got.AllowVoteChange {
+			if !got.AllowVoteChange {
 				t.Errorf("pseudo=%v: AllowVoteChange = %v, want true for a legacy vote", pseudo, got.AllowVoteChange)
 			}
 			if got.Ballot.CanChangeVote != nil {
@@ -324,7 +324,7 @@ func TestConvertVoteLinkBallotToResult(t *testing.T) {
 			fixture.Ballot.AllowVoteChange = utils.BoolPtr(false)
 			fixture.Ballot.CanChangeVote = utils.BoolPtr(false)
 			got := ConvertVoteLinkBallotToResult(fixture)
-			if got.AllowVoteChange == nil || *got.AllowVoteChange {
+			if got.AllowVoteChange {
 				t.Errorf("pseudo=%v: AllowVoteChange = %v, want false", pseudo, got.AllowVoteChange)
 			}
 			if got.Ballot.CanChangeVote == nil || *got.Ballot.CanChangeVote {

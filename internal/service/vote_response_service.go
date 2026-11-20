@@ -191,7 +191,8 @@ func (s *VoteResponseService) submitVoteResponse(ctx context.Context, req *Creat
 
 // GetVoteResponse retrieves vote response details (proxies to ITX GET /voting/vote/{vote_id}).
 // For a pending ballot it also reads the vote (ITX GET /voting/poll/{poll_id}) to tell whether
-// this ballot is the last one outstanding; a failed vote read fails the request.
+// this ballot is the last one outstanding; a failed vote read reports WouldEndVote false
+// instead of failing the request.
 func (s *VoteResponseService) GetVoteResponse(ctx context.Context, voteID string) (*VoteResponseDetails, error) {
 	principal, err := requirePrincipal(ctx)
 	if err != nil {
@@ -216,17 +217,17 @@ func (s *VoteResponseService) GetVoteResponse(ctx context.Context, voteID string
 
 	details := &VoteResponseDetails{Ballot: voteResp}
 	// Submitted and removed ballots can never end the vote, so they skip the extra ITX read.
+	// The check only drives a warning, so a failed vote read leaves WouldEndVote false.
 	if isPendingBallot(voteResp) {
 		if s.pollReader == nil {
-			s.logger.WarnContext(ctx, "Pending ballot requested but no poll reader is configured")
-			return nil, domain.NewUnavailableError("vote reads are not configured")
+			s.logger.WarnContext(ctx, "Pending ballot requested but no poll reader is configured; reporting would_end_vote false",
+				"vote_uid", voteResp.PollID)
+		} else if poll, err := s.pollReader.GetPoll(ctx, voteResp.PollID); err != nil {
+			s.logger.WarnContext(ctx, "Failed to get vote from ITX; reporting would_end_vote false",
+				"vote_uid", voteResp.PollID, "error", err)
+		} else {
+			details.WouldEndVote = wouldEndVote(poll, voteResp)
 		}
-		poll, err := s.pollReader.GetPoll(ctx, voteResp.PollID)
-		if err != nil {
-			s.logger.ErrorContext(ctx, "Failed to get vote from ITX", "error", err)
-			return nil, err
-		}
-		details.WouldEndVote = wouldEndVote(poll, voteResp)
 	}
 
 	s.logger.InfoContext(ctx, "Vote response retrieved successfully", "vote_id", voteResp.VoteID)

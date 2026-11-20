@@ -184,8 +184,7 @@ func TestConvertPollResponseToVoteResultAllowVoteChange(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := ConvertPollResponseToVoteResult(&itx.PollResponse{AllowVoteChange: tt.value})
 
-			require.NotNil(t, result.AllowVoteChange)
-			assert.Equal(t, tt.want, *result.AllowVoteChange)
+			assert.Equal(t, tt.want, result.AllowVoteChange)
 		})
 	}
 }

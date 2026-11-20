@@ -267,7 +267,7 @@ type CreateVoteResponseBody struct {
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
-	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
+	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
 }
 
 // GetVoteResponseBody is the type of the "vote" service "get_vote" endpoint
@@ -326,7 +326,7 @@ type GetVoteResponseBody struct {
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
-	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
+	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
 }
 
 // UpdateVoteResponseBody is the type of the "vote" service "update_vote"
@@ -385,7 +385,7 @@ type UpdateVoteResponseBody struct {
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
-	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
+	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
 }
 
 // ExtendVoteResponseBody is the type of the "vote" service "extend_vote"
@@ -444,7 +444,7 @@ type ExtendVoteResponseBody struct {
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
-	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
+	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
 }
 
 // EndVoteResponseBody is the type of the "vote" service "end_vote" endpoint
@@ -503,7 +503,7 @@ type EndVoteResponseBody struct {
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
-	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
+	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
 }
 
 // GetVoteResultsResponseBody is the type of the "vote" service
@@ -548,13 +548,14 @@ type GetVoteResponseResponseBody struct {
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 	// Whether the vote lets voters change a submitted ballot until it ends. Votes
 	// created before this setting existed report true.
-	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
+	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
 	// Whether this submitted ballot can still be changed with PUT
 	// /vote_responses/{vote_response_uid}. Omitted when ITX does not report it.
 	CanChangeVote *bool `form:"can_change_vote,omitempty" json:"can_change_vote,omitempty" xml:"can_change_vote,omitempty"`
 	// Whether submitting this pending ballot now would be the final response that
 	// ends the vote. False once a ballot is submitted, for removed voters, and
-	// when the vote is not active.
+	// when the vote is not active. Also false when the vote's response counts
+	// cannot be read; the ballot is still returned.
 	WouldEndVote bool `form:"would_end_vote" json:"would_end_vote" xml:"would_end_vote"`
 	// Vote creation time
 	VoteCreationTime *string `form:"vote_creation_time,omitempty" json:"vote_creation_time,omitempty" xml:"vote_creation_time,omitempty"`
@@ -637,7 +638,7 @@ type GetVoteBallotByLinkResponseBody struct {
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
 	// Whether the vote lets voters change a submitted ballot until it ends. Votes
 	// created before this setting existed report true.
-	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
+	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
 	// Whether the vote is pseudo-anonymous; if so, ballot contents are never
 	// returned
 	PseudoAnonymity bool `form:"pseudo_anonymity" json:"pseudo_anonymity" xml:"pseudo_anonymity"`

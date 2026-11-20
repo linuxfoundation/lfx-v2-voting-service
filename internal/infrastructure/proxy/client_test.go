@@ -1104,7 +1104,9 @@ func TestLastVoterBallotContract(t *testing.T) {
 						wantPaths = append(wantPaths, "GET /v2/voting/poll/"+linkVoteUID)
 					}
 					require.Equal(t, wantPaths, paths)
-					if tc.pollFails {
+					// A vote link needs the poll to build its response, so a failed poll read still
+					// fails it; the authenticated ballot read returns the ballot with would_end_vote false.
+					if tc.pollFails && byLink {
 						require.Equal(t, http.StatusServiceUnavailable, rec.Code, rec.Body.String())
 						return
 					}
