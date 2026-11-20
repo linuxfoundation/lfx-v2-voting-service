@@ -68,11 +68,37 @@ type inviteCall struct {
 
 // stubInviter records invite requests.
 type stubInviter struct {
-	calls []inviteCall
+	calls    []inviteCall
+	intents  map[string]bool
+	guardErr error
 }
 
-func (s *stubInviter) MaybeInvite(_ context.Context, _ *slog.Logger, voteResponseUID, email, displayName, pollID string) {
+func (s *stubInviter) MaybeInvite(_ context.Context, _ *slog.Logger, voteResponseUID, email, displayName, pollID string) bool {
+	if s.guardErr != nil {
+		return true
+	}
 	s.calls = append(s.calls, inviteCall{voteResponseUID, email, displayName, pollID})
+	return false
+}
+
+func (s *stubInviter) PrepareInvite(_ context.Context, id string, firstProcessing bool) (bool, error) {
+	if s.intents == nil {
+		s.intents = map[string]bool{}
+	}
+	if firstProcessing {
+		if _, exists := s.intents[id]; !exists {
+			s.intents[id] = true
+		}
+	}
+	return s.intents[id], nil
+}
+
+func (s *stubInviter) ResolveInvite(_ context.Context, id string) error {
+	if s.intents == nil {
+		s.intents = map[string]bool{}
+	}
+	s.intents[id] = false
+	return nil
 }
 
 // harness wires a Syncer to recording test adapters.

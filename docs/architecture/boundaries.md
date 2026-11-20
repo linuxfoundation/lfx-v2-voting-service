@@ -182,13 +182,15 @@ The v1→v2 sync logic lives in `internal/service/eventsync`. It is one module w
 
 `cmd/voting-api/eventing/` is the NATS adapter: it builds the consumer, turns a JetStream message into an
 `eventsync.Entry`, and ACKs or NAKs it (with exponential backoff) from the returned `Outcome`. It also holds
-the adapters for the poll-privacy read and the invite hook, which read `v1-objects` and `v1-mappings` directly.
+the source-freshness, poll-privacy and invite adapters. Source reads use `v1-objects`;
+processing/guard state uses service-owned PG through pure domain interfaces.
 
 ### Seams
 
 | Seam | Interface | Adapters |
 |---|---|---|
-| Sync state | `domain.MappingStore` | `mappings.KVStore` (NATS KV), an in-memory store in the `eventsync` tests |
+| Sync state | `domain.MappingStore` | `eventstate.Store` (PG), legacy KV adapter in tests, an in-memory sync-test store |
+| Source ordering | `domain.SourceFence`, `domain.ResourceLocker` | NATS source adapter and PG session locks; no external imports in domain/service |
 | Poll privacy | `eventsync.PollPrivacyReader` | `pollPrivacyReader` (v1-objects) |
 | Invite | `eventsync.VoteResponseInviter` | `VoteResponseInviteHandler` |
 | Publishing | `domain.EventPublisher` | `eventing.NATSPublisher` |

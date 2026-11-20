@@ -23,7 +23,7 @@ type VoteResponseInviteHandler struct {
 	inviteSender     domain.InviteSender
 	userReader       domain.UserReader
 	v1ObjectsKV      jetstream.KeyValue
-	v1MappingsKV     jetstream.KeyValue
+	guards           domain.InvitationGuards
 	selfServeBaseURL string
 }
 
@@ -32,6 +32,7 @@ func (h *VoteResponseInviteHandler) inviteEnabled() bool {
 	return h != nil &&
 		h.inviteSender != nil &&
 		h.userReader != nil &&
+		h.guards != nil &&
 		strings.TrimSpace(h.selfServeBaseURL) != ""
 }
 
@@ -42,34 +43,36 @@ func voteResponseLFIDInviteSentKey(voteResponseUID string) string {
 }
 
 // MaybeInvite performs a best-effort LFID invite for a new vote-response participant
-// who has no username. All errors are logged and swallowed.
+// who has no username. Pre-dispatch storage failures retry; ambiguous dispatch
+// outcomes retain the guard for manual reconciliation.
 func (h *VoteResponseInviteHandler) MaybeInvite(
 	ctx context.Context,
 	logger *slog.Logger,
 	voteResponseUID, email, displayName, pollID string,
-) {
+) (retry bool) {
 	if !h.inviteEnabled() {
-		return
+		return false
 	}
 
 	email = strings.TrimSpace(email)
 	if email == "" {
-		return
+		return h.resolveIntent(ctx, logger, voteResponseUID)
 	}
 
-	inviteSentKey := voteResponseLFIDInviteSentKey(voteResponseUID)
-	if _, err := h.v1MappingsKV.Get(ctx, inviteSentKey); err == nil {
+	guard, err := h.guards.LookupInvitation(ctx, voteResponseUID)
+	if err != nil {
+		logger.WarnContext(ctx, "failed to read invitation guard; retrying before dispatch")
+		return true
+	}
+	if guard.Exists {
 		logger.DebugContext(ctx, "LFID invite already sent for vote response, skipping")
-		return
-	} else if !errors.Is(err, jetstream.ErrKeyNotFound) {
-		logger.With(errKey, err).WarnContext(ctx, "failed to check LFID invite sent marker; skipping invite")
-		return
+		return false
 	}
 
 	username, err := h.userReader.UsernameByEmail(ctx, email)
 	if err == nil && username != "" {
 		logger.DebugContext(ctx, "vote response participant already has LFID, skipping invite")
-		return
+		return h.resolveIntent(ctx, logger, voteResponseUID)
 	}
 	if err != nil && !errors.Is(err, domain.ErrUserNotFound) {
 		// Transient auth-service error: fall through and attempt the invite anyway.
@@ -90,7 +93,7 @@ func (h *VoteResponseInviteHandler) MaybeInvite(
 	}
 	if voteName == "" {
 		logger.WarnContext(ctx, "could not resolve vote name; skipping invite to avoid confusing email")
-		return
+		return false
 	}
 
 	returnURL := fmt.Sprintf("%s/votes/%s", strings.TrimRight(h.selfServeBaseURL, "/"), url.PathEscape(pollID))
@@ -113,21 +116,60 @@ func (h *VoteResponseInviteHandler) MaybeInvite(
 	// Write a "pending" marker before calling SendInvite to close the duplicate-invite
 	// window: a concurrent redelivery that passes the Get check above would also see
 	// this marker and skip, preventing two goroutines from both calling SendInvite.
-	if _, err := h.v1MappingsKV.Put(ctx, inviteSentKey, []byte("pending")); err != nil {
+	revision, err := h.guards.ClaimInvitation(ctx, voteResponseUID)
+	if err != nil {
 		logger.With(errKey, err).WarnContext(ctx, "failed to store pending invite marker; skipping to avoid duplicate")
-		return
+		return !errors.Is(err, domain.ErrEventStateExists)
 	}
 
+	if err := domain.CheckSourceFence(ctx); err != nil {
+		logger.With(errKey, err).WarnContext(ctx, "source changed or unavailable after invite claim; retaining claim for reconciliation")
+		return !errors.Is(err, domain.ErrSourceSuperseded)
+	}
 	result, sendErr := h.inviteSender.SendInvite(ctx, req)
 	if sendErr != nil {
 		logger.With(errKey, sendErr).WarnContext(ctx, "failed to send LFID invite for vote response; continuing")
-		return
+		return false
 	}
-	if _, err := h.v1MappingsKV.Put(ctx, inviteSentKey, []byte(result.InviteUID)); err != nil {
+	if result == nil || result.InviteUID == "" {
+		logger.WarnContext(ctx, "invite result unresolved; retaining dispatch claim")
+		return false
+	}
+	if err := h.guards.CompleteInvitation(ctx, voteResponseUID, revision, result.InviteUID); err != nil {
 		logger.With(errKey, err).WarnContext(ctx, "failed to update vote response LFID invite sent marker")
 	}
 	logger.InfoContext(ctx, "sent LFID invite for vote response",
 		"invite_uid", result.InviteUID,
 		"expires_at", result.ExpiresAt,
 	)
+	return false
+}
+
+// ResolveInvite records terminal eligibility without removing dispatch guards.
+func (h *VoteResponseInviteHandler) ResolveInvite(ctx context.Context, id string) error {
+	if !h.inviteEnabled() {
+		return nil
+	}
+	return h.guards.ResolveInvitation(ctx, id)
+}
+func (h *VoteResponseInviteHandler) resolveIntent(ctx context.Context, logger *slog.Logger, id string) bool {
+	if err := h.ResolveInvite(ctx, id); err != nil {
+		logger.With(errKey, err).WarnContext(ctx, "failed to resolve terminal invitation intent; retrying")
+		return true
+	}
+	return false
+}
+
+// PrepareInvite persists new-response intent before processed-state writes and
+// reads that intent on replay; imported historical responses acquire no intent.
+func (h *VoteResponseInviteHandler) PrepareInvite(ctx context.Context, id string, firstProcessing bool) (bool, error) {
+	if !h.inviteEnabled() {
+		return false, nil
+	}
+	if firstProcessing {
+		if err := h.guards.PrepareInvitation(ctx, id); err != nil {
+			return false, err
+		}
+	}
+	return h.guards.InvitationPrepared(ctx, id)
 }

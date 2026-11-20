@@ -14,8 +14,30 @@ jobs:
   build-pr:
     name: Build and Test
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine@sha256:1d5b02d3a9941fbd52437db4107f8c52d6297dac553ca1e5c299ebb3756b4857
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U testuser"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
+      - name: Configure test database
+        env:
+          TEST_DATABASE_USER: testuser
+          TEST_DATABASE_PASSWORD: test-password
+          TEST_DATABASE_HOST: 127.0.0.1
+          TEST_DATABASE_PORT: "5432"
+        run: |
+          echo "VOTING_STATE_TEST_DATABASE_URL=postgres://${TEST_DATABASE_USER}:${TEST_DATABASE_PASSWORD}@${TEST_DATABASE_HOST}:${TEST_DATABASE_PORT}/postgres?sslmode=disable" >> "$GITHUB_ENV"
+
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
           persist-credentials: false

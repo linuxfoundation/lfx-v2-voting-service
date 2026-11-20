@@ -6,6 +6,7 @@ package eventsync
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -63,8 +64,10 @@ type resource[T any] struct {
 
 	// publish sends the item to the indexer (and FGA-sync where applicable).
 	publish func(ctx context.Context, pub domain.EventPublisher, action string, item *T) error
-	// afterPublish runs best-effort work after a successful publish and mapping write.
-	afterPublish func(ctx context.Context, s *Syncer, logger *slog.Logger, action indexerConstants.MessageAction, item *T)
+	// beforeMark persists any retryable eligibility before processed state.
+	beforeMark func(ctx context.Context, s *Syncer, logger *slog.Logger, action indexerConstants.MessageAction, item *T) *Outcome
+	// afterPublish completes post-mark work, optionally requesting redelivery.
+	afterPublish func(ctx context.Context, s *Syncer, logger *slog.Logger, action indexerConstants.MessageAction, item *T) *Outcome
 
 	// deleteItem builds the minimal item published for a delete. value is the raw
 	// record, empty for hard deletes and purges.
@@ -102,24 +105,38 @@ func (r *resource[T]) update(ctx context.Context, s *Syncer, key string, v1Data 
 	}
 
 	state := d.Mappings.State(ctx, r.kind, uid)
+	if state == domain.MappingUnavailable {
+		logger.WarnContext(ctx, "failed to read processing state; retrying")
+		return Retry
+	}
 	exists := state == domain.MappingSynced || (state == domain.MappingTombstoned && !r.tombstoneIsCreate)
 	action := indexerConstants.ActionCreated
 	if exists {
 		action = indexerConstants.ActionUpdated
 	}
 
+	if o := sourceOutcome(ctx, logger); o != nil {
+		return *o
+	}
 	if err := r.publish(ctx, d.Publisher, string(action), item); err != nil {
 		logger.With(errKey, err).ErrorContext(ctx, fmt.Sprintf("failed to publish %s event", r.label))
 		return retryIfTransient(err)
 	}
 
+	if r.beforeMark != nil {
+		if o := r.beforeMark(ctx, s, logger, action, item); o != nil {
+			return *o
+		}
+	}
 	if err := d.Mappings.MarkSynced(ctx, r.kind, uid); err != nil {
-		// Don't retry on mapping storage failures.
 		logger.With(errKey, err).WarnContext(ctx, fmt.Sprintf("failed to store %s mapping", r.label))
+		return Retry
 	}
 
 	if r.afterPublish != nil {
-		r.afterPublish(ctx, s, logger, action, item)
+		if o := r.afterPublish(ctx, s, logger, action, item); o != nil {
+			return *o
+		}
 	}
 
 	logger.InfoContext(ctx, fmt.Sprintf("successfully synced %s", r.label))
@@ -136,12 +153,20 @@ func (r *resource[T]) remove(ctx context.Context, s *Syncer, uid string, value [
 	logger.DebugContext(ctx, fmt.Sprintf("processing %s delete", r.label))
 
 	// Skip if already tombstoned: prevents duplicate delete events on redelivery.
-	if d.Mappings.State(ctx, r.kind, uid) == domain.MappingTombstoned {
+	state := d.Mappings.State(ctx, r.kind, uid)
+	if state == domain.MappingUnavailable {
+		logger.WarnContext(ctx, "failed to read deletion state; retrying")
+		return Retry
+	}
+	if state == domain.MappingTombstoned {
 		logger.DebugContext(ctx, fmt.Sprintf("%s delete already processed, skipping", r.label))
 		return Ack
 	}
 
 	item := r.deleteItem(ctx, logger, uid, value)
+	if o := sourceOutcome(ctx, logger); o != nil {
+		return *o
+	}
 	if err := r.publish(ctx, d.Publisher, string(indexerConstants.ActionDeleted), item); err != nil {
 		logger.With(errKey, err).ErrorContext(ctx, fmt.Sprintf("failed to publish %s delete event", r.label))
 		return retryIfTransient(err)
@@ -149,12 +174,25 @@ func (r *resource[T]) remove(ctx context.Context, s *Syncer, uid string, value [
 
 	// Tombstone the mapping instead of removing it, so redelivery is safely skipped.
 	if err := d.Mappings.MarkTombstoned(ctx, r.kind, uid); err != nil {
-		// Don't retry on mapping failures.
 		logger.With(errKey, err).WarnContext(ctx, fmt.Sprintf("failed to tombstone %s mapping", r.label))
+		return Retry
 	}
 
 	logger.InfoContext(ctx, fmt.Sprintf("successfully synced %s delete", r.label))
 	return Ack
+}
+
+func sourceOutcome(ctx context.Context, logger *slog.Logger) *Outcome {
+	err := domain.CheckSourceFence(ctx)
+	if errors.Is(err, domain.ErrSourceSuperseded) {
+		logger.InfoContext(ctx, "skipping superseded source delivery")
+		return outcome(Ack)
+	}
+	if err != nil {
+		logger.With(errKey, err).WarnContext(ctx, "source freshness unavailable; retrying")
+		return outcome(Retry)
+	}
+	return nil
 }
 
 func retryIfTransient(err error) Outcome {

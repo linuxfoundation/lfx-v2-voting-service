@@ -65,8 +65,8 @@ func TestKVStore_OnDiskFormat(t *testing.T) {
 	assert.Contains(t, bucket.data, "vote_result.p1")
 }
 
-func TestKVStore_ReadErrorReportsAbsent(t *testing.T) {
+func TestKVStore_ReadErrorReportsUnavailable(t *testing.T) {
 	bucket := &fakeBucket{data: map[string][]byte{"vote.u1": []byte("1")}, getErr: errors.New("boom")}
 	store := NewKVStore(bucket)
-	assert.Equal(t, domain.MappingAbsent, store.State(context.Background(), domain.MappingKindVote, "u1"))
+	assert.Equal(t, domain.MappingUnavailable, store.State(context.Background(), domain.MappingKindVote, "u1"))
 }

@@ -4,6 +4,11 @@
 
 The voting service implements NATS KV bucket event processing to automatically sync vote (poll) and vote response data from the v1 system to the v2 system. This enables real-time data synchronization, search indexing, and access control updates without manual intervention.
 
+Processing state, invitation intents and dispatch guards now live in voting-owned
+Postgres tables. Legacy `v1-mappings` key names below describe compatibility
+encoding, not runtime bucket access. Source `v1-objects` and canonical helper
+RPCs remain unchanged. See [Postgres state and cutover](event-state-postgres.md).
+
 ## Architecture
 
 ### Components
@@ -67,7 +72,7 @@ The voting service implements NATS KV bucket event processing to automatically s
      - Manages viewer/writer/auditor permissions
      - Links votes to committees and projects
 
-4. **Track**: Records processed events in `v1-mappings` KV bucket for deduplication
+4. **Track**: Records processed/deleted state in voting-owned Postgres tables.
 
 ## Configuration
 
@@ -79,6 +84,7 @@ The voting service implements NATS KV bucket event processing to automatically s
 | `EVENT_CONSUMER_NAME` | `voting-service-kv-consumer` | JetStream consumer name |
 | `EVENT_STREAM_NAME` | `KV_v1-objects` | JetStream stream name |
 | `NATS_URL` | `nats://nats:4222` | NATS server URL |
+| `VOTING_STATE_DATABASE_URL` | Required with event processing | Secret-loaded voting-owned PG DSN with a verified offline cutover checkpoint |
 | `INVITES_ENABLED` | `false` | Enable LFID invite sending (vote-response handler) and `invite_accepted` enrichment |
 | `LFX_SELF_SERVE_BASE_URL` | derived from `LFX_ENVIRONMENT` | Base URL embedded in invite emails as `return_url` |
 
@@ -90,13 +96,16 @@ When `INVITES_ENABLED=true`, the voting service participates in the platform LFI
 
 During vote-response create processing (`itx-poll-vote.*`), after the vote response is indexed:
 
-1. Skip if the participant already has a username (LFID) or if an invite was already sent for this vote-response UID (tracked in `v1-mappings` as `v1_vote_response_lfid_invite_sent.{vote_response_uid}`).
+1. Resolve terminal intent when the participant already has a username (LFID); suppress another dispatch when `voting_invitation_guards` contains a guard for the response ID.
 2. Look up the email via `lfx.auth-service.email_to_username` — skip if an LFID already exists.
 3. Resolve the vote name from the `v1-objects` KV bucket (`itx-poll.{poll_id}`); skip if unavailable.
 4. Send `lfx.invite-service.send_invite` with `resource.type=vote` and role `Voter`.
-5. Store the invite UID in the sent-marker mapping key (best-effort).
+5. Complete the create-only pending PG guard with the invite UID and claimed revision (best-effort).
 
-All invite operations are best-effort: errors are logged and never cause KV message retries.
+Pre-dispatch state/intent/guard failures request retry. Send/completion ambiguity
+retains the dispatch claim without automatically resending. Terminal no-invite
+decisions resolve intent so later email edits cannot reactivate eligibility.
+See [LFID invites](lfid-invites.md) and [state recovery](event-state-postgres.md).
 
 #### Invite acceptance enrichment (independent of event processing)
 
@@ -106,7 +115,7 @@ When `INVITES_ENABLED=true` and `NATS_URL` is set, `main.go` starts a NATS queue
 
 - **Delivery Policy**: `DeliverLastPerSubjectPolicy` - Processes the latest version of each key
 - **Ack Policy**: `AckExplicitPolicy` - Requires explicit acknowledgment
-- **Max Deliver**: `3` - Retries transient failures up to 3 times
+- **Max Deliver**: `-1` - Unlimited recoverable deliveries with capped backoff
 - **Ack Wait**: `30s` - Timeout before message redelivery
 - **Max Ack Pending**: `1000` - Maximum unacknowledged messages
 
@@ -232,8 +241,14 @@ These errors trigger NAK (negative acknowledgment) for automatic retry:
 - IDMapper service unavailable
 - Network failures
 - Temporary downstream service outages
+- Postgres state read/write or invitation intent/guard failures before dispatch
+- Unavailable source-revision reads or busy same-source processing locks
 
-**Action**: Message redelivered up to `MaxDeliver` times (3 attempts)
+**Action**: Retry with 2s/10s/20s capped backoff and warning diagnostics. Active
+handlers extend the acknowledgment deadline. Work survives dependency recovery
+and restarts while source messages remain retained; unlimited deliveries do not
+protect against source expiry or administrative purge. Monitor consumer backlog
+and retention headroom. Superseded deliveries ACK without replaying side effects.
 
 ### Permanent Errors (Skip)
 
@@ -301,9 +316,10 @@ nats consumer report KV_v1-objects voting-service-kv-consumer
 1. **Startup**: Event processor initializes after IDMapper
 2. **Running**: Processes events in background goroutine
 3. **Shutdown**: Graceful shutdown sequence:
-   - Context cancellation stops the consumer
-   - Consumer drains pending messages (30s timeout)
-   - NATS connection closed
+   - Stop callback admission and SDK consumption
+   - Preserve active processing contexts/resources during a 30-second grace window
+   - Wait for SDK completion and callbacks; cancel overdue work and wait for its completion
+   - Close NATS/publisher/Postgres only after active callbacks finish
    - HTTP server shutdown
 
 ### Troubleshooting
@@ -313,7 +329,7 @@ nats consumer report KV_v1-objects voting-service-kv-consumer
 - Check `EVENT_PROCESSING_ENABLED=true`
 - Verify NATS connection: `NATS_URL`
 - Check consumer exists: `nats consumer ls KV_v1-objects`
-- Verify `v1-mappings` KV bucket exists
+- Verify the PG Secret/database and `voting_state_cutover` checkpoint; do not bootstrap empty state or erase a checkpoint to force startup
 
 **Events failing repeatedly**:
 
@@ -324,8 +340,8 @@ nats consumer report KV_v1-objects voting-service-kv-consumer
 
 **Duplicate processing**:
 
-- Check `v1-mappings` KV bucket for tracking entries (live = `1`, deleted = `!del`)
-- Verify consumer name is unique per instance
+- Inspect `voting_processed_resources` by resource kind/source ID, and `voting_invitation_guards` by response ID
+- Use the shared durable consumer name across replicas, not per-instance replay consumers
 - Ensure `DeliverLastPerSubjectPolicy` is configured
 
 **ID mapping failures**:
@@ -336,7 +352,8 @@ nats consumer report KV_v1-objects voting-service-kv-consumer
 
 ## Deduplication
 
-The service uses the `v1-mappings` KV bucket to track processed events:
+The service uses `voting_processed_resources` in its own Postgres schema.
+Legacy key/value names below are compatibility encoding, not runtime KV storage:
 
 **Key Pattern**:
 
@@ -344,7 +361,8 @@ The service uses the `v1-mappings` KV bucket to track processed events:
 - Vote Responses: `vote_response.<vote_id>`
 - Vote Results: `vote_result.<poll_id>`
 
-The key format and the `!del` marker are an on-disk contract, owned by `internal/infrastructure/mappings` (`domain.MappingStore`).
+`internal/infrastructure/eventstate.Store` implements `domain.MappingStore`.
+It stores named state columns and preserves the compatibility `!del` encoding.
 **Value**:
 
 - `1` — resource has been synced at least once (live mapping)
@@ -360,6 +378,11 @@ The key format and the `!del` marker are an on-disk contract, owned by `internal
 **Tombstone deduplication**:
 
 When a delete event is processed, the mapping key is set to `!del` rather than being removed. On any redelivery of the same delete message, the tombstone is detected and the event is safely skipped without re-publishing a delete to downstream services.
+
+Source stream revisions and leader-served current-source checks reject stale
+deliveries before effects/state mutations. PG advisory locks serialize same-source
+handlers across replicas. External index/FGA effects are not an atomic transaction;
+see [ordering limitations](event-state-postgres.md#concurrency-and-rollback).
 
 **Soft delete support**:
 
@@ -471,11 +494,14 @@ These per-resource rules (and the create/update rule above) are explicit policy 
    grep "successfully sent vote" logs/voting-api.log
    ```
 
-5. **Verify mappings stored**:
+5. **Verify PG processing state** (load the DSN from the local test Secret/environment):
 
-   ```bash
-   nats kv get v1-mappings vote.test-123
-   nats kv get v1-mappings vote_response.vote-response-123
+   ```sql
+   SELECT resource_kind, source_id, state
+   FROM voting_processed_resources
+   WHERE (resource_kind = 'vote' AND source_id = 'test-123')
+      OR (resource_kind = 'vote_response' AND source_id = 'vote-response-123');
+   SELECT source_last_sequence, verified_at FROM voting_state_cutover;
    ```
 
 ### Unit Tests

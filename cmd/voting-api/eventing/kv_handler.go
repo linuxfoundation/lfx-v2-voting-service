@@ -5,10 +5,12 @@ package eventing
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
 
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/mappings"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/service/eventsync"
 	"github.com/nats-io/nats.go/jetstream"
@@ -51,14 +53,19 @@ func kvMessageHandler(
 		operation = eventsync.OpDelete
 	}
 
-	outcome := syncer.Sync(ctx, eventsync.Entry{Key: key, Op: operation, Value: msg.Data()})
+	metadata, metadataErr := msg.Metadata()
+	if metadataErr != nil || metadata == nil {
+		metadata = &jetstream.MsgMetadata{NumDelivered: 1}
+	}
+	outcome := syncer.Sync(ctx, eventsync.Entry{Key: key, Op: operation, Value: msg.Data(), Revision: metadata.Sequence.Stream})
+	if errors.Is(domain.CheckSourceFence(ctx), domain.ErrSourceSuperseded) {
+		outcome = eventsync.Ack
+	}
 
 	if outcome == eventsync.Retry {
 		// Get message metadata to determine retry attempt number
-		metadata, err := msg.Metadata()
-		if err != nil {
-			logger.With("error", err, "key", key).Warn("failed to get message metadata, using default delay")
-			metadata = &jetstream.MsgMetadata{NumDelivered: 1}
+		if metadataErr != nil {
+			logger.With("error", metadataErr, "key", key).Warn("failed to get message metadata, using default delay")
 		}
 
 		// Calculate exponential backoff delay based on delivery attempt
@@ -70,7 +77,6 @@ func kvMessageHandler(
 		case 2:
 			delay = 10 * time.Second
 		default:
-			// This case won't be hit if there is a consumer max delivery of 3 or less
 			delay = 20 * time.Second
 		}
 
@@ -79,7 +85,7 @@ func kvMessageHandler(
 		if err := msg.NakWithDelay(delay); err != nil {
 			logger.With("error", err, "key", key).Error("failed to NAK KV JetStream message for retry")
 		} else {
-			logger.With("key", key, "attempt", metadata.NumDelivered, "delay_seconds", delay.Seconds()).Debug("NAKed KV message for retry with exponential backoff")
+			logger.With("key", key, "attempt", metadata.NumDelivered, "delay_seconds", delay.Seconds()).Warn("NAKed KV message for recoverable retry with capped backoff")
 		}
 	} else {
 		// Acknowledge the message

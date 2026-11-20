@@ -150,11 +150,11 @@ func TestSync_VoteResponseUpdate(t *testing.T) {
 		assert.Equal(t, domain.MappingAbsent, responseState(h, "vote-123"))
 	})
 
-	t.Run("still acks when recording the mapping fails", func(t *testing.T) {
+	t.Run("retries when recording the mapping fails", func(t *testing.T) {
 		h := newHarness(t)
 		withParentVote(h, "poll-456")
 		h.store.PutErr = errors.New("kv put failed")
-		assert.Equal(t, Ack, h.sync(putJSON(t, key, responsePayload("vote-123", "poll-456"))))
+		assert.Equal(t, Retry, h.sync(putJSON(t, key, responsePayload("vote-123", "poll-456"))))
 		assert.Len(t, h.pub.publishedVoteResponses, 1)
 	})
 }
@@ -330,6 +330,18 @@ func TestSync_VoteResponseUpdate_Invite(t *testing.T) {
 		assert.Equal(t, Ack, h.sync(putJSON(t, key, guest())))
 		assert.Len(t, h.pub.publishedVoteResponses, 1)
 	})
+	t.Run("guard failure resumes an invitation on updated redelivery", func(t *testing.T) {
+		h := newHarness(t)
+		withParentVote(h, "poll-456")
+		h.inviter.guardErr = domain.NewUnavailableError("guard unavailable")
+		require.Equal(t, Retry, h.sync(putJSON(t, key, guest())))
+		require.Empty(t, h.inviter.calls)
+		require.Equal(t, domain.MappingSynced, responseState(h, "vote-123"))
+		h.inviter.guardErr = nil
+		require.Equal(t, Ack, h.sync(putJSON(t, key, guest())))
+		require.Len(t, h.inviter.calls, 1)
+		require.Equal(t, "updated", h.pub.publishedVoteResponseActions[1])
+	})
 }
 
 func TestSync_VoteResponseDelete(t *testing.T) {
@@ -366,10 +378,10 @@ func TestSync_VoteResponseDelete(t *testing.T) {
 		assert.Empty(t, h.pub.publishedVoteResponses[0].Username)
 	})
 
-	t.Run("still acks when tombstoning fails", func(t *testing.T) {
+	t.Run("retries when tombstoning fails", func(t *testing.T) {
 		h := newHarness(t)
 		h.store.PutErr = errors.New("kv put failed")
-		assert.Equal(t, Ack, h.sync(hardDelete(key)))
+		assert.Equal(t, Retry, h.sync(hardDelete(key)))
 		assert.Len(t, h.pub.publishedVoteResponses, 1)
 	})
 }

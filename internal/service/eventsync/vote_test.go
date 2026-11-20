@@ -45,6 +45,12 @@ func voteState(h *harness, uid string) domain.MappingState {
 }
 
 func TestSync_VoteUpdate(t *testing.T) {
+	t.Run("unavailable state retries without publishing", func(t *testing.T) {
+		h := newHarness(t)
+		h.store.Seed(domain.MappingKindVote, "poll-123", domain.MappingUnavailable)
+		require.Equal(t, Retry, h.sync(putJSON(t, "itx-poll.poll-123", votePayload("poll-123"))))
+		require.Empty(t, h.pub.publishedVotes)
+	})
 	key := "itx-poll.poll-123"
 
 	t.Run("publishes a created vote and records the mapping", func(t *testing.T) {
@@ -167,15 +173,21 @@ func TestSync_VoteUpdate(t *testing.T) {
 		assert.Equal(t, domain.MappingAbsent, voteState(h, "poll-123"))
 	})
 
-	t.Run("still acks when recording the mapping fails", func(t *testing.T) {
+	t.Run("retries when recording the mapping fails", func(t *testing.T) {
 		h := newHarness(t)
 		h.store.PutErr = errors.New("kv put failed")
-		assert.Equal(t, Ack, h.sync(putJSON(t, key, votePayload("poll-123"))))
+		assert.Equal(t, Retry, h.sync(putJSON(t, key, votePayload("poll-123"))))
 		assert.Len(t, h.pub.publishedVotes, 1)
 	})
 }
 
 func TestSync_VoteDelete(t *testing.T) {
+	t.Run("unavailable state does not publish a delete", func(t *testing.T) {
+		h := newHarness(t)
+		h.store.Seed(domain.MappingKindVote, "poll-123", domain.MappingUnavailable)
+		require.Equal(t, Retry, h.sync(hardDelete("itx-poll.poll-123")))
+		require.Empty(t, h.pub.publishedVotes)
+	})
 	key := "itx-poll.poll-123"
 
 	t.Run("publishes a delete and tombstones the mapping", func(t *testing.T) {
@@ -209,10 +221,10 @@ func TestSync_VoteDelete(t *testing.T) {
 		assert.Equal(t, domain.MappingAbsent, voteState(h, "poll-123"))
 	})
 
-	t.Run("still acks when tombstoning fails", func(t *testing.T) {
+	t.Run("retries when tombstoning fails", func(t *testing.T) {
 		h := newHarness(t)
 		h.store.PutErr = errors.New("kv put failed")
-		assert.Equal(t, Ack, h.sync(hardDelete(key)))
+		assert.Equal(t, Retry, h.sync(hardDelete(key)))
 		assert.Len(t, h.pub.publishedVotes, 1)
 	})
 }

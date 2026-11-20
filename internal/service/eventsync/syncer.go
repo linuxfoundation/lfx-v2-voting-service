@@ -46,6 +46,8 @@ const (
 
 // Entry is a raw entry from the v1-objects KV bucket.
 type Entry struct {
+	// Revision is the source stream revision, not a database write revision.
+	Revision uint64
 	// Key is the KV key without the bucket prefix, e.g. "itx-poll.<uid>".
 	Key string
 	// Op is the change the entry represents.
@@ -64,9 +66,14 @@ type PollPrivacyReader interface {
 }
 
 // VoteResponseInviter sends a best-effort LFID invite for a new vote-response participant.
-// Implementations log and swallow their own errors.
+// Implementations retain new-response intent and report pre-dispatch failures.
 type VoteResponseInviter interface {
-	MaybeInvite(ctx context.Context, logger *slog.Logger, voteResponseUID, email, displayName, pollID string)
+	// PrepareInvite records first-process eligibility or reads prior intent.
+	PrepareInvite(ctx context.Context, responseUID string, firstProcessing bool) (bool, error)
+	// MaybeInvite requests retry only for pre-dispatch guard storage failures.
+	MaybeInvite(ctx context.Context, logger *slog.Logger, voteResponseUID, email, displayName, pollID string) bool
+	// ResolveInvite persists terminal eligibility resolution without clearing guards.
+	ResolveInvite(context.Context, string) error
 }
 
 // Deps are the seams the Syncer depends on.
