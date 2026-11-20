@@ -35,9 +35,10 @@ func WithVoteLinkVerifier(signer domain.VoteLinkSigner) VoteResponseServiceOptio
 }
 
 // WithPollReader lets the service read the vote itself (questions, choices, status and
-// response counts) from ITX. The personalized vote link ballot read always needs it, and the
-// authenticated ballot read (GET /vote_responses/{uid}) needs it for pending ballots. Without
-// it, GetBallotByLink and GetVoteResponse for a pending ballot return 503.
+// response counts) from ITX. The personalized vote link ballot read always needs it: without
+// it, GetBallotByLink returns 503. The authenticated ballot read (GET /vote_responses/{uid})
+// uses it to compute WouldEndVote for pending ballots: without it, GetVoteResponse still
+// returns the ballot but reports WouldEndVote false.
 func WithPollReader(polls domain.PollClient) VoteResponseServiceOption {
 	return func(s *VoteResponseService) {
 		s.pollReader = polls
