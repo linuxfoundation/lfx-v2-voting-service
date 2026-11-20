@@ -268,7 +268,7 @@ func (c *Client) UpdatePoll(ctx context.Context, pollID string, req *itx.UpdateP
 	return &result, nil
 }
 
-// DeletePoll deletes a poll in ITX (only when status is "disabled")
+// DeletePoll deletes a disabled poll or cancels an active one in ITX; ITX rejects ended polls with 400
 func (c *Client) DeletePoll(ctx context.Context, pollID string) error {
 	// Create HTTP request
 	url := fmt.Sprintf("%sv2/voting/poll/%s", c.config.BaseURL, pollID)
@@ -295,7 +295,7 @@ func (c *Client) DeletePoll(ctx context.Context, pollID string) error {
 		return domain.NewInternalError("failed to read response", err)
 	}
 
-	// Handle non-2xx status codes (ITX returns 400 if status is not "disabled")
+	// Handle non-2xx status codes (ITX returns 400 if the poll has ended)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return c.mapHTTPError(resp.StatusCode, respBody)
 	}

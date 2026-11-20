@@ -23,14 +23,19 @@ type Service interface {
 	// Update vote (proxies to ITX PUT /voting/poll/{poll_id}). Only allowed when
 	// status is 'disabled'
 	UpdateVote(context.Context, *UpdateVotePayload) (res *VoteResult, err error)
-	// Delete vote (proxies to ITX DELETE /voting/poll/{poll_id}). Only allowed
-	// when status is 'disabled'
+	// Delete or cancel a vote (proxies to ITX DELETE /voting/poll/{poll_id}). A
+	// disabled (draft) vote is deleted. An active vote is cancelled: the vote and
+	// its responses are permanently removed, and recipients receive a cancellation
+	// notice; response cleanup runs asynchronously. Ended votes, whether closed
+	// early, closed automatically or past end_time, cannot be deleted; ITX returns
+	// 400 'ended polls cannot be deleted'. Requires writer on the vote.
 	DeleteVote(context.Context, *DeleteVotePayload) (err error)
 	// Extend a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)
 	ExtendVote(context.Context, *ExtendVotePayload) (res *VoteResult, err error)
 	// End an active vote immediately (proxies to ITX POST
 	// /voting/poll/{poll_id}/end). Idempotent for an already-ended vote; a
-	// disabled vote returns 409.
+	// disabled vote returns 409. Ending preserves the vote and its results; to
+	// cancel and remove an active vote use delete_vote.
 	EndVote(context.Context, *EndVotePayload) (res *VoteResult, err error)
 	// Enable a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)
 	EnableVote(context.Context, *EnableVotePayload) (err error)
