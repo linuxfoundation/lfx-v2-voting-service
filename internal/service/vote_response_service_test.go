@@ -13,6 +13,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
@@ -243,6 +244,58 @@ func TestGetVoteResponse_WouldEndVote(t *testing.T) {
 			}
 			if got.Ballot != tc.ballot {
 				t.Error("Ballot must be the ballot read from ITX")
+			}
+		})
+	}
+}
+
+// advisoryPollReader lets timeout tests inspect and wait on the poll-only context.
+type advisoryPollReader struct {
+	domain.PollClient
+	read func(context.Context, string) (*itx.PollResponse, error)
+}
+
+func (r *advisoryPollReader) GetPoll(ctx context.Context, pollID string) (*itx.PollResponse, error) {
+	return r.read(ctx, pollID)
+}
+
+func TestGetVoteResponse_AdvisoryDeadline(t *testing.T) {
+	for _, timeout := range []time.Duration{0, 2 * time.Second, 500 * time.Millisecond} {
+		t.Run(timeout.String(), func(t *testing.T) {
+			ctx := ctxWithPrincipal("user")
+			if timeout > 0 {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, timeout)
+				defer cancel()
+			}
+			ballot := &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusAwaitingResponse}
+			called := false
+			var advisoryCtx context.Context
+			polls := &advisoryPollReader{read: func(pollCtx context.Context, pollID string) (*itx.PollResponse, error) {
+				called = true
+				advisoryCtx = pollCtx
+				assert.Equal(t, "vote-1", pollID)
+				deadline, ok := pollCtx.Deadline()
+				require.True(t, ok, "an advisory call must always have a deadline")
+				assert.LessOrEqual(t, time.Until(deadline), advisoryPollTimeout)
+				if parent, ok := ctx.Deadline(); ok {
+					assert.Equal(t, parent.Add(-advisoryResponseReserve), deadline)
+					<-pollCtx.Done()
+					assert.ErrorIs(t, pollCtx.Err(), context.DeadlineExceeded)
+				}
+				return nil, context.DeadlineExceeded
+			}}
+			svc := NewVoteResponseService(nil, &ballotVoteClient{ballot: ballot}, identityIDMapper{}, discardLogger(), WithPollReader(polls))
+
+			got, err := svc.GetVoteResponse(ctx, "ballot-1")
+
+			require.NoError(t, err)
+			assert.Same(t, ballot, got.Ballot)
+			assert.False(t, got.WouldEndVote)
+			assert.NoError(t, ctx.Err(), "the advisory timeout must not cancel the caller")
+			assert.Equal(t, timeout != 500*time.Millisecond, called, "skip the advisory read when only the response reserve remains")
+			if advisoryCtx != nil {
+				assert.Error(t, advisoryCtx.Err(), "release the child context after the call")
 			}
 		})
 	}

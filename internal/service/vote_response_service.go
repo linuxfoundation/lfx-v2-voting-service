@@ -6,11 +6,18 @@ package service
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 	"goa.design/goa/v3/security"
+)
+
+const (
+	advisoryPollTimeout     = 5 * time.Second
+	advisoryBallotBudget    = 10 * time.Second
+	advisoryResponseReserve = time.Second
 )
 
 // VoteResponseService implements vote response business logic
@@ -192,9 +199,10 @@ func (s *VoteResponseService) submitVoteResponse(ctx context.Context, req *Creat
 
 // GetVoteResponse retrieves vote response details (proxies to ITX GET /voting/vote/{vote_id}).
 // For a pending ballot it also reads the vote (ITX GET /voting/poll/{poll_id}) to tell whether
-// this ballot is the last one outstanding; a failed vote read reports WouldEndVote false
-// instead of failing the request.
+// this ballot is the last one outstanding; a failed or timed-out advisory vote read
+// reports WouldEndVote false instead of failing the request.
 func (s *VoteResponseService) GetVoteResponse(ctx context.Context, voteID string) (*VoteResponseDetails, error) {
+	started := time.Now()
 	principal, err := requirePrincipal(ctx)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
@@ -223,11 +231,30 @@ func (s *VoteResponseService) GetVoteResponse(ctx context.Context, voteID string
 		if s.pollReader == nil {
 			s.logger.WarnContext(ctx, "Pending ballot requested but no poll reader is configured; reporting would_end_vote false",
 				"vote_uid", voteResp.PollID)
-		} else if poll, err := s.pollReader.GetPoll(ctx, voteResp.PollID); err != nil {
-			s.logger.WarnContext(ctx, "Failed to get vote from ITX; reporting would_end_vote false",
-				"vote_uid", voteResp.PollID, "error", err)
 		} else {
-			details.WouldEndVote = wouldEndVote(poll, voteResp)
+			// Bound only the advisory lookup. Required reads above keep their original
+			// context, but consume this budget too, leaving room under the server's
+			// 15-second write timeout for conversion and delivery of the loaded ballot.
+			deadline := started.Add(advisoryBallotBudget)
+			if limit := time.Now().Add(advisoryPollTimeout); limit.Before(deadline) {
+				deadline = limit
+			}
+			if parent, ok := ctx.Deadline(); ok && parent.Add(-advisoryResponseReserve).Before(deadline) {
+				deadline = parent.Add(-advisoryResponseReserve)
+			}
+			pollCtx, cancel := context.WithDeadline(ctx, deadline)
+			var poll *itx.PollResponse
+			err := pollCtx.Err()
+			if err == nil {
+				poll, err = s.pollReader.GetPoll(pollCtx, voteResp.PollID)
+			}
+			cancel()
+			if err != nil {
+				s.logger.WarnContext(ctx, "Failed to get vote from ITX; reporting would_end_vote false",
+					"vote_uid", voteResp.PollID, "error", err)
+			} else {
+				details.WouldEndVote = wouldEndVote(poll, voteResp)
+			}
 		}
 	}
 

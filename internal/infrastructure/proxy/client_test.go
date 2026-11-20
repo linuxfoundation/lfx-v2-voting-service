@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"bytes"
 	"encoding/json"
@@ -1121,6 +1122,76 @@ func TestLastVoterBallotContract(t *testing.T) {
 					}
 					require.Equal(t, strconv.FormatBool(tc.want), string(body["would_end_vote"]), "the boolean must always be serialized")
 				})
+			}
+		})
+	}
+}
+
+// TestLastVoterBallotContract_StalledPoll uses real TCP servers so an expired
+// write deadline cannot be hidden by httptest.ResponseRecorder.
+func TestLastVoterBallotContract_StalledPoll(t *testing.T) {
+	for _, ballotDelay := range []time.Duration{0, 8 * time.Second} {
+		t.Run(ballotDelay.String(), func(t *testing.T) {
+			pollCancelled := make(chan struct{}, 1)
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				switch r.URL.Path {
+				case "/v2/voting/vote/" + linkBallotUID:
+					select {
+					case <-time.After(ballotDelay):
+					case <-r.Context().Done():
+						return
+					}
+					_, _ = io.WriteString(w, `{"vote_id":"`+linkBallotUID+`","poll_id":"`+linkVoteUID+`","project_id":"synthetic-project","vote_status":"awaiting_response","comment_responses":[]}`)
+				case "/v2/voting/poll/" + linkVoteUID:
+					<-r.Context().Done()
+					pollCancelled <- struct{}{}
+				default:
+					t.Errorf("unexpected upstream path: %s", r.URL.Path)
+					w.WriteHeader(http.StatusNotFound)
+				}
+			}))
+			t.Cleanup(upstream.Close)
+			upstreamClient := upstream.Client()
+			upstreamClient.Timeout = 30 * time.Second
+			client := NewContractTestClient(upstreamClient, upstream.URL+"/")
+			responses := service.NewVoteResponseService(nil, client, methodContractIDMapper{}, slog.New(slog.NewTextHandler(io.Discard, nil)),
+				service.WithPollReader(client))
+			getResponse := func(ctx context.Context, payload any) (any, error) {
+				ctx = context.WithValue(ctx, constants.PrincipalContextID, "synthetic-contract-user")
+				details, err := responses.GetVoteResponse(ctx, payload.(*votesvc.GetVoteResponsePayload).VoteResponseUID)
+				if err != nil {
+					return nil, err
+				}
+				return converters.ConvertVoteResponseDetailsToResult(details), nil
+			}
+			mux := goahttp.NewMuxer()
+			voteserver.MountGetVoteResponseHandler(mux, voteserver.NewGetVoteResponseHandler(getResponse, mux, goahttp.RequestDecoder, goahttp.ResponseEncoder, nil, nil))
+			api := httptest.NewUnstartedServer(mux)
+			api.Config.WriteTimeout = 15 * time.Second
+			api.Start()
+			t.Cleanup(api.Close)
+			apiClient := api.Client()
+			apiClient.Timeout = 20 * time.Second
+
+			started := time.Now()
+			resp, err := apiClient.Get(api.URL + "/vote_responses/" + linkBallotUID)
+			require.NoError(t, err, "the loaded ballot must arrive before the server write deadline")
+			defer func() { _ = resp.Body.Close() }()
+			require.Equal(t, http.StatusOK, resp.StatusCode)
+			var body map[string]json.RawMessage
+			require.NoError(t, json.NewDecoder(resp.Body).Decode(&body))
+			assert.Equal(t, `"`+linkBallotUID+`"`, string(body["vote_response_uid"]))
+			assert.Equal(t, "false", string(body["would_end_vote"]))
+			limit := 7 * time.Second
+			if ballotDelay > 0 {
+				limit = 12 * time.Second
+			}
+			assert.Less(t, time.Since(started), limit, "required reads must consume the advisory budget")
+			select {
+			case <-pollCancelled:
+			case <-time.After(2 * time.Second):
+				t.Fatal("the advisory timeout must cancel the upstream HTTP request")
 			}
 		})
 	}

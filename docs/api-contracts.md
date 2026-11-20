@@ -1326,7 +1326,16 @@ final submit-time checks.
 
 **Endpoint**: `GET /v2/voting/vote/{vote_id}`
 
-For a pending ballot (`vote_status` `awaiting_response`, voter not removed), the proxy also calls `GET /v2/voting/poll/{poll_id}` to compute `would_end_vote`. If that call fails, the proxy logs a warning and returns the ballot with `would_end_vote: false`. Other ballots skip it.
+For a pending ballot (`vote_status` `awaiting_response`, voter not removed), the proxy also calls
+`GET /v2/voting/poll/{poll_id}` to compute `would_end_vote`. Its advisory context deadline is
+at most five seconds after the lookup starts, capped at ten seconds from service entry
+(including the required ballot read and ID mapping). An earlier caller deadline shortens
+it further, reserving one second for the response; an exhausted advisory budget skips the
+call. If the lookup returns an error, including a context timeout, the proxy logs a warning
+and returns the ballot with `would_end_vote: false`. Other ballots skip it. These deadlines
+bound context-aware ITX HTTP work, not a wall-clock guarantee: existing OAuth token-renewal
+waits use a background context and can still outlast the advisory deadline. Required ballot
+reads and personalized vote-link reads retain their existing timeouts.
 
 **Headers**:
 
