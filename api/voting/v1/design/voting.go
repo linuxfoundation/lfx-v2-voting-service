@@ -171,7 +171,7 @@ var _ = Service("vote", func() {
 	})
 
 	Method("delete_vote", func() {
-		Description("Delete vote (proxies to ITX DELETE /voting/poll/{poll_id}). Only allowed when status is 'disabled'")
+		Description("Delete or cancel a vote (proxies to ITX DELETE /voting/poll/{poll_id}). A disabled (draft) vote is deleted. An active vote is cancelled: the vote and its responses are permanently removed, and recipients receive a cancellation notice; response cleanup runs asynchronously. Ended votes, whether closed early, closed automatically or past end_time, cannot be deleted; ITX returns 400 'ended polls cannot be deleted'. Requires writer on the vote.")
 
 		Security(JWTAuth, func() {
 			Scope("manage:projects")
@@ -229,7 +229,7 @@ var _ = Service("vote", func() {
 	})
 
 	Method("end_vote", func() {
-		Description("End an active vote immediately (proxies to ITX POST /voting/poll/{poll_id}/end). Idempotent for an already-ended vote; a disabled vote returns 409.")
+		Description("End an active vote immediately (proxies to ITX POST /voting/poll/{poll_id}/end). Idempotent for an already-ended vote; a disabled vote returns 409. Ending preserves the vote and its results; to cancel and remove an active vote use delete_vote.")
 
 		Security(JWTAuth, func() {
 			Scope("manage:projects")

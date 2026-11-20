@@ -305,7 +305,7 @@ The service provides the following endpoints:
 - `POST /votes` - Create a new vote/poll
 - `GET /votes/{vote_uid}` - Get vote/poll details
 - `PUT /votes/{vote_uid}` - Update a vote/poll (only when status is "disabled")
-- `DELETE /votes/{vote_uid}` - Delete a vote/poll (only when status is "disabled")
+- `DELETE /votes/{vote_uid}` - Delete a draft vote/poll or cancel an active one (ended votes cannot be deleted)
 - `POST /votes/{vote_uid}/extend` - Extend a vote/poll end time
 - `POST /votes/{vote_uid}/end` - End an active vote/poll immediately
 - `POST /votes/{vote_uid}/enable` - Enable a vote/poll for voting
