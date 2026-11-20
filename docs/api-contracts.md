@@ -521,7 +521,7 @@ x-scope: manage:voting
 
 ---
 
-## DELETE /votes/{vote_uid} (Delete Vote)
+## DELETE /votes/{vote_uid} (Delete or Cancel Vote)
 
 ### LFXv2 Proxy API
 
@@ -545,7 +545,16 @@ Authorization: Bearer <heimdall-jwt-token>
 (empty body)
 ```
 
-**Note**: Deletion is only allowed when `status == "disabled"`
+**Behavior**:
+
+| Current vote state | Result |
+|---|---|
+| `disabled` (draft) | Deleted: `204 No Content`; no notices are sent |
+| `active` (before `end_time`) | Cancelled: `204 No Content`; the vote and its responses are permanently removed, recipients receive a cancellation email, and ITX removes the response records asynchronously |
+| `ended` (ended early manually or automatically, or past its `end_time`) | `400 Bad Request` passed through from ITX (`ended polls cannot be deleted`) |
+| Unknown vote | `404 Not Found` |
+
+Cancellation is irreversible. Unlike `POST /votes/{vote_uid}/end`, which preserves the vote and its results, it removes the vote. A draft past its `end_time` is still deletable, because ITX treats only non-draft votes past their `end_time` as ended. The authority is `writer` on `vote:{vote_uid}`: any user holding that relation can delete or cancel the vote, not only the user who created it, and ordinary voters cannot cancel it.
 
 ---
 
@@ -677,8 +686,10 @@ x-scope: manage:voting
 | Status | Can Update? | Can Delete? | Can Activate? | Description |
 |--------|-------------|-------------|---------------|-------------|
 | `disabled` | ✅ Yes | ✅ Yes | ✅ Yes | Initial state, not yet sent |
-| `active` | ❌ No | ❌ No | N/A | Currently accepting votes |
+| `active` | ❌ No | ✅ Yes (cancels) | N/A | Currently accepting votes |
 | `ended` | ❌ No | ❌ No | N/A | Voting period closed |
+
+Deleting an active vote cancels it (see [DELETE /votes/{vote_uid}](#delete-votesvote_uid-delete-or-cancel-vote)). `ended` includes votes ended early, manually or automatically, and votes past their `end_time`.
 
 ### Poll Types
 
@@ -808,6 +819,8 @@ Authorization: Bearer <heimdall-jwt-token>
 | `active` but already past its scheduled `end_time` | `400 Bad Request` passed through from ITX (`poll is already past its scheduled end time`) |
 
 Extending an ended vote reactivates it and clears `early_end_time` (see the `extend` section above). Status changes flow through the same NATS KV eventing path as any other status change.
+
+Ending keeps the vote and its results; to remove an active vote instead, cancel it with `DELETE /votes/{vote_uid}`.
 
 ---
 

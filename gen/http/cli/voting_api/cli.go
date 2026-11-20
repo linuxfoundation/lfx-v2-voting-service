@@ -305,9 +305,9 @@ func voteUsage() {
 	fmt.Fprintln(os.Stderr, `    create-vote: Create a new vote (proxies to ITX POST /voting/poll)`)
 	fmt.Fprintln(os.Stderr, `    get-vote: Get vote details (proxies to ITX GET /voting/poll/{poll_id})`)
 	fmt.Fprintln(os.Stderr, `    update-vote: Update vote (proxies to ITX PUT /voting/poll/{poll_id}). Only allowed when status is 'disabled'`)
-	fmt.Fprintln(os.Stderr, `    delete-vote: Delete vote (proxies to ITX DELETE /voting/poll/{poll_id}). Only allowed when status is 'disabled'`)
+	fmt.Fprintln(os.Stderr, `    delete-vote: Delete or cancel a vote (proxies to ITX DELETE /voting/poll/{poll_id}). A disabled (draft) vote is deleted. An active vote is cancelled: the vote and its responses are permanently removed, and recipients receive a cancellation notice; response cleanup runs asynchronously. Ended votes, whether closed early, closed automatically or past end_time, cannot be deleted; ITX returns 400 'ended polls cannot be deleted'. Requires writer on the vote.`)
 	fmt.Fprintln(os.Stderr, `    extend-vote: Extend a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)`)
-	fmt.Fprintln(os.Stderr, `    end-vote: End an active vote immediately (proxies to ITX POST /voting/poll/{poll_id}/end). Idempotent for an already-ended vote; a disabled vote returns 409.`)
+	fmt.Fprintln(os.Stderr, `    end-vote: End an active vote immediately (proxies to ITX POST /voting/poll/{poll_id}/end). Idempotent for an already-ended vote; a disabled vote returns 409. Ending preserves the vote and its results; to cancel and remove an active vote use delete_vote.`)
 	fmt.Fprintln(os.Stderr, `    enable-vote: Enable a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)`)
 	fmt.Fprintln(os.Stderr, `    bulk-resend-vote: Bulk resend vote email to select recipients (proxies to ITX POST /voting/poll/{poll_id}/bulk_resend)`)
 	fmt.Fprintln(os.Stderr, `    get-vote-results: Get vote results (proxies to ITX GET /voting/poll/{poll_id}/results)`)
@@ -393,7 +393,7 @@ func voteDeleteVoteUsage() {
 
 	// Description
 	fmt.Fprintln(os.Stderr)
-	fmt.Fprintln(os.Stderr, `Delete vote (proxies to ITX DELETE /voting/poll/{poll_id}). Only allowed when status is 'disabled'`)
+	fmt.Fprintln(os.Stderr, `Delete or cancel a vote (proxies to ITX DELETE /voting/poll/{poll_id}). A disabled (draft) vote is deleted. An active vote is cancelled: the vote and its responses are permanently removed, and recipients receive a cancellation notice; response cleanup runs asynchronously. Ended votes, whether closed early, closed automatically or past end_time, cannot be deleted; ITX returns 400 'ended polls cannot be deleted'. Requires writer on the vote.`)
 
 	// Flags list
 	fmt.Fprintln(os.Stderr, `    -uid STRING: Vote UID`)
@@ -435,7 +435,7 @@ func voteEndVoteUsage() {
 
 	// Description
 	fmt.Fprintln(os.Stderr)
-	fmt.Fprintln(os.Stderr, `End an active vote immediately (proxies to ITX POST /voting/poll/{poll_id}/end). Idempotent for an already-ended vote; a disabled vote returns 409.`)
+	fmt.Fprintln(os.Stderr, `End an active vote immediately (proxies to ITX POST /voting/poll/{poll_id}/end). Idempotent for an already-ended vote; a disabled vote returns 409. Ending preserves the vote and its results; to cancel and remove an active vote use delete_vote.`)
 
 	// Flags list
 	fmt.Fprintln(os.Stderr, `    -uid STRING: Vote UID`)

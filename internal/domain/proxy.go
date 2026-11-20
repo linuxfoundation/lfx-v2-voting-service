@@ -20,7 +20,7 @@ type PollClient interface {
 	// UpdatePoll updates a poll in ITX (only when status is "disabled")
 	UpdatePoll(ctx context.Context, pollID string, req *itx.UpdatePollRequest) (*itx.PollResponse, error)
 
-	// DeletePoll deletes a poll in ITX (only when status is "disabled")
+	// DeletePoll deletes a disabled poll or cancels an active one in ITX; ITX rejects ended polls with 400
 	DeletePoll(ctx context.Context, pollID string) error
 
 	// ExtendPoll extends a poll's end time in ITX
