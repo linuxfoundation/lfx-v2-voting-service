@@ -275,9 +275,11 @@ var VoteResult = Type("VoteResult", func() {
 	Attribute("num_winners", Int, "Number of winners. Absent when no winner count is stored upstream.")
 	Attribute("allow_abstain", Boolean, "Allow abstain")
 	Attribute("allow_vote_change", Boolean, "Whether voters may change a submitted ballot until the vote ends. "+
-		"Votes created before this setting existed report true.")
+		"Votes created before this setting existed report true.", func() {
+		Example(false)
+	})
 
-	Required("uid", "name", "description", "status", "project_uid", "committee_uid")
+	Required("uid", "name", "description", "status", "project_uid", "committee_uid", "allow_vote_change")
 })
 
 // PollQuestion represents a question in a vote
@@ -428,16 +430,23 @@ var VoteResponseResult = Type("VoteResponseResult", func() {
 
 	Attribute("project_uid", String, "Project identifier")
 	Attribute("vote_status", String, "Vote status", func() {
-		Example("submitted")
+		Example("responded")
 	})
-	Attribute("abstained", Boolean, "Whether the voter abstained")
+	Attribute("abstained", Boolean, "Whether the voter abstained", func() {
+		Example(false)
+	})
 	Attribute("allow_abstain", Boolean, "Whether abstention is allowed")
 	Attribute("allow_vote_change", Boolean, "Whether the vote lets voters change a submitted ballot until it ends. "+
-		"Votes created before this setting existed report true.")
+		"Votes created before this setting existed report true.", func() {
+		Example(false)
+	})
 	Attribute("can_change_vote", Boolean, "Whether this submitted ballot can still be changed with "+
-		"PUT /vote_responses/{vote_response_uid}. Omitted when ITX does not report it.")
+		"PUT /vote_responses/{vote_response_uid}. Omitted when ITX does not report it.", func() {
+		Example(false)
+	})
 	Attribute("would_end_vote", Boolean, "Whether submitting this pending ballot now would be the final response "+
-		"that ends the vote. False once a ballot is submitted, for removed voters, and when the vote is not active.", func() {
+		"that ends the vote. False once a ballot is submitted, for removed voters, and when the vote is not active. "+
+		"Also false when the vote's response counts cannot be read; the ballot is still returned.", func() {
 		Example(false)
 	})
 	Attribute("vote_creation_time", String, "Vote creation time", func() {
@@ -468,7 +477,8 @@ var VoteResponseResult = Type("VoteResponseResult", func() {
 		"the poll's comment prompts. Always an array (empty if the poll has no comment prompts "+
 		"or the voter left none).")
 
-	Required("vote_response_uid", "vote_uid", "project_uid", "vote_status", "comment_responses", "would_end_vote")
+	Required("vote_response_uid", "vote_uid", "project_uid", "vote_status", "comment_responses", "would_end_vote",
+		"allow_vote_change")
 })
 
 // VoteLinkBallotResult is what a personalized vote link holder may see: the vote's ballot
@@ -509,13 +519,16 @@ var VoteLinkBallotResult = Type("VoteLinkBallotResult", func() {
 	Attribute("num_winners", Int, "Number of winners. Absent when no winner count is stored upstream.")
 	Attribute("allow_abstain", Boolean, "Whether abstaining is allowed")
 	Attribute("allow_vote_change", Boolean, "Whether the vote lets voters change a submitted ballot until it ends. "+
-		"Votes created before this setting existed report true.")
+		"Votes created before this setting existed report true.", func() {
+		Example(false)
+	})
 	Attribute("pseudo_anonymity", Boolean, "Whether the vote is pseudo-anonymous; if so, ballot contents are never returned")
 	Attribute("poll_questions", ArrayOf(PollQuestion), "Vote questions with their choices")
 	Attribute("poll_comment_prompts", ArrayOf(PollCommentPrompt), "Comment prompts for the vote")
 	Attribute("ballot", VoteLinkBallot, "The link holder's own ballot")
 
-	Required("vote_uid", "project_uid", "name", "description", "status", "pseudo_anonymity", "ballot")
+	Required("vote_uid", "project_uid", "name", "description", "status", "pseudo_anonymity", "ballot",
+		"allow_vote_change")
 })
 
 // VoteLinkBallot is the link holder's own ballot state.
@@ -526,20 +539,36 @@ var VoteLinkBallot = Type("VoteLinkBallot", func() {
 		Example("awaiting_response")
 	})
 	Attribute("already_voted", Boolean, "True when a ballot has been submitted (vote_status responded, or ended after "+
-		"voting), so changes use PUT /vote_links/responses while the vote is active")
-	Attribute("voter_removed", Boolean, "True when the recipient was removed from the vote and can no longer vote")
+		"voting), so changes use PUT /vote_links/responses while the vote is active", func() {
+		Example(false)
+	})
+	Attribute("voter_removed", Boolean, "True when the recipient was removed from the vote and can no longer vote", func() {
+		Example(false)
+	})
 	Attribute("can_change_vote", Boolean, "Whether this submitted ballot can still be changed with "+
-		"PUT /vote_links/responses. Returned on pseudo-anonymous votes too; omitted when ITX does not report it.")
+		"PUT /vote_links/responses. Returned on pseudo-anonymous votes too; omitted when ITX does not report it.", func() {
+		Example(false)
+	})
 	Attribute("would_end_vote", Boolean, "Whether submitting this pending ballot now would be the final response "+
 		"that ends the vote. False once a ballot is submitted, for removed voters, and when the vote is not active. "+
 		"Returned on pseudo-anonymous votes too; response counts are never returned.", func() {
 		Example(false)
 	})
-	Attribute("abstained", Boolean, "Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.")
+	Attribute("abstained", Boolean, "Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.", func() {
+		Example(false)
+	})
 	Attribute("poll_answers", ArrayOf(VoteAnswer), "The submitted answers. Omitted on pseudo-anonymous votes and before voting.")
 	Attribute("comment_responses", ArrayOf(CommentResponse), "The submitted comments. Omitted on pseudo-anonymous votes and before voting.")
 
 	Required("vote_status", "already_voted", "voter_removed", "would_end_vote")
+
+	Example(map[string]any{
+		"vote_status":     "awaiting_response",
+		"already_voted":   false,
+		"voter_removed":   false,
+		"can_change_vote": false,
+		"would_end_vote":  false,
+	})
 })
 
 // VoteAnswer represents an answer to a poll question

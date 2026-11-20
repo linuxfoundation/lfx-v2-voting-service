@@ -1303,15 +1303,16 @@ it has at least one invitation, and `num_response_received + 1 >= total_voting_r
 This mirrors ITX's own auto-end check, which ends the vote once every invited voter has
 responded. The proxy computes it from ITX's poll counts. It is `false` for submitted ballots
 (changing a response never ends the vote), removed voters, and ended or disabled votes.
-It describes the moment of the read and can change if another voter responds or a voter
+When the proxy cannot read the vote's counts, it still returns the ballot, with
+`would_end_vote: false`. It describes the moment of the read and can change if another voter responds or a voter
 is added or removed afterwards.
 
 **Consistency and failure limits**: This is an advisory signal, not a reservation or a
 guarantee of closure. ITX's poll read recomputes `num_response_received` from non-removed
 submitted ballots using strongly consistent reads, and `total_voting_request_invitations`
 excludes removed voters. If ITX cannot reconcile the invitations with the vote index, the
-poll read fails (HTTP 500) rather than returning a stale count, and so does this ballot
-read. Auto-end uses the stored poll counter instead, and counters that drifted before the
+poll read fails (HTTP 500) rather than returning a stale count, and this ballot read then
+reports `would_end_vote: false` instead of failing. Auto-end uses the stored poll counter instead, and counters that drifted before the
 atomic membership-update fix are not repaired by a ballot read. If ITX saves a ballot but
 its separate response-count increment fails, the submission still succeeds (HTTP 201
 upstream), but the stored counter may prevent auto-end; the vote can remain open until its
@@ -1325,7 +1326,16 @@ final submit-time checks.
 
 **Endpoint**: `GET /v2/voting/vote/{vote_id}`
 
-For a pending ballot (`vote_status` `awaiting_response`, voter not removed), the proxy also calls `GET /v2/voting/poll/{poll_id}` to compute `would_end_vote`. If that call fails, the request fails with the ITX error (for example 404, 500 or 503). Other ballots skip it.
+For a pending ballot (`vote_status` `awaiting_response`, voter not removed), the proxy also calls
+`GET /v2/voting/poll/{poll_id}` to compute `would_end_vote`. Its advisory context deadline is
+at most five seconds after the lookup starts, capped at ten seconds from service entry
+(including the required ballot read and ID mapping). An earlier caller deadline shortens
+it further, reserving one second for the response; an exhausted advisory budget skips the
+call. If the lookup returns an error, including a context timeout, the proxy logs a warning
+and returns the ballot with `would_end_vote: false`. Other ballots skip it. These deadlines
+bound context-aware ITX HTTP work, not a wall-clock guarantee: existing OAuth token-renewal
+waits use a background context and can still outlast the advisory deadline. Required ballot
+reads and personalized vote-link reads retain their existing timeouts.
 
 **Headers**:
 

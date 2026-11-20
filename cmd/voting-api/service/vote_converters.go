@@ -142,7 +142,7 @@ func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *votesvc.VoteResult
 		NumResponseReceived:           utils.IntPtr(poll.NumResponseReceived),
 		PollType:                      poll.PollType,
 		AllowAbstain:                  utils.BoolPtr(poll.AllowAbstain),
-		AllowVoteChange:               utils.BoolPtr(itx.VoteChangeAllowed(poll.AllowVoteChange)),
+		AllowVoteChange:               itx.VoteChangeAllowed(poll.AllowVoteChange),
 	}
 	// num_winners is omitted when ITX stores none (it deserializes as 0) rather
 	// than surfacing a fabricated 0 to API clients; explicit values pass through.

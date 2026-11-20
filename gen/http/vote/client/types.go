@@ -554,7 +554,8 @@ type GetVoteResponseResponseBody struct {
 	CanChangeVote *bool `form:"can_change_vote,omitempty" json:"can_change_vote,omitempty" xml:"can_change_vote,omitempty"`
 	// Whether submitting this pending ballot now would be the final response that
 	// ends the vote. False once a ballot is submitted, for removed voters, and
-	// when the vote is not active.
+	// when the vote is not active. Also false when the vote's response counts
+	// cannot be read; the ballot is still returned.
 	WouldEndVote *bool `form:"would_end_vote,omitempty" json:"would_end_vote,omitempty" xml:"would_end_vote,omitempty"`
 	// Vote creation time
 	VoteCreationTime *string `form:"vote_creation_time,omitempty" json:"vote_creation_time,omitempty" xml:"vote_creation_time,omitempty"`
@@ -2268,7 +2269,7 @@ func NewCreateVoteVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResu
 		NumResponseReceived:           body.NumResponseReceived,
 		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
-		AllowVoteChange:               body.AllowVoteChange,
+		AllowVoteChange:               *body.AllowVoteChange,
 	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
@@ -2407,7 +2408,7 @@ func NewGetVoteVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
 		NumResponseReceived:           body.NumResponseReceived,
 		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
-		AllowVoteChange:               body.AllowVoteChange,
+		AllowVoteChange:               *body.AllowVoteChange,
 	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
@@ -2533,7 +2534,7 @@ func NewUpdateVoteVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
 		NumResponseReceived:           body.NumResponseReceived,
 		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
-		AllowVoteChange:               body.AllowVoteChange,
+		AllowVoteChange:               *body.AllowVoteChange,
 	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
@@ -2727,7 +2728,7 @@ func NewExtendVoteVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
 		NumResponseReceived:           body.NumResponseReceived,
 		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
-		AllowVoteChange:               body.AllowVoteChange,
+		AllowVoteChange:               *body.AllowVoteChange,
 	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
@@ -2855,7 +2856,7 @@ func NewEndVoteVoteResultOK(body *EndVoteResponseBody) *vote.VoteResult {
 		NumResponseReceived:           body.NumResponseReceived,
 		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
-		AllowVoteChange:               body.AllowVoteChange,
+		AllowVoteChange:               *body.AllowVoteChange,
 	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
@@ -3276,7 +3277,7 @@ func NewGetVoteResponseVoteResponseResultOK(body *GetVoteResponseResponseBody) *
 		VoteStatus:             *body.VoteStatus,
 		Abstained:              body.Abstained,
 		AllowAbstain:           body.AllowAbstain,
-		AllowVoteChange:        body.AllowVoteChange,
+		AllowVoteChange:        *body.AllowVoteChange,
 		CanChangeVote:          body.CanChangeVote,
 		WouldEndVote:           *body.WouldEndVote,
 		VoteCreationTime:       body.VoteCreationTime,
@@ -3635,7 +3636,7 @@ func NewGetVoteBallotByLinkVoteLinkBallotResultOK(body *GetVoteBallotByLinkRespo
 		EarlyEndTime:    body.EarlyEndTime,
 		NumWinners:      body.NumWinners,
 		AllowAbstain:    body.AllowAbstain,
-		AllowVoteChange: body.AllowVoteChange,
+		AllowVoteChange: *body.AllowVoteChange,
 		PseudoAnonymity: *body.PseudoAnonymity,
 	}
 	if body.PollType != nil {
@@ -3822,6 +3823,9 @@ func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
+	if body.AllowVoteChange == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("allow_vote_change", "body"))
+	}
 	if body.UID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
@@ -3889,6 +3893,9 @@ func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
 	}
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
+	}
+	if body.AllowVoteChange == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("allow_vote_change", "body"))
 	}
 	if body.UID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
@@ -3958,6 +3965,9 @@ func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
+	if body.AllowVoteChange == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("allow_vote_change", "body"))
+	}
 	if body.UID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
@@ -4026,6 +4036,9 @@ func ValidateExtendVoteResponseBody(body *ExtendVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
+	if body.AllowVoteChange == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("allow_vote_change", "body"))
+	}
 	if body.UID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
@@ -4093,6 +4106,9 @@ func ValidateEndVoteResponseBody(body *EndVoteResponseBody) (err error) {
 	}
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
+	}
+	if body.AllowVoteChange == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("allow_vote_change", "body"))
 	}
 	if body.UID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
@@ -4191,6 +4207,9 @@ func ValidateGetVoteResponseResponseBody(body *GetVoteResponseResponseBody) (err
 	if body.WouldEndVote == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("would_end_vote", "body"))
 	}
+	if body.AllowVoteChange == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("allow_vote_change", "body"))
+	}
 	if body.VoteResponseUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_response_uid", *body.VoteResponseUID, goa.FormatUUID))
 	}
@@ -4240,6 +4259,9 @@ func ValidateGetVoteBallotByLinkResponseBody(body *GetVoteBallotByLinkResponseBo
 	}
 	if body.Ballot == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("ballot", "body"))
+	}
+	if body.AllowVoteChange == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("allow_vote_change", "body"))
 	}
 	if body.VoteUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))

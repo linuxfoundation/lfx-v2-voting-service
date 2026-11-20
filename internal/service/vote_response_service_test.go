@@ -13,6 +13,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
@@ -187,13 +188,12 @@ func TestWouldEndVote(t *testing.T) {
 func TestGetVoteResponse_WouldEndVote(t *testing.T) {
 	lastVoterPoll := &itx.PollResponse{PollID: "vote-1", Status: itx.PollStatusActive, NumResponseReceived: 8, TotalVotingRequestInvitations: 9}
 	cases := []struct {
-		name            string
-		ballot          *itx.VoteResponse
-		pollErr         error
-		noReader        bool
-		want            bool
-		wantUnavailable bool
-		wantPollID      string
+		name       string
+		ballot     *itx.VoteResponse
+		pollErr    error
+		noReader   bool
+		want       bool
+		wantPollID string
 	}{
 		{
 			name:       "pending last voter",
@@ -210,17 +210,17 @@ func TestGetVoteResponse_WouldEndVote(t *testing.T) {
 			ballot: &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusAwaitingResponse, VoterRemoved: true},
 		},
 		{
-			name:            "poll read fails",
-			ballot:          &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusAwaitingResponse},
-			pollErr:         domain.NewUnavailableError("ITX down"),
-			wantUnavailable: true,
-			wantPollID:      "vote-1",
+			name:       "poll read fails",
+			ballot:     &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusAwaitingResponse},
+			pollErr:    domain.NewUnavailableError("ITX down"),
+			want:       false,
+			wantPollID: "vote-1",
 		},
 		{
-			name:            "no poll reader",
-			ballot:          &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusAwaitingResponse},
-			noReader:        true,
-			wantUnavailable: true,
+			name:     "no poll reader",
+			ballot:   &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusAwaitingResponse},
+			noReader: true,
+			want:     false,
 		},
 	}
 	for _, tc := range cases {
@@ -236,10 +236,6 @@ func TestGetVoteResponse_WouldEndVote(t *testing.T) {
 			if polls.requested != tc.wantPollID {
 				t.Errorf("poll requested = %q, want %q", polls.requested, tc.wantPollID)
 			}
-			if tc.wantUnavailable {
-				assertErrorType(t, err, domain.ErrorTypeUnavailable)
-				return
-			}
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -248,6 +244,58 @@ func TestGetVoteResponse_WouldEndVote(t *testing.T) {
 			}
 			if got.Ballot != tc.ballot {
 				t.Error("Ballot must be the ballot read from ITX")
+			}
+		})
+	}
+}
+
+// advisoryPollReader lets timeout tests inspect and wait on the poll-only context.
+type advisoryPollReader struct {
+	domain.PollClient
+	read func(context.Context, string) (*itx.PollResponse, error)
+}
+
+func (r *advisoryPollReader) GetPoll(ctx context.Context, pollID string) (*itx.PollResponse, error) {
+	return r.read(ctx, pollID)
+}
+
+func TestGetVoteResponse_AdvisoryDeadline(t *testing.T) {
+	for _, timeout := range []time.Duration{0, 2 * time.Second, 500 * time.Millisecond} {
+		t.Run(timeout.String(), func(t *testing.T) {
+			ctx := ctxWithPrincipal("user")
+			if timeout > 0 {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithTimeout(ctx, timeout)
+				defer cancel()
+			}
+			ballot := &itx.VoteResponse{VoteID: "ballot-1", PollID: "vote-1", VoteStatus: itx.VoteStatusAwaitingResponse}
+			called := false
+			var advisoryCtx context.Context
+			polls := &advisoryPollReader{read: func(pollCtx context.Context, pollID string) (*itx.PollResponse, error) {
+				called = true
+				advisoryCtx = pollCtx
+				assert.Equal(t, "vote-1", pollID)
+				deadline, ok := pollCtx.Deadline()
+				require.True(t, ok, "an advisory call must always have a deadline")
+				assert.LessOrEqual(t, time.Until(deadline), advisoryPollTimeout)
+				if parent, ok := ctx.Deadline(); ok {
+					assert.Equal(t, parent.Add(-advisoryResponseReserve), deadline)
+					<-pollCtx.Done()
+					assert.ErrorIs(t, pollCtx.Err(), context.DeadlineExceeded)
+				}
+				return nil, context.DeadlineExceeded
+			}}
+			svc := NewVoteResponseService(nil, &ballotVoteClient{ballot: ballot}, identityIDMapper{}, discardLogger(), WithPollReader(polls))
+
+			got, err := svc.GetVoteResponse(ctx, "ballot-1")
+
+			require.NoError(t, err)
+			assert.Same(t, ballot, got.Ballot)
+			assert.False(t, got.WouldEndVote)
+			assert.NoError(t, ctx.Err(), "the advisory timeout must not cancel the caller")
+			assert.Equal(t, timeout != 500*time.Millisecond, called, "skip the advisory read when only the response reserve remains")
+			if advisoryCtx != nil {
+				assert.Error(t, advisoryCtx.Err(), "release the child context after the call")
 			}
 		})
 	}

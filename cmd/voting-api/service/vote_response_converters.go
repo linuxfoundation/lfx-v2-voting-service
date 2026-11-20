@@ -178,7 +178,7 @@ func ConvertVoteResponseToResult(resp *itx.VoteResponse) *votesvc.VoteResponseRe
 		VoteStatus:             resp.VoteStatus,
 		Abstained:              utils.BoolPtr(resp.Abstained),
 		AllowAbstain:           utils.BoolPtr(resp.AllowAbstain),
-		AllowVoteChange:        utils.BoolPtr(itx.VoteChangeAllowed(resp.AllowVoteChange)),
+		AllowVoteChange:        itx.VoteChangeAllowed(resp.AllowVoteChange),
 		CanChangeVote:          resp.CanChangeVote,
 		VoteCreationTime:       &resp.VoteCreationTime,
 		UserName:               &resp.UserName,
@@ -295,7 +295,7 @@ func ConvertVoteLinkBallotToResult(b *service.VoteLinkBallot) *votesvc.VoteLinkB
 		PollType:     poll.PollType,
 		AllowAbstain: utils.BoolPtr(poll.AllowAbstain),
 		// Legacy polls without the setting allow changes, as ITX resolves them.
-		AllowVoteChange: utils.BoolPtr(itx.VoteChangeAllowed(poll.AllowVoteChange)),
+		AllowVoteChange: itx.VoteChangeAllowed(poll.AllowVoteChange),
 		// An unknown flag is reported as pseudo-anonymous, matching the service's fail-closed
 		// handling of ballot contents.
 		PseudoAnonymity:    poll.PseudoAnonymity || !poll.PseudoAnonymityKnown,

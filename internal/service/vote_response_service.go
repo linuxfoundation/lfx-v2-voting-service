@@ -6,11 +6,18 @@ package service
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 	"goa.design/goa/v3/security"
+)
+
+const (
+	advisoryPollTimeout     = 5 * time.Second
+	advisoryBallotBudget    = 10 * time.Second
+	advisoryResponseReserve = time.Second
 )
 
 // VoteResponseService implements vote response business logic
@@ -35,9 +42,10 @@ func WithVoteLinkVerifier(signer domain.VoteLinkSigner) VoteResponseServiceOptio
 }
 
 // WithPollReader lets the service read the vote itself (questions, choices, status and
-// response counts) from ITX. The personalized vote link ballot read always needs it, and the
-// authenticated ballot read (GET /vote_responses/{uid}) needs it for pending ballots. Without
-// it, GetBallotByLink and GetVoteResponse for a pending ballot return 503.
+// response counts) from ITX. The personalized vote link ballot read always needs it: without
+// it, GetBallotByLink returns 503. The authenticated ballot read (GET /vote_responses/{uid})
+// uses it to compute WouldEndVote for pending ballots: without it, GetVoteResponse still
+// returns the ballot but reports WouldEndVote false.
 func WithPollReader(polls domain.PollClient) VoteResponseServiceOption {
 	return func(s *VoteResponseService) {
 		s.pollReader = polls
@@ -191,8 +199,10 @@ func (s *VoteResponseService) submitVoteResponse(ctx context.Context, req *Creat
 
 // GetVoteResponse retrieves vote response details (proxies to ITX GET /voting/vote/{vote_id}).
 // For a pending ballot it also reads the vote (ITX GET /voting/poll/{poll_id}) to tell whether
-// this ballot is the last one outstanding; a failed vote read fails the request.
+// this ballot is the last one outstanding; a failed or timed-out advisory vote read
+// reports WouldEndVote false instead of failing the request.
 func (s *VoteResponseService) GetVoteResponse(ctx context.Context, voteID string) (*VoteResponseDetails, error) {
+	started := time.Now()
 	principal, err := requirePrincipal(ctx)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
@@ -216,17 +226,36 @@ func (s *VoteResponseService) GetVoteResponse(ctx context.Context, voteID string
 
 	details := &VoteResponseDetails{Ballot: voteResp}
 	// Submitted and removed ballots can never end the vote, so they skip the extra ITX read.
+	// The check only drives a warning, so a failed vote read leaves WouldEndVote false.
 	if isPendingBallot(voteResp) {
 		if s.pollReader == nil {
-			s.logger.WarnContext(ctx, "Pending ballot requested but no poll reader is configured")
-			return nil, domain.NewUnavailableError("vote reads are not configured")
+			s.logger.WarnContext(ctx, "Pending ballot requested but no poll reader is configured; reporting would_end_vote false",
+				"vote_uid", voteResp.PollID)
+		} else {
+			// Bound only the advisory lookup. Required reads above keep their original
+			// context, but consume this budget too, leaving room under the server's
+			// 15-second write timeout for conversion and delivery of the loaded ballot.
+			deadline := started.Add(advisoryBallotBudget)
+			if limit := time.Now().Add(advisoryPollTimeout); limit.Before(deadline) {
+				deadline = limit
+			}
+			if parent, ok := ctx.Deadline(); ok && parent.Add(-advisoryResponseReserve).Before(deadline) {
+				deadline = parent.Add(-advisoryResponseReserve)
+			}
+			pollCtx, cancel := context.WithDeadline(ctx, deadline)
+			var poll *itx.PollResponse
+			err := pollCtx.Err()
+			if err == nil {
+				poll, err = s.pollReader.GetPoll(pollCtx, voteResp.PollID)
+			}
+			cancel()
+			if err != nil {
+				s.logger.WarnContext(ctx, "Failed to get vote from ITX; reporting would_end_vote false",
+					"vote_uid", voteResp.PollID, "error", err)
+			} else {
+				details.WouldEndVote = wouldEndVote(poll, voteResp)
+			}
 		}
-		poll, err := s.pollReader.GetPoll(ctx, voteResp.PollID)
-		if err != nil {
-			s.logger.ErrorContext(ctx, "Failed to get vote from ITX", "error", err)
-			return nil, err
-		}
-		details.WouldEndVote = wouldEndVote(poll, voteResp)
 	}
 
 	s.logger.InfoContext(ctx, "Vote response retrieved successfully", "vote_id", voteResp.VoteID)
