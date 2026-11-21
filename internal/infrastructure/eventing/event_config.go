@@ -7,13 +7,15 @@ import "time"
 
 // Config holds the configuration for the event processor
 type Config struct {
-	NATSURL        string
-	ConsumerName   string
-	StreamName     string
-	FilterSubjects []string
-	MaxDeliver     int
-	AckWait        time.Duration
-	MaxAckPending  int
+	// StateDatabaseURL addresses the service-owned verified PG event state.
+	StateDatabaseURL string
+	NATSURL          string
+	ConsumerName     string
+	StreamName       string
+	FilterSubjects   []string
+	MaxDeliver       int
+	AckWait          time.Duration
+	MaxAckPending    int
 	// ParticipantGrantsEnabled turns on writing vote `participant` tuples (see WithParticipantGrants).
 	ParticipantGrantsEnabled bool
 }

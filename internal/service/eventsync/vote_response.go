@@ -142,7 +142,8 @@ func voteResponseResource() *resource[domain.VoteResponseData] {
 				logger.ErrorContext(ctx, "vote response missing required parent vote ID")
 				return outcome(Ack) // permanent: ACK and skip
 			}
-			if s.deps.Mappings.State(ctx, domain.MappingKindVote, v.PollID) == domain.MappingAbsent {
+			parentState := s.deps.Mappings.State(ctx, domain.MappingKindVote, v.PollID)
+			if parentState == domain.MappingAbsent || parentState == domain.MappingUnavailable {
 				logger.InfoContext(ctx, "parent vote not found in mappings, will retry vote response sync")
 				return outcome(Retry) // parent vote hasn't been processed yet
 			}
@@ -167,10 +168,32 @@ func voteResponseResource() *resource[domain.VoteResponseData] {
 		publish: func(ctx context.Context, pub domain.EventPublisher, action string, v *domain.VoteResponseData) error {
 			return pub.PublishVoteResponseEvent(ctx, action, v)
 		},
-		afterPublish: func(ctx context.Context, s *Syncer, logger *slog.Logger, action indexerConstants.MessageAction, v *domain.VoteResponseData) {
-			if s.deps.Inviter != nil && shouldSendVoteResponseInvite(action, v.Username, v.UserEmail) {
-				s.deps.Inviter.MaybeInvite(ctx, logger, v.UID, v.UserEmail, v.UserName, v.PollID)
+		beforeMark: func(ctx context.Context, s *Syncer, logger *slog.Logger, action indexerConstants.MessageAction, v *domain.VoteResponseData) *Outcome {
+			if s.deps.Inviter != nil && strings.TrimSpace(v.Username) == "" && strings.TrimSpace(v.UserEmail) != "" {
+				if _, err := s.deps.Inviter.PrepareInvite(ctx, v.UID, shouldSendVoteResponseInvite(action, v.Username, v.UserEmail)); err != nil {
+					logger.With(errKey, err).WarnContext(ctx, "failed to prepare invitation intent; retrying")
+					return outcome(Retry)
+				}
+			} else if s.deps.Inviter != nil {
+				if err := s.deps.Inviter.ResolveInvite(ctx, v.UID); err != nil {
+					logger.With(errKey, err).WarnContext(ctx, "failed to resolve terminal invitation intent; retrying")
+					return outcome(Retry)
+				}
 			}
+			return nil
+		},
+		afterPublish: func(ctx context.Context, s *Syncer, logger *slog.Logger, action indexerConstants.MessageAction, v *domain.VoteResponseData) *Outcome {
+			if s.deps.Inviter != nil && strings.TrimSpace(v.Username) == "" && strings.TrimSpace(v.UserEmail) != "" {
+				eligible, err := s.deps.Inviter.PrepareInvite(ctx, v.UID, false)
+				if err != nil {
+					logger.With(errKey, err).WarnContext(ctx, "failed to read invitation intent; retrying")
+					return outcome(Retry)
+				}
+				if eligible && s.deps.Inviter.MaybeInvite(ctx, logger, v.UID, v.UserEmail, v.UserName, v.PollID) {
+					return outcome(Retry)
+				}
+			}
+			return nil
 		},
 		deleteItem: func(ctx context.Context, logger *slog.Logger, uid string, value []byte) *domain.VoteResponseData {
 			item := &domain.VoteResponseData{UID: uid, VoteID: uid}

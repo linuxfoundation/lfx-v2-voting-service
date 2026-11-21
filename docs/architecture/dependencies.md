@@ -74,7 +74,7 @@ NATS is used for four distinct purposes, each with different interaction pattern
 | **Used by** | `internal/infrastructure/idmapper/nats_mapper.go` |
 | **Subject** | `lfx.lookup_v1_mapping` |
 | **Pattern** | Request/reply with 5-second timeout — sends a key string, receives the mapped ID |
-| **Note** | The mapper sends to an external responder over NATS; it does **not** access the `v1-mappings` KV bucket directly. The `v1-mappings` bucket is used separately by the event processor for create/update/delete tracking (section 4a). |
+| **Note** | The mapper sends to an external responder over NATS; it does **not** access the `v1-mappings` KV bucket directly. Event processing state is separately stored in voting-owned PG, not in canonical helper mappings. |
 | **Config env vars** | `NATS_URL`, `ID_MAPPING_DISABLED` |
 | **Architectural implication** | Used on synchronous HTTP requests that translate project or committee UIDs. When NATS mapping is unavailable (and not disabled), the following calls fail: `CreateVote`, `GetVote`, `UpdateVote`, `ExtendVote`, `CreateVoteResponse`, `GetVoteResponse`, `UpdateVoteResponse`. Operations that pass a vote ID directly to ITX without UID translation (`DeleteVote`, `EnableVote`, `BulkResendVote`, `GetVoteResults`) continue to work. |
 
@@ -85,7 +85,7 @@ NATS is used for four distinct purposes, each with different interaction pattern
 | **Purpose** | Forwards transformed v2 data to indexer-service and fga-sync |
 | **Used by** | `internal/infrastructure/eventing/nats_publisher.go` |
 | **Subjects** | `lfx.index.vote`, `lfx.index.vote_response`, `lfx.index.vote_result` (indexer); `lfx.fga-sync.update_access`, `lfx.fga-sync.delete_access` (FGA) |
-| **Pattern** | Fire-and-forget; no response expected |
+| **Pattern** | Core NATS publish plus server flush; no downstream processing acknowledgment or atomic index/FGA transaction |
 | **OTel** | Trace context is injected into NATS message headers via W3C TraceContext propagation |
 
 #### 4d. Invite / user lookup (request/reply, optional)
@@ -200,8 +200,8 @@ The service runs in the `lfx` Kubernetes namespace. Deployment manifests live in
 
 ## Documentation Gaps
 
-- The exact ownership and schema of the `v1-mappings` NATS KV bucket (which services write to it
-  besides this one, and what the full key namespace is) is not documented in this repo.
+- Other legacy `v1-mappings` owners are external. Voting's state schema, verified
+  cutover and recovery are documented in [event-state-postgres.md](../event-state-postgres.md).
 - The Meltano pipeline that mirrors v1 DynamoDB data into the `v1-objects` KV bucket is an
   external system not documented here. Its behavior explains why numeric fields may arrive as
   strings (DynamoDB Decimal → Meltano string serialization).

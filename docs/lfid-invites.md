@@ -27,31 +27,38 @@ eventsync vote response update
   [index + FGA sync]
         │
         ▼
-shouldSendVoteResponseInvite?
-  • ActionCreated
+New or retained invitation intent?
+  • first processing records eligibility before processed state
+  • updated redelivery resumes unresolved intent only
   • username == ""
   • email != ""
         │ yes
         ▼
 VoteResponseInviteHandler.MaybeInvite
   1. Check invite-sent marker  ──── already sent? → skip
-     (v1-mappings: v1_vote_response_lfid_invite_sent.{uid})
-  2. UsernameByEmail via NATS  ──── has LFID? → skip
+      (Postgres: voting_invitation_guards, response_id={uid})
+   2. UsernameByEmail via NATS  ──── has LFID? → resolve intent, skip
      (lfx.auth-service.email_to_username)          transient error? → proceed (best-effort)
   3. Resolve vote name from KV ──── not found? → skip
      (v1-objects: itx-poll.{poll_id})
-  4. Write "pending" invite marker
+   4. Create-only pending PG guard (lost claim → skip; storage failure → retry)
   5. lfx.invite-service.send_invite
      • resource.type = vote
      • role = Voter
      • return_url = {LFX_SELF_SERVE_BASE_URL}/votes/{poll_id}
      • expiration_days = 30
-  6. Update marker with invite UID (best-effort)
+   6. Complete PG guard with invite UID using the claimed revision
 ```
 
 **Idempotency**: The invite-sent marker (step 1) is written before `SendInvite` is called (step 4), using the value `"pending"`. This prevents a concurrent redelivery from sending a duplicate invite during the `SendInvite` round-trip. After success, the marker is updated with the actual invite UID.
 
-**Best-effort contract**: All invite operations are best-effort. Errors are logged and never cause the KV message to be NAK'd or retried — the indexing and FGA sync have already completed successfully at this point.
+**Recovery contract**: Pre-dispatch state/intent/guard failures NAK for durable
+retry. `voting_invitation_intents` retains new-response eligibility even when
+redelivery is classified as updated; historical imports have no intent. Existing
+LFID, absent recipient or populated username resolves intent durably, so a later
+email edit cannot reactivate it. Uncertain name lookup remains recoverable rather
+than being treated as terminal. Send/completion ambiguity retains its guard for
+manual reconciliation, never automatic expiry/resend. See [PG state and recovery](event-state-postgres.md).
 
 ### Path 2 — Invite acceptance enrichment (independent subscriber)
 
@@ -83,9 +90,12 @@ The enrichment subscriber runs regardless of whether `EVENT_PROCESSING_ENABLED` 
 | `lfx.invite-service.invite_accepted` | inbound (subscribe) | Receive notification when a participant accepts an invite |
 | `lfx.auth-service.email_to_username` | outbound (request/reply) | Look up LFX username by email before sending an invite |
 
-## KV Markers
+## Postgres Invitation State
 
-All markers are stored in the `v1-mappings` NATS KV bucket.
+`voting_invitation_guards` stores response IDs, pending/sent state, invite IDs and
+CAS revisions. `voting_invitation_intents` stores eligibility and terminal
+resolution. Neither table persists recipient data. The old key below is only a
+compatibility encoding; runtime never opens the `v1-mappings` bucket.
 
 | Key pattern | Value | Purpose |
 |-------------|-------|---------|

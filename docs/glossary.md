@@ -25,7 +25,7 @@ Terms specific to the LFX Voting Service. For general platform terms (Goa, NATS,
 | **vote vs. poll** | This service calls the resource a **vote**; ITX calls the same resource a **poll**. The proxy translates between `vote_uid` ↔ `poll_id`, `/votes` ↔ `/v2/voting/poll`, etc. everywhere. |
 | **vote response** | A submitted ballot — one voter's answers to a vote. Called a **vote** in the ITX API (confusingly), but a **vote response** in LFXv2. |
 | **vote link** | A personalized, HMAC-signed URL (`/votes/{vote_uid}#vote_token=...`) emailed by bulk resend with `personalized_links: true`. Its token authorizes one recipient to submit or update their own vote response without logging in. See [vote-links.md](vote-links.md). |
-| **Tombstone** | A marker value (`!del`) written to the `v1-mappings` NATS KV bucket when a vote or vote response is deleted. Prevents duplicate delete events from being re-published to downstream services on redelivery. |
+| **Tombstone** | Deleted state retained in voting-owned Postgres (compatibility encoding `!del`). Prevents duplicate delete publication on redelivery; source-revision checks also reject obsolete deletions after restores. |
 
 ---
 

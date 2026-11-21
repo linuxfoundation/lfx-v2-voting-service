@@ -45,6 +45,13 @@ spec:
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           env:
+            {{- if .Values.eventStateDatabase.secretName }}
+            - name: VOTING_STATE_DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.eventStateDatabase.secretName | quote }}
+                  key: {{ .Values.eventStateDatabase.secretKey | quote }}
+            {{- end }}
             {{- range $key, $value := .Values.app.environment }}
             - name: {{ $key }}
               {{- if $value.value }}

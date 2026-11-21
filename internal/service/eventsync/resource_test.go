@@ -4,8 +4,10 @@
 package eventsync
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
@@ -55,6 +57,50 @@ func TestIsTransientError(t *testing.T) {
 		result := isTransientError(err)
 		assert.True(t, result)
 	})
+}
+
+type mutableSourceFence struct{ current bool }
+
+func (f *mutableSourceFence) Current(context.Context) (bool, error) { return f.current, nil }
+
+func TestResourceStaleRetries(t *testing.T) {
+	for _, oldDelete := range []bool{true, false} {
+		t.Run(fmt.Sprintf("oldDelete=%t", oldDelete), func(t *testing.T) {
+			h := newHarness(t, withNoInviter())
+			fence := &mutableSourceFence{current: true}
+			ctx := domain.WithSourceFence(context.Background(), fence)
+			put := putJSON(t, "itx-poll.one", votePayload("one"))
+			del := hardDelete("itx-poll.one")
+			old, newer := put, del
+			if oldDelete {
+				old, newer = del, put
+			}
+			h.store.PutErr = domain.NewUnavailableError("state unavailable")
+			require.Equal(t, Retry, h.syncer.Sync(ctx, old))
+			h.store.PutErr = nil
+			require.Equal(t, Ack, h.syncer.Sync(context.Background(), newer))
+			fence.current = false
+			require.Equal(t, Ack, h.syncer.Sync(ctx, old))
+			require.Len(t, h.pub.publishedVotes, 2, "old retry cannot republish")
+			want := domain.MappingTombstoned
+			if oldDelete {
+				want = domain.MappingSynced
+			}
+			require.Equal(t, want, voteState(h, "one"))
+		})
+	}
+}
+
+func TestResourceRecoveryBeyondFormerBudget(t *testing.T) {
+	h := newHarness(t, withNoInviter())
+	entry := putJSON(t, "itx-poll.one", votePayload("one"))
+	h.store.PutErr = domain.NewUnavailableError("state unavailable")
+	for range 4 {
+		require.Equal(t, Retry, h.sync(entry))
+	}
+	h.store.PutErr = nil
+	require.Equal(t, Ack, h.sync(entry))
+	require.Equal(t, domain.MappingSynced, voteState(h, "one"))
 }
 
 func TestDecodeRecord(t *testing.T) {

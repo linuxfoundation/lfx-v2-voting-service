@@ -109,7 +109,7 @@ sequenceDiagram
     participant Router as kvMessageHandler (NATS adapter)
     participant Handler as eventsync.Syncer<br/>(vote / vote_response / vote_result specs)
     participant IDMap as ID Mapper (NATS)
-    participant Mappings as NATS KV: v1-mappings
+    participant Mappings as Voting-owned Postgres
     participant Pub as NATSPublisher
     participant Indexer as indexer-service
     participant FGA as fga-sync
@@ -120,7 +120,7 @@ sequenceDiagram
     Handler->>Handler: route by key prefix<br/>(itx-poll.* / itx-poll-vote.* / itx-poll-results.*)
     Handler->>Handler: decode payload (JSON or msgpack)
     Handler->>Handler: unmarshal into PollDBRaw / VoteDBRaw / PollResultDBRaw<br/>(custom UnmarshalJSON: coerce string→int)
-    Handler->>Mappings: get v1-mappings key → determine create vs update
+    Handler->>Mappings: read processed state → determine create vs update
     Handler->>IDMap: MapProjectV1ToV2(projectSFID)
     IDMap-->>Handler: v2 projectUID
     Handler->>IDMap: MapCommitteeV1ToV2(committeeSFID)
@@ -155,7 +155,7 @@ This flow runs inside the vote-response event handler after the response is publ
 ```mermaid
 sequenceDiagram
     participant Handler as VoteResponseInviteHandler
-    participant Mappings as NATS KV: v1-mappings
+    participant Mappings as Voting-owned Postgres
     participant V1KV as NATS KV: v1-objects
     participant AuthSvc as auth-service (NATS)
     participant InviteSvc as invite-service (NATS)
@@ -166,12 +166,13 @@ sequenceDiagram
     AuthSvc-->>Handler: username or "not found"
     Handler->>Handler: skip if user already has LFID
     Handler->>V1KV: get itx-poll.{poll_id} → read vote name
+    Handler->>Mappings: create pending guard (one dispatcher)
     Handler->>InviteSvc: lfx.invite-service.send_invite
-    Handler->>Mappings: store invite_sent marker (best-effort)
+    Handler->>Mappings: complete guard using claimed revision (best-effort)
 ```
 
-All invite steps are best-effort. Errors are logged but do not cause the parent KV message to be
-NAK'd.
+Pre-dispatch state/intent/guard failures NAK. Ambiguous send/completion retains
+claims without automatic resend; terminal no-invite decisions resolve eligibility.
 
 **Evidence:** `cmd/voting-api/eventing/vote_response_invite.go`,
 `cmd/voting-api/eventing/invite_config.go`, `docs/lfid-invites.md`
@@ -235,5 +236,5 @@ sequenceDiagram
   prolonged NATS unavailability is not tested or documented.
 - There is no documented flow for what happens when the ITX API returns a non-standard error body
   that doesn't contain `message` or `error` JSON fields.
-- The `v1-mappings` KV bucket is written by this service but may also be written by other services.
+- Voting runtime writes only voting-owned PG state; the shared legacy bucket is read only by explicit offline migration tooling.
   The full lifecycle of this bucket is not documented here.

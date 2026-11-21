@@ -12,11 +12,13 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/cmd/voting-api/eventing"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
+	"github.com/linuxfoundation/lfx-v2-voting-service/internal/infrastructure/eventstate"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/vmihailenco/msgpack/v5"
 )
@@ -120,7 +122,23 @@ type result struct {
 //
 // A read that fails for any reason other than "not found" aborts the run with an error, so an
 // operator never mistakes a partial run for a complete one.
-func reindex(ctx context.Context, js jetstream.JetStream, opts options, logger *slog.Logger) (*result, error) {
+func reindexPostgres(ctx context.Context, js jetstream.JetStream, opts options, logger *slog.Logger) (*result, error) {
+	state, err := eventstate.Open(ctx, os.Getenv("VOTING_STATE_DATABASE_URL"))
+	if err != nil {
+		return nil, err
+	}
+	defer state.Close()
+	if err := state.Ready(ctx); err != nil {
+		return nil, err
+	}
+	return reindexWithState(ctx, js, opts, logger, state)
+}
+
+type mappingReader interface {
+	Get(context.Context, string) (jetstream.KeyValueEntry, error)
+}
+
+func reindexWithState(ctx context.Context, js jetstream.JetStream, opts options, logger *slog.Logger, mappingsKV mappingReader) (*result, error) {
 	// Documents already on vote_response#auditor still hold ballot data, so skipping them would
 	// leave the remediation pass incomplete while reporting success.
 	if opts.PseudoAnonymousOnly && opts.SkipReindexed {
@@ -134,11 +152,6 @@ func reindex(ctx context.Context, js jetstream.JetStream, opts options, logger *
 	if err != nil {
 		return nil, fmt.Errorf("failed to access %s KV bucket: %w", eventing.V1ObjectsBucket, err)
 	}
-	mappingsKV, err := js.KeyValue(ctx, eventing.V1MappingsBucket)
-	if err != nil {
-		return nil, fmt.Errorf("failed to access %s KV bucket: %w", eventing.V1MappingsBucket, err)
-	}
-
 	client := opts.HTTPClient
 	if client == nil {
 		client = &http.Client{Timeout: 30 * time.Second}
@@ -197,14 +210,15 @@ func reindex(ctx context.Context, js jetstream.JetStream, opts options, logger *
 }
 
 type runner struct {
-	objectsKV, mappingsKV jetstream.KeyValue
-	opts                  options
-	res                   *result
-	logger                *slog.Logger
-	tick                  <-chan time.Time
-	seen                  map[string]bool
-	parentOK              map[string]bool
-	pseudoOK              map[string]bool
+	objectsKV  jetstream.KeyValue
+	mappingsKV mappingReader
+	opts       options
+	res        *result
+	logger     *slog.Logger
+	tick       <-chan time.Time
+	seen       map[string]bool
+	parentOK   map[string]bool
+	pseudoOK   map[string]bool
 }
 
 // process handles one indexed document: it applies every skip rule and, for an eligible record,
@@ -377,7 +391,7 @@ var readRetryDelays = []time.Duration{250 * time.Millisecond, time.Second, 3 * t
 
 // getEntry reads a key, reporting a missing key as found=false. Any other failure is retried
 // (see readRetryDelays) and, if it persists, returned as an error.
-func getEntry(ctx context.Context, kv jetstream.KeyValue, key string, logger *slog.Logger) (jetstream.KeyValueEntry, bool, error) {
+func getEntry(ctx context.Context, kv mappingReader, key string, logger *slog.Logger) (jetstream.KeyValueEntry, bool, error) {
 	for attempt := 0; ; attempt++ {
 		entry, err := kv.Get(ctx, key)
 		if err == nil {

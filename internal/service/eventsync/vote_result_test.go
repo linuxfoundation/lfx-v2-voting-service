@@ -112,11 +112,11 @@ func TestSync_VoteResultUpdate(t *testing.T) {
 		assert.Empty(t, h.pub.publishedVoteResults)
 	})
 
-	t.Run("still acks when recording the mapping fails", func(t *testing.T) {
+	t.Run("retries when recording the mapping fails", func(t *testing.T) {
 		h := newHarness(t)
 		h.store.Seed(domain.MappingKindVote, "poll-123", domain.MappingSynced)
 		h.store.PutErr = errors.New("kv put failed")
-		assert.Equal(t, Ack, h.sync(putJSON(t, key, resultPayload("poll-123"))))
+		assert.Equal(t, Retry, h.sync(putJSON(t, key, resultPayload("poll-123"))))
 		assert.Len(t, h.pub.publishedVoteResults, 1)
 	})
 
@@ -156,10 +156,10 @@ func TestSync_VoteResultDelete(t *testing.T) {
 		assert.Equal(t, domain.MappingAbsent, resultState(h, "poll-123"))
 	})
 
-	t.Run("still acks when tombstoning fails", func(t *testing.T) {
+	t.Run("retries when tombstoning fails", func(t *testing.T) {
 		h := newHarness(t)
 		h.store.PutErr = errors.New("kv put failed")
-		assert.Equal(t, Ack, h.sync(hardDelete(key)))
+		assert.Equal(t, Retry, h.sync(hardDelete(key)))
 		assert.Len(t, h.pub.publishedVoteResults, 1)
 	})
 }

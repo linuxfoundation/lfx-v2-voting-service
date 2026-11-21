@@ -21,20 +21,22 @@ const (
 type MappingState int
 
 const (
-	// MappingAbsent means the resource has not been synced, or its state could not be read.
+	// MappingAbsent means the resource has not been synced (confirmed absence).
 	MappingAbsent MappingState = iota
 	// MappingSynced means the resource was synced and has not been deleted since.
 	MappingSynced
 	// MappingTombstoned means the resource was synced and then deleted.
 	MappingTombstoned
+	// MappingUnavailable means the store could not be read; callers must retry.
+	MappingUnavailable
 )
 
 // MappingStore records which v1 resources the sync has already processed, so that
 // create-vs-update can be decided, child resources can wait for their parent, and
 // redelivered deletes are skipped.
 type MappingStore interface {
-	// State reports what is known about the resource. A read failure is reported as
-	// MappingAbsent, matching the previous behaviour of the sync handlers.
+	// State reports what is known about the resource. A read failure must return
+	// MappingUnavailable, never MappingAbsent.
 	State(ctx context.Context, kind MappingKind, uid string) MappingState
 
 	// MarkSynced records that the resource was synced.

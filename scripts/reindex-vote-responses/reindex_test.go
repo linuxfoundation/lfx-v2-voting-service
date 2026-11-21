@@ -23,6 +23,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// reindex keeps existing source/HTTP test fixtures independent of a live PG
+// instance; production reindexPostgres always opens verified Postgres state.
+func reindex(ctx context.Context, js jetstream.JetStream, opts options, logger *slog.Logger) (*result, error) {
+	kv, err := js.KeyValue(ctx, "v1-mappings")
+	if err != nil {
+		return nil, err
+	}
+	return reindexWithState(ctx, js, opts, logger, kv)
+}
+
 type fixture struct {
 	conn       *nats.Conn
 	js         jetstream.JetStream

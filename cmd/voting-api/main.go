@@ -160,15 +160,16 @@ func run() int {
 		participantGrants := parseBoolEnv("VOTE_PARTICIPANT_GRANTS_ENABLED", logger)
 		logger.Info("Event processing is ENABLED - initializing event processor", "vote_participant_grants_enabled", participantGrants)
 		ep, err := apieventing.NewEventProcessor(eventing.Config{
-			NATSURL:      cfg.NATSURL,
-			ConsumerName: cfg.EventConsumerName,
-			StreamName:   cfg.EventStreamName,
+			StateDatabaseURL: os.Getenv("VOTING_STATE_DATABASE_URL"),
+			NATSURL:          cfg.NATSURL,
+			ConsumerName:     cfg.EventConsumerName,
+			StreamName:       cfg.EventStreamName,
 			FilterSubjects: []string{
 				"$KV.v1-objects.itx-poll.>",
 				"$KV.v1-objects.itx-poll-vote.>",
 				"$KV.v1-objects.itx-poll-results.>",
 			},
-			MaxDeliver:               3,
+			MaxDeliver:               -1, // Retain recoverable work across dependency outages.
 			AckWait:                  30 * time.Second,
 			MaxAckPending:            1000,
 			ParticipantGrantsEnabled: participantGrants,

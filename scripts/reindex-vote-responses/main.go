@@ -74,7 +74,7 @@ func run() error {
 		opts.OnEligible = func(key string) { fmt.Println(key) }
 	}
 
-	res, err := reindex(ctx, js, opts, logger)
+	res, err := reindexPostgres(ctx, js, opts, logger)
 
 	if res != nil {
 		mode := "DRY RUN (pass -apply to write)"

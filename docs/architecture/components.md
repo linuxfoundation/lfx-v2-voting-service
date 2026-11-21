@@ -227,7 +227,7 @@ Processes NATS JetStream KV change events from the `v1-objects` bucket:
 - Transforms v1 data (string numerics, SFIDs) to v2 format (typed numerics, UUIDs)
 - Uses the ID mapper to translate project/committee IDs
 - Calls `domain.EventPublisher` to forward events to indexer-service and fga-sync
-- Tracks processed records in the `v1-mappings` KV bucket for create/update/delete deduplication
+- Tracks processed/deleted records and invitation state in voting-owned Postgres, with a verified cutover checkpoint
 
 **Three KV key prefixes handled:**
 - `itx-poll.*` → vote (poll) events
@@ -350,4 +350,4 @@ Applied in reverse registration order (outermost is registered last in code, fir
   relative to the service layer and the Goa-generated types.
 - The exact schema of `lfx.lookup_v1_mapping` NATS request/response messages is owned by the
   v1-sync-helper service and not documented here.
-- No documentation on how `v1-mappings` KV bucket keys are structured or who else writes to them.
+- Other owners of the shared legacy KV bucket are external; voting-owned state and cutover are documented in [event-state-postgres.md](../event-state-postgres.md).

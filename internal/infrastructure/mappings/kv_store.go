@@ -6,6 +6,7 @@ package mappings
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
@@ -41,7 +42,10 @@ func NewKVStore(kv jetstream.KeyValue) *KVStore {
 func (s *KVStore) State(ctx context.Context, kind domain.MappingKind, uid string) domain.MappingState {
 	entry, err := s.kv.Get(ctx, mappingKey(kind, uid))
 	if err != nil {
-		return domain.MappingAbsent
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			return domain.MappingAbsent
+		}
+		return domain.MappingUnavailable
 	}
 	if string(entry.Value()) == TombstoneMarker {
 		return domain.MappingTombstoned

@@ -343,7 +343,7 @@ bin/reindex-vote-responses -pseudo-anonymous-only -apply
 ```
 
 - Do **not** combine `-pseudo-anonymous-only` with `-skip-reindexed`. Documents that already moved to `vote_response#auditor` still hold ballot data and must be replayed.
-- The pass is safe to repeat for canonical documents. Re-run it if a transient error outlasted the consumer's retries (`MaxDeliver`) and left an older, unredacted document in place. Noncanonical copies require the separate cleanup described above; replay alone never fixes them.
+- The pass is safe to repeat for canonical documents. Recoverable consumer retries now have no finite attempt ceiling, but retention loss or historical exhausted work may still require approved replay. Noncanonical copies require the separate cleanup described above; replay alone never fixes them.
 
 - Run it **before** enabling `VOTE_PARTICIPANT_GRANTS_ENABLED`, then again after (see `fga-contract.md` § Rollout). It is what moves existing responses to `vote_response#auditor`, and the second run writes the participant tuples.
 - It is a **dry run unless `-apply` is passed**, and reports a count for every category it skips.

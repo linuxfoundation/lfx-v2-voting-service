@@ -58,7 +58,8 @@ lfx-v2-voting-service/
 │   │   ├── auth/             # JWT authentication (Heimdall)
 │   │   ├── eventing/         # NATS event publisher
 │   │   ├── idmapper/         # NATS-based v1↔v2 ID mapping
-│   │   ├── mappings/         # v1-mappings KV store (sync state)
+│   │   ├── mappings/         # Legacy KV compatibility adapter (tests)
+│   │   ├── eventstate/       # Voting-owned Postgres sync/guard state and offline import
 │   │   └── proxy/            # ITX HTTP client
 │   ├── middleware/           # HTTP middleware (auth, request ID, logger)
 │   └── logging/              # Logging configuration
@@ -117,6 +118,7 @@ Configure the service using environment variables:
 ### Event Processing
 
 - `EVENT_PROCESSING_ENABLED` - Enable/disable event processing (default: true)
+- `VOTING_STATE_DATABASE_URL` - Secret-loaded DSN for voting-owned processing-state tables; required when processing is enabled and for reindex/migration tooling. Complete a verified offline import before startup; see [Postgres state and cutover](docs/event-state-postgres.md). Local proxy-only development still uses `EVENT_PROCESSING_ENABLED=false` and needs no database.
 - `EVENT_CONSUMER_NAME` - JetStream consumer name (default: voting-service-kv-consumer)
 - `EVENT_STREAM_NAME` - JetStream stream name (default: KV_v1-objects)
 - `EVENT_FILTER_SUBJECT` - NATS subject filter (default: $KV.v1-objects.>)
