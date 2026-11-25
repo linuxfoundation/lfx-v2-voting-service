@@ -90,8 +90,10 @@ apigen:
 	@echo "==> Generating API code from Goa design..."
 	$(shell go env GOPATH)/bin/goa gen github.com/linuxfoundation/lfx-v2-voting-service/api/voting/v1/design
 	@# Normalize null Swagger 2 security requirements to empty arrays.
-	@tmp=$$(mktemp) && \
+	@tmp=$$(mktemp gen/http/openapi.json.XXXXXX) && \
+		trap 'rm -f "$$tmp"' EXIT && \
 		jq 'walk(if type == "object" and has("security") and (.security | type) == "array" then .security |= map(with_entries(.value = (.value // []))) else . end)' gen/http/openapi.json > "$$tmp" && \
+		chmod 644 "$$tmp" && \
 		mv "$$tmp" gen/http/openapi.json
 	@echo "==> API generation complete"
 
