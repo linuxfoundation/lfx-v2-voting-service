@@ -72,7 +72,8 @@ lfx-v2-voting-service/
 
 ### Prerequisites
 
-- Go 1.27.4 or later (version pinned in `go.mod`)
+- Go 1.26.11 or later (toolchain pinned in `go.mod`)
+- `jq` for API generation (e.g. `brew install jq`)
 - Goa CLI and other dev tools: run `make deps` (installs the version pinned in `go.mod` — do **not** use `go install goa@latest`, which will install a mismatched version and break `make generate`)
 - ITX service account credentials (see [Getting Dev Credentials](CONTRIBUTING.md#getting-dev-credentials))
 - **[lfx-platform Helm chart](https://github.com/linuxfoundation/lfx-v2-helm/tree/main/charts/lfx-platform)** — provides NATS and Heimdall for local development (optional: can be bypassed with env flags)

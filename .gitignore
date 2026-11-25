@@ -35,8 +35,6 @@ megalinter-reports/
 *.swp
 *.swo
 *~
-.DS_Store
-Thumbs.db
 
 # Environment and configuration files
 .env

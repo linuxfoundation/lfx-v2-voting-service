@@ -29,10 +29,12 @@ jobs:
       - uses: ko-build/setup-ko@d006021bd0c28d1ce33a07e7943d48b079944c8d  # v0.9
         with:
           version: v0.17.1
-      - run: |
+      - env:
+          GIT_SHA: "${{ github.sha }}"
+        run: |
           ko build github.com/linuxfoundation/lfx-v2-voting-service/cmd/voting-api \
             -B \
             --platform linux/amd64,linux/arm64 \
-            -t ${{ github.sha }} \
+            -t "$GIT_SHA" \
             -t development \
             --sbom spdx

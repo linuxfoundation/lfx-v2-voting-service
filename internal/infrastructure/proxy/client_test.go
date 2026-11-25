@@ -1298,7 +1298,8 @@ func TestVoteMethodContract(t *testing.T) {
 			}
 			if tt.method == http.MethodPut {
 				t.Run("generated CLI and client body", func(t *testing.T) {
-					payload, err := voteclient.BuildUpdateVotePayload(body, uid, "")
+					token := ""
+					payload, err := voteclient.BuildUpdateVotePayload(&body, new(uid), &token)
 					if err != nil {
 						t.Fatal(err)
 					}
@@ -1739,7 +1740,7 @@ func TestVoteResultsMethodContract(t *testing.T) {
 					}
 					return
 				}
-				if err == nil || !strings.Contains(err.Error(), "body.vote_id") {
+				if err == nil || !strings.Contains(err.Error(), ".vote_id") {
 					t.Fatalf("want vote_id validation error, got %v", err)
 				}
 			})

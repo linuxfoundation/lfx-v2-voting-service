@@ -1,0 +1,7 @@
+{
+  "language": "en",
+  "dictionaries": ["companies", "filetypes", "fullstack", "softwareTerms"],
+  "words": ["lfx", "lfxv", "linuxfoundation"],
+  "flagWords": [],
+  "ignorePaths": [".cspell.json", "CODEOWNERS", "LICENSE", "LICENSE-docs", "megalinter-reports"]
+}
