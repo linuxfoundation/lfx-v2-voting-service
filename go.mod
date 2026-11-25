@@ -3,7 +3,9 @@
 
 module github.com/linuxfoundation/lfx-v2-voting-service
 
-go 1.27.4
+go 1.26.3
+
+toolchain go1.26.11
 
 require (
 	github.com/auth0/go-auth0 v1.54.0
@@ -12,7 +14,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/linuxfoundation/lfx-v2-fga-sync v0.3.14
 	github.com/linuxfoundation/lfx-v2-indexer-service v0.5.5
-	github.com/linuxfoundation/lfx-v2-invite-service v0.2.7
+	github.com/linuxfoundation/lfx-v2-invite-service v0.2.5
 	github.com/nats-io/nats-server/v2 v2.12.12
 	github.com/nats-io/nats.go v1.56.0
 	github.com/remychantenay/slog-otel v1.3.5
@@ -26,7 +28,7 @@ require (
 	go.opentelemetry.io/otel/sdk/log v1.47.0
 	go.opentelemetry.io/otel/sdk/metric v1.47.0
 	go.opentelemetry.io/otel/trace v1.47.0
-	goa.design/goa/v3 v3.36.0
+	goa.design/goa/v3 v3.34.0
 	golang.org/x/oauth2 v0.38.0
 	gopkg.in/go-jose/go-jose.v2 v2.6.3
 )
@@ -45,7 +47,7 @@ require (
 	github.com/goccy/go-json v0.12.0 // indirect
 	github.com/gohugoio/hashstructure v1.1.0 // indirect
 	github.com/google/go-tpm v0.9.8 // indirect
-	github.com/gorilla/websocket v1.5.3 // indirect
+	github.com/gorilla/websocket v1.5.4-0.20240701034025-d67f41855da4 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.34.0 // indirect
 	github.com/klauspost/compress v1.20.5 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.4 // indirect

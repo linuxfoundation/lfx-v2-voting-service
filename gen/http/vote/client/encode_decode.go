@@ -12,7 +12,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -230,9 +229,7 @@ func (c *Client) BuildGetVoteRequest(ctx context.Context, v any) (*http.Request,
 		}
 		uid = p.UID
 	}
-
-	rawPath := fmt.Sprintf("/votes/%v", url.PathEscape(fmt.Sprint(uid)))
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteVotePath(uid), RawPath: rawPath}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteVotePath(uid)}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "get_vote", u.String(), err)
@@ -418,9 +415,7 @@ func (c *Client) BuildUpdateVoteRequest(ctx context.Context, v any) (*http.Reque
 		}
 		uid = p.UID
 	}
-
-	rawPath := fmt.Sprintf("/votes/%v", url.PathEscape(fmt.Sprint(uid)))
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateVoteVotePath(uid), RawPath: rawPath}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateVoteVotePath(uid)}
 	req, err := http.NewRequest("PUT", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "update_vote", u.String(), err)
@@ -610,9 +605,7 @@ func (c *Client) BuildDeleteVoteRequest(ctx context.Context, v any) (*http.Reque
 		}
 		uid = p.UID
 	}
-
-	rawPath := fmt.Sprintf("/votes/%v", url.PathEscape(fmt.Sprint(uid)))
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: DeleteVoteVotePath(uid), RawPath: rawPath}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: DeleteVoteVotePath(uid)}
 	req, err := http.NewRequest("DELETE", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "delete_vote", u.String(), err)
@@ -785,9 +778,7 @@ func (c *Client) BuildExtendVoteRequest(ctx context.Context, v any) (*http.Reque
 		}
 		uid = p.UID
 	}
-
-	rawPath := fmt.Sprintf("/votes/%v/extend", url.PathEscape(fmt.Sprint(uid)))
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ExtendVoteVotePath(uid), RawPath: rawPath}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ExtendVoteVotePath(uid)}
 	req, err := http.NewRequest("POST", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "extend_vote", u.String(), err)
@@ -977,9 +968,7 @@ func (c *Client) BuildEndVoteRequest(ctx context.Context, v any) (*http.Request,
 		}
 		uid = p.UID
 	}
-
-	rawPath := fmt.Sprintf("/votes/%v/end", url.PathEscape(fmt.Sprint(uid)))
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: EndVoteVotePath(uid), RawPath: rawPath}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: EndVoteVotePath(uid)}
 	req, err := http.NewRequest("POST", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "end_vote", u.String(), err)
@@ -1180,9 +1169,7 @@ func (c *Client) BuildEnableVoteRequest(ctx context.Context, v any) (*http.Reque
 		}
 		uid = p.UID
 	}
-
-	rawPath := fmt.Sprintf("/votes/%v/enable", url.PathEscape(fmt.Sprint(uid)))
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: EnableVoteVotePath(uid), RawPath: rawPath}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: EnableVoteVotePath(uid)}
 	req, err := http.NewRequest("PUT", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "enable_vote", u.String(), err)
@@ -1355,9 +1342,7 @@ func (c *Client) BuildBulkResendVoteRequest(ctx context.Context, v any) (*http.R
 		}
 		uid = p.UID
 	}
-
-	rawPath := fmt.Sprintf("/votes/%v/bulk_resend", url.PathEscape(fmt.Sprint(uid)))
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: BulkResendVoteVotePath(uid), RawPath: rawPath}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: BulkResendVoteVotePath(uid)}
 	req, err := http.NewRequest("POST", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "bulk_resend_vote", u.String(), err)
@@ -1534,9 +1519,7 @@ func (c *Client) BuildGetVoteResultsRequest(ctx context.Context, v any) (*http.R
 		}
 		uid = p.UID
 	}
-
-	rawPath := fmt.Sprintf("/votes/%v/results", url.PathEscape(fmt.Sprint(uid)))
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteResultsVotePath(uid), RawPath: rawPath}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteResultsVotePath(uid)}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "get_vote_results", u.String(), err)
@@ -1890,9 +1873,7 @@ func (c *Client) BuildGetVoteResponseRequest(ctx context.Context, v any) (*http.
 		}
 		voteResponseUID = p.VoteResponseUID
 	}
-
-	rawPath := fmt.Sprintf("/vote_responses/%v", url.PathEscape(fmt.Sprint(voteResponseUID)))
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteResponseVotePath(voteResponseUID), RawPath: rawPath}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: GetVoteResponseVotePath(voteResponseUID)}
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "get_vote_response", u.String(), err)
@@ -2079,9 +2060,7 @@ func (c *Client) BuildUpdateVoteResponseRequest(ctx context.Context, v any) (*ht
 		}
 		voteResponseUID = p.VoteResponseUID
 	}
-
-	rawPath := fmt.Sprintf("/vote_responses/%v", url.PathEscape(fmt.Sprint(voteResponseUID)))
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateVoteResponseVotePath(voteResponseUID), RawPath: rawPath}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: UpdateVoteResponseVotePath(voteResponseUID)}
 	req, err := http.NewRequest("PUT", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "update_vote_response", u.String(), err)
@@ -2821,9 +2800,7 @@ func (c *Client) BuildResendVoteResponseRequest(ctx context.Context, v any) (*ht
 		}
 		voteResponseUID = p.VoteResponseUID
 	}
-
-	rawPath := fmt.Sprintf("/vote_responses/%v/resend", url.PathEscape(fmt.Sprint(voteResponseUID)))
-	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ResendVoteResponseVotePath(voteResponseUID), RawPath: rawPath}
+	u := &url.URL{Scheme: c.scheme, Host: c.host, Path: ResendVoteResponseVotePath(voteResponseUID)}
 	req, err := http.NewRequest("POST", u.String(), nil)
 	if err != nil {
 		return nil, goahttp.ErrInvalidURL("vote", "resend_vote_response", u.String(), err)
