@@ -15,7 +15,7 @@ jobs:
   license-header-check:
     name: License Header Check
     # yamllint disable-line rule:line-length
-    uses: linuxfoundation/lfx-public-workflows/.github/workflows/license-header-check.yml@a93335d2abc2a2e2bb1b7a4cdefbbf15351681ce  # v0.1.0
+    uses: linuxfoundation/lfx-public-workflows/.github/workflows/license-header-check.yml@737873e045a02df2f66b09d8061b98997cdf1880  # v0.2.0
     with:
       copyright_line: "Copyright The Linux Foundation and each contributor to LFX."
       exclude_pattern: "gen,cmd/voting-api/kodata"
