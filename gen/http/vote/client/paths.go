@@ -8,9 +8,7 @@
 
 package client
 
-import (
-	"fmt"
-)
+import "fmt"
 
 // CreateVoteVotePath returns the URL path to the vote service create_vote HTTP endpoint.
 func CreateVoteVotePath() string {
@@ -35,6 +33,11 @@ func DeleteVoteVotePath(uid string) string {
 // ExtendVoteVotePath returns the URL path to the vote service extend_vote HTTP endpoint.
 func ExtendVoteVotePath(uid string) string {
 	return fmt.Sprintf("/votes/%v/extend", uid)
+}
+
+// EndVoteVotePath returns the URL path to the vote service end_vote HTTP endpoint.
+func EndVoteVotePath(uid string) string {
+	return fmt.Sprintf("/votes/%v/end", uid)
 }
 
 // EnableVoteVotePath returns the URL path to the vote service enable_vote HTTP endpoint.
@@ -65,6 +68,21 @@ func GetVoteResponseVotePath(voteResponseUID string) string {
 // UpdateVoteResponseVotePath returns the URL path to the vote service update_vote_response HTTP endpoint.
 func UpdateVoteResponseVotePath(voteResponseUID string) string {
 	return fmt.Sprintf("/vote_responses/%v", voteResponseUID)
+}
+
+// CreateVoteResponseByLinkVotePath returns the URL path to the vote service create_vote_response_by_link HTTP endpoint.
+func CreateVoteResponseByLinkVotePath() string {
+	return "/vote_links/responses"
+}
+
+// UpdateVoteResponseByLinkVotePath returns the URL path to the vote service update_vote_response_by_link HTTP endpoint.
+func UpdateVoteResponseByLinkVotePath() string {
+	return "/vote_links/responses"
+}
+
+// GetVoteBallotByLinkVotePath returns the URL path to the vote service get_vote_ballot_by_link HTTP endpoint.
+func GetVoteBallotByLinkVotePath() string {
+	return "/vote_links/ballot"
 }
 
 // ResendVoteResponseVotePath returns the URL path to the vote service resend_vote_response HTTP endpoint.

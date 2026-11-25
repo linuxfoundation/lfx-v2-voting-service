@@ -23,11 +23,20 @@ type Service interface {
 	// Update vote (proxies to ITX PUT /voting/poll/{poll_id}). Only allowed when
 	// status is 'disabled'
 	UpdateVote(context.Context, *UpdateVotePayload) (res *VoteResult, err error)
-	// Delete vote (proxies to ITX DELETE /voting/poll/{poll_id}). Only allowed
-	// when status is 'disabled'
+	// Delete or cancel a vote (proxies to ITX DELETE /voting/poll/{poll_id}). A
+	// disabled (draft) vote is deleted. An active vote is cancelled: the vote and
+	// its responses are permanently removed, and recipients receive a cancellation
+	// notice; response cleanup runs asynchronously. Ended votes, whether closed
+	// early, closed automatically or past end_time, cannot be deleted; ITX returns
+	// 400 'ended polls cannot be deleted'. Requires writer on the vote.
 	DeleteVote(context.Context, *DeleteVotePayload) (err error)
 	// Extend a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)
 	ExtendVote(context.Context, *ExtendVotePayload) (res *VoteResult, err error)
+	// End an active vote immediately (proxies to ITX POST
+	// /voting/poll/{poll_id}/end). Idempotent for an already-ended vote; a
+	// disabled vote returns 409. Ending preserves the vote and its results; to
+	// cancel and remove an active vote use delete_vote.
+	EndVote(context.Context, *EndVotePayload) (res *VoteResult, err error)
 	// Enable a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)
 	EnableVote(context.Context, *EnableVotePayload) (err error)
 	// Bulk resend vote email to select recipients (proxies to ITX POST
@@ -39,8 +48,29 @@ type Service interface {
 	CreateVoteResponse(context.Context, *CreateVoteResponsePayload) (err error)
 	// Get vote response details (proxies to ITX GET /voting/vote/{vote_id})
 	GetVoteResponse(context.Context, *GetVoteResponsePayload) (res *VoteResponseResult, err error)
-	// Update vote response (proxies to ITX PUT /voting/vote/{vote_id})
+	// Update vote response (proxies to ITX PUT /voting/vote/{vote_id}). Returns
+	// 409 when the vote does not allow changing a submitted ballot.
 	UpdateVoteResponse(context.Context, *UpdateVoteResponsePayload) (err error)
+	// Submit a vote response using a personalized vote link token, without logging
+	// in (proxies to ITX POST /voting/vote). The ballot is identified only by the
+	// token. External callers send no Authorization header: the gateway (Heimdall)
+	// admits the request anonymously and supplies the JWT shown in this spec's
+	// security requirement.
+	CreateVoteResponseByLink(context.Context, *CreateVoteResponseByLinkPayload) (err error)
+	// Update a vote response using a personalized vote link token, without logging
+	// in (proxies to ITX PUT /voting/vote/{vote_id}). The ballot is identified
+	// only by the token. External callers send no Authorization header: the
+	// gateway (Heimdall) admits the request anonymously and supplies the JWT shown
+	// in this spec's security requirement. Omitting comment_responses preserves
+	// existing comments; including it (even empty) replaces them. Returns 409 when
+	// the vote does not allow changing a submitted ballot.
+	UpdateVoteResponseByLink(context.Context, *UpdateVoteResponseByLinkPayload) (err error)
+	// Get the vote's questions and the link holder's own ballot using a
+	// personalized vote link token, without logging in. The vote and ballot are
+	// identified only by the token. External callers send no Authorization header:
+	// the gateway (Heimdall) admits the request anonymously and supplies the JWT
+	// shown in this spec's security requirement.
+	GetVoteBallotByLink(context.Context, *GetVoteBallotByLinkPayload) (res *VoteLinkBallotResult, err error)
 	// Resend vote email (proxies to ITX POST /voting/vote/{vote_id}/resend)
 	ResendVoteResponse(context.Context, *ResendVoteResponsePayload) (err error)
 }
@@ -65,7 +95,7 @@ const ServiceName = "vote"
 // MethodNames lists the service method names as defined in the design. These
 // are the same values that are set in the endpoint request contexts under the
 // MethodKey key.
-var MethodNames = [12]string{"create_vote", "get_vote", "update_vote", "delete_vote", "extend_vote", "enable_vote", "bulk_resend_vote", "get_vote_results", "create_vote_response", "get_vote_response", "update_vote_response", "resend_vote_response"}
+var MethodNames = [16]string{"create_vote", "get_vote", "update_vote", "delete_vote", "extend_vote", "end_vote", "enable_vote", "bulk_resend_vote", "get_vote_results", "create_vote_response", "get_vote_response", "update_vote_response", "create_vote_response_by_link", "update_vote_response_by_link", "get_vote_ballot_by_link", "resend_vote_response"}
 
 // Bad request error response
 type BadRequestError struct {
@@ -82,8 +112,12 @@ type BulkResendVotePayload struct {
 	Token *string
 	// Vote UID
 	UID string
-	// List of recipient IDs to resend vote email to
+	// Vote response (ballot) IDs to resend the vote email to
 	RecipientIds []string
+	// When true, each recipient's email links to a personal HMAC-signed URL that
+	// lets them submit or update their vote response without logging in. When
+	// false or omitted, recipients receive the standard vote link.
+	PersonalizedLinks bool
 }
 
 // A voter's free-text response to a comment prompt
@@ -96,8 +130,9 @@ type CommentResponse struct {
 
 // A voter's free-text comment response, with attribution
 type CommentResponseWithUser struct {
-	// The vote that submitted this comment
-	VoteID string
+	// The vote that submitted this comment. Absent for comments on an ended
+	// pseudo-anonymous poll, which carry the comment text only.
+	VoteID *string
 	// The LFX identifier of the voter who submitted this comment. Absent entirely
 	// when the poll has pseudo_anonymity enabled.
 	UserID *string
@@ -109,11 +144,12 @@ type CommentResponseWithUser struct {
 	// URL of the voter's profile picture. Absent entirely when the poll has
 	// pseudo_anonymity enabled.
 	ProfilePicture *string
-	// The time the voter submitted this comment (their vote_creation_time)
-	VoteCreationTime string
+	// The time the voter submitted this comment (their vote_creation_time). Absent
+	// for comments on an ended pseudo-anonymous poll.
+	VoteCreationTime *string
 	// Whether the voter who submitted this comment abstained from voting on the
-	// poll
-	Abstained bool
+	// poll. Absent for comments on an ended pseudo-anonymous poll.
+	Abstained *bool
 }
 
 // Results for a single comment prompt, grouped with every response to it.
@@ -176,14 +212,42 @@ type CreateVotePayload struct {
 	PseudoAnonymity bool
 	// Type of poll
 	PollType string
-	// Number of winners (meek_stv only)
-	NumWinners int
+	// Number of winners. Sent upstream only when explicitly provided; meek_stv
+	// creates default to 2 when omitted. Updates leave omitted counts for ITX to
+	// resolve.
+	NumWinners *int
 	// Allow voters to abstain
 	AllowAbstain bool
+	// Allow voters to change a submitted ballot (choices, comments or abstention)
+	// until the vote ends. Omitted on create means allowed; omitted on update
+	// preserves the stored value.
+	AllowVoteChange *bool
 	// Quorum percentage required
 	QuorumPercentage *int
 	// Winning threshold percentage
 	WinningThresholdPercentage *int
+}
+
+// CreateVoteResponseByLinkPayload is the payload type of the vote service
+// create_vote_response_by_link method.
+type CreateVoteResponseByLinkPayload struct {
+	// JWT token
+	Token *string
+	// Signed token from the personalized vote link (the vote_token in the emailed
+	// URL's fragment). Identifies the ballot; treat it as a credential and never
+	// log it.
+	VoteToken string
+	// Vote answers
+	UserVoteContent []*VoteAnswerInput
+	// Whether to abstain from voting
+	Abstain bool
+	// The voter's free-text responses to the poll's comment prompts. Allowed
+	// regardless of whether abstain is true — an abstaining voter skips the ballot
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Optional; only meaningful if the poll has poll_comment_prompts.
+	CommentResponses []*CommentResponse
 }
 
 // CreateVoteResponsePayload is the payload type of the vote service
@@ -199,12 +263,12 @@ type CreateVoteResponsePayload struct {
 	UserVoteContent []*VoteAnswerInput
 	// Whether to abstain from voting
 	Abstain bool
-	// The voter's free-text responses to the poll's comment prompts. Optional;
-	// only meaningful if the poll has poll_comment_prompts. Allowed regardless of
-	// whether abstain is true — an abstaining voter skips the ballot but may still
-	// comment. Each prompt_id must match one of the poll's comment prompts and
-	// must not repeat; each comment_text is required (cannot be empty after
-	// trimming) and is rejected with a 400 if longer than 5000 characters.
+	// The voter's free-text responses to the poll's comment prompts. Allowed
+	// regardless of whether abstain is true — an abstaining voter skips the ballot
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Optional; only meaningful if the poll has poll_comment_prompts.
 	CommentResponses []*CommentResponse
 }
 
@@ -218,6 +282,14 @@ type DeleteVotePayload struct {
 
 // EnableVotePayload is the payload type of the vote service enable_vote method.
 type EnableVotePayload struct {
+	// JWT token
+	Token *string
+	// Vote UID
+	UID string
+}
+
+// EndVotePayload is the payload type of the vote service end_vote method.
+type EndVotePayload struct {
 	// JWT token
 	Token *string
 	// Vote UID
@@ -253,6 +325,17 @@ type GenericChoiceVote struct {
 	VoteCount int
 	// Percentage of votes
 	Percentage float64
+}
+
+// GetVoteBallotByLinkPayload is the payload type of the vote service
+// get_vote_ballot_by_link method.
+type GetVoteBallotByLinkPayload struct {
+	// JWT token
+	Token *string
+	// Signed token from the personalized vote link (the vote_token in the emailed
+	// URL's fragment). Identifies the ballot; treat it as a credential and never
+	// log it.
+	VoteToken string
 }
 
 // GetVotePayload is the payload type of the vote service get_vote method.
@@ -522,15 +605,44 @@ type UpdateVotePayload struct {
 	// Enable pseudo-anonymity
 	PseudoAnonymity bool
 	// Type of poll
-	PollType string
-	// Number of winners (meek_stv only)
-	NumWinners int
+	PollType *string
+	// Number of winners. Sent upstream only when explicitly provided; meek_stv
+	// creates default to 2 when omitted. Updates leave omitted counts for ITX to
+	// resolve.
+	NumWinners *int
 	// Allow voters to abstain
 	AllowAbstain bool
+	// Allow voters to change a submitted ballot (choices, comments or abstention)
+	// until the vote ends. Omitted on create means allowed; omitted on update
+	// preserves the stored value.
+	AllowVoteChange *bool
 	// Quorum percentage required
 	QuorumPercentage *int
 	// Winning threshold percentage
 	WinningThresholdPercentage *int
+}
+
+// UpdateVoteResponseByLinkPayload is the payload type of the vote service
+// update_vote_response_by_link method.
+type UpdateVoteResponseByLinkPayload struct {
+	// JWT token
+	Token *string
+	// Signed token from the personalized vote link (the vote_token in the emailed
+	// URL's fragment). Identifies the ballot; treat it as a credential and never
+	// log it.
+	VoteToken string
+	// Vote answers
+	UserVoteContent []*VoteAnswerInput
+	// Whether to abstain from voting
+	Abstain bool
+	// The voter's free-text responses to the poll's comment prompts. Allowed
+	// regardless of whether abstain is true — an abstaining voter skips the ballot
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Omitting this field entirely preserves the vote's existing comments
+	// untouched; including it (even as an empty array) validates and replaces them.
+	CommentResponses []*CommentResponse
 }
 
 // UpdateVoteResponsePayload is the payload type of the vote service
@@ -540,18 +652,17 @@ type UpdateVoteResponsePayload struct {
 	Token *string
 	// Vote response identifier
 	VoteResponseUID string
-	// Updated vote answers
+	// Vote answers
 	UserVoteContent []*VoteAnswerInput
 	// Whether to abstain from voting
 	Abstain bool
 	// The voter's free-text responses to the poll's comment prompts. Allowed
 	// regardless of whether abstain is true — an abstaining voter skips the ballot
-	// but may still comment. Otherwise, omitting this field entirely preserves the
-	// vote's existing comments untouched; including it (even as an empty array)
-	// validates and replaces them. Each prompt_id must match one of the poll's
-	// comment prompts and must not repeat; each comment_text is required (cannot
-	// be empty after trimming) and is rejected with a 400 if longer than 5000
-	// characters.
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Omitting this field entirely preserves the vote's existing comments
+	// untouched; including it (even as an empty array) validates and replaces them.
 	CommentResponses []*CommentResponse
 }
 
@@ -597,6 +708,76 @@ type VoteCount struct {
 	Percentage *float64
 }
 
+// The link holder's own ballot
+type VoteLinkBallot struct {
+	// Ballot status from ITX, e.g. awaiting_response or responded
+	VoteStatus string
+	// True when a ballot has been submitted (vote_status responded, or ended after
+	// voting), so changes use PUT /vote_links/responses while the vote is active
+	AlreadyVoted bool
+	// True when the recipient was removed from the vote and can no longer vote
+	VoterRemoved bool
+	// Whether this submitted ballot can still be changed with PUT
+	// /vote_links/responses. Returned on pseudo-anonymous votes too; omitted when
+	// ITX does not report it.
+	CanChangeVote *bool
+	// Whether submitting this pending ballot now would be the final response that
+	// ends the vote. False once a ballot is submitted, for removed voters, and
+	// when the vote is not active. Returned on pseudo-anonymous votes too;
+	// response counts are never returned.
+	WouldEndVote bool
+	// Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.
+	Abstained *bool
+	// The submitted answers. Omitted on pseudo-anonymous votes and before voting.
+	PollAnswers []*VoteAnswer
+	// The submitted comments. Omitted on pseudo-anonymous votes and before voting.
+	CommentResponses []*CommentResponse
+}
+
+// VoteLinkBallotResult is the result type of the vote service
+// get_vote_ballot_by_link method.
+type VoteLinkBallotResult struct {
+	// Vote identifier
+	VoteUID string
+	// LFX project UID the vote belongs to
+	ProjectUID string
+	// LFX project slug. Absent when no slug is stored upstream.
+	ProjectSlug *string
+	// Vote name
+	Name string
+	// Vote description
+	Description string
+	// Vote status; ballots can be submitted or updated only while active
+	Status string
+	// End time
+	EndTime *string
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Absent when no timezone is stored.
+	EndTimeTimezone *string
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
+	EarlyEndTime *string
+	// Poll type
+	PollType string
+	// Number of winners. Absent when no winner count is stored upstream.
+	NumWinners *int
+	// Whether abstaining is allowed
+	AllowAbstain *bool
+	// Whether the vote lets voters change a submitted ballot until it ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange bool
+	// Whether the vote is pseudo-anonymous; if so, ballot contents are never
+	// returned
+	PseudoAnonymity bool
+	// Vote questions with their choices
+	PollQuestions []*PollQuestion
+	// Comment prompts for the vote
+	PollCommentPrompts []*PollCommentPrompt
+	// The link holder's own ballot
+	Ballot *VoteLinkBallot
+}
+
 // VoteResponseResult is the result type of the vote service get_vote_response
 // method.
 type VoteResponseResult struct {
@@ -612,6 +793,17 @@ type VoteResponseResult struct {
 	Abstained *bool
 	// Whether abstention is allowed
 	AllowAbstain *bool
+	// Whether the vote lets voters change a submitted ballot until it ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange bool
+	// Whether this submitted ballot can still be changed with PUT
+	// /vote_responses/{vote_response_uid}. Omitted when ITX does not report it.
+	CanChangeVote *bool
+	// Whether submitting this pending ballot now would be the final response that
+	// ends the vote. False once a ballot is submitted, for removed voters, and
+	// when the vote is not active. Also false when the vote's response counts
+	// cannot be read; the ballot is still returned.
+	WouldEndVote bool
 	// Vote creation time
 	VoteCreationTime *string
 	// Voter name
@@ -678,9 +870,9 @@ type VoteResult struct {
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
 	// Absent when no timezone is stored.
 	EndTimeTimezone *string
-	// Actual close time when the poll auto-ended early because all voters
-	// responded before end_time. Absent when the poll closed on schedule or is
-	// still active. RFC3339.
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
 	EarlyEndTime *string
 	// Vote status
 	Status string
@@ -710,25 +902,33 @@ type VoteResult struct {
 	PollCommentPrompts []*PollCommentPrompt
 	// Poll type
 	PollType string
-	// Number of winners (meek_stv only)
+	// Number of winners. Absent when no winner count is stored upstream.
 	NumWinners *int
 	// Allow abstain
 	AllowAbstain *bool
+	// Whether voters may change a submitted ballot until the vote ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange bool
 }
 
 // VoteResultsResult is the result type of the vote service get_vote_results
 // method.
 type VoteResultsResult struct {
-	// Poll results data
+	// True when the results are withheld because the vote is pseudo-anonymous and
+	// has not ended. An explicit false from ITX is preserved as-is; clients must
+	// not treat absence as a held or final state on its own. While held, only the
+	// participation counts and poll_end_time are returned.
+	ResultsHeld *bool
+	// Poll results data. Absent while results are held.
 	PollResults []*PollResultItem
-	// Comment results
+	// Comment results. Absent while results are held.
 	CommentResults []*CommentResultItem
 	// Number of recipients
 	NumRecipients int
 	// Number of votes cast
 	NumVotesCast int
-	// Number who abstained
-	NumAbstained int
+	// Number who abstained. Absent while results are held.
+	NumAbstained *int
 	// Poll end time
 	PollEndTime *string
 	// IANA timezone name used to interpret poll_end_time (e.g.

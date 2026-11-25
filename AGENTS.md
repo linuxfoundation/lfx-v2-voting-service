@@ -7,7 +7,8 @@
 | `api/voting/v1/design/` | Goa DSL — API contract source of truth |
 | `gen/` | **Generated** — never edit directly |
 | `cmd/voting-api/` | Application entry point, handlers, wiring, converters |
-| `cmd/voting-api/eventing/` | NATS KV event processing (asynchronous path) |
+| `cmd/voting-api/eventing/` | NATS KV consumer adapter (asynchronous path) |
+| `internal/service/eventsync/` | v1→v2 sync of votes, vote responses and vote results |
 | `internal/domain/` | Interfaces and models — no external imports allowed |
 | `internal/service/` | Business logic |
 | `internal/infrastructure/` | ITX proxy, NATS publisher, ID mapper, auth |
@@ -31,6 +32,22 @@ make clean-bin  # remove bin/ only (preserves gen/)
 
 Run `make ci` before opening a pull request. Run `make help` for all targets.
 
+## Go version
+
+This repo targets Go 1.27.x (currently 1.27.4, the latest patch). This
+supersedes the Go version policy in the `lfx-megalinter` skill, which targets
+the latest stable minor minus one: don't move `go.mod` back to Go 1.26. Take
+every 1.27.x patch release, and update `go.mod` and `README.md` together.
+Release images are built with the `go.mod` version (`setup-go` reads it).
+
+MegaLinter (v10.2.0) runs Go 1.26.10 in its image, so
+`.github/workflows/mega-linter.yaml` sets `GOTOOLCHAIN: auto` to let its Go
+linters download the `go.mod` toolchain. Its bundled golangci-lint 2.15.0 is
+built with Go 1.27.0 and lints this module. osv-scanner's govulncheck call
+analysis is built with Go 1.26 and cannot load it, so osv-scanner falls back
+to matching vulnerabilities by version: any known vulnerability in a
+dependency version fails the check, reachable or not.
+
 ## Architecture Layers
 
 Dependencies flow **inward only**. Never import infrastructure from service or domain.
@@ -43,7 +60,8 @@ Dependencies flow **inward only**. Never import infrastructure from service or d
 | Service | `internal/service/` | Business logic — call domain interfaces only |
 | Infrastructure | `internal/infrastructure/` | External systems — never imported by service/domain |
 | App wiring | `cmd/voting-api/` | Handlers, converters, dependency injection |
-| Event processing | `cmd/voting-api/eventing/` | Known tech debt: contains business logic that belongs in service layer — do not add more here |
+| Event sync | `internal/service/eventsync/` | v1→v2 sync logic behind `Syncer.Sync` — `internal/domain` and shared `pkg/` only, no infrastructure imports |
+| Event processing | `cmd/voting-api/eventing/` | NATS adapter only (consumer, ACK/NAK, backoff) — no sync logic |
 
 See `docs/architecture/boundaries.md` for the full boundary map including known violations.
 
@@ -61,6 +79,12 @@ Use `#` prefix for YAML, Makefile, and shell files. CI enforces this on all file
 **Errors** — use the `ErrorType` enum in `internal/domain/errors.go`. Return domain errors from service/infrastructure; convert to Goa errors only in `cmd/voting-api/api.go`.
 
 > **Why ITX 401/403 maps to `ErrorTypeInternal`**: When the proxy receives a 401 or 403 from ITX it means the service's own M2M token is invalid or expired — an infrastructure problem, not a client-auth failure. There is deliberately no `ErrorTypeForbidden`. See the comment in `internal/domain/errors.go` for the full rationale.
+
+**Test file naming** — a `_test.go` file must have a matching implementation file: `foo_test.go` tests `foo.go` in the same directory. Never add `foo_gaps_test.go`, `foo_coverage_test.go`, `foo_contract_test.go` or a test file named after a feature or theme; add the tests to the existing `foo_test.go` (create it only if `foo.go` exists). If a test covers a function, put it in the test file of the file that defines that function. The only exceptions are shared test support files with no production counterpart: fakes/mocks (`mock_*_test.go`, e.g. `mock_kv_test.go`) and shared helpers (`helpers_test.go`, `memory_store_test.go`). Check with:
+
+```bash
+find . -name '*_test.go' ! -path './gen/*' | while read f; do [ -f "${f%_test.go}.go" ] || echo "$f"; done
+```
 
 **Doc comments** — all exported functions and types must have Go doc comments.
 
@@ -90,7 +114,7 @@ To test without a live ITX connection, mock the domain interfaces in `internal/d
 1. Define endpoint in `api/voting/v1/design/voting.go`
 2. Add types in `api/voting/v1/design/types.go` if needed
 3. `make generate` — commit the `gen/` changes
-4. Add proxy method in `internal/infrastructure/proxy/client.go`
+4. Add proxy method in `internal/infrastructure/proxy/client.go` and a row for it in `operations()` in `internal/infrastructure/proxy/client_test.go`
 5. Add service method in `internal/service/`
 6. Add converters in `cmd/voting-api/service/`
 7. Implement Goa handler in `cmd/voting-api/api.go`
@@ -98,7 +122,7 @@ To test without a live ITX connection, mock the domain interfaces in `internal/d
 ## Dangerous Operations
 
 - **Auth middleware** (`internal/middleware/`) — changes affect every request; must be its own PR
-- **NATS event schemas** (indexer and FGA events in `cmd/voting-api/eventing/`) — downstream services depend on the exact format; see `docs/indexer-contract.md` and `docs/fga-contract.md`
+- **NATS event schemas** (indexer and FGA events in `internal/infrastructure/eventing/`, produced by `internal/service/eventsync/`) — downstream services depend on the exact format; see `docs/indexer-contract.md` and `docs/fga-contract.md`
 - **ITX API field mappings** — mismatches cause silent data corruption; see `docs/api-contracts.md`
 - **`internal/domain/` interface changes** — break all infrastructure implementations that implement them
 - **`make clean`** removes `gen/`; run `make generate` before the next build
@@ -115,5 +139,6 @@ To test without a live ITX connection, mock the domain interfaces in `internal/d
 | `docs/api-contracts.md` | LFXv2 ↔ ITX field mappings |
 | `docs/itx-proxy-implementation.md` | Proxy layer deep-dive |
 | `docs/glossary.md` | Service-specific terminology (ITX, SFID, v1/v2) |
+| `docs/vote-links.md` | Personalized HMAC-signed vote links (login-free voting) |
 | `README.md` | Environment variables, running locally, Helm deployment |
 | `CONTRIBUTING.md` | PR process, branch naming, commit conventions |

@@ -89,7 +89,7 @@ func TestNewEventProcessor(t *testing.T) {
 		assert.NotNil(t, ep.natsConn)
 		assert.NotNil(t, ep.jsInstance)
 		assert.NotNil(t, ep.publisher)
-		assert.NotNil(t, ep.mappingsKV)
+		assert.NotNil(t, ep.syncer)
 	})
 
 	t.Run("fails with invalid NATS URL", func(t *testing.T) {

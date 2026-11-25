@@ -24,14 +24,33 @@ import (
 //	command (subcommand1|subcommand2|...)
 func UsageCommands() []string {
 	return []string{
-		"vote (create-vote|get-vote|update-vote|delete-vote|extend-vote|enable-vote|bulk-resend-vote|get-vote-results|create-vote-response|get-vote-response|update-vote-response|resend-vote-response)",
+		"vote (create-vote|get-vote|update-vote|delete-vote|extend-vote|end-vote|enable-vote|bulk-resend-vote|get-vote-results|create-vote-response|get-vote-response|update-vote-response|create-vote-response-by-link|update-vote-response-by-link|get-vote-ballot-by-link|resend-vote-response)",
 	}
 }
 
 // UsageExamples produces an example of a valid invocation of the CLI tool.
 func UsageExamples() string {
-	return os.Args[0] + " " + "vote create-vote --body '{\n      \"allow_abstain\": true,\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n      \"committee_uids\": [\n         \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n         \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n      ],\n      \"description\": \"Vote for the TSC members for Q1 2026\",\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"end_time_timezone\": \"America/New_York\",\n      \"name\": \"Q1 2026 Technical Steering Committee Election\",\n      \"num_winners\": 5,\n      \"poll_comment_prompts\": [\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         }\n      ],\n      \"poll_questions\": [\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"82f82f31-aa62-41d3-a57c-698d4442162d\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"82f82f31-aa62-41d3-a57c-698d4442162d\",\n            \"type\": \"single_choice\"\n         }\n      ],\n      \"poll_type\": \"generic\",\n      \"project_uid\": \"a09P000000DsCBuIRT\",\n      \"pseudo_anonymity\": false,\n      \"quorum_percentage\": 50,\n      \"winning_threshold_percentage\": 51\n   }' --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"" + "\n" +
+	return os.Args[0] + " " + "vote create-vote --body '{\n      \"allow_abstain\": true,\n      \"allow_vote_change\": false,\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n      \"committee_uids\": [\n         \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n         \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n      ],\n      \"description\": \"Vote for the TSC members for Q1 2026\",\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"end_time_timezone\": \"America/New_York\",\n      \"name\": \"Q1 2026 Technical Steering Committee Election\",\n      \"num_winners\": 9,\n      \"poll_comment_prompts\": [\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         }\n      ],\n      \"poll_questions\": [\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"c206dc2f-7638-4cfd-b544-fc4e84f6a402\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"c206dc2f-7638-4cfd-b544-fc4e84f6a402\",\n            \"type\": \"single_choice\"\n         }\n      ],\n      \"poll_type\": \"instant_runoff_vote\",\n      \"project_uid\": \"a09P000000DsCBuIRT\",\n      \"pseudo_anonymity\": true,\n      \"quorum_percentage\": 50,\n      \"winning_threshold_percentage\": 51\n   }' --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"" + "\n" +
 		""
+}
+
+// cliStringFlag keeps an omitted command-line flag distinct from an explicitly empty flag.
+type cliStringFlag struct {
+	value *string
+}
+
+// String returns the flag text shown by the standard flag package.
+func (f *cliStringFlag) String() string {
+	if f.value == nil {
+		return ""
+	}
+	return *f.value
+}
+
+// Set records that the user supplied the flag, even when value is empty.
+func (f *cliStringFlag) Set(value string) error {
+	f.value = &value
+	return nil
 }
 
 // ParseEndpoint returns the endpoint and payload as specified on the command
@@ -47,69 +66,126 @@ func ParseEndpoint(
 		voteFlags = flag.NewFlagSet("vote", flag.ContinueOnError)
 
 		voteCreateVoteFlags     = flag.NewFlagSet("create-vote", flag.ExitOnError)
-		voteCreateVoteBodyFlag  = voteCreateVoteFlags.String("body", "REQUIRED", "")
-		voteCreateVoteTokenFlag = voteCreateVoteFlags.String("token", "", "")
+		voteCreateVoteBodyFlag  = new(cliStringFlag)
+		voteCreateVoteTokenFlag = new(cliStringFlag)
 
 		voteGetVoteFlags     = flag.NewFlagSet("get-vote", flag.ExitOnError)
-		voteGetVoteUIDFlag   = voteGetVoteFlags.String("uid", "REQUIRED", "Vote UID")
-		voteGetVoteTokenFlag = voteGetVoteFlags.String("token", "", "")
+		voteGetVoteUIDFlag   = new(cliStringFlag)
+		voteGetVoteTokenFlag = new(cliStringFlag)
 
 		voteUpdateVoteFlags     = flag.NewFlagSet("update-vote", flag.ExitOnError)
-		voteUpdateVoteBodyFlag  = voteUpdateVoteFlags.String("body", "REQUIRED", "")
-		voteUpdateVoteUIDFlag   = voteUpdateVoteFlags.String("uid", "REQUIRED", "Vote UID")
-		voteUpdateVoteTokenFlag = voteUpdateVoteFlags.String("token", "", "")
+		voteUpdateVoteBodyFlag  = new(cliStringFlag)
+		voteUpdateVoteUIDFlag   = new(cliStringFlag)
+		voteUpdateVoteTokenFlag = new(cliStringFlag)
 
 		voteDeleteVoteFlags     = flag.NewFlagSet("delete-vote", flag.ExitOnError)
-		voteDeleteVoteUIDFlag   = voteDeleteVoteFlags.String("uid", "REQUIRED", "Vote UID")
-		voteDeleteVoteTokenFlag = voteDeleteVoteFlags.String("token", "", "")
+		voteDeleteVoteUIDFlag   = new(cliStringFlag)
+		voteDeleteVoteTokenFlag = new(cliStringFlag)
 
 		voteExtendVoteFlags     = flag.NewFlagSet("extend-vote", flag.ExitOnError)
-		voteExtendVoteBodyFlag  = voteExtendVoteFlags.String("body", "REQUIRED", "")
-		voteExtendVoteUIDFlag   = voteExtendVoteFlags.String("uid", "REQUIRED", "Vote UID")
-		voteExtendVoteTokenFlag = voteExtendVoteFlags.String("token", "", "")
+		voteExtendVoteBodyFlag  = new(cliStringFlag)
+		voteExtendVoteUIDFlag   = new(cliStringFlag)
+		voteExtendVoteTokenFlag = new(cliStringFlag)
+
+		voteEndVoteFlags     = flag.NewFlagSet("end-vote", flag.ExitOnError)
+		voteEndVoteUIDFlag   = new(cliStringFlag)
+		voteEndVoteTokenFlag = new(cliStringFlag)
 
 		voteEnableVoteFlags     = flag.NewFlagSet("enable-vote", flag.ExitOnError)
-		voteEnableVoteUIDFlag   = voteEnableVoteFlags.String("uid", "REQUIRED", "Vote UID")
-		voteEnableVoteTokenFlag = voteEnableVoteFlags.String("token", "", "")
+		voteEnableVoteUIDFlag   = new(cliStringFlag)
+		voteEnableVoteTokenFlag = new(cliStringFlag)
 
 		voteBulkResendVoteFlags     = flag.NewFlagSet("bulk-resend-vote", flag.ExitOnError)
-		voteBulkResendVoteBodyFlag  = voteBulkResendVoteFlags.String("body", "REQUIRED", "")
-		voteBulkResendVoteUIDFlag   = voteBulkResendVoteFlags.String("uid", "REQUIRED", "Vote UID")
-		voteBulkResendVoteTokenFlag = voteBulkResendVoteFlags.String("token", "", "")
+		voteBulkResendVoteBodyFlag  = new(cliStringFlag)
+		voteBulkResendVoteUIDFlag   = new(cliStringFlag)
+		voteBulkResendVoteTokenFlag = new(cliStringFlag)
 
 		voteGetVoteResultsFlags     = flag.NewFlagSet("get-vote-results", flag.ExitOnError)
-		voteGetVoteResultsUIDFlag   = voteGetVoteResultsFlags.String("uid", "REQUIRED", "Vote UID")
-		voteGetVoteResultsTokenFlag = voteGetVoteResultsFlags.String("token", "", "")
+		voteGetVoteResultsUIDFlag   = new(cliStringFlag)
+		voteGetVoteResultsTokenFlag = new(cliStringFlag)
 
 		voteCreateVoteResponseFlags     = flag.NewFlagSet("create-vote-response", flag.ExitOnError)
-		voteCreateVoteResponseBodyFlag  = voteCreateVoteResponseFlags.String("body", "REQUIRED", "")
-		voteCreateVoteResponseTokenFlag = voteCreateVoteResponseFlags.String("token", "", "")
+		voteCreateVoteResponseBodyFlag  = new(cliStringFlag)
+		voteCreateVoteResponseTokenFlag = new(cliStringFlag)
 
 		voteGetVoteResponseFlags               = flag.NewFlagSet("get-vote-response", flag.ExitOnError)
-		voteGetVoteResponseVoteResponseUIDFlag = voteGetVoteResponseFlags.String("vote-response-uid", "REQUIRED", "Vote response identifier")
-		voteGetVoteResponseTokenFlag           = voteGetVoteResponseFlags.String("token", "", "")
+		voteGetVoteResponseVoteResponseUIDFlag = new(cliStringFlag)
+		voteGetVoteResponseTokenFlag           = new(cliStringFlag)
 
 		voteUpdateVoteResponseFlags               = flag.NewFlagSet("update-vote-response", flag.ExitOnError)
-		voteUpdateVoteResponseBodyFlag            = voteUpdateVoteResponseFlags.String("body", "REQUIRED", "")
-		voteUpdateVoteResponseVoteResponseUIDFlag = voteUpdateVoteResponseFlags.String("vote-response-uid", "REQUIRED", "Vote response identifier")
-		voteUpdateVoteResponseTokenFlag           = voteUpdateVoteResponseFlags.String("token", "", "")
+		voteUpdateVoteResponseBodyFlag            = new(cliStringFlag)
+		voteUpdateVoteResponseVoteResponseUIDFlag = new(cliStringFlag)
+		voteUpdateVoteResponseTokenFlag           = new(cliStringFlag)
+
+		voteCreateVoteResponseByLinkFlags     = flag.NewFlagSet("create-vote-response-by-link", flag.ExitOnError)
+		voteCreateVoteResponseByLinkBodyFlag  = new(cliStringFlag)
+		voteCreateVoteResponseByLinkTokenFlag = new(cliStringFlag)
+
+		voteUpdateVoteResponseByLinkFlags     = flag.NewFlagSet("update-vote-response-by-link", flag.ExitOnError)
+		voteUpdateVoteResponseByLinkBodyFlag  = new(cliStringFlag)
+		voteUpdateVoteResponseByLinkTokenFlag = new(cliStringFlag)
+
+		voteGetVoteBallotByLinkFlags     = flag.NewFlagSet("get-vote-ballot-by-link", flag.ExitOnError)
+		voteGetVoteBallotByLinkBodyFlag  = new(cliStringFlag)
+		voteGetVoteBallotByLinkTokenFlag = new(cliStringFlag)
 
 		voteResendVoteResponseFlags               = flag.NewFlagSet("resend-vote-response", flag.ExitOnError)
-		voteResendVoteResponseVoteResponseUIDFlag = voteResendVoteResponseFlags.String("vote-response-uid", "REQUIRED", "Vote response identifier")
-		voteResendVoteResponseTokenFlag           = voteResendVoteResponseFlags.String("token", "", "")
+		voteResendVoteResponseVoteResponseUIDFlag = new(cliStringFlag)
+		voteResendVoteResponseTokenFlag           = new(cliStringFlag)
 	)
+	voteCreateVoteFlags.Var(voteCreateVoteBodyFlag, "body", "")
+	voteCreateVoteFlags.Var(voteCreateVoteTokenFlag, "token", "")
+	voteGetVoteFlags.Var(voteGetVoteUIDFlag, "uid", "Vote UID")
+	voteGetVoteFlags.Var(voteGetVoteTokenFlag, "token", "")
+	voteUpdateVoteFlags.Var(voteUpdateVoteBodyFlag, "body", "")
+	voteUpdateVoteFlags.Var(voteUpdateVoteUIDFlag, "uid", "Vote UID")
+	voteUpdateVoteFlags.Var(voteUpdateVoteTokenFlag, "token", "")
+	voteDeleteVoteFlags.Var(voteDeleteVoteUIDFlag, "uid", "Vote UID")
+	voteDeleteVoteFlags.Var(voteDeleteVoteTokenFlag, "token", "")
+	voteExtendVoteFlags.Var(voteExtendVoteBodyFlag, "body", "")
+	voteExtendVoteFlags.Var(voteExtendVoteUIDFlag, "uid", "Vote UID")
+	voteExtendVoteFlags.Var(voteExtendVoteTokenFlag, "token", "")
+	voteEndVoteFlags.Var(voteEndVoteUIDFlag, "uid", "Vote UID")
+	voteEndVoteFlags.Var(voteEndVoteTokenFlag, "token", "")
+	voteEnableVoteFlags.Var(voteEnableVoteUIDFlag, "uid", "Vote UID")
+	voteEnableVoteFlags.Var(voteEnableVoteTokenFlag, "token", "")
+	voteBulkResendVoteFlags.Var(voteBulkResendVoteBodyFlag, "body", "")
+	voteBulkResendVoteFlags.Var(voteBulkResendVoteUIDFlag, "uid", "Vote UID")
+	voteBulkResendVoteFlags.Var(voteBulkResendVoteTokenFlag, "token", "")
+	voteGetVoteResultsFlags.Var(voteGetVoteResultsUIDFlag, "uid", "Vote UID")
+	voteGetVoteResultsFlags.Var(voteGetVoteResultsTokenFlag, "token", "")
+	voteCreateVoteResponseFlags.Var(voteCreateVoteResponseBodyFlag, "body", "")
+	voteCreateVoteResponseFlags.Var(voteCreateVoteResponseTokenFlag, "token", "")
+	voteGetVoteResponseFlags.Var(voteGetVoteResponseVoteResponseUIDFlag, "vote-response-uid", "Vote response identifier")
+	voteGetVoteResponseFlags.Var(voteGetVoteResponseTokenFlag, "token", "")
+	voteUpdateVoteResponseFlags.Var(voteUpdateVoteResponseBodyFlag, "body", "")
+	voteUpdateVoteResponseFlags.Var(voteUpdateVoteResponseVoteResponseUIDFlag, "vote-response-uid", "Vote response identifier")
+	voteUpdateVoteResponseFlags.Var(voteUpdateVoteResponseTokenFlag, "token", "")
+	voteCreateVoteResponseByLinkFlags.Var(voteCreateVoteResponseByLinkBodyFlag, "body", "")
+	voteCreateVoteResponseByLinkFlags.Var(voteCreateVoteResponseByLinkTokenFlag, "token", "")
+	voteUpdateVoteResponseByLinkFlags.Var(voteUpdateVoteResponseByLinkBodyFlag, "body", "")
+	voteUpdateVoteResponseByLinkFlags.Var(voteUpdateVoteResponseByLinkTokenFlag, "token", "")
+	voteGetVoteBallotByLinkFlags.Var(voteGetVoteBallotByLinkBodyFlag, "body", "")
+	voteGetVoteBallotByLinkFlags.Var(voteGetVoteBallotByLinkTokenFlag, "token", "")
+	voteResendVoteResponseFlags.Var(voteResendVoteResponseVoteResponseUIDFlag, "vote-response-uid", "Vote response identifier")
+	voteResendVoteResponseFlags.Var(voteResendVoteResponseTokenFlag, "token", "")
+
 	voteFlags.Usage = voteUsage
 	voteCreateVoteFlags.Usage = voteCreateVoteUsage
 	voteGetVoteFlags.Usage = voteGetVoteUsage
 	voteUpdateVoteFlags.Usage = voteUpdateVoteUsage
 	voteDeleteVoteFlags.Usage = voteDeleteVoteUsage
 	voteExtendVoteFlags.Usage = voteExtendVoteUsage
+	voteEndVoteFlags.Usage = voteEndVoteUsage
 	voteEnableVoteFlags.Usage = voteEnableVoteUsage
 	voteBulkResendVoteFlags.Usage = voteBulkResendVoteUsage
 	voteGetVoteResultsFlags.Usage = voteGetVoteResultsUsage
 	voteCreateVoteResponseFlags.Usage = voteCreateVoteResponseUsage
 	voteGetVoteResponseFlags.Usage = voteGetVoteResponseUsage
 	voteUpdateVoteResponseFlags.Usage = voteUpdateVoteResponseUsage
+	voteCreateVoteResponseByLinkFlags.Usage = voteCreateVoteResponseByLinkUsage
+	voteUpdateVoteResponseByLinkFlags.Usage = voteUpdateVoteResponseByLinkUsage
+	voteGetVoteBallotByLinkFlags.Usage = voteGetVoteBallotByLinkUsage
 	voteResendVoteResponseFlags.Usage = voteResendVoteResponseUsage
 
 	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
@@ -161,6 +237,9 @@ func ParseEndpoint(
 			case "extend-vote":
 				epf = voteExtendVoteFlags
 
+			case "end-vote":
+				epf = voteEndVoteFlags
+
 			case "enable-vote":
 				epf = voteEnableVoteFlags
 
@@ -178,6 +257,15 @@ func ParseEndpoint(
 
 			case "update-vote-response":
 				epf = voteUpdateVoteResponseFlags
+
+			case "create-vote-response-by-link":
+				epf = voteCreateVoteResponseByLinkFlags
+
+			case "update-vote-response-by-link":
+				epf = voteUpdateVoteResponseByLinkFlags
+
+			case "get-vote-ballot-by-link":
+				epf = voteGetVoteBallotByLinkFlags
 
 			case "resend-vote-response":
 				epf = voteResendVoteResponseFlags
@@ -209,40 +297,52 @@ func ParseEndpoint(
 			switch epn {
 			case "create-vote":
 				endpoint = c.CreateVote()
-				data, err = votec.BuildCreateVotePayload(*voteCreateVoteBodyFlag, *voteCreateVoteTokenFlag)
+				data, err = votec.BuildCreateVotePayload(voteCreateVoteBodyFlag.value, voteCreateVoteTokenFlag.value)
 			case "get-vote":
 				endpoint = c.GetVote()
-				data, err = votec.BuildGetVotePayload(*voteGetVoteUIDFlag, *voteGetVoteTokenFlag)
+				data, err = votec.BuildGetVotePayload(voteGetVoteUIDFlag.value, voteGetVoteTokenFlag.value)
 			case "update-vote":
 				endpoint = c.UpdateVote()
-				data, err = votec.BuildUpdateVotePayload(*voteUpdateVoteBodyFlag, *voteUpdateVoteUIDFlag, *voteUpdateVoteTokenFlag)
+				data, err = votec.BuildUpdateVotePayload(voteUpdateVoteBodyFlag.value, voteUpdateVoteUIDFlag.value, voteUpdateVoteTokenFlag.value)
 			case "delete-vote":
 				endpoint = c.DeleteVote()
-				data, err = votec.BuildDeleteVotePayload(*voteDeleteVoteUIDFlag, *voteDeleteVoteTokenFlag)
+				data, err = votec.BuildDeleteVotePayload(voteDeleteVoteUIDFlag.value, voteDeleteVoteTokenFlag.value)
 			case "extend-vote":
 				endpoint = c.ExtendVote()
-				data, err = votec.BuildExtendVotePayload(*voteExtendVoteBodyFlag, *voteExtendVoteUIDFlag, *voteExtendVoteTokenFlag)
+				data, err = votec.BuildExtendVotePayload(voteExtendVoteBodyFlag.value, voteExtendVoteUIDFlag.value, voteExtendVoteTokenFlag.value)
+			case "end-vote":
+				endpoint = c.EndVote()
+				data, err = votec.BuildEndVotePayload(voteEndVoteUIDFlag.value, voteEndVoteTokenFlag.value)
 			case "enable-vote":
 				endpoint = c.EnableVote()
-				data, err = votec.BuildEnableVotePayload(*voteEnableVoteUIDFlag, *voteEnableVoteTokenFlag)
+				data, err = votec.BuildEnableVotePayload(voteEnableVoteUIDFlag.value, voteEnableVoteTokenFlag.value)
 			case "bulk-resend-vote":
 				endpoint = c.BulkResendVote()
-				data, err = votec.BuildBulkResendVotePayload(*voteBulkResendVoteBodyFlag, *voteBulkResendVoteUIDFlag, *voteBulkResendVoteTokenFlag)
+				data, err = votec.BuildBulkResendVotePayload(voteBulkResendVoteBodyFlag.value, voteBulkResendVoteUIDFlag.value, voteBulkResendVoteTokenFlag.value)
 			case "get-vote-results":
 				endpoint = c.GetVoteResults()
-				data, err = votec.BuildGetVoteResultsPayload(*voteGetVoteResultsUIDFlag, *voteGetVoteResultsTokenFlag)
+				data, err = votec.BuildGetVoteResultsPayload(voteGetVoteResultsUIDFlag.value, voteGetVoteResultsTokenFlag.value)
 			case "create-vote-response":
 				endpoint = c.CreateVoteResponse()
-				data, err = votec.BuildCreateVoteResponsePayload(*voteCreateVoteResponseBodyFlag, *voteCreateVoteResponseTokenFlag)
+				data, err = votec.BuildCreateVoteResponsePayload(voteCreateVoteResponseBodyFlag.value, voteCreateVoteResponseTokenFlag.value)
 			case "get-vote-response":
 				endpoint = c.GetVoteResponse()
-				data, err = votec.BuildGetVoteResponsePayload(*voteGetVoteResponseVoteResponseUIDFlag, *voteGetVoteResponseTokenFlag)
+				data, err = votec.BuildGetVoteResponsePayload(voteGetVoteResponseVoteResponseUIDFlag.value, voteGetVoteResponseTokenFlag.value)
 			case "update-vote-response":
 				endpoint = c.UpdateVoteResponse()
-				data, err = votec.BuildUpdateVoteResponsePayload(*voteUpdateVoteResponseBodyFlag, *voteUpdateVoteResponseVoteResponseUIDFlag, *voteUpdateVoteResponseTokenFlag)
+				data, err = votec.BuildUpdateVoteResponsePayload(voteUpdateVoteResponseBodyFlag.value, voteUpdateVoteResponseVoteResponseUIDFlag.value, voteUpdateVoteResponseTokenFlag.value)
+			case "create-vote-response-by-link":
+				endpoint = c.CreateVoteResponseByLink()
+				data, err = votec.BuildCreateVoteResponseByLinkPayload(voteCreateVoteResponseByLinkBodyFlag.value, voteCreateVoteResponseByLinkTokenFlag.value)
+			case "update-vote-response-by-link":
+				endpoint = c.UpdateVoteResponseByLink()
+				data, err = votec.BuildUpdateVoteResponseByLinkPayload(voteUpdateVoteResponseByLinkBodyFlag.value, voteUpdateVoteResponseByLinkTokenFlag.value)
+			case "get-vote-ballot-by-link":
+				endpoint = c.GetVoteBallotByLink()
+				data, err = votec.BuildGetVoteBallotByLinkPayload(voteGetVoteBallotByLinkBodyFlag.value, voteGetVoteBallotByLinkTokenFlag.value)
 			case "resend-vote-response":
 				endpoint = c.ResendVoteResponse()
-				data, err = votec.BuildResendVoteResponsePayload(*voteResendVoteResponseVoteResponseUIDFlag, *voteResendVoteResponseTokenFlag)
+				data, err = votec.BuildResendVoteResponsePayload(voteResendVoteResponseVoteResponseUIDFlag.value, voteResendVoteResponseTokenFlag.value)
 			}
 		}
 	}
@@ -261,14 +361,18 @@ func voteUsage() {
 	fmt.Fprintln(os.Stderr, `    create-vote: Create a new vote (proxies to ITX POST /voting/poll)`)
 	fmt.Fprintln(os.Stderr, `    get-vote: Get vote details (proxies to ITX GET /voting/poll/{poll_id})`)
 	fmt.Fprintln(os.Stderr, `    update-vote: Update vote (proxies to ITX PUT /voting/poll/{poll_id}). Only allowed when status is 'disabled'`)
-	fmt.Fprintln(os.Stderr, `    delete-vote: Delete vote (proxies to ITX DELETE /voting/poll/{poll_id}). Only allowed when status is 'disabled'`)
+	fmt.Fprintln(os.Stderr, `    delete-vote: Delete or cancel a vote (proxies to ITX DELETE /voting/poll/{poll_id}). A disabled (draft) vote is deleted. An active vote is cancelled: the vote and its responses are permanently removed, and recipients receive a cancellation notice; response cleanup runs asynchronously. Ended votes, whether closed early, closed automatically or past end_time, cannot be deleted; ITX returns 400 'ended polls cannot be deleted'. Requires writer on the vote.`)
 	fmt.Fprintln(os.Stderr, `    extend-vote: Extend a vote's end time (proxies to ITX POST /voting/poll/{poll_id}/extend)`)
+	fmt.Fprintln(os.Stderr, `    end-vote: End an active vote immediately (proxies to ITX POST /voting/poll/{poll_id}/end). Idempotent for an already-ended vote; a disabled vote returns 409. Ending preserves the vote and its results; to cancel and remove an active vote use delete_vote.`)
 	fmt.Fprintln(os.Stderr, `    enable-vote: Enable a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)`)
 	fmt.Fprintln(os.Stderr, `    bulk-resend-vote: Bulk resend vote email to select recipients (proxies to ITX POST /voting/poll/{poll_id}/bulk_resend)`)
 	fmt.Fprintln(os.Stderr, `    get-vote-results: Get vote results (proxies to ITX GET /voting/poll/{poll_id}/results)`)
 	fmt.Fprintln(os.Stderr, `    create-vote-response: Submit a vote response (proxies to ITX POST /voting/vote)`)
 	fmt.Fprintln(os.Stderr, `    get-vote-response: Get vote response details (proxies to ITX GET /voting/vote/{vote_id})`)
-	fmt.Fprintln(os.Stderr, `    update-vote-response: Update vote response (proxies to ITX PUT /voting/vote/{vote_id})`)
+	fmt.Fprintln(os.Stderr, `    update-vote-response: Update vote response (proxies to ITX PUT /voting/vote/{vote_id}). Returns 409 when the vote does not allow changing a submitted ballot.`)
+	fmt.Fprintln(os.Stderr, `    create-vote-response-by-link: Submit a vote response using a personalized vote link token, without logging in (proxies to ITX POST /voting/vote). The ballot is identified only by the token. External callers send no Authorization header: the gateway (Heimdall) admits the request anonymously and supplies the JWT shown in this spec's security requirement.`)
+	fmt.Fprintln(os.Stderr, `    update-vote-response-by-link: Update a vote response using a personalized vote link token, without logging in (proxies to ITX PUT /voting/vote/{vote_id}). The ballot is identified only by the token. External callers send no Authorization header: the gateway (Heimdall) admits the request anonymously and supplies the JWT shown in this spec's security requirement. Omitting comment_responses preserves existing comments; including it (even empty) replaces them. Returns 409 when the vote does not allow changing a submitted ballot.`)
+	fmt.Fprintln(os.Stderr, `    get-vote-ballot-by-link: Get the vote's questions and the link holder's own ballot using a personalized vote link token, without logging in. The vote and ballot are identified only by the token. External callers send no Authorization header: the gateway (Heimdall) admits the request anonymously and supplies the JWT shown in this spec's security requirement.`)
 	fmt.Fprintln(os.Stderr, `    resend-vote-response: Resend vote email (proxies to ITX POST /voting/vote/{vote_id}/resend)`)
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Additional help:")
@@ -291,7 +395,7 @@ func voteCreateVoteUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote create-vote --body '{\n      \"allow_abstain\": true,\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n      \"committee_uids\": [\n         \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n         \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n      ],\n      \"description\": \"Vote for the TSC members for Q1 2026\",\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"end_time_timezone\": \"America/New_York\",\n      \"name\": \"Q1 2026 Technical Steering Committee Election\",\n      \"num_winners\": 5,\n      \"poll_comment_prompts\": [\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         }\n      ],\n      \"poll_questions\": [\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"82f82f31-aa62-41d3-a57c-698d4442162d\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"82f82f31-aa62-41d3-a57c-698d4442162d\",\n            \"type\": \"single_choice\"\n         }\n      ],\n      \"poll_type\": \"generic\",\n      \"project_uid\": \"a09P000000DsCBuIRT\",\n      \"pseudo_anonymity\": false,\n      \"quorum_percentage\": 50,\n      \"winning_threshold_percentage\": 51\n   }' --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote create-vote --body '{\n      \"allow_abstain\": true,\n      \"allow_vote_change\": false,\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n      \"committee_uids\": [\n         \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n         \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n      ],\n      \"description\": \"Vote for the TSC members for Q1 2026\",\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"end_time_timezone\": \"America/New_York\",\n      \"name\": \"Q1 2026 Technical Steering Committee Election\",\n      \"num_winners\": 9,\n      \"poll_comment_prompts\": [\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         }\n      ],\n      \"poll_questions\": [\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"c206dc2f-7638-4cfd-b544-fc4e84f6a402\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"c206dc2f-7638-4cfd-b544-fc4e84f6a402\",\n            \"type\": \"single_choice\"\n         }\n      ],\n      \"poll_type\": \"instant_runoff_vote\",\n      \"project_uid\": \"a09P000000DsCBuIRT\",\n      \"pseudo_anonymity\": true,\n      \"quorum_percentage\": 50,\n      \"winning_threshold_percentage\": 51\n   }' --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
 }
 
 func voteGetVoteUsage() {
@@ -333,7 +437,7 @@ func voteUpdateVoteUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote update-vote --body '{\n      \"allow_abstain\": true,\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n      \"committee_uids\": [\n         \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n         \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n      ],\n      \"description\": \"Vote for the TSC members for Q1 2026\",\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"end_time_timezone\": \"America/New_York\",\n      \"name\": \"Q1 2026 Technical Steering Committee Election\",\n      \"num_winners\": 7,\n      \"poll_comment_prompts\": [\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         }\n      ],\n      \"poll_questions\": [\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"82f82f31-aa62-41d3-a57c-698d4442162d\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"82f82f31-aa62-41d3-a57c-698d4442162d\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"82f82f31-aa62-41d3-a57c-698d4442162d\",\n            \"type\": \"single_choice\"\n         }\n      ],\n      \"poll_type\": \"generic\",\n      \"project_uid\": \"a09P000000DsCBuIRT\",\n      \"pseudo_anonymity\": false,\n      \"quorum_percentage\": 50,\n      \"winning_threshold_percentage\": 51\n   }' --uid \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\" --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote update-vote --body '{\n      \"allow_abstain\": false,\n      \"allow_vote_change\": true,\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n      \"committee_uids\": [\n         \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n         \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n      ],\n      \"description\": \"Vote for the TSC members for Q1 2026\",\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"end_time_timezone\": \"America/New_York\",\n      \"name\": \"Q1 2026 Technical Steering Committee Election\",\n      \"num_winners\": 7,\n      \"poll_comment_prompts\": [\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         }\n      ],\n      \"poll_questions\": [\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"c206dc2f-7638-4cfd-b544-fc4e84f6a402\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"c206dc2f-7638-4cfd-b544-fc4e84f6a402\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"c206dc2f-7638-4cfd-b544-fc4e84f6a402\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"c206dc2f-7638-4cfd-b544-fc4e84f6a402\",\n            \"type\": \"single_choice\"\n         }\n      ],\n      \"poll_type\": \"condorcet_irv\",\n      \"project_uid\": \"a09P000000DsCBuIRT\",\n      \"pseudo_anonymity\": true,\n      \"quorum_percentage\": 50,\n      \"winning_threshold_percentage\": 51\n   }' --uid \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\" --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
 }
 
 func voteDeleteVoteUsage() {
@@ -345,7 +449,7 @@ func voteDeleteVoteUsage() {
 
 	// Description
 	fmt.Fprintln(os.Stderr)
-	fmt.Fprintln(os.Stderr, `Delete vote (proxies to ITX DELETE /voting/poll/{poll_id}). Only allowed when status is 'disabled'`)
+	fmt.Fprintln(os.Stderr, `Delete or cancel a vote (proxies to ITX DELETE /voting/poll/{poll_id}). A disabled (draft) vote is deleted. An active vote is cancelled: the vote and its responses are permanently removed, and recipients receive a cancellation notice; response cleanup runs asynchronously. Ended votes, whether closed early, closed automatically or past end_time, cannot be deleted; ITX returns 400 'ended polls cannot be deleted'. Requires writer on the vote.`)
 
 	// Flags list
 	fmt.Fprintln(os.Stderr, `    -uid STRING: Vote UID`)
@@ -376,6 +480,26 @@ func voteExtendVoteUsage() {
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
 	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote extend-vote --body '{\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"end_time_timezone\": \"America/New_York\"\n   }' --uid \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\" --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
+}
+
+func voteEndVoteUsage() {
+	// Header with flags
+	fmt.Fprintf(os.Stderr, "%s [flags] vote end-vote", os.Args[0])
+	fmt.Fprint(os.Stderr, " -uid STRING")
+	fmt.Fprint(os.Stderr, " -token STRING")
+	fmt.Fprintln(os.Stderr)
+
+	// Description
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, `End an active vote immediately (proxies to ITX POST /voting/poll/{poll_id}/end). Idempotent for an already-ended vote; a disabled vote returns 409. Ending preserves the vote and its results; to cancel and remove an active vote use delete_vote.`)
+
+	// Flags list
+	fmt.Fprintln(os.Stderr, `    -uid STRING: Vote UID`)
+	fmt.Fprintln(os.Stderr, `    -token STRING: `)
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Example:")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote end-vote --uid \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\" --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
 }
 
 func voteEnableVoteUsage() {
@@ -417,7 +541,7 @@ func voteBulkResendVoteUsage() {
 
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
-	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote bulk-resend-vote --body '{\n      \"recipient_ids\": [\n         \"cba14f40-1636-11ec-9621-0242ac130002\",\n         \"cba14f40-1636-11ec-9621-0242ac130003\"\n      ]\n   }' --uid \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\" --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote bulk-resend-vote --body '{\n      \"personalized_links\": true,\n      \"recipient_ids\": [\n         \"cba14f40-1636-11ec-9621-0242ac130002\",\n         \"cba14f40-1636-11ec-9621-0242ac130003\"\n      ]\n   }' --uid \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\" --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
 }
 
 func voteGetVoteResultsUsage() {
@@ -490,7 +614,7 @@ func voteUpdateVoteResponseUsage() {
 
 	// Description
 	fmt.Fprintln(os.Stderr)
-	fmt.Fprintln(os.Stderr, `Update vote response (proxies to ITX PUT /voting/vote/{vote_id})`)
+	fmt.Fprintln(os.Stderr, `Update vote response (proxies to ITX PUT /voting/vote/{vote_id}). Returns 409 when the vote does not allow changing a submitted ballot.`)
 
 	// Flags list
 	fmt.Fprintln(os.Stderr, `    -body JSON: `)
@@ -500,6 +624,66 @@ func voteUpdateVoteResponseUsage() {
 	fmt.Fprintln(os.Stderr)
 	fmt.Fprintln(os.Stderr, "Example:")
 	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote update-vote-response --body '{\n      \"abstain\": true,\n      \"comment_responses\": [\n         {\n            \"comment_text\": \"Because the incumbent has done great work this term.\",\n            \"prompt_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"user_vote_content\": []\n   }' --vote-response-uid \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\" --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
+}
+
+func voteCreateVoteResponseByLinkUsage() {
+	// Header with flags
+	fmt.Fprintf(os.Stderr, "%s [flags] vote create-vote-response-by-link", os.Args[0])
+	fmt.Fprint(os.Stderr, " -body JSON")
+	fmt.Fprint(os.Stderr, " -token STRING")
+	fmt.Fprintln(os.Stderr)
+
+	// Description
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, `Submit a vote response using a personalized vote link token, without logging in (proxies to ITX POST /voting/vote). The ballot is identified only by the token. External callers send no Authorization header: the gateway (Heimdall) admits the request anonymously and supplies the JWT shown in this spec's security requirement.`)
+
+	// Flags list
+	fmt.Fprintln(os.Stderr, `    -body JSON: `)
+	fmt.Fprintln(os.Stderr, `    -token STRING: `)
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Example:")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote create-vote-response-by-link --body '{\n      \"abstain\": false,\n      \"comment_responses\": [\n         {\n            \"comment_text\": \"Because the incumbent has done great work this term.\",\n            \"prompt_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"user_vote_content\": [\n         {\n            \"choice_ids\": [\n               \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n            ],\n            \"question_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"vote_token\": \"v1.k2026a.eyJ2IjoiOGYzYzJhMWUtNGI1ZC00ZTZmLTlhN2ItMWMyZDNlNGY1YTZiIiwiciI6ImNiYTE0ZjQwLTE2MzYtMTFlYy05NjIxLTAyNDJhYzEzMDAwMiIsImlhdCI6MTc5MzIzMjAwMH0.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU\"\n   }' --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
+}
+
+func voteUpdateVoteResponseByLinkUsage() {
+	// Header with flags
+	fmt.Fprintf(os.Stderr, "%s [flags] vote update-vote-response-by-link", os.Args[0])
+	fmt.Fprint(os.Stderr, " -body JSON")
+	fmt.Fprint(os.Stderr, " -token STRING")
+	fmt.Fprintln(os.Stderr)
+
+	// Description
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, `Update a vote response using a personalized vote link token, without logging in (proxies to ITX PUT /voting/vote/{vote_id}). The ballot is identified only by the token. External callers send no Authorization header: the gateway (Heimdall) admits the request anonymously and supplies the JWT shown in this spec's security requirement. Omitting comment_responses preserves existing comments; including it (even empty) replaces them. Returns 409 when the vote does not allow changing a submitted ballot.`)
+
+	// Flags list
+	fmt.Fprintln(os.Stderr, `    -body JSON: `)
+	fmt.Fprintln(os.Stderr, `    -token STRING: `)
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Example:")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote update-vote-response-by-link --body '{\n      \"abstain\": true,\n      \"comment_responses\": [\n         {\n            \"comment_text\": \"Because the incumbent has done great work this term.\",\n            \"prompt_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"user_vote_content\": [\n         {\n            \"choice_ids\": [\n               \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n            ],\n            \"question_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"vote_token\": \"v1.k2026a.eyJ2IjoiOGYzYzJhMWUtNGI1ZC00ZTZmLTlhN2ItMWMyZDNlNGY1YTZiIiwiciI6ImNiYTE0ZjQwLTE2MzYtMTFlYy05NjIxLTAyNDJhYzEzMDAwMiIsImlhdCI6MTc5MzIzMjAwMH0.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU\"\n   }' --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
+}
+
+func voteGetVoteBallotByLinkUsage() {
+	// Header with flags
+	fmt.Fprintf(os.Stderr, "%s [flags] vote get-vote-ballot-by-link", os.Args[0])
+	fmt.Fprint(os.Stderr, " -body JSON")
+	fmt.Fprint(os.Stderr, " -token STRING")
+	fmt.Fprintln(os.Stderr)
+
+	// Description
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, `Get the vote's questions and the link holder's own ballot using a personalized vote link token, without logging in. The vote and ballot are identified only by the token. External callers send no Authorization header: the gateway (Heimdall) admits the request anonymously and supplies the JWT shown in this spec's security requirement.`)
+
+	// Flags list
+	fmt.Fprintln(os.Stderr, `    -body JSON: `)
+	fmt.Fprintln(os.Stderr, `    -token STRING: `)
+
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "Example:")
+	fmt.Fprintf(os.Stderr, "    %s %s\n", os.Args[0], "vote get-vote-ballot-by-link --body '{\n      \"vote_token\": \"v1.k2026a.eyJ2IjoiOGYzYzJhMWUtNGI1ZC00ZTZmLTlhN2ItMWMyZDNlNGY1YTZiIiwiciI6ImNiYTE0ZjQwLTE2MzYtMTFlYy05NjIxLTAyNDJhYzEzMDAwMiIsImlhdCI6MTc5MzIzMjAwMH0.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU\"\n   }' --token \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\"")
 }
 
 func voteResendVoteResponseUsage() {

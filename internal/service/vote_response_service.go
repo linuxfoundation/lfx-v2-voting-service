@@ -6,11 +6,18 @@ package service
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 	"goa.design/goa/v3/security"
+)
+
+const (
+	advisoryPollTimeout     = 5 * time.Second
+	advisoryBallotBudget    = 10 * time.Second
+	advisoryResponseReserve = time.Second
 )
 
 // VoteResponseService implements vote response business logic
@@ -19,6 +26,52 @@ type VoteResponseService struct {
 	proxyClient domain.VoteResponseClient
 	idMapper    domain.IDMapper
 	logger      *slog.Logger
+	linkSigner  domain.VoteLinkSigner
+	pollReader  domain.PollClient
+}
+
+// VoteResponseServiceOption configures optional VoteResponseService behavior.
+type VoteResponseServiceOption func(*VoteResponseService)
+
+// WithVoteLinkVerifier enables the personalized vote link endpoints, verifying their
+// tokens with signer. Without it those endpoints return 503.
+func WithVoteLinkVerifier(signer domain.VoteLinkSigner) VoteResponseServiceOption {
+	return func(s *VoteResponseService) {
+		s.linkSigner = signer
+	}
+}
+
+// WithPollReader lets the service read the vote itself (questions, choices, status and
+// response counts) from ITX. The personalized vote link ballot read always needs it: without
+// it, GetBallotByLink returns 503. The authenticated ballot read (GET /vote_responses/{uid})
+// uses it to compute WouldEndVote for pending ballots: without it, GetVoteResponse still
+// returns the ballot but reports WouldEndVote false.
+func WithPollReader(polls domain.PollClient) VoteResponseServiceOption {
+	return func(s *VoteResponseService) {
+		s.pollReader = polls
+	}
+}
+
+// VoteLinkBallot is what a personalized vote link holder may see: the vote and their own
+// ballot. IncludeBallotContents is false on pseudo-anonymous votes, where the ballot's
+// answers, comments and abstention must not be returned. ProjectUID is the v2 UID mapped from
+// the poll's v1 project SFID.
+type VoteLinkBallot struct {
+	Poll                  *itx.PollResponse
+	Ballot                *itx.VoteResponse
+	ProjectUID            string
+	IncludeBallotContents bool
+	// WouldEndVote is true when submitting this pending ballot now would be the final
+	// response that ends the vote. Only this yes/no leaves the service, never the counts.
+	WouldEndVote bool
+}
+
+// VoteResponseDetails is a ballot as returned by GET /vote_responses/{uid}, which its voter or
+// a vote auditor may read. WouldEndVote is true when submitting this pending ballot now would
+// be the final response that ends the vote.
+type VoteResponseDetails struct {
+	Ballot       *itx.VoteResponse
+	WouldEndVote bool
 }
 
 // NewVoteResponseService creates a new vote response service
@@ -27,13 +80,18 @@ func NewVoteResponseService(
 	proxyClient domain.VoteResponseClient,
 	idMapper domain.IDMapper,
 	logger *slog.Logger,
+	opts ...VoteResponseServiceOption,
 ) *VoteResponseService {
-	return &VoteResponseService{
+	s := &VoteResponseService{
 		jwtAuth:     jwtAuth,
 		proxyClient: proxyClient,
 		idMapper:    idMapper,
 		logger:      logger,
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 // JWTAuth implements the authorization logic for JWT tokens
@@ -65,6 +123,33 @@ func (s *VoteResponseService) CreateVoteResponse(ctx context.Context, req *Creat
 		"abstain", req.Abstain,
 	)
 
+	return s.submitVoteResponse(ctx, req)
+}
+
+// CreateVoteResponseByLink submits a vote response authorized by a personalized vote link
+// token instead of the caller's identity. The ballot is taken from the verified token;
+// ITX rejects the submission if the vote has ended, the voter was removed, or the ballot
+// was already submitted.
+func (s *VoteResponseService) CreateVoteResponseByLink(ctx context.Context, token string, req *CreateVoteResponseRequest) error {
+	claims, err := s.verifyVoteLink(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	// abstain is not logged: next to the ballot ID it would reveal the voter's choice,
+	// including on pseudo-anonymous votes.
+	s.logger.InfoContext(ctx, "Creating vote response by link",
+		"vote_uid", claims.VoteUID,
+		"vote_id", claims.VoteResponseUID,
+		"key_id", claims.KeyID,
+	)
+
+	req.VoteID = claims.VoteResponseUID
+	return s.submitVoteResponse(ctx, req)
+}
+
+// submitVoteResponse sends a new ballot to ITX for req.VoteID.
+func (s *VoteResponseService) submitVoteResponse(ctx context.Context, req *CreateVoteResponseRequest) error {
 	// Build proxy request
 	proxyReq := &itx.CreateVoteRequest{
 		VoteID:          req.VoteID,
@@ -101,7 +186,7 @@ func (s *VoteResponseService) CreateVoteResponse(ctx context.Context, req *Creat
 	}
 
 	// Call ITX proxy
-	err = s.proxyClient.CreateVote(ctx, proxyReq)
+	err := s.proxyClient.CreateVote(ctx, proxyReq)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to create vote response in ITX", "error", err)
 		return err // Return domain error as-is
@@ -112,8 +197,12 @@ func (s *VoteResponseService) CreateVoteResponse(ctx context.Context, req *Creat
 	return nil
 }
 
-// GetVoteResponse retrieves vote response details (proxies to ITX GET /voting/vote/{vote_id})
-func (s *VoteResponseService) GetVoteResponse(ctx context.Context, voteID string) (*itx.VoteResponse, error) {
+// GetVoteResponse retrieves vote response details (proxies to ITX GET /voting/vote/{vote_id}).
+// For a pending ballot it also reads the vote (ITX GET /voting/poll/{poll_id}) to tell whether
+// this ballot is the last one outstanding; a failed or timed-out advisory vote read
+// reports WouldEndVote false instead of failing the request.
+func (s *VoteResponseService) GetVoteResponse(ctx context.Context, voteID string) (*VoteResponseDetails, error) {
+	started := time.Now()
 	principal, err := requirePrincipal(ctx)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
@@ -135,9 +224,43 @@ func (s *VoteResponseService) GetVoteResponse(ctx context.Context, voteID string
 		return nil, err
 	}
 
+	details := &VoteResponseDetails{Ballot: voteResp}
+	// Submitted and removed ballots can never end the vote, so they skip the extra ITX read.
+	// The check only drives a warning, so a failed vote read leaves WouldEndVote false.
+	if isPendingBallot(voteResp) {
+		if s.pollReader == nil {
+			s.logger.WarnContext(ctx, "Pending ballot requested but no poll reader is configured; reporting would_end_vote false",
+				"vote_uid", voteResp.PollID)
+		} else {
+			// Bound only the advisory lookup. Required reads above keep their original
+			// context, but consume this budget too, leaving room under the server's
+			// 15-second write timeout for conversion and delivery of the loaded ballot.
+			deadline := started.Add(advisoryBallotBudget)
+			if limit := time.Now().Add(advisoryPollTimeout); limit.Before(deadline) {
+				deadline = limit
+			}
+			if parent, ok := ctx.Deadline(); ok && parent.Add(-advisoryResponseReserve).Before(deadline) {
+				deadline = parent.Add(-advisoryResponseReserve)
+			}
+			pollCtx, cancel := context.WithDeadline(ctx, deadline)
+			var poll *itx.PollResponse
+			err := pollCtx.Err()
+			if err == nil {
+				poll, err = s.pollReader.GetPoll(pollCtx, voteResp.PollID)
+			}
+			cancel()
+			if err != nil {
+				s.logger.WarnContext(ctx, "Failed to get vote from ITX; reporting would_end_vote false",
+					"vote_uid", voteResp.PollID, "error", err)
+			} else {
+				details.WouldEndVote = wouldEndVote(poll, voteResp)
+			}
+		}
+	}
+
 	s.logger.InfoContext(ctx, "Vote response retrieved successfully", "vote_id", voteResp.VoteID)
 
-	return voteResp, nil
+	return details, nil
 }
 
 // UpdateVoteResponse updates a vote response (proxies to ITX PUT /voting/vote/{vote_id})
@@ -154,6 +277,115 @@ func (s *VoteResponseService) UpdateVoteResponse(ctx context.Context, voteID str
 		"abstain", req.Abstain,
 	)
 
+	return s.applyVoteResponseUpdate(ctx, voteID, req)
+}
+
+// UpdateVoteResponseByLink updates a vote response authorized by a personalized vote link
+// token instead of the caller's identity. The ballot is taken from the verified token;
+// ITX rejects the update if the vote has ended, the voter was removed, or no ballot has
+// been submitted yet.
+func (s *VoteResponseService) UpdateVoteResponseByLink(ctx context.Context, token string, req *UpdateVoteResponseRequest) error {
+	claims, err := s.verifyVoteLink(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	s.logger.InfoContext(ctx, "Updating vote response by link",
+		"vote_uid", claims.VoteUID,
+		"vote_id", claims.VoteResponseUID,
+		"key_id", claims.KeyID,
+	)
+
+	return s.applyVoteResponseUpdate(ctx, claims.VoteResponseUID, req)
+}
+
+// GetBallotByLink returns the vote and the link holder's own ballot for a personalized vote
+// link token. Both are identified only by the verified token: the ballot must belong to the
+// token's vote, otherwise the link is treated as invalid.
+func (s *VoteResponseService) GetBallotByLink(ctx context.Context, token string) (*VoteLinkBallot, error) {
+	claims, err := s.verifyVoteLink(ctx, token)
+	if err != nil {
+		return nil, err
+	}
+	if s.pollReader == nil {
+		s.logger.WarnContext(ctx, "Vote link ballot requested but no poll reader is configured")
+		return nil, domain.NewUnavailableError("personalized vote links are not configured")
+	}
+
+	s.logger.InfoContext(ctx, "Getting ballot by link",
+		"vote_uid", claims.VoteUID,
+		"vote_id", claims.VoteResponseUID,
+		"key_id", claims.KeyID,
+	)
+
+	ballot, err := s.proxyClient.GetVote(ctx, claims.VoteResponseUID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to get ballot from ITX", "error", err)
+		return nil, err
+	}
+	if ballot.PollID != claims.VoteUID {
+		s.logger.WarnContext(ctx, "Vote link ballot does not belong to the token's vote",
+			"vote_uid", claims.VoteUID, "ballot_poll_id", ballot.PollID)
+		return nil, domain.NewNotFoundError("invalid voting link")
+	}
+
+	poll, err := s.pollReader.GetPoll(ctx, claims.VoteUID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to get vote from ITX", "error", err)
+		return nil, err
+	}
+
+	projectUID, err := s.idMapper.MapProjectV1ToV2(ctx, poll.ProjectID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to map project SFID to UID", "error", err, "v1_sfid", poll.ProjectID)
+		return nil, err
+	}
+
+	return &VoteLinkBallot{
+		Poll:       poll,
+		Ballot:     ballot,
+		ProjectUID: projectUID,
+		// Fail closed: ballot contents only when ITX explicitly said the vote is not
+		// pseudo-anonymous; a missing or null flag is treated as pseudo-anonymous.
+		IncludeBallotContents: poll.PseudoAnonymityKnown && !poll.PseudoAnonymity,
+		WouldEndVote:          wouldEndVote(poll, ballot),
+	}, nil
+}
+
+// isPendingBallot reports whether ballot is still waiting to be cast by a voter who has not
+// been removed. Only such a ballot can be the response that ends the vote.
+func isPendingBallot(ballot *itx.VoteResponse) bool {
+	return ballot.VoteStatus == itx.VoteStatusAwaitingResponse && !ballot.VoterRemoved
+}
+
+// wouldEndVote reports whether submitting ballot now would be the final response that ends
+// poll. It mirrors ITX's auto-end gate (status active, at least one invitation, and responses
+// >= invitations), counting this ballot's response. Changing a submitted ballot never adds a
+// response, so only a pending ballot can end the vote.
+func wouldEndVote(poll *itx.PollResponse, ballot *itx.VoteResponse) bool {
+	return isPendingBallot(ballot) &&
+		poll.Status == itx.PollStatusActive &&
+		poll.TotalVotingRequestInvitations > 0 &&
+		poll.NumResponseReceived+1 >= poll.TotalVotingRequestInvitations
+}
+
+// verifyVoteLink checks a personalized vote link token. Every invalid token yields the
+// same 404 so callers cannot learn which check failed or whether a ballot exists.
+func (s *VoteResponseService) verifyVoteLink(ctx context.Context, token string) (*domain.VoteLinkClaims, error) {
+	if s.linkSigner == nil {
+		s.logger.WarnContext(ctx, "Vote link request received but personalized vote links are not configured")
+		return nil, domain.NewUnavailableError("personalized vote links are not configured")
+	}
+	claims, err := s.linkSigner.Verify(token)
+	if err != nil {
+		s.logger.WarnContext(ctx, "Rejected invalid vote link token")
+		return nil, domain.NewNotFoundError("invalid voting link")
+	}
+	return claims, nil
+}
+
+// applyVoteResponseUpdate sends an updated ballot to ITX for voteID.
+func (s *VoteResponseService) applyVoteResponseUpdate(ctx context.Context, voteID string, req *UpdateVoteResponseRequest) error {
 	// Build proxy request
 	proxyReq := &itx.UpdateVoteRequest{
 		UserVoteContent: make([]itx.PollAnswerInput, len(req.UserVoteContent)),
@@ -192,7 +424,7 @@ func (s *VoteResponseService) UpdateVoteResponse(ctx context.Context, voteID str
 	}
 
 	// Call ITX proxy
-	err = s.proxyClient.UpdateVote(ctx, voteID, proxyReq)
+	err := s.proxyClient.UpdateVote(ctx, voteID, proxyReq)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Failed to update vote response in ITX", "error", err)
 		return err // Return domain error as-is

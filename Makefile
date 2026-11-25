@@ -1,7 +1,7 @@
 # Copyright The Linux Foundation and each contributor to LFX.
 # SPDX-License-Identifier: MIT
 
-.PHONY: all help setup deps apigen generate verify build run debug test test-cover lint fmt check tidy ci clean clean-bin docker-build helm-install helm-install-local helm-templates helm-templates-local helm-uninstall
+.PHONY: all help setup deps apigen generate verify build build-reindex run debug test test-cover lint megalinter fmt check tidy ci clean clean-bin docker-build helm-install helm-install-local helm-templates helm-templates-local helm-uninstall
 
 # Default target
 all: clean deps apigen fmt lint test build
@@ -9,6 +9,9 @@ all: clean deps apigen fmt lint test build
 # Docker configuration
 DOCKER_IMAGE=linuxfoundation/lfx-v2-voting-service
 DOCKER_TAG=latest
+
+# Keep the local MegaLinter image in sync with the workflow.
+MEGALINTER_IMAGE := ghcr.io/oxsecurity/megalinter-go@sha256:e676b8e9dac00d148bf1abb6ab809f1df76f07e804d8061f78631975d0c90925  # v10.2.0
 
 # Helm configuration
 HELM_CHART_PATH=./charts/lfx-v2-voting-service
@@ -30,6 +33,7 @@ help:
 	@echo "Core workflow:"
 	@echo "  generate       - Regenerate API code from Goa design files (alias: apigen)"
 	@echo "  build          - Build binary to bin/voting-api"
+	@echo "  build-reindex  - Build bin/reindex-vote-responses (reindex vote responses)"
 	@echo "  run            - Build and run the service (requires env vars)"
 	@echo "  debug          - Build and run with LOG_LEVEL=debug"
 	@echo ""
@@ -40,6 +44,7 @@ help:
 	@echo "Code quality:"
 	@echo "  fmt            - Format all Go source files in place"
 	@echo "  lint           - Run golangci-lint"
+	@echo "  megalinter     - Run MegaLinter via Docker"
 	@echo "  check          - Check formatting and lint without modifying files"
 	@echo "  tidy           - Run go mod tidy"
 	@echo ""
@@ -73,20 +78,21 @@ setup:
 # Install dependencies
 deps:
 	@echo "==> Installing dependencies..."
+	@command -v jq >/dev/null || { echo "jq is required; install it (e.g. brew install jq)"; exit 1; }
 	@echo "==> Installing goa CLI (version pinned to go.mod)..."
 	@go install goa.design/goa/v3/cmd/goa@$(shell go list -m -f '{{.Version}}' goa.design/goa/v3)
-	@echo "==> Installing golangci-lint v2.12.2..."
-	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+	@echo "==> Installing golangci-lint v2.15.0..."
+	@go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.15.0
 	@echo "==> Downloading Go modules..."
 	@go mod download
 
 apigen:
 	@echo "==> Generating API code from Goa design..."
 	$(shell go env GOPATH)/bin/goa gen github.com/linuxfoundation/lfx-v2-voting-service/api/voting/v1/design
-	@# Goa v3.30.0 emits invalid Swagger 2 "security" requirements.
-	@# Patch null security requirement values to empty arrays until upstream fixes this.
-	@jq 'walk(if type == "object" and has("security") and (.security | type) == "array" then .security |= map(with_entries(.value = (.value // []))) else . end)' gen/http/openapi.json > /tmp/openapi.json.fixed \
-		&& mv /tmp/openapi.json.fixed gen/http/openapi.json
+	@# Normalize null Swagger 2 security requirements to empty arrays.
+	@tmp=$$(mktemp) && \
+		jq 'walk(if type == "object" and has("security") and (.security | type) == "array" then .security |= map(with_entries(.value = (.value // []))) else . end)' gen/http/openapi.json > "$$tmp" && \
+		mv "$$tmp" gen/http/openapi.json
 	@echo "==> API generation complete"
 
 # Alias for apigen — preferred name for documentation and agent use
@@ -95,6 +101,10 @@ generate: apigen
 build:
 	@echo "==> Building voting service..."
 	go build -o bin/voting-api ./cmd/voting-api
+
+build-reindex:
+	@echo "==> Building vote response replay..."
+	go build -o bin/reindex-vote-responses ./scripts/reindex-vote-responses
 
 test:
 	@echo "==> Running tests..."
@@ -128,6 +138,10 @@ clean-bin:
 lint:
 	@echo "==> Running linter..."
 	$(shell go env GOPATH)/bin/golangci-lint run ./...
+
+megalinter:
+	docker pull $(MEGALINTER_IMAGE)
+	docker run --rm --platform linux/amd64 -e GOTOOLCHAIN=auto -v '$(CURDIR):/tmp/lint:rw' $(MEGALINTER_IMAGE)
 
 # Format code
 fmt:

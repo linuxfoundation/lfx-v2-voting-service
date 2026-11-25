@@ -5,13 +5,16 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"net/url"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/utils"
 	"goa.design/goa/v3/security"
 )
 
@@ -20,12 +23,31 @@ import (
 // callers receive a clear error message. Both CreateVote and UpdateVote enforce this.
 const maxVoteNameLen = 200
 
+// pollStatusDisabled is the ITX poll status for a vote that has not been enabled yet.
+const pollStatusDisabled = "disabled"
+
 // VoteService implements the vote service business logic
 type VoteService struct {
-	jwtAuth     domain.Authenticator
-	proxyClient domain.PollClient
-	idMapper    domain.IDMapper
-	logger      *slog.Logger
+	jwtAuth          domain.Authenticator
+	proxyClient      domain.PollClient
+	idMapper         domain.IDMapper
+	logger           *slog.Logger
+	linkSigner       domain.VoteLinkSigner
+	selfServeBaseURL string
+}
+
+// VoteServiceOption configures optional VoteService behavior.
+type VoteServiceOption func(*VoteService)
+
+// WithVoteLinks enables personalized links on bulk resend: each recipient's link is
+// selfServeBaseURL/votes/{vote_uid}#vote_token={token}. The token is in the
+// fragment so browsers never send it to a server (access logs, Referer, analytics), with the token from signer.
+// Without it, a bulk resend that requests personalized links returns 503.
+func WithVoteLinks(signer domain.VoteLinkSigner, selfServeBaseURL string) VoteServiceOption {
+	return func(s *VoteService) {
+		s.linkSigner = signer
+		s.selfServeBaseURL = strings.TrimRight(selfServeBaseURL, "/")
+	}
 }
 
 // NewVoteService creates a new vote service
@@ -34,13 +56,18 @@ func NewVoteService(
 	proxyClient domain.PollClient,
 	idMapper domain.IDMapper,
 	logger *slog.Logger,
+	opts ...VoteServiceOption,
 ) *VoteService {
-	return &VoteService{
+	s := &VoteService{
 		jwtAuth:     jwtAuth,
 		proxyClient: proxyClient,
 		idMapper:    idMapper,
 		logger:      logger,
 	}
+	for _, opt := range opts {
+		opt(s)
+	}
+	return s
 }
 
 // JWTAuth implements the authorization logic for JWT tokens
@@ -98,8 +125,9 @@ func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*
 		CommitteeFilters:           req.CommitteeFilters,
 		PseudoAnonymity:            req.PseudoAnonymity,
 		PollType:                   req.PollType,
-		NumWinners:                 req.NumWinners,
+		NumWinners:                 resolveNumWinners(req.PollType, req.NumWinners),
 		AllowAbstain:               req.AllowAbstain,
+		AllowVoteChange:            req.AllowVoteChange,
 		QuorumPercentage:           req.QuorumPercentage,
 		WinningThresholdPercentage: req.WinningThresholdPercentage,
 	}
@@ -109,8 +137,9 @@ func (s *VoteService) CreateVote(ctx context.Context, req *CreateVoteRequest) (*
 	// username/email, so the principal must be sent as the username, not a bare ID.
 	proxyReq.CreatedBy = creatorFromPrincipal(principal)
 
-	// Mark the origin so ITX links the poll-ended email to the self-serve app: the proxy
-	// is the sole self-serve entry point, so every poll it creates is self-serve.
+	// Mark the origin so ITX links the creator's poll-ended results to Self Serve
+	// and voter invitation, extension, resend, and reminder emails to /votes/{poll_id}.
+	// The proxy is the sole self-serve entry point, so every poll it creates is self-serve.
 	proxyReq.Source = itx.PollSourceSelfServe
 
 	// Convert poll questions
@@ -224,6 +253,7 @@ func (s *VoteService) UpdateVote(ctx context.Context, voteID string, req *Update
 		PollType:                   req.PollType,
 		NumWinners:                 req.NumWinners,
 		AllowAbstain:               req.AllowAbstain,
+		AllowVoteChange:            req.AllowVoteChange,
 		QuorumPercentage:           req.QuorumPercentage,
 		WinningThresholdPercentage: req.WinningThresholdPercentage,
 	}
@@ -324,6 +354,47 @@ func (s *VoteService) ExtendVote(ctx context.Context, voteID string, endTime str
 	return pollResp, nil
 }
 
+// EndVote ends an active vote immediately (proxies to ITX POST /voting/poll/{poll_id}/end).
+// Ending an already-ended vote is an idempotent success. A disabled vote is rejected with a
+// conflict error before the ITX end endpoint is called, because ITX reports it as a 400.
+func (s *VoteService) EndVote(ctx context.Context, voteID string) (*itx.PollResponse, error) {
+	principal, err := requirePrincipal(ctx)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Principal not found in context")
+		return nil, err
+	}
+
+	s.logger.InfoContext(ctx, "Ending vote", "principal", principal, "vote_id", voteID)
+
+	// Pre-check the current status so a disabled vote maps to 409 rather than ITX's 400
+	current, err := s.proxyClient.GetPoll(ctx, voteID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to get poll from ITX", "error", err)
+		return nil, err // Return domain error as-is
+	}
+	if current.Status == pollStatusDisabled {
+		s.logger.WarnContext(ctx, "Cannot end a vote that has not started", "vote_id", voteID)
+		return nil, domain.NewConflictError("vote has not started and cannot be ended")
+	}
+
+	// Call ITX proxy
+	pollResp, err := s.proxyClient.EndPoll(ctx, voteID)
+	if err != nil {
+		s.logger.ErrorContext(ctx, "Failed to end poll in ITX", "error", err)
+		return nil, err // Return domain error as-is
+	}
+
+	// Map response fields from v1 to v2
+	if err := s.mapPollResponseV1ToV2(ctx, pollResp); err != nil {
+		s.logger.ErrorContext(ctx, "Failed to map poll response IDs", "error", err)
+		return nil, err
+	}
+
+	s.logger.InfoContext(ctx, "Vote ended successfully", "poll_id", pollResp.PollID, "status", pollResp.Status)
+
+	return pollResp, nil
+}
+
 // EnableVote enables a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)
 func (s *VoteService) EnableVote(ctx context.Context, voteID string) error {
 	principal, err := requirePrincipal(ctx)
@@ -346,8 +417,10 @@ func (s *VoteService) EnableVote(ctx context.Context, voteID string) error {
 	return nil
 }
 
-// BulkResendVote bulk resends vote emails to select recipients (proxies to ITX POST /voting/poll/{poll_id}/bulk_resend)
-func (s *VoteService) BulkResendVote(ctx context.Context, voteID string, recipientIDs []string) error {
+// BulkResendVote bulk resends vote emails to select recipients (proxies to ITX POST /voting/poll/{poll_id}/bulk_resend).
+// recipientIDs are vote response (ballot) IDs. When personalizedLinks is true, each recipient's
+// email links to a personal signed URL that lets them vote without logging in.
+func (s *VoteService) BulkResendVote(ctx context.Context, voteID string, recipientIDs []string, personalizedLinks bool) error {
 	principal, err := requirePrincipal(ctx)
 	if err != nil {
 		s.logger.ErrorContext(ctx, "Principal not found in context")
@@ -358,11 +431,21 @@ func (s *VoteService) BulkResendVote(ctx context.Context, voteID string, recipie
 		"principal", principal,
 		"vote_id", voteID,
 		"recipient_count", len(recipientIDs),
+		"personalized_links", personalizedLinks,
 	)
 
 	// Build proxy request
 	proxyReq := &itx.BulkResendRequest{
 		RecipientIDs: recipientIDs,
+	}
+
+	if personalizedLinks {
+		links, err := s.buildVoteLinks(voteID, recipientIDs)
+		if err != nil {
+			s.logger.ErrorContext(ctx, "Failed to build personalized vote links", "error", err)
+			return err
+		}
+		proxyReq.RecipientLinks = links
 	}
 
 	// Call ITX proxy
@@ -378,6 +461,34 @@ func (s *VoteService) BulkResendVote(ctx context.Context, voteID string, recipie
 	)
 
 	return nil
+}
+
+// buildVoteLinks returns a personalized, signed vote link for each recipient, keyed by
+// vote response ID. Links are never logged: each one is a voting credential.
+func (s *VoteService) buildVoteLinks(voteID string, recipientIDs []string) (map[string]string, error) {
+	if s.linkSigner == nil || s.selfServeBaseURL == "" {
+		return nil, domain.NewUnavailableError("personalized vote links are not configured")
+	}
+	if len(recipientIDs) == 0 {
+		return nil, domain.NewValidationError("recipient_ids must not be empty when personalized_links is true")
+	}
+
+	links := make(map[string]string, len(recipientIDs))
+	for _, recipientID := range recipientIDs {
+		if strings.TrimSpace(recipientID) == "" {
+			return nil, domain.NewValidationError("recipient_ids must not contain empty values")
+		}
+		if _, done := links[recipientID]; done {
+			continue
+		}
+		token, err := s.linkSigner.Sign(voteID, recipientID)
+		if err != nil {
+			return nil, domain.NewInternalError("failed to sign vote link", err)
+		}
+		links[recipientID] = fmt.Sprintf("%s/votes/%s#vote_token=%s",
+			s.selfServeBaseURL, url.PathEscape(voteID), url.QueryEscape(token))
+	}
+	return links, nil
 }
 
 // GetVoteResults retrieves aggregated poll results (proxies to ITX GET /voting/poll/{poll_id}/results)
@@ -472,6 +583,18 @@ func (s *VoteService) mapRequestIDsV2ToV1(ctx context.Context, projectUID, commi
 	return projectID, committeeID, committeeIDs, nil
 }
 
+// resolveNumWinners returns the winner count to send upstream to ITX on create.
+// Only an explicitly provided value is forwarded — except meek_stv, which defaults
+// to 2 winners when the client omitted num_winners. Updates bypass this helper so
+// ITX can resolve omitted counts against storage. The Goa schema deliberately
+// carries no Default so other poll types cannot leak a fabricated count (#2922).
+func resolveNumWinners(pollType string, numWinners *int) *int {
+	if numWinners == nil && pollType == "meek_stv" {
+		return utils.IntPtr(2)
+	}
+	return numWinners
+}
+
 // requirePrincipal extracts the principal string from a context and returns a
 // validation error if it is absent or empty. Centralises the auth guard that
 // every service method must perform before calling ITX.
@@ -511,6 +634,7 @@ type CreateVoteRequest struct {
 	PollType                   string
 	NumWinners                 *int
 	AllowAbstain               bool
+	AllowVoteChange            *bool // nil is not sent: ITX defaults to true on create, preserves on update
 	QuorumPercentage           *int
 	WinningThresholdPercentage *int
 }
@@ -548,6 +672,7 @@ type UpdateVoteRequest struct {
 	PollType                   string
 	NumWinners                 *int
 	AllowAbstain               bool
+	AllowVoteChange            *bool // nil is not sent: ITX defaults to true on create, preserves on update
 	QuorumPercentage           *int
 	WinningThresholdPercentage *int
 }

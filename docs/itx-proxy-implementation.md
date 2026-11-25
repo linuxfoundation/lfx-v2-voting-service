@@ -321,6 +321,7 @@ type PollClient interface {
     UpdatePoll(ctx context.Context, pollID string, req *itx.UpdatePollRequest) (*itx.PollResponse, error)
     DeletePoll(ctx context.Context, pollID string) error
     ExtendPoll(ctx context.Context, pollID string, req *itx.ExtendPollRequest) (*itx.PollResponse, error)
+    EndPoll(ctx context.Context, pollID string) (*itx.PollResponse, error)
     EnablePoll(ctx context.Context, pollID string) error
     BulkResendPoll(ctx context.Context, pollID string, req *itx.BulkResendRequest) error
     GetPollResults(ctx context.Context, pollID string) (*itx.VoteResults, error)
@@ -395,11 +396,12 @@ Response IDs are mapped from V1 to V2:
 | `PUT /votes/{id}` | `PUT /v2/voting/poll/{id}` |
 | `DELETE /votes/{id}` | `DELETE /v2/voting/poll/{id}` |
 | `POST /votes/{id}/extend` | `POST /v2/voting/poll/{id}/extend` |
+| `POST /votes/{id}/end` | `POST /v2/voting/poll/{id}/end` |
 | `PUT /votes/{id}/enable` | `PUT /v2/voting/poll/{id}/enable` |
 | `POST /votes/{id}/bulk_resend` | `POST /v2/voting/poll/{id}/bulk_resend` |
 | `GET /votes/{id}/results` | `GET /v2/voting/poll/{id}/results` |
 | `POST /vote_responses` | `POST /v2/voting/vote` |
-| `GET /vote_responses/{id}` | `GET /v2/voting/vote/{id}` |
+| `GET /vote_responses/{id}` | `GET /v2/voting/vote/{id}` (+ `GET /v2/voting/poll/{poll_id}` for pending ballots) |
 | `PUT /vote_responses/{id}` | `PUT /v2/voting/vote/{id}` |
 | `POST /vote_responses/{id}/resend` | `POST /v2/voting/vote/{id}/resend` |
 
@@ -554,7 +556,7 @@ Authorization is handled by Heimdall with OpenFGA checks:
 
 **Permission Model**:
 
-- `writer` - Can create, update, delete, extend, enable, and bulk-resend votes
+- `writer` - Can create, update, delete, extend, end, enable, and bulk-resend votes
 - `viewer` - Can read vote details
 - `results_viewer` - Can view aggregated vote results
 - `auditor` - Can view vote response details
@@ -574,7 +576,7 @@ Authorization is handled by Heimdall with OpenFGA checks:
 
 2. **Proxy Client Tests** (with mock HTTP server)
    - Test HTTP request construction
-   - Test OAuth2 token addition
+   - Test the `x-scope` header (the OAuth2 transport is bypassed in unit tests; token acquisition against Auth0 is not unit tested)
    - Test error mapping from HTTP status codes
    - Test response parsing
 

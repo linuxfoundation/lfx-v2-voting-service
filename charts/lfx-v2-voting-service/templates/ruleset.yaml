@@ -53,7 +53,7 @@ spec:
         - authorizer: openfga_or_check
           config:
             values:
-              relation: writer
+              relation: writer_guard
               object: "project:{{ "{{- .Request.Body.project_uid -}}" }}"
               or_relation: "{{ "{{- if .Request.Body.committee_uid -}}writer{{- end -}}" }}"
               or_object: "{{ "{{- if .Request.Body.committee_uid -}}committee:{{- .Request.Body.committee_uid -}}{{- end -}}" }}"
@@ -168,6 +168,37 @@ spec:
           - POST
         routes:
           - path: /votes/:id/extend
+      allow_encoded_slashes: "off"
+      execute:
+        - authenticator: oidc
+        - authenticator: anonymous_authenticator
+        {{- if .Values.app.use_oidc_contextualizer }}
+        - contextualizer: oidc_contextualizer
+        {{- end }}
+        {{- if .Values.openfga.enabled }}
+        - authorizer: openfga_check
+          config:
+            values:
+              relation: writer
+              object: "vote:{{ "{{- .Request.URL.Captures.id -}}" }}"
+        {{- else }}
+        {{/*
+          When OpenFGA is disabled, allow all requests
+          (Only meant for *local development* because OpenFGA should be enabled when deployed)
+        */}}
+        - authorizer: allow_all
+        {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
+
+    - id: "rule:lfx:lfx-v2-voting-service:votes:vote:end"
+      match:
+        methods:
+          - POST
+        routes:
+          - path: /votes/:id/end
       allow_encoded_slashes: "off"
       execute:
         - authenticator: oidc
@@ -406,6 +437,57 @@ spec:
         */}}
         - authorizer: allow_all
         {{- end }}
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
+
+    # Personalized vote links: voters submit or update a ballot without logging in.
+    # Heimdall admits these anonymously on purpose; the HMAC-signed vote_token in the
+    # body is verified by the service and is the only authorization for these routes.
+    - id: "rule:lfx:lfx-v2-voting-service:vote_link:response_create"
+      match:
+        methods:
+          - POST
+        routes:
+          - path: /vote_links/responses
+      allow_encoded_slashes: "off"
+      execute:
+        - authenticator: anonymous_authenticator
+        - authorizer: json_content_type
+        - authorizer: allow_all
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
+
+    - id: "rule:lfx:lfx-v2-voting-service:vote_link:ballot"
+      match:
+        methods:
+          - POST
+        routes:
+          - path: /vote_links/ballot
+      allow_encoded_slashes: "off"
+      execute:
+        - authenticator: anonymous_authenticator
+        - authorizer: json_content_type
+        - authorizer: allow_all
+        - finalizer: create_jwt
+          config:
+            values:
+              aud: {{ .Values.app.audience }}
+
+    - id: "rule:lfx:lfx-v2-voting-service:vote_link:response_update"
+      match:
+        methods:
+          - PUT
+        routes:
+          - path: /vote_links/responses
+      allow_encoded_slashes: "off"
+      execute:
+        - authenticator: anonymous_authenticator
+        - authorizer: json_content_type
+        - authorizer: allow_all
         - finalizer: create_jwt
           config:
             values:

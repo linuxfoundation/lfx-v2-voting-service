@@ -23,8 +23,9 @@ func ConvertCreateVotePayloadToDomain(payload *votesvc.CreateVotePayload) *servi
 		CommitteeFilters:           payload.CommitteeFilters,
 		PseudoAnonymity:            payload.PseudoAnonymity,
 		PollType:                   payload.PollType,
-		NumWinners:                 utils.IntPtr(payload.NumWinners),
+		NumWinners:                 payload.NumWinners,
 		AllowAbstain:               payload.AllowAbstain,
+		AllowVoteChange:            payload.AllowVoteChange,
 		QuorumPercentage:           payload.QuorumPercentage,
 		WinningThresholdPercentage: payload.WinningThresholdPercentage,
 	}
@@ -70,9 +71,9 @@ func ConvertUpdateVotePayloadToDomain(payload *votesvc.UpdateVotePayload) *servi
 		CommitteeUIDs:              payload.CommitteeUids,
 		CommitteeFilters:           payload.CommitteeFilters,
 		PseudoAnonymity:            payload.PseudoAnonymity,
-		PollType:                   payload.PollType,
-		NumWinners:                 utils.IntPtr(payload.NumWinners),
+		NumWinners:                 payload.NumWinners,
 		AllowAbstain:               payload.AllowAbstain,
+		AllowVoteChange:            payload.AllowVoteChange,
 		QuorumPercentage:           payload.QuorumPercentage,
 		WinningThresholdPercentage: payload.WinningThresholdPercentage,
 	}
@@ -83,6 +84,9 @@ func ConvertUpdateVotePayloadToDomain(payload *votesvc.UpdateVotePayload) *servi
 	}
 	if payload.CommitteeUID != nil {
 		req.CommitteeUID = *payload.CommitteeUID
+	}
+	if payload.PollType != nil {
+		req.PollType = *payload.PollType
 	}
 
 	// Convert poll questions
@@ -137,8 +141,13 @@ func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *votesvc.VoteResult
 		TotalVotingRequestInvitations: utils.IntPtr(poll.TotalVotingRequestInvitations),
 		NumResponseReceived:           utils.IntPtr(poll.NumResponseReceived),
 		PollType:                      poll.PollType,
-		NumWinners:                    utils.IntPtr(poll.NumWinners),
 		AllowAbstain:                  utils.BoolPtr(poll.AllowAbstain),
+		AllowVoteChange:               itx.VoteChangeAllowed(poll.AllowVoteChange),
+	}
+	// num_winners is omitted when ITX stores none (it deserializes as 0) rather
+	// than surfacing a fabricated 0 to API clients; explicit values pass through.
+	if poll.NumWinners != 0 {
+		result.NumWinners = utils.IntPtr(poll.NumWinners)
 	}
 	if v := utils.NormalizeTimestamp(poll.EarlyEndTime); v != "" {
 		result.EarlyEndTime = utils.StringPtr(v)
@@ -147,40 +156,51 @@ func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *votesvc.VoteResult
 		result.EndTimeTimezone = utils.StringPtr(poll.EndTimeTimezone)
 	}
 
-	// Convert poll questions
-	if len(poll.PollQuestions) > 0 {
-		questions := make([]*votesvc.PollQuestion, len(poll.PollQuestions))
-		for i, q := range poll.PollQuestions {
-			choices := make([]*votesvc.PollChoice, len(q.Choices))
-			for j, c := range q.Choices {
-				choices[j] = &votesvc.PollChoice{
-					ChoiceID:   utils.StringPtr(c.ChoiceID),
-					ChoiceText: c.ChoiceText,
-				}
-			}
-			questions[i] = &votesvc.PollQuestion{
-				QuestionID: utils.StringPtr(q.QuestionID),
-				Prompt:     q.Prompt,
-				Type:       q.Type,
-				Choices:    choices,
-			}
-		}
-		result.PollQuestions = questions
-	}
-
-	// Convert poll comment prompts
-	if len(poll.PollCommentPrompts) > 0 {
-		prompts := make([]*votesvc.PollCommentPrompt, len(poll.PollCommentPrompts))
-		for i, p := range poll.PollCommentPrompts {
-			prompts[i] = &votesvc.PollCommentPrompt{
-				PromptID: p.PromptID,
-				Prompt:   p.Prompt,
-			}
-		}
-		result.PollCommentPrompts = prompts
-	}
+	result.PollQuestions = convertPollQuestionsToResult(poll.PollQuestions)
+	result.PollCommentPrompts = convertPollCommentPromptsToResult(poll.PollCommentPrompts)
 
 	return result
+}
+
+// convertPollQuestionsToResult converts ITX poll questions to Goa results. An empty input
+// yields nil, so the field is omitted.
+func convertPollQuestionsToResult(questions []itx.PollQuestionOutput) []*votesvc.PollQuestion {
+	if len(questions) == 0 {
+		return nil
+	}
+	converted := make([]*votesvc.PollQuestion, len(questions))
+	for i, q := range questions {
+		choices := make([]*votesvc.PollChoice, len(q.Choices))
+		for j, c := range q.Choices {
+			choices[j] = &votesvc.PollChoice{
+				ChoiceID:   utils.StringPtr(c.ChoiceID),
+				ChoiceText: c.ChoiceText,
+			}
+		}
+		converted[i] = &votesvc.PollQuestion{
+			QuestionID: utils.StringPtr(q.QuestionID),
+			Prompt:     q.Prompt,
+			Type:       q.Type,
+			Choices:    choices,
+		}
+	}
+	return converted
+}
+
+// convertPollCommentPromptsToResult converts ITX comment prompts to Goa results. An empty
+// input yields nil, so the field is omitted.
+func convertPollCommentPromptsToResult(prompts []itx.PollCommentPromptOutput) []*votesvc.PollCommentPrompt {
+	if len(prompts) == 0 {
+		return nil
+	}
+	converted := make([]*votesvc.PollCommentPrompt, len(prompts))
+	for i, p := range prompts {
+		converted[i] = &votesvc.PollCommentPrompt{
+			PromptID: p.PromptID,
+			Prompt:   p.Prompt,
+		}
+	}
+	return converted
 }
 
 // ConvertVoteResultsToResult converts ITX VoteResults to Goa VoteResultsResult
@@ -190,6 +210,7 @@ func ConvertVoteResultsToResult(results *itx.VoteResults) *votesvc.VoteResultsRe
 		NumRecipients: results.NumRecipients,
 		NumVotesCast:  results.NumVotesCast,
 		NumAbstained:  results.NumAbstained,
+		ResultsHeld:   results.ResultsHeld,
 		PollEndTime:   &results.PollEndTime,
 	}
 	if results.PollEndTimeTimezone != "" {

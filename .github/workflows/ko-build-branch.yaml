@@ -40,12 +40,11 @@ jobs:
           echo tag="$container_tag" >> "$GITHUB_OUTPUT"
       - name: Build voting-api for PR
         env:
-          GIT_SHA: "${{ github.sha }}"
-          CONTAINER_TAG: "${{ steps.container_tag.outputs.tag }}"
+          CONTAINER_TAG: ${{ steps.container_tag.outputs.tag }}
         run: |
           ko build github.com/linuxfoundation/lfx-v2-voting-service/cmd/voting-api \
             -B \
             --platform linux/amd64,linux/arm64 \
-            -t "$GIT_SHA" \
-            -t "$CONTAINER_TAG" \
+            -t "${GITHUB_SHA}" \
+            -t "${CONTAINER_TAG}" \
             --sbom spdx

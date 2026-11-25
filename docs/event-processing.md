@@ -47,7 +47,7 @@ The voting service implements NATS KV bucket event processing to automatically s
    - `itx-poll.*` - Vote (poll) data (`$KV.v1-objects.itx-poll.>`)
    - `itx-poll-vote.*` - Vote response data (`$KV.v1-objects.itx-poll-vote.>`)
 
-   > **Note on encoding**: KV entries from v1 may be encoded as either JSON or msgpack. The handler attempts JSON deserialization first; if that fails, it falls back to msgpack. Both formats are supported transparently.
+   > **Note on encoding**: KV entries from v1 may be encoded as either JSON or msgpack. The sync module (`eventsync.DecodeRecord`) attempts JSON deserialization first; if that fails, it falls back to msgpack. Both formats are supported transparently.
 
 2. **Transform**: Converts v1 format to v2 format:
    - String fields → proper types (strings to ints)
@@ -342,7 +342,9 @@ The service uses the `v1-mappings` KV bucket to track processed events:
 
 - Votes: `vote.<poll_id>`
 - Vote Responses: `vote_response.<vote_id>`
+- Vote Results: `vote_result.<poll_id>`
 
+The key format and the `!del` marker are an on-disk contract, owned by `internal/infrastructure/mappings` (`domain.MappingStore`).
 **Value**:
 
 - `1` — resource has been synced at least once (live mapping)
@@ -350,8 +352,8 @@ The service uses the `v1-mappings` KV bucket to track processed events:
 
 **Logic**:
 
-- If mapping missing or tombstoned → **CREATE** operation
-- If mapping exists (live) → **UPDATE** operation
+- Votes and vote responses: if the mapping is missing → **CREATE**; if it exists, live **or tombstoned** → **UPDATE**
+- Vote results: if the mapping is missing **or tombstoned** → **CREATE**; if it is live → **UPDATE**
 - After successful sync → store/update mapping with value `1`
 - After successful delete → overwrite mapping with `!del` (tombstone)
 
@@ -365,7 +367,12 @@ KV PUT operations that include a non-empty `_sdc_deleted_at` field are treated a
 
 **Orphan prevention**:
 
-When processing a vote response, the handler checks that the parent vote mapping exists and is not tombstoned. If the parent mapping is missing or tombstoned (i.e., the vote was deleted), the response event is NAKed for retry rather than being synced to downstream services.
+Child records wait for their parent vote to be synced, and the rule differs by resource:
+
+- **Vote response**: NAKed for retry while the parent vote has no mapping. A tombstoned parent counts as present.
+- **Vote result**: NAKed for retry unless the parent vote mapping exists and is not tombstoned.
+
+These per-resource rules (and the create/update rule above) are explicit policy in `internal/service/eventsync` (`resource` specs), each pinned by a `policy:` test.
 
 ## Performance Considerations
 
@@ -480,10 +487,10 @@ The event processing code includes comprehensive unit tests:
 make test
 
 # Run only event processing tests
-go test ./cmd/voting-api/eventing/... -v
+go test ./cmd/voting-api/eventing/... ./internal/service/eventsync/... -v
 
 # Run with coverage
-go test ./cmd/voting-api/eventing/... -coverprofile=coverage.out
+go test ./cmd/voting-api/eventing/... ./internal/service/eventsync/... -coverprofile=coverage.out
 go tool cover -html=coverage.out
 ```
 
@@ -491,23 +498,29 @@ go tool cover -html=coverage.out
 
 - Event processor lifecycle (Start/Stop)
 - KV message handling and routing
-- Vote event handlers (create/update/delete)
-- Vote response event handlers
+- Vote, vote response and vote result sync (create/update/delete) through `eventsync.Syncer.Sync`
+- Per-resource policy (tombstones, parent ordering, retry rules)
 - Data transformations (v1 to v2)
 - Error handling (transient vs permanent)
 
 ### Code Structure
 
 ```
-cmd/voting-api/eventing/
+cmd/voting-api/eventing/               # NATS adapter
 ├── event_processor.go                 # Lifecycle management
-├── event_processor_test.go            # Lifecycle tests
-├── kv_handler.go                      # Event routing by key prefix
-├── kv_handler_test.go                 # Routing tests
-├── vote_event_handler.go              # Vote transformation logic
-├── vote_event_handler_test.go         # Vote tests
-├── vote_response_event_handler.go     # Response transformation logic
-└── vote_response_event_handler_test.go # Response tests
+├── kv_handler.go                      # JetStream message -> Entry; ACK/NAK with backoff
+├── vote_response_privacy.go           # Poll-privacy adapter (reads v1-objects)
+└── vote_response_invite.go            # Invite adapter
+
+internal/service/eventsync/            # v1 -> v2 sync module
+├── syncer.go                          # Syncer.Sync: decode, soft delete, routing
+├── resource.go                        # Shared update/delete flow, error classification
+├── vote.go                            # Vote spec + converter
+├── vote_response.go                   # Vote response spec + converter
+└── vote_result.go                     # Vote result spec + converter
+
+internal/infrastructure/mappings/
+└── kv_store.go                        # MappingStore: NATS KV adapter
 
 internal/domain/
 ├── event_models.go                    # v1 and v2 data models
@@ -522,11 +535,11 @@ internal/infrastructure/eventing/
 
 To add processing for new entity types:
 
-1. Create handler in `cmd/voting-api/eventing/{entity}_event_handler.go`
-2. Add routing logic in `kv_handler.go`
-3. Define v2 model in `internal/domain/event_models.go`
-4. Add publisher method in `internal/infrastructure/eventing/nats_publisher.go`
-5. Create test file `{entity}_event_handler_test.go`
+1. Define v2 model in `internal/domain/event_models.go`
+2. Add publisher method in `internal/infrastructure/eventing/nats_publisher.go`
+3. Add a `MappingKind` in `internal/domain/mapping_store.go`
+4. Add a resource spec and converter in `internal/service/eventsync/{entity}.go`, and register its prefix in `eventsync.New`
+5. Test through `Syncer.Sync` in `internal/service/eventsync/`
 6. Update documentation
 
 ## Message Formats

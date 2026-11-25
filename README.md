@@ -34,7 +34,7 @@ lfx-v2-voting-service/
 │       ├── values.yaml       # Default Helm values
 │       └── values.local.example.yaml  # Local dev values template
 ├── cmd/voting-api/           # Application entry point
-│   ├── eventing/             # Event processing handlers
+│   ├── eventing/             # NATS KV consumer adapter (ACK/NAK, backoff)
 │   ├── service/              # Request/response converters
 │   ├── api.go                # Goa interface implementation (votes)
 │   ├── api_votes.go          # Vote handler helpers
@@ -51,12 +51,14 @@ lfx-v2-voting-service/
 ├── internal/
 │   ├── domain/               # Interfaces and domain models
 │   ├── service/              # Business logic layer
+│   │   ├── eventsync/        # v1→v2 sync of votes, vote responses and vote results
 │   │   ├── vote_service.go
 │   │   └── vote_response_service.go
 │   ├── infrastructure/       # External system integrations
 │   │   ├── auth/             # JWT authentication (Heimdall)
 │   │   ├── eventing/         # NATS event publisher
 │   │   ├── idmapper/         # NATS-based v1↔v2 ID mapping
+│   │   ├── mappings/         # v1-mappings KV store (sync state)
 │   │   └── proxy/            # ITX HTTP client
 │   ├── middleware/           # HTTP middleware (auth, request ID, logger)
 │   └── logging/              # Logging configuration
@@ -70,7 +72,8 @@ lfx-v2-voting-service/
 
 ### Prerequisites
 
-- Go 1.26.0 or later (version pinned in `go.mod`)
+- Go 1.27.4 or later (version pinned in `go.mod`)
+- `jq` for API generation (e.g. `brew install jq`)
 - Goa CLI and other dev tools: run `make deps` (installs the version pinned in `go.mod` — do **not** use `go install goa@latest`, which will install a mismatched version and break `make generate`)
 - ITX service account credentials (see [Getting Dev Credentials](CONTRIBUTING.md#getting-dev-credentials))
 - **[lfx-platform Helm chart](https://github.com/linuxfoundation/lfx-v2-helm/tree/main/charts/lfx-platform)** — provides NATS and Heimdall for local development (optional: can be bypassed with env flags)
@@ -127,6 +130,14 @@ See [Event Processing Documentation](docs/event-processing.md) for details.
 - `LFX_SELF_SERVE_BASE_URL` - Base URL for invite return links. Defaults to the environment-appropriate LFX app URL based on `LFX_ENVIRONMENT`.
 
 See [LFID Invite Flow](docs/lfid-invites.md) for the full design, NATS subjects, KV markers, and operational notes.
+
+### Personalized Vote Links
+
+- `VOTE_LINK_SIGNING_KEYS` - HMAC signing keys as `kid1:base64key,kid2:base64key` (each at least 32 bytes). Unset disables the feature; set but invalid fails startup.
+- `VOTE_LINK_ACTIVE_KID` - Optional signing key ID override; defaults to the first key listed in `VOTE_LINK_SIGNING_KEYS`.
+- Links use `LFX_SELF_SERVE_BASE_URL` (above) as their base.
+
+See [Personalized Vote Links](docs/vote-links.md) for the token format, key rotation, and the ITX dependency.
 
 ### Local Infrastructure (NATS + Heimdall)
 
@@ -295,10 +306,11 @@ The service provides the following endpoints:
 - `POST /votes` - Create a new vote/poll
 - `GET /votes/{vote_uid}` - Get vote/poll details
 - `PUT /votes/{vote_uid}` - Update a vote/poll (only when status is "disabled")
-- `DELETE /votes/{vote_uid}` - Delete a vote/poll (only when status is "disabled")
+- `DELETE /votes/{vote_uid}` - Delete a draft vote/poll or cancel an active one (ended votes cannot be deleted)
 - `POST /votes/{vote_uid}/extend` - Extend a vote/poll end time
+- `POST /votes/{vote_uid}/end` - End an active vote/poll immediately
 - `POST /votes/{vote_uid}/enable` - Enable a vote/poll for voting
-- `POST /votes/{vote_uid}/bulk_resend` - Bulk resend vote emails to recipients
+- `POST /votes/{vote_uid}/bulk_resend` - Bulk resend vote emails to recipients (optional `personalized_links` for login-free voting)
 - `GET /votes/{vote_uid}/results` - Get aggregated vote results
 
 #### Vote Responses (Ballot Submissions)
@@ -307,6 +319,14 @@ The service provides the following endpoints:
 - `GET /vote_responses/{vote_response_uid}` - Get vote response details
 - `PUT /vote_responses/{vote_response_uid}` - Update a vote response
 - `POST /vote_responses/{vote_response_uid}/resend` - Resend vote email
+
+#### Personalized Vote Links (no login; authorized by the link's signed token)
+
+- `POST /vote_links/ballot` - Get the vote's questions and the link holder's own ballot
+- `POST /vote_links/responses` - Submit a vote response by link
+- `PUT /vote_links/responses` - Update a vote response by link
+
+See [Personalized Vote Links](docs/vote-links.md).
 
 For detailed request/response schemas, authentication requirements, and examples, refer to the generated OpenAPI specification or the Goa design files.
 

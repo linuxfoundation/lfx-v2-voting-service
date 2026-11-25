@@ -59,7 +59,7 @@ NATS is used for four distinct purposes, each with different interaction pattern
 | | |
 |---|---|
 | **Purpose** | Receives change events from the legacy v1 DynamoDB (mirrored via Meltano) |
-| **Used by** | `cmd/voting-api/eventing/event_processor.go` |
+| **Used by** | `cmd/voting-api/eventing/event_processor.go` (consumer); `internal/service/eventsync` (sync logic) |
 | **Stream** | `KV_v1-objects` (env var `EVENT_STREAM_NAME`) |
 | **Consumer** | Durable, `DeliverLastPerSubjectPolicy`, filter on `$KV.v1-objects.itx-poll.>`, `itx-poll-vote.>`, `itx-poll-results.>` |
 | **KV bucket** | `v1-objects` |
@@ -160,7 +160,7 @@ The service runs in the `lfx` Kubernetes namespace. Deployment manifests live in
 |---|---|
 | **Purpose** | Provisions `ITX_CLIENT_ID` and `ITX_CLIENT_PRIVATE_KEY` as Kubernetes secrets |
 | **Used by** | Deployment (`deployment.yaml` reads them as env vars via `secretKeyRef`) |
-| **Config** | `charts/.../externalsecret.yaml`, `secretstore.yaml` |
+| **Config** | `ExternalSecret.yaml` and `SecretStore.yaml` in `lfx-v2-argocd` (`custom-resources/lfx-v2-voting-service/`) |
 | **Architectural implication** | These secrets do not exist in the Helm chart values. They are pulled at deploy time. Without ESO running and the secrets present in AWS, the pod will not start. |
 
 ### ko (container image builder)

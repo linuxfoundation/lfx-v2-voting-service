@@ -17,18 +17,22 @@ import (
 
 // Endpoints wraps the "vote" service endpoints.
 type Endpoints struct {
-	CreateVote         goa.Endpoint
-	GetVote            goa.Endpoint
-	UpdateVote         goa.Endpoint
-	DeleteVote         goa.Endpoint
-	ExtendVote         goa.Endpoint
-	EnableVote         goa.Endpoint
-	BulkResendVote     goa.Endpoint
-	GetVoteResults     goa.Endpoint
-	CreateVoteResponse goa.Endpoint
-	GetVoteResponse    goa.Endpoint
-	UpdateVoteResponse goa.Endpoint
-	ResendVoteResponse goa.Endpoint
+	CreateVote               goa.Endpoint
+	GetVote                  goa.Endpoint
+	UpdateVote               goa.Endpoint
+	DeleteVote               goa.Endpoint
+	ExtendVote               goa.Endpoint
+	EndVote                  goa.Endpoint
+	EnableVote               goa.Endpoint
+	BulkResendVote           goa.Endpoint
+	GetVoteResults           goa.Endpoint
+	CreateVoteResponse       goa.Endpoint
+	GetVoteResponse          goa.Endpoint
+	UpdateVoteResponse       goa.Endpoint
+	CreateVoteResponseByLink goa.Endpoint
+	UpdateVoteResponseByLink goa.Endpoint
+	GetVoteBallotByLink      goa.Endpoint
+	ResendVoteResponse       goa.Endpoint
 }
 
 // NewEndpoints wraps the methods of the "vote" service with endpoints.
@@ -36,18 +40,22 @@ func NewEndpoints(s Service) *Endpoints {
 	// Casting service to Auther interface
 	a := s.(Auther)
 	return &Endpoints{
-		CreateVote:         NewCreateVoteEndpoint(s, a.JWTAuth),
-		GetVote:            NewGetVoteEndpoint(s, a.JWTAuth),
-		UpdateVote:         NewUpdateVoteEndpoint(s, a.JWTAuth),
-		DeleteVote:         NewDeleteVoteEndpoint(s, a.JWTAuth),
-		ExtendVote:         NewExtendVoteEndpoint(s, a.JWTAuth),
-		EnableVote:         NewEnableVoteEndpoint(s, a.JWTAuth),
-		BulkResendVote:     NewBulkResendVoteEndpoint(s, a.JWTAuth),
-		GetVoteResults:     NewGetVoteResultsEndpoint(s, a.JWTAuth),
-		CreateVoteResponse: NewCreateVoteResponseEndpoint(s, a.JWTAuth),
-		GetVoteResponse:    NewGetVoteResponseEndpoint(s, a.JWTAuth),
-		UpdateVoteResponse: NewUpdateVoteResponseEndpoint(s, a.JWTAuth),
-		ResendVoteResponse: NewResendVoteResponseEndpoint(s, a.JWTAuth),
+		CreateVote:               NewCreateVoteEndpoint(s, a.JWTAuth),
+		GetVote:                  NewGetVoteEndpoint(s, a.JWTAuth),
+		UpdateVote:               NewUpdateVoteEndpoint(s, a.JWTAuth),
+		DeleteVote:               NewDeleteVoteEndpoint(s, a.JWTAuth),
+		ExtendVote:               NewExtendVoteEndpoint(s, a.JWTAuth),
+		EndVote:                  NewEndVoteEndpoint(s, a.JWTAuth),
+		EnableVote:               NewEnableVoteEndpoint(s, a.JWTAuth),
+		BulkResendVote:           NewBulkResendVoteEndpoint(s, a.JWTAuth),
+		GetVoteResults:           NewGetVoteResultsEndpoint(s, a.JWTAuth),
+		CreateVoteResponse:       NewCreateVoteResponseEndpoint(s, a.JWTAuth),
+		GetVoteResponse:          NewGetVoteResponseEndpoint(s, a.JWTAuth),
+		UpdateVoteResponse:       NewUpdateVoteResponseEndpoint(s, a.JWTAuth),
+		CreateVoteResponseByLink: NewCreateVoteResponseByLinkEndpoint(s, a.JWTAuth),
+		UpdateVoteResponseByLink: NewUpdateVoteResponseByLinkEndpoint(s, a.JWTAuth),
+		GetVoteBallotByLink:      NewGetVoteBallotByLinkEndpoint(s, a.JWTAuth),
+		ResendVoteResponse:       NewResendVoteResponseEndpoint(s, a.JWTAuth),
 	}
 }
 
@@ -58,12 +66,16 @@ func (e *Endpoints) Use(m func(goa.Endpoint) goa.Endpoint) {
 	e.UpdateVote = m(e.UpdateVote)
 	e.DeleteVote = m(e.DeleteVote)
 	e.ExtendVote = m(e.ExtendVote)
+	e.EndVote = m(e.EndVote)
 	e.EnableVote = m(e.EnableVote)
 	e.BulkResendVote = m(e.BulkResendVote)
 	e.GetVoteResults = m(e.GetVoteResults)
 	e.CreateVoteResponse = m(e.CreateVoteResponse)
 	e.GetVoteResponse = m(e.GetVoteResponse)
 	e.UpdateVoteResponse = m(e.UpdateVoteResponse)
+	e.CreateVoteResponseByLink = m(e.CreateVoteResponseByLink)
+	e.UpdateVoteResponseByLink = m(e.UpdateVoteResponseByLink)
+	e.GetVoteBallotByLink = m(e.GetVoteBallotByLink)
 	e.ResendVoteResponse = m(e.ResendVoteResponse)
 }
 
@@ -80,7 +92,7 @@ func NewCreateVoteEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoi
 		}
 		var token string
 		if p.Token != nil {
-			token = *p.Token
+			token = string(*p.Token)
 		}
 		ctx, err = authJWTFn(ctx, token, &sc)
 		if err != nil {
@@ -103,7 +115,7 @@ func NewGetVoteEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint 
 		}
 		var token string
 		if p.Token != nil {
-			token = *p.Token
+			token = string(*p.Token)
 		}
 		ctx, err = authJWTFn(ctx, token, &sc)
 		if err != nil {
@@ -126,7 +138,7 @@ func NewUpdateVoteEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoi
 		}
 		var token string
 		if p.Token != nil {
-			token = *p.Token
+			token = string(*p.Token)
 		}
 		ctx, err = authJWTFn(ctx, token, &sc)
 		if err != nil {
@@ -149,7 +161,7 @@ func NewDeleteVoteEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoi
 		}
 		var token string
 		if p.Token != nil {
-			token = *p.Token
+			token = string(*p.Token)
 		}
 		ctx, err = authJWTFn(ctx, token, &sc)
 		if err != nil {
@@ -172,13 +184,36 @@ func NewExtendVoteEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoi
 		}
 		var token string
 		if p.Token != nil {
-			token = *p.Token
+			token = string(*p.Token)
 		}
 		ctx, err = authJWTFn(ctx, token, &sc)
 		if err != nil {
 			return nil, err
 		}
 		return s.ExtendVote(ctx, p)
+	}
+}
+
+// NewEndVoteEndpoint returns an endpoint function that calls the method
+// "end_vote" of service "vote".
+func NewEndVoteEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*EndVotePayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{"read:projects", "manage:projects", "manage:voting"},
+			RequiredScopes: []string{"manage:projects", "manage:voting"},
+		}
+		var token string
+		if p.Token != nil {
+			token = string(*p.Token)
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.EndVote(ctx, p)
 	}
 }
 
@@ -195,7 +230,7 @@ func NewEnableVoteEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoi
 		}
 		var token string
 		if p.Token != nil {
-			token = *p.Token
+			token = string(*p.Token)
 		}
 		ctx, err = authJWTFn(ctx, token, &sc)
 		if err != nil {
@@ -218,7 +253,7 @@ func NewBulkResendVoteEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.En
 		}
 		var token string
 		if p.Token != nil {
-			token = *p.Token
+			token = string(*p.Token)
 		}
 		ctx, err = authJWTFn(ctx, token, &sc)
 		if err != nil {
@@ -241,7 +276,7 @@ func NewGetVoteResultsEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.En
 		}
 		var token string
 		if p.Token != nil {
-			token = *p.Token
+			token = string(*p.Token)
 		}
 		ctx, err = authJWTFn(ctx, token, &sc)
 		if err != nil {
@@ -264,7 +299,7 @@ func NewCreateVoteResponseEndpoint(s Service, authJWTFn security.AuthJWTFunc) go
 		}
 		var token string
 		if p.Token != nil {
-			token = *p.Token
+			token = string(*p.Token)
 		}
 		ctx, err = authJWTFn(ctx, token, &sc)
 		if err != nil {
@@ -287,7 +322,7 @@ func NewGetVoteResponseEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.E
 		}
 		var token string
 		if p.Token != nil {
-			token = *p.Token
+			token = string(*p.Token)
 		}
 		ctx, err = authJWTFn(ctx, token, &sc)
 		if err != nil {
@@ -310,13 +345,82 @@ func NewUpdateVoteResponseEndpoint(s Service, authJWTFn security.AuthJWTFunc) go
 		}
 		var token string
 		if p.Token != nil {
-			token = *p.Token
+			token = string(*p.Token)
 		}
 		ctx, err = authJWTFn(ctx, token, &sc)
 		if err != nil {
 			return nil, err
 		}
 		return nil, s.UpdateVoteResponse(ctx, p)
+	}
+}
+
+// NewCreateVoteResponseByLinkEndpoint returns an endpoint function that calls
+// the method "create_vote_response_by_link" of service "vote".
+func NewCreateVoteResponseByLinkEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*CreateVoteResponseByLinkPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{"read:projects", "manage:projects", "manage:voting"},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.Token != nil {
+			token = string(*p.Token)
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return nil, s.CreateVoteResponseByLink(ctx, p)
+	}
+}
+
+// NewUpdateVoteResponseByLinkEndpoint returns an endpoint function that calls
+// the method "update_vote_response_by_link" of service "vote".
+func NewUpdateVoteResponseByLinkEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*UpdateVoteResponseByLinkPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{"read:projects", "manage:projects", "manage:voting"},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.Token != nil {
+			token = string(*p.Token)
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return nil, s.UpdateVoteResponseByLink(ctx, p)
+	}
+}
+
+// NewGetVoteBallotByLinkEndpoint returns an endpoint function that calls the
+// method "get_vote_ballot_by_link" of service "vote".
+func NewGetVoteBallotByLinkEndpoint(s Service, authJWTFn security.AuthJWTFunc) goa.Endpoint {
+	return func(ctx context.Context, req any) (any, error) {
+		p := req.(*GetVoteBallotByLinkPayload)
+		var err error
+		sc := security.JWTScheme{
+			Name:           "jwt",
+			Scopes:         []string{"read:projects", "manage:projects", "manage:voting"},
+			RequiredScopes: []string{},
+		}
+		var token string
+		if p.Token != nil {
+			token = string(*p.Token)
+		}
+		ctx, err = authJWTFn(ctx, token, &sc)
+		if err != nil {
+			return nil, err
+		}
+		return s.GetVoteBallotByLink(ctx, p)
 	}
 }
 
@@ -333,7 +437,7 @@ func NewResendVoteResponseEndpoint(s Service, authJWTFn security.AuthJWTFunc) go
 		}
 		var token string
 		if p.Token != nil {
-			token = *p.Token
+			token = string(*p.Token)
 		}
 		ctx, err = authJWTFn(ctx, token, &sc)
 		if err != nil {

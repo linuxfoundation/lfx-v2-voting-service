@@ -57,10 +57,11 @@ These fields are indexed and queryable via `filters` or `cel_filter` in the quer
 | `poll_questions` | []object | Poll questions (see [Poll Question schema](#poll-question-schema)) |
 | `poll_comment_prompts` | []object | Free-text comment prompts (see [Poll Comment Prompt schema](#poll-comment-prompt-schema)). Separate from `poll_questions`; not counted toward poll results |
 | `num_response_received` | int | Number of responses received |
-| `poll_type` | string | Poll type (e.g., `election`, `general`) |
+| `poll_type` | string | Poll type (`generic`, `condorcet_irv`, `instant_runoff_vote`, `meek_stv`; ITX additionally accepts `majority`) |
 | `pseudo_anonymity` | bool | Whether responses are pseudo-anonymous |
-| `num_winners` | int | Number of winners for election-type polls |
+| `num_winners` | int | Number of winners — stored for `meek_stv` polls only; 0 for all other poll types |
 | `allow_abstain` | bool | Whether abstaining is allowed |
+| `allow_vote_change` | bool | Whether voters may change a submitted ballot; legacy polls without the setting index as `true` |
 
 #### Poll Question Schema
 
@@ -150,10 +151,10 @@ Each element in `poll_comment_prompts` has:
 | `user_voting_status` | string | User's voting eligibility status |
 | `user_org_id` | string | User's organization identifier |
 | `user_org_name` | string | User's organization name |
-| `poll_answers` | []object | User's answers to poll questions (see [Poll Answer schema](#poll-answer-schema)) |
-| `comment_responses` | []object | User's free-text responses to comment prompts (see [Comment Response schema](#comment-response-schema)). May be present even when `abstained` is true |
+| `poll_answers` | []object | User's answers to poll questions (see [Poll Answer schema](#poll-answer-schema)). **Omitted for pseudo-anonymous votes** (see [Pseudo-anonymous votes](#pseudo-anonymous-votes)) |
+| `comment_responses` | []object | User's free-text responses to comment prompts (see [Comment Response schema](#comment-response-schema)). May be present even when `abstained` is true. **Omitted for pseudo-anonymous votes** |
 | `vote_status` | string | Vote response status |
-| `abstained` | bool | Whether the user abstained |
+| `abstained` | bool | Whether the user abstained. **Omitted for pseudo-anonymous votes** |
 | `voter_removed` | bool | Whether the voter was removed |
 | `ses_message_id` | string | AWS SES message identifier |
 | `ses_message_last_sent_time` | string | Timestamp of last SES email send |
@@ -191,6 +192,24 @@ Each element in `comment_responses` has:
 | `prompt_id` | string | Identifier of the poll's comment prompt being answered |
 | `comment_text` | string | Voter's free-text response (max 5000 characters) |
 
+### Pseudo-anonymous votes
+
+A response document must not reveal how a named person voted on a pseudo-anonymous vote. Before publishing, the vote response sync (`voteResponseResource` in `internal/service/eventsync/vote_response.go`) reads the parent `itx-poll.{poll_id}` record from `v1-objects`. Unless that record's `pseudo_anonymity` is explicitly `false` (bool `false` or string `"false"`), the handler indexes the response **without** these keys:
+
+- `poll_answers`
+- `comment_responses`
+- `abstained`
+
+The keys are left out of the payload entirely, not sent as `[]` or `false`. The indexer replaces the whole document on every create or update, so a missing key removes the field from the stored document.
+
+- **Fails closed.** A missing or `null` flag, an unrecognised value, a missing `itx-poll` record or an undecodable record all count as pseudo-anonymous. Only a named vote whose flag is explicitly `false` is indexed with its ballot. If a legacy named poll has no flag, its `poll_answers` are absent; this is intended. A transient `v1-objects` read error NAKs the message for retry, and the previous document stays until the retry succeeds.
+- **Participation is kept.** Identity (`user_id`, `user_email`, `username`, `user_name`), `user_voting_status`, `voter_removed` and the `ses_*` fields stay, so managers can see who has responded and who needs a reminder.
+- **`vote_status` is always kept.** Its ITX values are `awaiting_response`, `responded`, `ended` and `awaiting_response_but_poll_ended`. None of them is abstain-specific: abstaining sets only the `abstained` flag. So `vote_status` shows participation, not the choice.
+- **`vote_creation_time` and `last_modified_time` are kept on purpose.** While live totals stay hidden (lfx-self-serve#3920), a submission time next to a name does not reveal a choice. Self Serve does not return these fields for pseudo-anonymous votes (lfx-self-serve#3916).
+- **One writer.** The live handler is the only writer of `vote_response` documents, and `reindex-vote-responses` works by replaying records through it. Updates and later re-indexes therefore cannot reintroduce the fields. Documents indexed before this rule existed are fixed with the `-pseudo-anonymous-only` pass below.
+- **Privacy-setting changes do not cascade.** Updating an `itx-poll` record does not re-publish its child responses. If a named vote changes to pseudo-anonymous after responses have been indexed, their existing ballot fields remain until each response is updated or replayed. Do not assume ITX prevents this transition. Deploy the protected consumer everywhere first, capture the affected vote's baseline, then run `bin/reindex-vote-responses -vote-uid <uid> -pseudo-anonymous-only -apply`. Wait for consumption and perform the before/after verification under [Reindexing vote responses](#reindexing-vote-responses); changing the flag or completing the replay command alone is not proof of cleanup.
+- Named votes (`pseudo_anonymity: false`) are unchanged, including `"abstained": false` and an empty `"poll_answers": []`.
+
 ### Tags
 
 | Tag Format | Example | Purpose |
@@ -204,12 +223,139 @@ Each element in `comment_responses` has:
 
 | Field | Value |
 | --- | --- |
-| `access_check_object` | `vote:{vote_uid}` |
-| `access_check_relation` | `viewer` |
+| `access_check_object` | `vote_response:{uid}` |
+| `access_check_relation` | `auditor` |
 | `history_check_object` | `vote_response:{uid}` |
 | `history_check_relation` | `auditor` |
 
-> Note: access checks are scoped to the parent vote object, not the response itself.
+> Note: access checks are scoped to the response itself. `vote_response#auditor` is `owner or auditor from vote`, so a response is visible to the voter who cast it and to the vote's project/committee auditors. It must not be gated on `vote#viewer`: invitees are `participant`s of the vote (see `fga-contract.md`), which grants `viewer`, and that would expose every voter's `poll_answers` to every other participant.
+>
+> Documents indexed before this change still carry `access_check_object: vote:{vote_uid}` until they are re-indexed. Run `reindex-vote-responses` (below) to re-emit them.
+
+#### Reindexing vote responses
+
+`scripts/reindex-vote-responses` reindexes responses the same way `reindex_meetings` does in lfx-v2-meeting-service. It scrolls OpenSearch for the indexed `vote_response` documents, then re-puts each one's `itx-poll-vote.{object_id}` record in the `v1-objects` KV bucket with its existing bytes. That lands as a new revision on `$KV.v1-objects.itx-poll-vote.>`, which the voting consumer already watches, so every record goes through the live handler: the indexer message with the current `IndexingConfig`, the `vote_response` owner tuple, and the vote participant tuple (`fga-contract.md`).
+
+OpenSearch drives the run because `v1-objects` holds every v1 object type and is far too large to list; the key for each response is built from its indexed `object_id` instead.
+
+```bash
+make build-reindex
+# NATS and OpenSearch, e.g. via kubectl port-forward (svc/lfx-platform-nats 4222, svc/opensearch-cluster-master 9200, namespace lfx)
+export NATS_URL=nats://localhost:4222
+export OPENSEARCH_URL=http://localhost:9200
+
+bin/reindex-vote-responses -list                       # dry run: print every record it would replay
+bin/reindex-vote-responses -vote-uid <uid> -apply      # one vote first; check the indexed doc and read_tuples
+bin/reindex-vote-responses -apply                      # everything
+```
+
+**Redacting existing pseudo-anonymous responses.** `-pseudo-anonymous-only` replays only the responses whose parent vote is pseudo-anonymous, so the handler re-indexes them without ballot data (see [Pseudo-anonymous votes](#pseudo-anonymous-votes)). It uses the handler's fail-closed rule. A parent `itx-poll` record that is missing, undecodable or has no `pseudo_anonymity` counts as pseudo-anonymous and is replayed. Responses of named votes are counted as `skipped, named vote`. The result is cached per vote. A persistent read error on a parent record aborts the run, like any other read.
+
+The privacy pass requires every indexed response hit in the selected vote scope to have the canonical OpenSearch `_id`, `vote_response:<object_id>`. It checks each hit **before** deduplicating by `object_id`, including named-vote hits and responses that would otherwise be skipped. A historical/noncanonical copy (or a missing `_id`) aborts the pass with its document and response IDs: replay cannot replace that copy. Investigate it separately, preserve the canonical response and its participation data, and remove or redact the noncanonical copy through an approved OpenSearch cleanup before rerunning. The tool never deletes or directly updates OpenSearch documents. An abort may follow earlier successful replays; it does not roll them back.
+
+```bash
+bin/reindex-vote-responses -pseudo-anonymous-only -list # preview; investigate any noncanonical-document error
+```
+
+**Capture a baseline before applying replay.** For the single-vote trial, use the function below to snapshot every matching document, including legacy responses with only `data.poll_id`. It scrolls all pages, fails on HTTP errors or partial results, and stores only verification metadata, never ballot contents. Keep the same baseline until verification is complete. These files contain response identifiers and participation status; keep them private.
+
+```bash
+VOTE_UID='<uid>' # replace with the actual pseudo-anonymous vote UID
+VERIFY_DIR=$(mktemp -d) # private directory for this vote's before/after snapshots
+
+snapshot_vote_responses() (
+  set -euo pipefail
+  : "${VOTE_UID:?Set the vote UID}"
+  scroll_id=''
+  trap 'if [ -n "$scroll_id" ]; then
+    curl -fsS -X DELETE "$OPENSEARCH_URL/_search/scroll" \
+      -H "Content-Type: application/json" \
+      --data "$(jq -nc --arg id "$scroll_id" '\''{scroll_id: [$id]}'\'')" >/dev/null ||
+      printf "Warning: failed to release verification scroll\n" >&2
+  fi' EXIT
+
+  query=$(jq -nc --arg uid "$VOTE_UID" '{
+    size: 200,
+    _source: ["object_id", "data.vote_status", "data.poll_answers", "data.comment_responses", "data.abstained"],
+    query: {bool: {filter: [
+      {term: {object_type: "vote_response"}},
+      {bool: {should: [
+        {term: {"data.vote_uid": $uid}},
+        {term: {"data.poll_id": $uid}}
+      ], minimum_should_match: 1}}
+    ]}}
+  }') || exit 1
+  page=$(curl -fsS "$OPENSEARCH_URL/resources/_search?scroll=2m" \
+    -H 'Content-Type: application/json' --data "$query") || exit 1
+
+  while :; do
+    scroll_id=$(jq -er '._scroll_id | select(type == "string" and length > 0)' <<< "$page") || exit 1
+    jq -e '.timed_out == false and ._shards.failed == 0 and (.hits.hits | type == "array")' \
+      <<< "$page" >/dev/null || exit 1
+    [ "$(jq '.hits.hits | length' <<< "$page")" -gt 0 ] || break
+    jq -c '.hits.hits[] | {
+      _id, object_id: ._source.object_id,
+      has_vote_status: (._source.data | has("vote_status")),
+      vote_status: ._source.data.vote_status,
+      ballot_keys: (._source.data | keys | map(select(
+        . == "poll_answers" or . == "comment_responses" or . == "abstained"
+      )))
+    }' <<< "$page" || exit 1
+    page=$(curl -fsS "$OPENSEARCH_URL/_search/scroll" \
+      -H 'Content-Type: application/json' \
+      --data "$(jq -nc --arg id "$scroll_id" '{scroll: "2m", scroll_id: $id}')") || exit 1
+  done
+)
+
+# Do not replay if this fails or the baseline is empty: check the UID and index.
+snapshot_vote_responses > "$VERIFY_DIR/before.jsonl" && \
+  jq -s -e 'length > 0' "$VERIFY_DIR/before.jsonl" >/dev/null
+```
+
+Only after the baseline succeeds, apply the trial and wait for its replay to be consumed:
+
+```bash
+bin/reindex-vote-responses -vote-uid "$VOTE_UID" -pseudo-anonymous-only -apply
+```
+
+Then capture the same scope again. Require nonempty results, an identical document-ID set (not just an equal count), a recognized and unchanged `vote_status` on every response, and no ballot keys in `_source`. Checking keys catches even `null` values and empty arrays that an OpenSearch `exists` query may not index. Treat **any failed command** as incomplete verification, not successful cleanup.
+
+```bash
+snapshot_vote_responses > "$VERIFY_DIR/after.jsonl" && \
+  jq -s -e 'length > 0 and all(.[]; .has_vote_status and
+    (.vote_status as $status | ["awaiting_response", "responded", "ended", "awaiting_response_but_poll_ended"] | index($status) != null) and
+    (.ballot_keys | length == 0))' \
+    "$VERIFY_DIR/after.jsonl" >/dev/null && \
+  jq -s -e --slurpfile before "$VERIFY_DIR/before.jsonl" \
+    '(map({_id, vote_status}) | sort_by(._id)) == ($before | map({_id, vote_status}) | sort_by(._id))' \
+    "$VERIFY_DIR/after.jsonl" >/dev/null && {
+    printf 'Before responses: '; jq -s 'length' "$VERIFY_DIR/before.jsonl"
+    printf 'After responses:  '; jq -s 'length' "$VERIFY_DIR/after.jsonl"
+  }
+```
+
+The counts alone are not proof: both validation commands must pass. If legitimate concurrent creates/deletes or status transitions changed the snapshot, reconcile each difference rather than silently accepting it. A zero baseline, missing documents, a skipped response, changed/invalid status or retained ballot key must be investigated. Inspect only the projected metadata files when diagnosing results; do not dump ballots to logs. Remove the private snapshot directory when verification is complete.
+
+After the single-vote trial succeeds, run the bulk pass, retaining a before/after baseline for **each** affected vote and repeating the checks above for all of them:
+
+```bash
+bin/reindex-vote-responses -pseudo-anonymous-only -apply
+```
+
+- Do **not** combine `-pseudo-anonymous-only` with `-skip-reindexed`. Documents that already moved to `vote_response#auditor` still hold ballot data and must be replayed.
+- The pass is safe to repeat for canonical documents. Re-run it if a transient error outlasted the consumer's retries (`MaxDeliver`) and left an older, unredacted document in place. Noncanonical copies require the separate cleanup described above; replay alone never fixes them.
+
+- Run it **before** enabling `VOTE_PARTICIPANT_GRANTS_ENABLED`, then again after (see `fga-contract.md` § Rollout). It is what moves existing responses to `vote_response#auditor`, and the second run writes the participant tuples.
+- It is a **dry run unless `-apply` is passed**, and reports a count for every category it skips.
+- The re-put is a **compare-and-swap on the revision it read**. The bucket is written by the upstream sync, so a record that changed in between is never overwritten with stale bytes; it is counted as a conflict (the newer write already went through the consumer).
+- **Transient KV read errors are retried** (3 retries over about 4 seconds) before the run aborts, so a single timeout does not kill a long run. If the run still aborts, re-run it with `-skip-reindexed`: it skips responses already on `vote_response#auditor`, so it resumes where the last run stopped instead of re-putting everything. Do **not** use `-skip-reindexed` for the pass after enabling `VOTE_PARTICIPANT_GRANTS_ENABLED`: those responses are already on the new check but still need their participant tuple.
+- It **fails instead of skipping** when a read is incomplete: any KV read error other than "not found", an OpenSearch error, or a partial OpenSearch result (`timed_out` or failed shards) aborts the run with a non-zero exit, so a partial run is never mistaken for a complete one.
+- It processes records as it reads them, so record payloads are never accumulated. It does keep the set of response IDs seen so far (to drop duplicates) and one entry per parent vote, so memory still grows with the number of responses, but only by those IDs.
+- The OpenSearch scroll is kept alive for the time one page takes at the configured `-rate` (doubled, plus 2 minutes), so a low rate does not outlive it.
+- It only touches responses that are indexed; a response with no document in OpenSearch is left alone, and an indexed response with no `v1-objects` record is counted as `indexed but not in v1-objects`.
+- It replays only records the consumer has **already processed** (they have a `vote_response.{uid}` mapping and a mapped parent vote), so the handler treats them as updates and the LFID invite path, which fires only on a first create, does not run. Soft-deleted and tombstoned records are skipped.
+- It is paced at `-rate` (default 50/s) because each record fans out to the indexer and fga-sync. Watch consumer lag on `KV_v1-objects` during a full run.
+- If a replay is applied while the consumer is down, nothing is lost: the messages queue and are consumed when it returns.
 
 ### Search Behavior
 

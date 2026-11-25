@@ -69,9 +69,10 @@ var _ = Service("vote", func() {
 			PollQuestionsAttribute()
 			PollCommentPromptsAttribute()
 			PseudoAnonymityAttribute()
-			PollTypeAttribute()
+			PollTypeAttribute(true)
 			NumWinnersAttribute()
 			AllowAbstainAttribute()
+			AllowVoteChangeAttribute()
 			QuorumPercentageAttribute()
 			WinningThresholdPercentageAttribute()
 
@@ -145,9 +146,10 @@ var _ = Service("vote", func() {
 			PollQuestionsAttribute()
 			PollCommentPromptsAttribute()
 			PseudoAnonymityAttribute()
-			PollTypeAttribute()
+			PollTypeAttribute(false)
 			NumWinnersAttribute()
 			AllowAbstainAttribute()
+			AllowVoteChangeAttribute()
 			QuorumPercentageAttribute()
 			WinningThresholdPercentageAttribute()
 
@@ -169,7 +171,7 @@ var _ = Service("vote", func() {
 	})
 
 	Method("delete_vote", func() {
-		Description("Delete vote (proxies to ITX DELETE /voting/poll/{poll_id}). Only allowed when status is 'disabled'")
+		Description("Delete or cancel a vote (proxies to ITX DELETE /voting/poll/{poll_id}). A disabled (draft) vote is deleted. An active vote is cancelled: the vote and its responses are permanently removed, and recipients receive a cancellation notice; response cleanup runs asynchronously. Ended votes, whether closed early, closed automatically or past end_time, cannot be deleted; ITX returns 400 'ended polls cannot be deleted'. Requires writer on the vote.")
 
 		Security(JWTAuth, func() {
 			Scope("manage:projects")
@@ -226,6 +228,36 @@ var _ = Service("vote", func() {
 		})
 	})
 
+	Method("end_vote", func() {
+		Description("End an active vote immediately (proxies to ITX POST /voting/poll/{poll_id}/end). Idempotent for an already-ended vote; a disabled vote returns 409. Ending preserves the vote and its results; to cancel and remove an active vote use delete_vote.")
+
+		Security(JWTAuth, func() {
+			Scope("manage:projects")
+			Scope("manage:voting")
+		})
+
+		Payload(func() {
+			BearerTokenAttribute()
+			VoteIDAttribute()
+
+			Required("uid")
+		})
+
+		Result(VoteResult)
+
+		HTTP(func() {
+			POST("/votes/{uid}/end")
+			Response(StatusOK)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("Conflict", StatusConflict)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
 	Method("enable_vote", func() {
 		Description("Enable a vote for voting (proxies to ITX PUT /voting/poll/{poll_id}/enable)")
 
@@ -264,8 +296,14 @@ var _ = Service("vote", func() {
 		Payload(func() {
 			BearerTokenAttribute()
 			VoteIDAttribute()
-			Attribute("recipient_ids", ArrayOf(String), "List of recipient IDs to resend vote email to", func() {
+			Attribute("recipient_ids", ArrayOf(String), "Vote response (ballot) IDs to resend the vote email to", func() {
 				Example([]string{"cba14f40-1636-11ec-9621-0242ac130002", "cba14f40-1636-11ec-9621-0242ac130003"})
+			})
+
+			Attribute("personalized_links", Boolean, "When true, each recipient's email links to a personal "+
+				"HMAC-signed URL that lets them submit or update their vote response without logging in. "+
+				"When false or omitted, recipients receive the standard vote link.", func() {
+				Default(false)
 			})
 
 			Required("uid", "recipient_ids")
@@ -335,33 +373,7 @@ var _ = Service("vote", func() {
 				Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
 			})
 
-			Attribute("user_vote_content", ArrayOf(VoteAnswerInput), "Vote answers", func() {
-				Example([]any{
-					map[string]any{
-						"question_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
-						"choice_ids":  []string{"b03cdbaf-53b1-4d47-bc04-dd7e459dd309"},
-					},
-				})
-			})
-
-			Attribute("abstain", Boolean, "Whether to abstain from voting", func() {
-				Default(false)
-			})
-
-			Attribute("comment_responses", ArrayOf(CommentResponse), "The voter's free-text "+
-				"responses to the poll's comment prompts. Optional; only meaningful if the poll "+
-				"has poll_comment_prompts. Allowed regardless of whether abstain is true — an "+
-				"abstaining voter skips the ballot but may still comment. Each prompt_id must "+
-				"match one of the poll's comment prompts and must not repeat; each comment_text "+
-				"is required (cannot be empty after trimming) and is rejected with a 400 if "+
-				"longer than 5000 characters.", func() {
-				Example([]any{
-					map[string]any{
-						"prompt_id":    "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
-						"comment_text": "Because the incumbent has done great work this term.",
-					},
-				})
-			})
+			VoteResponseBallotAttributes(createCommentNote)
 
 			Required("vote_response_uid", "vote_uid", "abstain")
 
@@ -425,7 +437,8 @@ var _ = Service("vote", func() {
 	})
 
 	Method("update_vote_response", func() {
-		Description("Update vote response (proxies to ITX PUT /voting/vote/{vote_id})")
+		Description("Update vote response (proxies to ITX PUT /voting/vote/{vote_id}). " +
+			"Returns 409 when the vote does not allow changing a submitted ballot.")
 
 		Security(JWTAuth, func() {
 			Scope("manage:projects")
@@ -440,34 +453,7 @@ var _ = Service("vote", func() {
 				Example("b03cdbaf-53b1-4d47-bc04-dd7e459dd309")
 			})
 
-			Attribute("user_vote_content", ArrayOf(VoteAnswerInput), "Updated vote answers", func() {
-				Example([]any{
-					map[string]any{
-						"question_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
-						"choice_ids":  []string{"b03cdbaf-53b1-4d47-bc04-dd7e459dd309"},
-					},
-				})
-			})
-
-			Attribute("abstain", Boolean, "Whether to abstain from voting", func() {
-				Default(false)
-			})
-
-			Attribute("comment_responses", ArrayOf(CommentResponse), "The voter's free-text "+
-				"responses to the poll's comment prompts. Allowed regardless of whether abstain "+
-				"is true — an abstaining voter skips the ballot but may still comment. Otherwise, "+
-				"omitting this field entirely preserves the vote's existing comments untouched; "+
-				"including it (even as an empty array) validates and replaces them. Each "+
-				"prompt_id must match one of the poll's comment prompts and must not repeat; "+
-				"each comment_text is required (cannot be empty after trimming) and is "+
-				"rejected with a 400 if longer than 5000 characters.", func() {
-				Example([]any{
-					map[string]any{
-						"prompt_id":    "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
-						"comment_text": "Because the incumbent has done great work this term.",
-					},
-				})
-			})
+			VoteResponseBallotAttributes(updateCommentNote)
 
 			Required("vote_response_uid", "abstain")
 
@@ -487,6 +473,105 @@ var _ = Service("vote", func() {
 		HTTP(func() {
 			PUT("/vote_responses/{vote_response_uid}")
 			Response(StatusNoContent)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("Conflict", StatusConflict)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
+	// Personalized vote link methods. Heimdall admits these anonymously; the
+	// HMAC-signed vote_token is the only authorization and identifies the ballot.
+
+	Method("create_vote_response_by_link", func() {
+		Description("Submit a vote response using a personalized vote link token, without logging in " +
+			"(proxies to ITX POST /voting/vote). The ballot is identified only by the token. " +
+			"External callers send no Authorization header: the gateway (Heimdall) admits the request " +
+			"anonymously and supplies the JWT shown in this spec's security requirement.")
+
+		// Heimdall admits this route anonymously and still mints its JWT (principal
+		// "_anonymous"); JWTAuth only proves the request came through the gateway. No
+		// scopes apply. The vote_token is the only authorization.
+		Security(JWTAuth)
+
+		Payload(func() {
+			BearerTokenAttribute()
+			VoteLinkTokenAttribute()
+			VoteResponseBallotAttributes(createCommentNote)
+			Required("vote_token", "abstain")
+		})
+
+		HTTP(func() {
+			POST("/vote_links/responses")
+			Response(StatusNoContent)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("Conflict", StatusConflict)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
+	Method("update_vote_response_by_link", func() {
+		Description("Update a vote response using a personalized vote link token, without logging in " +
+			"(proxies to ITX PUT /voting/vote/{vote_id}). The ballot is identified only by the token. " +
+			"External callers send no Authorization header: the gateway (Heimdall) admits the request " +
+			"anonymously and supplies the JWT shown in this spec's security requirement. " +
+			"Omitting comment_responses preserves existing comments; including it (even empty) replaces them. " +
+			"Returns 409 when the vote does not allow changing a submitted ballot.")
+
+		// Heimdall admits this route anonymously and still mints its JWT (principal
+		// "_anonymous"); JWTAuth only proves the request came through the gateway. No
+		// scopes apply. The vote_token is the only authorization.
+		Security(JWTAuth)
+
+		Payload(func() {
+			BearerTokenAttribute()
+			VoteLinkTokenAttribute()
+			VoteResponseBallotAttributes(updateCommentNote)
+			Required("vote_token", "abstain")
+		})
+
+		HTTP(func() {
+			PUT("/vote_links/responses")
+			Response(StatusNoContent)
+			Response("BadRequest", StatusBadRequest)
+			Response("Unauthorized", StatusUnauthorized)
+			Response("Forbidden", StatusForbidden)
+			Response("NotFound", StatusNotFound)
+			Response("Conflict", StatusConflict)
+			Response("InternalServerError", StatusInternalServerError)
+			Response("ServiceUnavailable", StatusServiceUnavailable)
+		})
+	})
+
+	Method("get_vote_ballot_by_link", func() {
+		Description("Get the vote's questions and the link holder's own ballot using a personalized vote " +
+			"link token, without logging in. The vote and ballot are identified only by the token. " +
+			"External callers send no Authorization header: the gateway (Heimdall) admits the request " +
+			"anonymously and supplies the JWT shown in this spec's security requirement.")
+
+		// Heimdall admits this route anonymously and still mints its JWT (principal
+		// "_anonymous"); JWTAuth only proves the request came through the gateway. No
+		// scopes apply. The vote_token is the only authorization.
+		Security(JWTAuth)
+
+		Payload(func() {
+			BearerTokenAttribute()
+			VoteLinkTokenAttribute()
+			Required("vote_token")
+		})
+
+		Result(VoteLinkBallotResult)
+
+		HTTP(func() {
+			POST("/vote_links/ballot")
+			Response(StatusOK)
 			Response("BadRequest", StatusBadRequest)
 			Response("Unauthorized", StatusUnauthorized)
 			Response("Forbidden", StatusForbidden)

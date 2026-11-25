@@ -18,6 +18,54 @@ func BearerTokenAttribute() {
 	})
 }
 
+// VoteLinkTokenAttribute is the DSL attribute for the HMAC-signed token from a personalized vote link.
+func VoteLinkTokenAttribute() {
+	Attribute("vote_token", String, "Signed token from the personalized vote link (the vote_token in the "+
+		"emailed URL's fragment). Identifies the ballot; treat it as a credential and never log it.", func() {
+		MinLength(1)
+		MaxLength(1024)
+		Example("v1.k2026a.eyJ2IjoiOGYzYzJhMWUtNGI1ZC00ZTZmLTlhN2ItMWMyZDNlNGY1YTZiIiwiciI6ImNiYTE0ZjQwLTE2MzYtMTFlYy05NjIxLTAyNDJhYzEzMDAwMiIsImlhdCI6MTc5MzIzMjAwMH0.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU")
+	})
+}
+
+// VoteResponseBallotAttributes is the DSL for the ballot fields shared by every vote response
+// submit and update method. commentNote is appended to the comment_responses description to
+// state the method's omission semantics (create vs. update differ).
+func VoteResponseBallotAttributes(commentNote string) {
+	Attribute("user_vote_content", ArrayOf(VoteAnswerInput), "Vote answers", func() {
+		Example([]any{
+			map[string]any{
+				"question_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+				"choice_ids":  []string{"b03cdbaf-53b1-4d47-bc04-dd7e459dd309"},
+			},
+		})
+	})
+
+	Attribute("abstain", Boolean, "Whether to abstain from voting", func() {
+		Default(false)
+	})
+
+	Attribute("comment_responses", ArrayOf(CommentResponse), "The voter's free-text "+
+		"responses to the poll's comment prompts. Allowed regardless of whether abstain is true — an "+
+		"abstaining voter skips the ballot but may still comment. Each prompt_id must match one of the "+
+		"poll's comment prompts and must not repeat; each comment_text is required (cannot be empty "+
+		"after trimming) and is rejected with a 400 if longer than 5000 characters. "+commentNote, func() {
+		Example([]any{
+			map[string]any{
+				"prompt_id":    "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+				"comment_text": "Because the incumbent has done great work this term.",
+			},
+		})
+	})
+}
+
+// Comment-preservation notes passed to VoteResponseBallotAttributes.
+const (
+	createCommentNote = "Optional; only meaningful if the poll has poll_comment_prompts."
+	updateCommentNote = "Omitting this field entirely preserves the vote's existing comments untouched; " +
+		"including it (even as an empty array) validates and replaces them."
+)
+
 // VoteIDAttribute is the DSL attribute for vote ID (UUID).
 func VoteIDAttribute() {
 	Attribute("uid", String, "Vote UID", func() {
@@ -98,19 +146,24 @@ func PseudoAnonymityAttribute() {
 }
 
 // PollTypeAttribute is the DSL attribute for poll type.
-func PollTypeAttribute() {
+// withDefault enables the create-only default.
+func PollTypeAttribute(withDefault bool) {
 	Attribute("poll_type", String, "Type of poll", func() {
 		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
-		Default("generic")
+		if withDefault {
+			Default("generic")
+		}
 	})
 }
 
 // NumWinnersAttribute is the DSL attribute for number of winners.
+// Deliberately no Default: an omitted num_winners must stay omitted so
+// non-STV poll types do not leak a fabricated winner count upstream to ITX.
+// The service layer applies the meek_stv default (2) on create only.
 func NumWinnersAttribute() {
-	Attribute("num_winners", Int, "Number of winners (meek_stv only)", func() {
+	Attribute("num_winners", Int, "Number of winners. Sent upstream only when explicitly provided; meek_stv creates default to 2 when omitted. Updates leave omitted counts for ITX to resolve.", func() {
 		Minimum(2)
 		Maximum(10)
-		Default(2)
 	})
 }
 
@@ -119,6 +172,14 @@ func AllowAbstainAttribute() {
 	Attribute("allow_abstain", Boolean, "Allow voters to abstain", func() {
 		Default(false)
 	})
+}
+
+// AllowVoteChangeAttribute is the DSL attribute for allowing voters to change a submitted ballot.
+// Deliberately no Default: an omitted value must stay omitted so ITX applies its create
+// default (true) and preserves the stored value on update instead of overwriting it.
+func AllowVoteChangeAttribute() {
+	Attribute("allow_vote_change", Boolean, "Allow voters to change a submitted ballot (choices, comments or abstention) "+
+		"until the vote ends. Omitted on create means allowed; omitted on update preserves the stored value.")
 }
 
 // CommitteeUIDsAttribute is the DSL attribute for multiple committee UIDs.
@@ -183,7 +244,7 @@ var VoteResult = Type("VoteResult", func() {
 
 	EndTimeTimezoneAttribute("Absent when no timezone is stored.")
 
-	Attribute("early_end_time", String, "Actual close time when the poll auto-ended early because all voters responded before end_time. Absent when the poll closed on schedule or is still active. RFC3339.", func() {
+	Attribute("early_end_time", String, "Actual close time when the poll ended before end_time, either manually or automatically after all voters responded. Absent when the poll closed on schedule or is still active. RFC3339.", func() {
 		Format(FormatDateTime)
 		Example("2026-02-10T14:32:11Z")
 	})
@@ -211,10 +272,14 @@ var VoteResult = Type("VoteResult", func() {
 		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
 		Default("generic")
 	})
-	Attribute("num_winners", Int, "Number of winners (meek_stv only)")
+	Attribute("num_winners", Int, "Number of winners. Absent when no winner count is stored upstream.")
 	Attribute("allow_abstain", Boolean, "Allow abstain")
+	Attribute("allow_vote_change", Boolean, "Whether voters may change a submitted ballot until the vote ends. "+
+		"Votes created before this setting existed report true.", func() {
+		Example(false)
+	})
 
-	Required("uid", "name", "description", "status", "project_uid", "committee_uid")
+	Required("uid", "name", "description", "status", "project_uid", "committee_uid", "allow_vote_change")
 })
 
 // PollQuestion represents a question in a vote
@@ -365,10 +430,25 @@ var VoteResponseResult = Type("VoteResponseResult", func() {
 
 	Attribute("project_uid", String, "Project identifier")
 	Attribute("vote_status", String, "Vote status", func() {
-		Example("submitted")
+		Example("responded")
 	})
-	Attribute("abstained", Boolean, "Whether the voter abstained")
+	Attribute("abstained", Boolean, "Whether the voter abstained", func() {
+		Example(false)
+	})
 	Attribute("allow_abstain", Boolean, "Whether abstention is allowed")
+	Attribute("allow_vote_change", Boolean, "Whether the vote lets voters change a submitted ballot until it ends. "+
+		"Votes created before this setting existed report true.", func() {
+		Example(false)
+	})
+	Attribute("can_change_vote", Boolean, "Whether this submitted ballot can still be changed with "+
+		"PUT /vote_responses/{vote_response_uid}. Omitted when ITX does not report it.", func() {
+		Example(false)
+	})
+	Attribute("would_end_vote", Boolean, "Whether submitting this pending ballot now would be the final response "+
+		"that ends the vote. False once a ballot is submitted, for removed voters, and when the vote is not active. "+
+		"Also false when the vote's response counts cannot be read; the ballot is still returned.", func() {
+		Example(false)
+	})
 	Attribute("vote_creation_time", String, "Vote creation time", func() {
 		Format(FormatDateTime)
 	})
@@ -397,7 +477,98 @@ var VoteResponseResult = Type("VoteResponseResult", func() {
 		"the poll's comment prompts. Always an array (empty if the poll has no comment prompts "+
 		"or the voter left none).")
 
-	Required("vote_response_uid", "vote_uid", "project_uid", "vote_status", "comment_responses")
+	Required("vote_response_uid", "vote_uid", "project_uid", "vote_status", "comment_responses", "would_end_vote",
+		"allow_vote_change")
+})
+
+// VoteLinkBallotResult is what a personalized vote link holder may see: the vote's ballot
+// fields, the project's UID and slug (no committee, creator or response counts) and their own
+// ballot's state.
+var VoteLinkBallotResult = Type("VoteLinkBallotResult", func() {
+	Description("The vote and the link holder's ballot, as returned to a personalized vote link")
+
+	Attribute("vote_uid", String, "Vote identifier", func() {
+		Format(FormatUUID)
+		Example("a02bdbaf-53b1-4d47-bc04-dd7e459dd308")
+	})
+	Attribute("project_uid", String, "LFX project UID the vote belongs to", func() {
+		Format(FormatUUID)
+		Example("7cad5a8d-19d0-41a4-81a6-043453daf9ee")
+	})
+	Attribute("project_slug", String, "LFX project slug. Absent when no slug is stored upstream.", func() {
+		Example("cncf")
+	})
+	Attribute("name", String, "Vote name")
+	Attribute("description", String, "Vote description")
+	Attribute("status", String, "Vote status; ballots can be submitted or updated only while active", func() {
+		Enum("disabled", "active", "ended")
+		Example("active")
+	})
+	Attribute("end_time", String, "End time", func() {
+		Format(FormatDateTime)
+		Example("2026-02-15T23:59:59Z")
+	})
+	EndTimeTimezoneAttribute("Absent when no timezone is stored.")
+	Attribute("early_end_time", String, "Actual close time when the poll ended before end_time, either manually or automatically after all voters responded. Absent when the poll closed on schedule or is still active. RFC3339.", func() {
+		Format(FormatDateTime)
+	})
+	Attribute("poll_type", String, "Poll type", func() {
+		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
+		Default("generic")
+	})
+	Attribute("num_winners", Int, "Number of winners. Absent when no winner count is stored upstream.")
+	Attribute("allow_abstain", Boolean, "Whether abstaining is allowed")
+	Attribute("allow_vote_change", Boolean, "Whether the vote lets voters change a submitted ballot until it ends. "+
+		"Votes created before this setting existed report true.", func() {
+		Example(false)
+	})
+	Attribute("pseudo_anonymity", Boolean, "Whether the vote is pseudo-anonymous; if so, ballot contents are never returned")
+	Attribute("poll_questions", ArrayOf(PollQuestion), "Vote questions with their choices")
+	Attribute("poll_comment_prompts", ArrayOf(PollCommentPrompt), "Comment prompts for the vote")
+	Attribute("ballot", VoteLinkBallot, "The link holder's own ballot")
+
+	Required("vote_uid", "project_uid", "name", "description", "status", "pseudo_anonymity", "ballot",
+		"allow_vote_change")
+})
+
+// VoteLinkBallot is the link holder's own ballot state.
+var VoteLinkBallot = Type("VoteLinkBallot", func() {
+	Description("The link holder's own ballot")
+
+	Attribute("vote_status", String, "Ballot status from ITX, e.g. awaiting_response or responded", func() {
+		Example("awaiting_response")
+	})
+	Attribute("already_voted", Boolean, "True when a ballot has been submitted (vote_status responded, or ended after "+
+		"voting), so changes use PUT /vote_links/responses while the vote is active", func() {
+		Example(false)
+	})
+	Attribute("voter_removed", Boolean, "True when the recipient was removed from the vote and can no longer vote", func() {
+		Example(false)
+	})
+	Attribute("can_change_vote", Boolean, "Whether this submitted ballot can still be changed with "+
+		"PUT /vote_links/responses. Returned on pseudo-anonymous votes too; omitted when ITX does not report it.", func() {
+		Example(false)
+	})
+	Attribute("would_end_vote", Boolean, "Whether submitting this pending ballot now would be the final response "+
+		"that ends the vote. False once a ballot is submitted, for removed voters, and when the vote is not active. "+
+		"Returned on pseudo-anonymous votes too; response counts are never returned.", func() {
+		Example(false)
+	})
+	Attribute("abstained", Boolean, "Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.", func() {
+		Example(false)
+	})
+	Attribute("poll_answers", ArrayOf(VoteAnswer), "The submitted answers. Omitted on pseudo-anonymous votes and before voting.")
+	Attribute("comment_responses", ArrayOf(CommentResponse), "The submitted comments. Omitted on pseudo-anonymous votes and before voting.")
+
+	Required("vote_status", "already_voted", "voter_removed", "would_end_vote")
+
+	Example(map[string]any{
+		"vote_status":     "awaiting_response",
+		"already_voted":   false,
+		"voter_removed":   false,
+		"can_change_vote": false,
+		"would_end_vote":  false,
+	})
 })
 
 // VoteAnswer represents an answer to a poll question
@@ -480,11 +651,14 @@ var RankedChoiceInput = Type("RankedChoiceInput", func() {
 var VoteResultsResult = Type("VoteResultsResult", func() {
 	Description("Aggregated poll/vote results")
 
-	Attribute("poll_results", ArrayOf(PollResultItem), "Poll results data")
-	Attribute("comment_results", ArrayOf(CommentResultItem), "Comment results")
+	Attribute("results_held", Boolean, "True when the results are withheld because the vote is pseudo-anonymous "+
+		"and has not ended. An explicit false from ITX is preserved as-is; clients must not treat absence as a held "+
+		"or final state on its own. While held, only the participation counts and poll_end_time are returned.")
+	Attribute("poll_results", ArrayOf(PollResultItem), "Poll results data. Absent while results are held.")
+	Attribute("comment_results", ArrayOf(CommentResultItem), "Comment results. Absent while results are held.")
 	Attribute("num_recipients", Int, "Number of recipients")
 	Attribute("num_votes_cast", Int, "Number of votes cast")
-	Attribute("num_abstained", Int, "Number who abstained")
+	Attribute("num_abstained", Int, "Number who abstained. Absent while results are held.")
 	Attribute("poll_end_time", String, "Poll end time", func() {
 		Format(FormatDateTime)
 	})
@@ -493,7 +667,7 @@ var VoteResultsResult = Type("VoteResultsResult", func() {
 		Example("America/New_York")
 	})
 
-	Required("poll_results", "num_recipients", "num_votes_cast", "num_abstained")
+	Required("num_recipients", "num_votes_cast")
 })
 
 // PollResultItem represents results for a single poll question
@@ -669,7 +843,8 @@ var CommentResultItem = Type("CommentResultItem", func() {
 var CommentResponseWithUser = Type("CommentResponseWithUser", func() {
 	Description("A voter's free-text comment response, with attribution")
 
-	Attribute("vote_id", String, "The vote that submitted this comment", func() {
+	Attribute("vote_id", String, "The vote that submitted this comment. Absent for comments on an ended "+
+		"pseudo-anonymous poll, which carry the comment text only.", func() {
 		Format(FormatUUID)
 	})
 	Attribute("user_id", String, "The LFX identifier of the voter who submitted this comment. Absent "+
@@ -679,10 +854,12 @@ var CommentResponseWithUser = Type("CommentResponseWithUser", func() {
 		"entirely when the poll has pseudo_anonymity enabled.")
 	Attribute("profile_picture", String, "URL of the voter's profile picture. Absent "+
 		"entirely when the poll has pseudo_anonymity enabled.")
-	Attribute("vote_creation_time", String, "The time the voter submitted this comment (their vote_creation_time)", func() {
+	Attribute("vote_creation_time", String, "The time the voter submitted this comment (their vote_creation_time). "+
+		"Absent for comments on an ended pseudo-anonymous poll.", func() {
 		Format(FormatDateTime)
 	})
-	Attribute("abstained", Boolean, "Whether the voter who submitted this comment abstained from voting on the poll")
+	Attribute("abstained", Boolean, "Whether the voter who submitted this comment abstained from voting on the poll. "+
+		"Absent for comments on an ended pseudo-anonymous poll.")
 
-	Required("vote_id", "comment_text", "vote_creation_time", "abstained")
+	Required("comment_text")
 })

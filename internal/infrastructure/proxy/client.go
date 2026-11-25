@@ -268,7 +268,7 @@ func (c *Client) UpdatePoll(ctx context.Context, pollID string, req *itx.UpdateP
 	return &result, nil
 }
 
-// DeletePoll deletes a poll in ITX (only when status is "disabled")
+// DeletePoll deletes a disabled poll or cancels an active one in ITX; ITX rejects ended polls with 400
 func (c *Client) DeletePoll(ctx context.Context, pollID string) error {
 	// Create HTTP request
 	url := fmt.Sprintf("%sv2/voting/poll/%s", c.config.BaseURL, pollID)
@@ -295,7 +295,7 @@ func (c *Client) DeletePoll(ctx context.Context, pollID string) error {
 		return domain.NewInternalError("failed to read response", err)
 	}
 
-	// Handle non-2xx status codes (ITX returns 400 if status is not "disabled")
+	// Handle non-2xx status codes (ITX returns 400 if the poll has ended)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return c.mapHTTPError(resp.StatusCode, respBody)
 	}
@@ -320,6 +320,49 @@ func (c *Client) ExtendPoll(ctx context.Context, pollID string, req *itx.ExtendP
 
 	// Set headers (Authorization header is automatically set by OAuth2 transport)
 	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Accept", "application/json")
+	httpReq.Header.Set("x-scope", "manage:voting")
+
+	// Execute request
+	resp, err := c.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, domain.NewUnavailableError("ITX service request failed", err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	// Read response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, domain.NewInternalError("failed to read response", err)
+	}
+
+	// Handle non-2xx status codes
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, c.mapHTTPError(resp.StatusCode, respBody)
+	}
+
+	// Parse response
+	var result itx.PollResponse
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, domain.NewInternalError("failed to parse response", err)
+	}
+
+	return &result, nil
+}
+
+// EndPoll ends an active poll immediately in ITX. ITX returns 200 with the poll for an
+// already-ended poll, so the call is idempotent.
+func (c *Client) EndPoll(ctx context.Context, pollID string) (*itx.PollResponse, error) {
+	// Create HTTP request (no body)
+	url := fmt.Sprintf("%sv2/voting/poll/%s/end", c.config.BaseURL, pollID)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
+	if err != nil {
+		return nil, domain.NewInternalError("failed to create request", err)
+	}
+
+	// Set headers (Authorization header is automatically set by OAuth2 transport)
 	httpReq.Header.Set("Accept", "application/json")
 	httpReq.Header.Set("x-scope", "manage:voting")
 

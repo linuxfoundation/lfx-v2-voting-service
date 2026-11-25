@@ -31,9 +31,22 @@ DISABLE_ERRORS_LINTERS:
   - MARKDOWN_MARKDOWNLINT
   - MARKDOWN_MARKDOWN_TABLE_FORMATTER
 YAML_YAMLLINT_CONFIG_FILE: .yamllint
-# yamllint disable-line rule:line-length
-REPOSITORY_KICS_ARGUMENTS: scan --no-progress --exclude-severities="medium,low,info,trace" --exclude-paths="./gen/*" --exclude-paths="./cmd/voting-api/kodata/*"
+# zizmor's "artipacked" audit needs the GitHub API (to verify
+# SHA-pinned action tags), which requires GITHUB_TOKEN.
+ACTION_ZIZMOR_UNSECURED_ENV_VARIABLES:
+  - GITHUB_TOKEN
 SPELL_CSPELL_ANALYZE_FILE_NAMES: false
+SPELL_CSPELL_PRE_COMMANDS:
+  - command: >-
+      cp .cspell.json /tmp/cspell.json.orig &&
+      curl -sSf --connect-timeout 5 --max-time 15 https://raw.githubusercontent.com/linuxfoundation/lfx-public-workflows/737873e045a02df2f66b09d8061b98997cdf1880/cspell/flagwords.json.snippet -o /tmp/flagwords.json.snippet &&
+      test "$(grep -c '^[[:space:]]*"flagWords"[[:space:]]*:[[:space:]]*\[\],[[:space:]]*$' .cspell.json)" -eq 1 &&
+      sed -i -e '/^[[:space:]]*"flagWords"[[:space:]]*:[[:space:]]*\[\],[[:space:]]*$/{r /tmp/flagwords.json.snippet' -e 'd}' .cspell.json
+    cwd: workspace
+    continue_if_failed: false
+SPELL_CSPELL_POST_COMMANDS:
+  - command: cp /tmp/cspell.json.orig .cspell.json
+    cwd: workspace
 # Make sure Vale is setup to run with the styles it needs.
 SPELL_VALE_PRE_COMMANDS:
   - command: mkdir -p styles

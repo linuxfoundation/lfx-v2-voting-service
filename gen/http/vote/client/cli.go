@@ -19,13 +19,16 @@ import (
 
 // BuildCreateVotePayload builds the payload for the vote create_vote endpoint
 // from CLI flags.
-func BuildCreateVotePayload(voteCreateVoteBody string, voteCreateVoteToken string) (*vote.CreateVotePayload, error) {
+func BuildCreateVotePayload(voteCreateVoteBody *string, voteCreateVoteToken *string) (*vote.CreateVotePayload, error) {
 	var err error
 	var body CreateVoteRequestBody
 	{
-		err = json.Unmarshal([]byte(voteCreateVoteBody), &body)
+		if voteCreateVoteBody == nil {
+			return nil, fmt.Errorf("missing required flag --body")
+		}
+		err = json.Unmarshal([]byte(*voteCreateVoteBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"allow_abstain\": true,\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n      \"committee_uids\": [\n         \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n         \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n      ],\n      \"description\": \"Vote for the TSC members for Q1 2026\",\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"end_time_timezone\": \"America/New_York\",\n      \"name\": \"Q1 2026 Technical Steering Committee Election\",\n      \"num_winners\": 5,\n      \"poll_comment_prompts\": [\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         }\n      ],\n      \"poll_questions\": [\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"82f82f31-aa62-41d3-a57c-698d4442162d\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"82f82f31-aa62-41d3-a57c-698d4442162d\",\n            \"type\": \"single_choice\"\n         }\n      ],\n      \"poll_type\": \"generic\",\n      \"project_uid\": \"a09P000000DsCBuIRT\",\n      \"pseudo_anonymity\": false,\n      \"quorum_percentage\": 50,\n      \"winning_threshold_percentage\": 51\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"allow_abstain\": true,\n      \"allow_vote_change\": false,\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n      \"committee_uids\": [\n         \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n         \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n      ],\n      \"description\": \"Vote for the TSC members for Q1 2026\",\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"end_time_timezone\": \"America/New_York\",\n      \"name\": \"Q1 2026 Technical Steering Committee Election\",\n      \"num_winners\": 9,\n      \"poll_comment_prompts\": [\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         }\n      ],\n      \"poll_questions\": [\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"c206dc2f-7638-4cfd-b544-fc4e84f6a402\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"c206dc2f-7638-4cfd-b544-fc4e84f6a402\",\n            \"type\": \"single_choice\"\n         }\n      ],\n      \"poll_type\": \"instant_runoff_vote\",\n      \"project_uid\": \"a09P000000DsCBuIRT\",\n      \"pseudo_anonymity\": true,\n      \"quorum_percentage\": 50,\n      \"winning_threshold_percentage\": 51\n   }'")
 		}
 		if body.PollQuestions == nil {
 			err = goa.MergeErrors(err, goa.MissingFieldError("poll_questions", "body"))
@@ -48,7 +51,7 @@ func BuildCreateVotePayload(voteCreateVoteBody string, voteCreateVoteToken strin
 		}
 		for _, e := range body.PollQuestions {
 			if e != nil {
-				if err2 := ValidatePollQuestionRequestBody(e); err2 != nil {
+				if err2 := validatePollQuestionRequestBody(e, "body.poll_questions[*]"); err2 != nil {
 					err = goa.MergeErrors(err, err2)
 				}
 			}
@@ -56,18 +59,18 @@ func BuildCreateVotePayload(voteCreateVoteBody string, voteCreateVoteToken strin
 		if !(body.PollType == "generic" || body.PollType == "condorcet_irv" || body.PollType == "meek_stv" || body.PollType == "instant_runoff_vote") {
 			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
 		}
-		if body.NumWinners < 2 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.num_winners", body.NumWinners, 2, true))
-		}
-		if body.NumWinners > 10 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.num_winners", body.NumWinners, 10, false))
+		if body.NumWinners != nil {
+			if *body.NumWinners < 2 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.num_winners", *body.NumWinners, 2, true))
+			}
+			if *body.NumWinners > 10 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.num_winners", *body.NumWinners, 10, false))
+			}
 		}
 		if body.QuorumPercentage != nil {
 			if *body.QuorumPercentage < 0 {
 				err = goa.MergeErrors(err, goa.InvalidRangeError("body.quorum_percentage", *body.QuorumPercentage, 0, true))
 			}
-		}
-		if body.QuorumPercentage != nil {
 			if *body.QuorumPercentage > 100 {
 				err = goa.MergeErrors(err, goa.InvalidRangeError("body.quorum_percentage", *body.QuorumPercentage, 100, false))
 			}
@@ -76,8 +79,6 @@ func BuildCreateVotePayload(voteCreateVoteBody string, voteCreateVoteToken strin
 			if *body.WinningThresholdPercentage < 0 {
 				err = goa.MergeErrors(err, goa.InvalidRangeError("body.winning_threshold_percentage", *body.WinningThresholdPercentage, 0, true))
 			}
-		}
-		if body.WinningThresholdPercentage != nil {
 			if *body.WinningThresholdPercentage > 100 {
 				err = goa.MergeErrors(err, goa.InvalidRangeError("body.winning_threshold_percentage", *body.WinningThresholdPercentage, 100, false))
 			}
@@ -88,8 +89,8 @@ func BuildCreateVotePayload(voteCreateVoteBody string, voteCreateVoteToken strin
 	}
 	var token *string
 	{
-		if voteCreateVoteToken != "" {
-			token = &voteCreateVoteToken
+		if voteCreateVoteToken != nil {
+			token = voteCreateVoteToken
 		}
 	}
 	v := &vote.CreateVotePayload{
@@ -103,6 +104,7 @@ func BuildCreateVotePayload(voteCreateVoteBody string, voteCreateVoteToken strin
 		PollType:                   body.PollType,
 		NumWinners:                 body.NumWinners,
 		AllowAbstain:               body.AllowAbstain,
+		AllowVoteChange:            body.AllowVoteChange,
 		QuorumPercentage:           body.QuorumPercentage,
 		WinningThresholdPercentage: body.WinningThresholdPercentage,
 	}
@@ -153,12 +155,6 @@ func BuildCreateVotePayload(voteCreateVoteBody string, voteCreateVoteToken strin
 		}
 	}
 	{
-		var zero int
-		if v.NumWinners == zero {
-			v.NumWinners = 2
-		}
-	}
-	{
 		var zero bool
 		if v.AllowAbstain == zero {
 			v.AllowAbstain = false
@@ -171,11 +167,14 @@ func BuildCreateVotePayload(voteCreateVoteBody string, voteCreateVoteToken strin
 
 // BuildGetVotePayload builds the payload for the vote get_vote endpoint from
 // CLI flags.
-func BuildGetVotePayload(voteGetVoteUID string, voteGetVoteToken string) (*vote.GetVotePayload, error) {
+func BuildGetVotePayload(voteGetVoteUID *string, voteGetVoteToken *string) (*vote.GetVotePayload, error) {
 	var err error
 	var uid string
 	{
-		uid = voteGetVoteUID
+		if voteGetVoteUID == nil {
+			return nil, fmt.Errorf("missing required flag --uid")
+		}
+		uid = *voteGetVoteUID
 		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
@@ -183,8 +182,8 @@ func BuildGetVotePayload(voteGetVoteUID string, voteGetVoteToken string) (*vote.
 	}
 	var token *string
 	{
-		if voteGetVoteToken != "" {
-			token = &voteGetVoteToken
+		if voteGetVoteToken != nil {
+			token = voteGetVoteToken
 		}
 	}
 	v := &vote.GetVotePayload{}
@@ -196,13 +195,16 @@ func BuildGetVotePayload(voteGetVoteUID string, voteGetVoteToken string) (*vote.
 
 // BuildUpdateVotePayload builds the payload for the vote update_vote endpoint
 // from CLI flags.
-func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteUID string, voteUpdateVoteToken string) (*vote.UpdateVotePayload, error) {
+func BuildUpdateVotePayload(voteUpdateVoteBody *string, voteUpdateVoteUID *string, voteUpdateVoteToken *string) (*vote.UpdateVotePayload, error) {
 	var err error
 	var body UpdateVoteRequestBody
 	{
-		err = json.Unmarshal([]byte(voteUpdateVoteBody), &body)
+		if voteUpdateVoteBody == nil {
+			return nil, fmt.Errorf("missing required flag --body")
+		}
+		err = json.Unmarshal([]byte(*voteUpdateVoteBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"allow_abstain\": true,\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n      \"committee_uids\": [\n         \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n         \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n      ],\n      \"description\": \"Vote for the TSC members for Q1 2026\",\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"end_time_timezone\": \"America/New_York\",\n      \"name\": \"Q1 2026 Technical Steering Committee Election\",\n      \"num_winners\": 7,\n      \"poll_comment_prompts\": [\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         }\n      ],\n      \"poll_questions\": [\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"82f82f31-aa62-41d3-a57c-698d4442162d\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"82f82f31-aa62-41d3-a57c-698d4442162d\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"08cebc9c-f5dd-4b31-84b7-df2afacdb82d\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"82f82f31-aa62-41d3-a57c-698d4442162d\",\n            \"type\": \"single_choice\"\n         }\n      ],\n      \"poll_type\": \"generic\",\n      \"project_uid\": \"a09P000000DsCBuIRT\",\n      \"pseudo_anonymity\": false,\n      \"quorum_percentage\": 50,\n      \"winning_threshold_percentage\": 51\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"allow_abstain\": false,\n      \"allow_vote_change\": true,\n      \"committee_filters\": [\n         \"Voting Rep\",\n         \"Alternate Voting Rep\"\n      ],\n      \"committee_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n      \"committee_uids\": [\n         \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\",\n         \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n      ],\n      \"description\": \"Vote for the TSC members for Q1 2026\",\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"end_time_timezone\": \"America/New_York\",\n      \"name\": \"Q1 2026 Technical Steering Committee Election\",\n      \"num_winners\": 7,\n      \"poll_comment_prompts\": [\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         },\n         {\n            \"prompt\": \"Please provide any additional feedback\"\n         }\n      ],\n      \"poll_questions\": [\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"c206dc2f-7638-4cfd-b544-fc4e84f6a402\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"c206dc2f-7638-4cfd-b544-fc4e84f6a402\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"c206dc2f-7638-4cfd-b544-fc4e84f6a402\",\n            \"type\": \"single_choice\"\n         },\n         {\n            \"choices\": [\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               },\n               {\n                  \"choice_id\": \"59481638-823c-48ea-805a-cc3c71ec0848\",\n                  \"choice_text\": \"John Doe\"\n               }\n            ],\n            \"prompt\": \"Who should be elected to the TSC?\",\n            \"question_id\": \"c206dc2f-7638-4cfd-b544-fc4e84f6a402\",\n            \"type\": \"single_choice\"\n         }\n      ],\n      \"poll_type\": \"condorcet_irv\",\n      \"project_uid\": \"a09P000000DsCBuIRT\",\n      \"pseudo_anonymity\": true,\n      \"quorum_percentage\": 50,\n      \"winning_threshold_percentage\": 51\n   }'")
 		}
 		if body.PollQuestions == nil {
 			err = goa.MergeErrors(err, goa.MissingFieldError("poll_questions", "body"))
@@ -227,26 +229,28 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteUID string,
 		}
 		for _, e := range body.PollQuestions {
 			if e != nil {
-				if err2 := ValidatePollQuestionRequestBody(e); err2 != nil {
+				if err2 := validatePollQuestionRequestBody(e, "body.poll_questions[*]"); err2 != nil {
 					err = goa.MergeErrors(err, err2)
 				}
 			}
 		}
-		if !(body.PollType == "generic" || body.PollType == "condorcet_irv" || body.PollType == "meek_stv" || body.PollType == "instant_runoff_vote") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
+		if body.PollType != nil {
+			if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
+				err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
+			}
 		}
-		if body.NumWinners < 2 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.num_winners", body.NumWinners, 2, true))
-		}
-		if body.NumWinners > 10 {
-			err = goa.MergeErrors(err, goa.InvalidRangeError("body.num_winners", body.NumWinners, 10, false))
+		if body.NumWinners != nil {
+			if *body.NumWinners < 2 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.num_winners", *body.NumWinners, 2, true))
+			}
+			if *body.NumWinners > 10 {
+				err = goa.MergeErrors(err, goa.InvalidRangeError("body.num_winners", *body.NumWinners, 10, false))
+			}
 		}
 		if body.QuorumPercentage != nil {
 			if *body.QuorumPercentage < 0 {
 				err = goa.MergeErrors(err, goa.InvalidRangeError("body.quorum_percentage", *body.QuorumPercentage, 0, true))
 			}
-		}
-		if body.QuorumPercentage != nil {
 			if *body.QuorumPercentage > 100 {
 				err = goa.MergeErrors(err, goa.InvalidRangeError("body.quorum_percentage", *body.QuorumPercentage, 100, false))
 			}
@@ -255,8 +259,6 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteUID string,
 			if *body.WinningThresholdPercentage < 0 {
 				err = goa.MergeErrors(err, goa.InvalidRangeError("body.winning_threshold_percentage", *body.WinningThresholdPercentage, 0, true))
 			}
-		}
-		if body.WinningThresholdPercentage != nil {
 			if *body.WinningThresholdPercentage > 100 {
 				err = goa.MergeErrors(err, goa.InvalidRangeError("body.winning_threshold_percentage", *body.WinningThresholdPercentage, 100, false))
 			}
@@ -267,7 +269,10 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteUID string,
 	}
 	var uid string
 	{
-		uid = voteUpdateVoteUID
+		if voteUpdateVoteUID == nil {
+			return nil, fmt.Errorf("missing required flag --uid")
+		}
+		uid = *voteUpdateVoteUID
 		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
@@ -275,8 +280,8 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteUID string,
 	}
 	var token *string
 	{
-		if voteUpdateVoteToken != "" {
-			token = &voteUpdateVoteToken
+		if voteUpdateVoteToken != nil {
+			token = voteUpdateVoteToken
 		}
 	}
 	v := &vote.UpdateVotePayload{
@@ -290,6 +295,7 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteUID string,
 		PollType:                   body.PollType,
 		NumWinners:                 body.NumWinners,
 		AllowAbstain:               body.AllowAbstain,
+		AllowVoteChange:            body.AllowVoteChange,
 		QuorumPercentage:           body.QuorumPercentage,
 		WinningThresholdPercentage: body.WinningThresholdPercentage,
 	}
@@ -334,18 +340,6 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteUID string,
 		}
 	}
 	{
-		var zero string
-		if v.PollType == zero {
-			v.PollType = "generic"
-		}
-	}
-	{
-		var zero int
-		if v.NumWinners == zero {
-			v.NumWinners = 2
-		}
-	}
-	{
 		var zero bool
 		if v.AllowAbstain == zero {
 			v.AllowAbstain = false
@@ -359,11 +353,14 @@ func BuildUpdateVotePayload(voteUpdateVoteBody string, voteUpdateVoteUID string,
 
 // BuildDeleteVotePayload builds the payload for the vote delete_vote endpoint
 // from CLI flags.
-func BuildDeleteVotePayload(voteDeleteVoteUID string, voteDeleteVoteToken string) (*vote.DeleteVotePayload, error) {
+func BuildDeleteVotePayload(voteDeleteVoteUID *string, voteDeleteVoteToken *string) (*vote.DeleteVotePayload, error) {
 	var err error
 	var uid string
 	{
-		uid = voteDeleteVoteUID
+		if voteDeleteVoteUID == nil {
+			return nil, fmt.Errorf("missing required flag --uid")
+		}
+		uid = *voteDeleteVoteUID
 		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
@@ -371,8 +368,8 @@ func BuildDeleteVotePayload(voteDeleteVoteUID string, voteDeleteVoteToken string
 	}
 	var token *string
 	{
-		if voteDeleteVoteToken != "" {
-			token = &voteDeleteVoteToken
+		if voteDeleteVoteToken != nil {
+			token = voteDeleteVoteToken
 		}
 	}
 	v := &vote.DeleteVotePayload{}
@@ -384,11 +381,14 @@ func BuildDeleteVotePayload(voteDeleteVoteUID string, voteDeleteVoteToken string
 
 // BuildExtendVotePayload builds the payload for the vote extend_vote endpoint
 // from CLI flags.
-func BuildExtendVotePayload(voteExtendVoteBody string, voteExtendVoteUID string, voteExtendVoteToken string) (*vote.ExtendVotePayload, error) {
+func BuildExtendVotePayload(voteExtendVoteBody *string, voteExtendVoteUID *string, voteExtendVoteToken *string) (*vote.ExtendVotePayload, error) {
 	var err error
 	var body ExtendVoteRequestBody
 	{
-		err = json.Unmarshal([]byte(voteExtendVoteBody), &body)
+		if voteExtendVoteBody == nil {
+			return nil, fmt.Errorf("missing required flag --body")
+		}
+		err = json.Unmarshal([]byte(*voteExtendVoteBody), &body)
 		if err != nil {
 			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"end_time\": \"2026-02-15T23:59:59Z\",\n      \"end_time_timezone\": \"America/New_York\"\n   }'")
 		}
@@ -402,7 +402,10 @@ func BuildExtendVotePayload(voteExtendVoteBody string, voteExtendVoteUID string,
 	}
 	var uid string
 	{
-		uid = voteExtendVoteUID
+		if voteExtendVoteUID == nil {
+			return nil, fmt.Errorf("missing required flag --uid")
+		}
+		uid = *voteExtendVoteUID
 		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
@@ -410,8 +413,8 @@ func BuildExtendVotePayload(voteExtendVoteBody string, voteExtendVoteUID string,
 	}
 	var token *string
 	{
-		if voteExtendVoteToken != "" {
-			token = &voteExtendVoteToken
+		if voteExtendVoteToken != nil {
+			token = voteExtendVoteToken
 		}
 	}
 	v := &vote.ExtendVotePayload{
@@ -424,13 +427,16 @@ func BuildExtendVotePayload(voteExtendVoteBody string, voteExtendVoteUID string,
 	return v, nil
 }
 
-// BuildEnableVotePayload builds the payload for the vote enable_vote endpoint
-// from CLI flags.
-func BuildEnableVotePayload(voteEnableVoteUID string, voteEnableVoteToken string) (*vote.EnableVotePayload, error) {
+// BuildEndVotePayload builds the payload for the vote end_vote endpoint from
+// CLI flags.
+func BuildEndVotePayload(voteEndVoteUID *string, voteEndVoteToken *string) (*vote.EndVotePayload, error) {
 	var err error
 	var uid string
 	{
-		uid = voteEnableVoteUID
+		if voteEndVoteUID == nil {
+			return nil, fmt.Errorf("missing required flag --uid")
+		}
+		uid = *voteEndVoteUID
 		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
@@ -438,8 +444,36 @@ func BuildEnableVotePayload(voteEnableVoteUID string, voteEnableVoteToken string
 	}
 	var token *string
 	{
-		if voteEnableVoteToken != "" {
-			token = &voteEnableVoteToken
+		if voteEndVoteToken != nil {
+			token = voteEndVoteToken
+		}
+	}
+	v := &vote.EndVotePayload{}
+	v.UID = uid
+	v.Token = token
+
+	return v, nil
+}
+
+// BuildEnableVotePayload builds the payload for the vote enable_vote endpoint
+// from CLI flags.
+func BuildEnableVotePayload(voteEnableVoteUID *string, voteEnableVoteToken *string) (*vote.EnableVotePayload, error) {
+	var err error
+	var uid string
+	{
+		if voteEnableVoteUID == nil {
+			return nil, fmt.Errorf("missing required flag --uid")
+		}
+		uid = *voteEnableVoteUID
+		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
+		if err != nil {
+			return nil, err
+		}
+	}
+	var token *string
+	{
+		if voteEnableVoteToken != nil {
+			token = voteEnableVoteToken
 		}
 	}
 	v := &vote.EnableVotePayload{}
@@ -451,13 +485,16 @@ func BuildEnableVotePayload(voteEnableVoteUID string, voteEnableVoteToken string
 
 // BuildBulkResendVotePayload builds the payload for the vote bulk_resend_vote
 // endpoint from CLI flags.
-func BuildBulkResendVotePayload(voteBulkResendVoteBody string, voteBulkResendVoteUID string, voteBulkResendVoteToken string) (*vote.BulkResendVotePayload, error) {
+func BuildBulkResendVotePayload(voteBulkResendVoteBody *string, voteBulkResendVoteUID *string, voteBulkResendVoteToken *string) (*vote.BulkResendVotePayload, error) {
 	var err error
 	var body BulkResendVoteRequestBody
 	{
-		err = json.Unmarshal([]byte(voteBulkResendVoteBody), &body)
+		if voteBulkResendVoteBody == nil {
+			return nil, fmt.Errorf("missing required flag --body")
+		}
+		err = json.Unmarshal([]byte(*voteBulkResendVoteBody), &body)
 		if err != nil {
-			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"recipient_ids\": [\n         \"cba14f40-1636-11ec-9621-0242ac130002\",\n         \"cba14f40-1636-11ec-9621-0242ac130003\"\n      ]\n   }'")
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"personalized_links\": true,\n      \"recipient_ids\": [\n         \"cba14f40-1636-11ec-9621-0242ac130002\",\n         \"cba14f40-1636-11ec-9621-0242ac130003\"\n      ]\n   }'")
 		}
 		if body.RecipientIds == nil {
 			err = goa.MergeErrors(err, goa.MissingFieldError("recipient_ids", "body"))
@@ -468,7 +505,10 @@ func BuildBulkResendVotePayload(voteBulkResendVoteBody string, voteBulkResendVot
 	}
 	var uid string
 	{
-		uid = voteBulkResendVoteUID
+		if voteBulkResendVoteUID == nil {
+			return nil, fmt.Errorf("missing required flag --uid")
+		}
+		uid = *voteBulkResendVoteUID
 		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
@@ -476,11 +516,13 @@ func BuildBulkResendVotePayload(voteBulkResendVoteBody string, voteBulkResendVot
 	}
 	var token *string
 	{
-		if voteBulkResendVoteToken != "" {
-			token = &voteBulkResendVoteToken
+		if voteBulkResendVoteToken != nil {
+			token = voteBulkResendVoteToken
 		}
 	}
-	v := &vote.BulkResendVotePayload{}
+	v := &vote.BulkResendVotePayload{
+		PersonalizedLinks: body.PersonalizedLinks,
+	}
 	if body.RecipientIds != nil {
 		v.RecipientIds = make([]string, len(body.RecipientIds))
 		for i, val := range body.RecipientIds {
@@ -488,6 +530,12 @@ func BuildBulkResendVotePayload(voteBulkResendVoteBody string, voteBulkResendVot
 		}
 	} else {
 		v.RecipientIds = []string{}
+	}
+	{
+		var zero bool
+		if v.PersonalizedLinks == zero {
+			v.PersonalizedLinks = false
+		}
 	}
 	v.UID = uid
 	v.Token = token
@@ -497,11 +545,14 @@ func BuildBulkResendVotePayload(voteBulkResendVoteBody string, voteBulkResendVot
 
 // BuildGetVoteResultsPayload builds the payload for the vote get_vote_results
 // endpoint from CLI flags.
-func BuildGetVoteResultsPayload(voteGetVoteResultsUID string, voteGetVoteResultsToken string) (*vote.GetVoteResultsPayload, error) {
+func BuildGetVoteResultsPayload(voteGetVoteResultsUID *string, voteGetVoteResultsToken *string) (*vote.GetVoteResultsPayload, error) {
 	var err error
 	var uid string
 	{
-		uid = voteGetVoteResultsUID
+		if voteGetVoteResultsUID == nil {
+			return nil, fmt.Errorf("missing required flag --uid")
+		}
+		uid = *voteGetVoteResultsUID
 		err = goa.MergeErrors(err, goa.ValidateFormat("uid", uid, goa.FormatUUID))
 		if err != nil {
 			return nil, err
@@ -509,8 +560,8 @@ func BuildGetVoteResultsPayload(voteGetVoteResultsUID string, voteGetVoteResults
 	}
 	var token *string
 	{
-		if voteGetVoteResultsToken != "" {
-			token = &voteGetVoteResultsToken
+		if voteGetVoteResultsToken != nil {
+			token = voteGetVoteResultsToken
 		}
 	}
 	v := &vote.GetVoteResultsPayload{}
@@ -522,11 +573,14 @@ func BuildGetVoteResultsPayload(voteGetVoteResultsUID string, voteGetVoteResults
 
 // BuildCreateVoteResponsePayload builds the payload for the vote
 // create_vote_response endpoint from CLI flags.
-func BuildCreateVoteResponsePayload(voteCreateVoteResponseBody string, voteCreateVoteResponseToken string) (*vote.CreateVoteResponsePayload, error) {
+func BuildCreateVoteResponsePayload(voteCreateVoteResponseBody *string, voteCreateVoteResponseToken *string) (*vote.CreateVoteResponsePayload, error) {
 	var err error
 	var body CreateVoteResponseRequestBody
 	{
-		err = json.Unmarshal([]byte(voteCreateVoteResponseBody), &body)
+		if voteCreateVoteResponseBody == nil {
+			return nil, fmt.Errorf("missing required flag --body")
+		}
+		err = json.Unmarshal([]byte(*voteCreateVoteResponseBody), &body)
 		if err != nil {
 			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"abstain\": true,\n      \"comment_responses\": [\n         {\n            \"comment_text\": \"Because the incumbent has done great work this term.\",\n            \"prompt_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"user_vote_content\": [],\n      \"vote_response_uid\": \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\",\n      \"vote_uid\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n   }'")
 		}
@@ -534,14 +588,14 @@ func BuildCreateVoteResponsePayload(voteCreateVoteResponseBody string, voteCreat
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", body.VoteUID, goa.FormatUUID))
 		for _, e := range body.UserVoteContent {
 			if e != nil {
-				if err2 := ValidateVoteAnswerInputRequestBody(e); err2 != nil {
+				if err2 := validateVoteAnswerInputRequestBody(e, "body.user_vote_content[*]"); err2 != nil {
 					err = goa.MergeErrors(err, err2)
 				}
 			}
 		}
 		for _, e := range body.CommentResponses {
 			if e != nil {
-				if err2 := ValidateCommentResponseRequestBody(e); err2 != nil {
+				if err2 := validateCommentResponseRequestBody(e, "body.comment_responses[*]"); err2 != nil {
 					err = goa.MergeErrors(err, err2)
 				}
 			}
@@ -552,8 +606,8 @@ func BuildCreateVoteResponsePayload(voteCreateVoteResponseBody string, voteCreat
 	}
 	var token *string
 	{
-		if voteCreateVoteResponseToken != "" {
-			token = &voteCreateVoteResponseToken
+		if voteCreateVoteResponseToken != nil {
+			token = voteCreateVoteResponseToken
 		}
 	}
 	v := &vote.CreateVoteResponsePayload{
@@ -588,11 +642,14 @@ func BuildCreateVoteResponsePayload(voteCreateVoteResponseBody string, voteCreat
 
 // BuildGetVoteResponsePayload builds the payload for the vote
 // get_vote_response endpoint from CLI flags.
-func BuildGetVoteResponsePayload(voteGetVoteResponseVoteResponseUID string, voteGetVoteResponseToken string) (*vote.GetVoteResponsePayload, error) {
+func BuildGetVoteResponsePayload(voteGetVoteResponseVoteResponseUID *string, voteGetVoteResponseToken *string) (*vote.GetVoteResponsePayload, error) {
 	var err error
 	var voteResponseUID string
 	{
-		voteResponseUID = voteGetVoteResponseVoteResponseUID
+		if voteGetVoteResponseVoteResponseUID == nil {
+			return nil, fmt.Errorf("missing required flag --vote-response-uid")
+		}
+		voteResponseUID = *voteGetVoteResponseVoteResponseUID
 		err = goa.MergeErrors(err, goa.ValidateFormat("vote_response_uid", voteResponseUID, goa.FormatUUID))
 		if err != nil {
 			return nil, err
@@ -600,8 +657,8 @@ func BuildGetVoteResponsePayload(voteGetVoteResponseVoteResponseUID string, vote
 	}
 	var token *string
 	{
-		if voteGetVoteResponseToken != "" {
-			token = &voteGetVoteResponseToken
+		if voteGetVoteResponseToken != nil {
+			token = voteGetVoteResponseToken
 		}
 	}
 	v := &vote.GetVoteResponsePayload{}
@@ -613,24 +670,27 @@ func BuildGetVoteResponsePayload(voteGetVoteResponseVoteResponseUID string, vote
 
 // BuildUpdateVoteResponsePayload builds the payload for the vote
 // update_vote_response endpoint from CLI flags.
-func BuildUpdateVoteResponsePayload(voteUpdateVoteResponseBody string, voteUpdateVoteResponseVoteResponseUID string, voteUpdateVoteResponseToken string) (*vote.UpdateVoteResponsePayload, error) {
+func BuildUpdateVoteResponsePayload(voteUpdateVoteResponseBody *string, voteUpdateVoteResponseVoteResponseUID *string, voteUpdateVoteResponseToken *string) (*vote.UpdateVoteResponsePayload, error) {
 	var err error
 	var body UpdateVoteResponseRequestBody
 	{
-		err = json.Unmarshal([]byte(voteUpdateVoteResponseBody), &body)
+		if voteUpdateVoteResponseBody == nil {
+			return nil, fmt.Errorf("missing required flag --body")
+		}
+		err = json.Unmarshal([]byte(*voteUpdateVoteResponseBody), &body)
 		if err != nil {
 			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"abstain\": true,\n      \"comment_responses\": [\n         {\n            \"comment_text\": \"Because the incumbent has done great work this term.\",\n            \"prompt_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"user_vote_content\": []\n   }'")
 		}
 		for _, e := range body.UserVoteContent {
 			if e != nil {
-				if err2 := ValidateVoteAnswerInputRequestBody(e); err2 != nil {
+				if err2 := validateVoteAnswerInputRequestBody(e, "body.user_vote_content[*]"); err2 != nil {
 					err = goa.MergeErrors(err, err2)
 				}
 			}
 		}
 		for _, e := range body.CommentResponses {
 			if e != nil {
-				if err2 := ValidateCommentResponseRequestBody(e); err2 != nil {
+				if err2 := validateCommentResponseRequestBody(e, "body.comment_responses[*]"); err2 != nil {
 					err = goa.MergeErrors(err, err2)
 				}
 			}
@@ -641,7 +701,10 @@ func BuildUpdateVoteResponsePayload(voteUpdateVoteResponseBody string, voteUpdat
 	}
 	var voteResponseUID string
 	{
-		voteResponseUID = voteUpdateVoteResponseVoteResponseUID
+		if voteUpdateVoteResponseVoteResponseUID == nil {
+			return nil, fmt.Errorf("missing required flag --vote-response-uid")
+		}
+		voteResponseUID = *voteUpdateVoteResponseVoteResponseUID
 		err = goa.MergeErrors(err, goa.ValidateFormat("vote_response_uid", voteResponseUID, goa.FormatUUID))
 		if err != nil {
 			return nil, err
@@ -649,8 +712,8 @@ func BuildUpdateVoteResponsePayload(voteUpdateVoteResponseBody string, voteUpdat
 	}
 	var token *string
 	{
-		if voteUpdateVoteResponseToken != "" {
-			token = &voteUpdateVoteResponseToken
+		if voteUpdateVoteResponseToken != nil {
+			token = voteUpdateVoteResponseToken
 		}
 	}
 	v := &vote.UpdateVoteResponsePayload{
@@ -682,13 +745,197 @@ func BuildUpdateVoteResponsePayload(voteUpdateVoteResponseBody string, voteUpdat
 	return v, nil
 }
 
+// BuildCreateVoteResponseByLinkPayload builds the payload for the vote
+// create_vote_response_by_link endpoint from CLI flags.
+func BuildCreateVoteResponseByLinkPayload(voteCreateVoteResponseByLinkBody *string, voteCreateVoteResponseByLinkToken *string) (*vote.CreateVoteResponseByLinkPayload, error) {
+	var err error
+	var body CreateVoteResponseByLinkRequestBody
+	{
+		if voteCreateVoteResponseByLinkBody == nil {
+			return nil, fmt.Errorf("missing required flag --body")
+		}
+		err = json.Unmarshal([]byte(*voteCreateVoteResponseByLinkBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"abstain\": false,\n      \"comment_responses\": [\n         {\n            \"comment_text\": \"Because the incumbent has done great work this term.\",\n            \"prompt_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"user_vote_content\": [\n         {\n            \"choice_ids\": [\n               \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n            ],\n            \"question_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"vote_token\": \"v1.k2026a.eyJ2IjoiOGYzYzJhMWUtNGI1ZC00ZTZmLTlhN2ItMWMyZDNlNGY1YTZiIiwiciI6ImNiYTE0ZjQwLTE2MzYtMTFlYy05NjIxLTAyNDJhYzEzMDAwMiIsImlhdCI6MTc5MzIzMjAwMH0.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU\"\n   }'")
+		}
+		if utf8.RuneCountInString(body.VoteToken) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.vote_token", body.VoteToken, utf8.RuneCountInString(body.VoteToken), 1, true))
+		}
+		if utf8.RuneCountInString(body.VoteToken) > 1024 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.vote_token", body.VoteToken, utf8.RuneCountInString(body.VoteToken), 1024, false))
+		}
+		for _, e := range body.UserVoteContent {
+			if e != nil {
+				if err2 := validateVoteAnswerInputRequestBody(e, "body.user_vote_content[*]"); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
+		for _, e := range body.CommentResponses {
+			if e != nil {
+				if err2 := validateCommentResponseRequestBody(e, "body.comment_responses[*]"); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var token *string
+	{
+		if voteCreateVoteResponseByLinkToken != nil {
+			token = voteCreateVoteResponseByLinkToken
+		}
+	}
+	v := &vote.CreateVoteResponseByLinkPayload{
+		VoteToken: body.VoteToken,
+		Abstain:   body.Abstain,
+	}
+	if body.UserVoteContent != nil {
+		v.UserVoteContent = make([]*vote.VoteAnswerInput, len(body.UserVoteContent))
+		for i, val := range body.UserVoteContent {
+			if val == nil {
+				v.UserVoteContent[i] = nil
+				continue
+			}
+			v.UserVoteContent[i] = marshalVoteAnswerInputRequestBodyToVoteVoteAnswerInput(val)
+		}
+	}
+	if body.CommentResponses != nil {
+		v.CommentResponses = make([]*vote.CommentResponse, len(body.CommentResponses))
+		for i, val := range body.CommentResponses {
+			if val == nil {
+				v.CommentResponses[i] = nil
+				continue
+			}
+			v.CommentResponses[i] = marshalCommentResponseRequestBodyToVoteCommentResponse(val)
+		}
+	}
+	v.Token = token
+
+	return v, nil
+}
+
+// BuildUpdateVoteResponseByLinkPayload builds the payload for the vote
+// update_vote_response_by_link endpoint from CLI flags.
+func BuildUpdateVoteResponseByLinkPayload(voteUpdateVoteResponseByLinkBody *string, voteUpdateVoteResponseByLinkToken *string) (*vote.UpdateVoteResponseByLinkPayload, error) {
+	var err error
+	var body UpdateVoteResponseByLinkRequestBody
+	{
+		if voteUpdateVoteResponseByLinkBody == nil {
+			return nil, fmt.Errorf("missing required flag --body")
+		}
+		err = json.Unmarshal([]byte(*voteUpdateVoteResponseByLinkBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"abstain\": true,\n      \"comment_responses\": [\n         {\n            \"comment_text\": \"Because the incumbent has done great work this term.\",\n            \"prompt_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"user_vote_content\": [\n         {\n            \"choice_ids\": [\n               \"b03cdbaf-53b1-4d47-bc04-dd7e459dd309\"\n            ],\n            \"question_id\": \"a02bdbaf-53b1-4d47-bc04-dd7e459dd308\"\n         }\n      ],\n      \"vote_token\": \"v1.k2026a.eyJ2IjoiOGYzYzJhMWUtNGI1ZC00ZTZmLTlhN2ItMWMyZDNlNGY1YTZiIiwiciI6ImNiYTE0ZjQwLTE2MzYtMTFlYy05NjIxLTAyNDJhYzEzMDAwMiIsImlhdCI6MTc5MzIzMjAwMH0.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU\"\n   }'")
+		}
+		if utf8.RuneCountInString(body.VoteToken) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.vote_token", body.VoteToken, utf8.RuneCountInString(body.VoteToken), 1, true))
+		}
+		if utf8.RuneCountInString(body.VoteToken) > 1024 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.vote_token", body.VoteToken, utf8.RuneCountInString(body.VoteToken), 1024, false))
+		}
+		for _, e := range body.UserVoteContent {
+			if e != nil {
+				if err2 := validateVoteAnswerInputRequestBody(e, "body.user_vote_content[*]"); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
+		for _, e := range body.CommentResponses {
+			if e != nil {
+				if err2 := validateCommentResponseRequestBody(e, "body.comment_responses[*]"); err2 != nil {
+					err = goa.MergeErrors(err, err2)
+				}
+			}
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var token *string
+	{
+		if voteUpdateVoteResponseByLinkToken != nil {
+			token = voteUpdateVoteResponseByLinkToken
+		}
+	}
+	v := &vote.UpdateVoteResponseByLinkPayload{
+		VoteToken: body.VoteToken,
+		Abstain:   body.Abstain,
+	}
+	if body.UserVoteContent != nil {
+		v.UserVoteContent = make([]*vote.VoteAnswerInput, len(body.UserVoteContent))
+		for i, val := range body.UserVoteContent {
+			if val == nil {
+				v.UserVoteContent[i] = nil
+				continue
+			}
+			v.UserVoteContent[i] = marshalVoteAnswerInputRequestBodyToVoteVoteAnswerInput(val)
+		}
+	}
+	if body.CommentResponses != nil {
+		v.CommentResponses = make([]*vote.CommentResponse, len(body.CommentResponses))
+		for i, val := range body.CommentResponses {
+			if val == nil {
+				v.CommentResponses[i] = nil
+				continue
+			}
+			v.CommentResponses[i] = marshalCommentResponseRequestBodyToVoteCommentResponse(val)
+		}
+	}
+	v.Token = token
+
+	return v, nil
+}
+
+// BuildGetVoteBallotByLinkPayload builds the payload for the vote
+// get_vote_ballot_by_link endpoint from CLI flags.
+func BuildGetVoteBallotByLinkPayload(voteGetVoteBallotByLinkBody *string, voteGetVoteBallotByLinkToken *string) (*vote.GetVoteBallotByLinkPayload, error) {
+	var err error
+	var body GetVoteBallotByLinkRequestBody
+	{
+		if voteGetVoteBallotByLinkBody == nil {
+			return nil, fmt.Errorf("missing required flag --body")
+		}
+		err = json.Unmarshal([]byte(*voteGetVoteBallotByLinkBody), &body)
+		if err != nil {
+			return nil, fmt.Errorf("invalid JSON for body, \nerror: %s, \nexample of valid JSON:\n%s", err, "'{\n      \"vote_token\": \"v1.k2026a.eyJ2IjoiOGYzYzJhMWUtNGI1ZC00ZTZmLTlhN2ItMWMyZDNlNGY1YTZiIiwiciI6ImNiYTE0ZjQwLTE2MzYtMTFlYy05NjIxLTAyNDJhYzEzMDAwMiIsImlhdCI6MTc5MzIzMjAwMH0.vY-4FhdIHtowj0UaclJQCHvcT86Fqs47AV_AQMMNKrU\"\n   }'")
+		}
+		if utf8.RuneCountInString(body.VoteToken) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.vote_token", body.VoteToken, utf8.RuneCountInString(body.VoteToken), 1, true))
+		}
+		if utf8.RuneCountInString(body.VoteToken) > 1024 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.vote_token", body.VoteToken, utf8.RuneCountInString(body.VoteToken), 1024, false))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	var token *string
+	{
+		if voteGetVoteBallotByLinkToken != nil {
+			token = voteGetVoteBallotByLinkToken
+		}
+	}
+	v := &vote.GetVoteBallotByLinkPayload{
+		VoteToken: body.VoteToken,
+	}
+	v.Token = token
+
+	return v, nil
+}
+
 // BuildResendVoteResponsePayload builds the payload for the vote
 // resend_vote_response endpoint from CLI flags.
-func BuildResendVoteResponsePayload(voteResendVoteResponseVoteResponseUID string, voteResendVoteResponseToken string) (*vote.ResendVoteResponsePayload, error) {
+func BuildResendVoteResponsePayload(voteResendVoteResponseVoteResponseUID *string, voteResendVoteResponseToken *string) (*vote.ResendVoteResponsePayload, error) {
 	var err error
 	var voteResponseUID string
 	{
-		voteResponseUID = voteResendVoteResponseVoteResponseUID
+		if voteResendVoteResponseVoteResponseUID == nil {
+			return nil, fmt.Errorf("missing required flag --vote-response-uid")
+		}
+		voteResponseUID = *voteResendVoteResponseVoteResponseUID
 		err = goa.MergeErrors(err, goa.ValidateFormat("vote_response_uid", voteResponseUID, goa.FormatUUID))
 		if err != nil {
 			return nil, err
@@ -696,8 +943,8 @@ func BuildResendVoteResponsePayload(voteResendVoteResponseVoteResponseUID string
 	}
 	var token *string
 	{
-		if voteResendVoteResponseToken != "" {
-			token = &voteResendVoteResponseToken
+		if voteResendVoteResponseToken != nil {
+			token = voteResendVoteResponseToken
 		}
 	}
 	v := &vote.ResendVoteResponsePayload{}

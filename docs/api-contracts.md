@@ -97,14 +97,18 @@ Content-Type: application/json
   ],
   "pseudo_anonymity": false,
   "poll_type": "generic",
-  "num_winners": 5,
   "allow_abstain": false,
+  "allow_vote_change": true,
   "quorum_percentage": 50,
   "winning_threshold_percentage": 50
 }
 ```
 
 `end_time_timezone` is required: an IANA timezone name (e.g., `America/New_York`) that ITX uses to interpret `end_time` exactly as sent. Omitting it fails contract validation with a 400 before ITX is called. The proxy passes the value through untouched and performs no validation of its own; ITX rejects invalid timezone names with a 400, which the proxy surfaces as a 400.
+
+**Create defaults:** `POST /votes` defaults an omitted `poll_type` to `generic`. An omitted `num_winners` defaults to two only for `meek_stv` creates; other poll types forward a winner count only when explicitly provided ([#2922](https://github.com/linuxfoundation/lfx-self-serve/issues/2922)). Explicit values retain the enum and count range (2–10) constraints. ITX [PR #285](https://github.com/linuxfoundation-it/itx-service-voting/pull/285) additionally validates Meek STV winner counts on creation: the count must not exceed the choices in any question; an incompatible count returns 400, not a silently reduced count.
+
+**Vote change setting:** `allow_vote_change` is optional and has no V2 default. When omitted, the proxy leaves it out of the ITX request and ITX creates the vote with changes allowed (`true`). The public OpenAPI contract permits omission, not JSON `null`; callers must omit the field to use the create default. The current decoder also treats `null` as omission, but spec-validating clients or gateways may reject it. An explicit `false` locks submitted ballots: voters cannot change their choices, comments or abstention afterwards. Every vote read returns a resolved boolean; votes created before this setting existed report `true`.
 
 **Response** (201 Created):
 
@@ -127,6 +131,7 @@ Content-Type: application/json
   "total_voting_request_invitations": 0,
   "num_response_received": 0,
   "allow_abstain": false,
+  "allow_vote_change": true,
   "poll_questions": [
     {
       "question_id": "q1-uuid",
@@ -192,12 +197,21 @@ x-scope: manage:voting
   ],
   "pseudo_anonymity": false,
   "poll_type": "generic",
-  "num_winners": 5,
   "allow_abstain": false,
+  "allow_vote_change": true,
   "quorum_percentage": 50,
   "winning_threshold_percentage": 50
 }
 ```
+
+**Poll origin and email routing**: The proxy automatically adds `source: "self_serve"`
+to the ITX create request; clients do not supply it through the V2 API. ITX stores
+this origin and uses it for both the creator's poll-ended results link and voter
+email destinations. For `self_serve`, invitation, extension, resend, and reminder
+emails open `/votes/{poll_id}` on the environment's Self Serve app. The poll ID is
+the same identifier exposed as the V2 vote UID; no ID translation is required.
+Other stored origins (`pcc`, `unknown`, or an empty legacy value) retain the
+configured MyProfile/OpenProfile voter link and the PCC results link for creators.
 
 **Response** (200 OK):
 
@@ -220,6 +234,7 @@ x-scope: manage:voting
   "total_voting_request_invitations": 0,
   "num_response_received": 0,
   "allow_abstain": false,
+  "allow_vote_change": true,
   "poll_questions": [
     {
       "question_id": "q1-uuid",
@@ -285,18 +300,19 @@ Authorization: Bearer <heimdall-jwt-token>
   "total_voting_request_invitations": 25,
   "num_response_received": 10,
   "allow_abstain": false,
+  "allow_vote_change": true,
   "poll_questions": [...]
 }
 ```
 
-When a poll auto-ends because all eligible voters respond (by voting or being removed) before its scheduled `end_time`, ITX stamps `early_end_time` with the actual close time and preserves the original `end_time`. Extending an ended poll reactivates it and clears `early_end_time`. The proxy forwards `early_end_time` as a read-only field, present only on auto-ended polls, and normalizes zero-value timestamps to absent (mirroring ITX, since the NATS KV ingress reads raw DynamoDB attributes):
+When a poll ends early, either manually or automatically because all eligible voters respond (by voting or being removed) before its scheduled `end_time`, ITX stamps `early_end_time` with the actual close time and preserves the original `end_time`. Extending an ended poll reactivates it and clears `early_end_time`. The proxy forwards `early_end_time` as a read-only field, present for both manual and automatic early endings, and normalizes zero-value timestamps to absent (mirroring ITX, since the NATS KV ingress reads raw DynamoDB attributes):
 
 ```jsonc
 {
   "vote_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
   "status": "ended",
   "end_time": "2026-02-15T23:59:59Z",
-  "early_end_time": "2026-02-10T14:32:11Z"  // Only present when all voters responded before end_time
+  "early_end_time": "2026-02-10T14:32:11Z"  // Present for manual or automatic endings before end_time
 }
 ```
 
@@ -338,6 +354,7 @@ x-scope: manage:voting
   "total_voting_request_invitations": 25,
   "num_response_received": 10,
   "allow_abstain": false,
+  "allow_vote_change": true,
   "poll_questions": [...]
 }
 ```
@@ -389,15 +406,35 @@ Content-Type: application/json
     {"prompt": "Comments?"}
   ],
   "pseudo_anonymity": true,
-  "poll_type": "generic",
-  "num_winners": 1,
   "allow_abstain": true,
+  "allow_vote_change": true,
   "quorum_percentage": 60,
   "winning_threshold_percentage": 60
 }
 ```
 
 `end_time_timezone` is required, as on create. Omitting it fails contract validation with a 400 before ITX is called, so ITX always receives an explicit timezone on every update. As on create, ITX rejects invalid timezone names with a 400, surfaced as a 400.
+
+**Update method/count contract:** `PUT /votes/{uid}` keeps `poll_type` and `num_winners` optional. Omitted values remain absent from the upstream ITX request; neither the HTTP decoder, generated client/CLI nor converter supplies create defaults. The public OpenAPI contract permits omission, not JSON `null`; callers must omit these fields to retain existing settings. The current decoder also treats `null` as omission, but spec-validating clients or gateways may reject it. Explicit valid values are intentional replacements, including an explicit `generic` type. Empty/unknown types and counts outside 2–10 fail voting-service validation with 400 before ITX is called. This is not a general PATCH/merge API: the other required replacement fields remain required.
+
+**Update vote change setting:** `allow_vote_change` is optional on `PUT /votes/{uid}` too. Omitting it leaves it out of the ITX request, so ITX keeps the stored value; an explicit `true` or `false` replaces it. The public OpenAPI contract permits omission, not JSON `null`; callers must omit the field to retain the stored setting. The current decoder also treats `null` as omission, but spec-validating clients or gateways may reject it.
+
+Stored-value preservation is owned by ITX [#3428](https://github.com/linuxfoundation/lfx-self-serve/issues/3428), with the following update precedence:
+
+| Effective method/count input | ITX #3428 behavior |
+|---|---|
+| Type omitted | Retain the stored type |
+| Explicit valid type | Replace the stored type |
+| Existing Meek STV, count omitted | Retain the stored count, including four; applies when type is omitted or explicitly repeats `meek_stv` |
+| Effective Meek STV, explicit count | Use the supplied valid count |
+| Explicit non-STV → Meek STV transition, count omitted | Use two winners |
+| Effective non-STV | Do not retain a previous STV count |
+
+The voting service does not choose a winner default on updates based on the request's decoded type; ITX resolves the effective type against storage. The Meek STV default in #2922 applies only to creates.
+
+Merged ITX PR #285 also validates the resolved Meek STV winner count against **every replacement question's choice count**. An edit that preserves four winners but reduces a question to three choices returns 400 before persistence; it does not reset the stored count. The same bound applies to explicit winner counts and creation. Keep enough choices or explicitly select a valid smaller count.
+
+**Frontend compatibility and release gate:** Self Serve's draft/publish updates omit both fields; PCC's disabled type control is included by `getRawValue`, so its explicit type remains supported. Neither frontend needs changes. Implement, verify with persisted readback, and release ITX #3428 **before** voting-service [#2974](https://github.com/linuxfoundation/lfx-self-serve/issues/2974). Old ITX still defaults an omitted type to `generic`; wire-omission tests alone do not prove preservation. Until the changed ITX version is available and paired smoke passes, this voting change is not release-ready. ITX's existing read-then-replace persistence is unchanged; no atomicity guarantee is added.
 
 **Response** (200 OK):
 
@@ -459,8 +496,8 @@ x-scope: manage:voting
   ],
   "pseudo_anonymity": true,
   "poll_type": "generic",
-  "num_winners": 1,
   "allow_abstain": true,
+  "allow_vote_change": true,
   "quorum_percentage": 60,
   "winning_threshold_percentage": 60
 }
@@ -484,7 +521,7 @@ x-scope: manage:voting
 
 ---
 
-## DELETE /votes/{vote_uid} (Delete Vote)
+## DELETE /votes/{vote_uid} (Delete or Cancel Vote)
 
 ### LFXv2 Proxy API
 
@@ -508,7 +545,16 @@ Authorization: Bearer <heimdall-jwt-token>
 (empty body)
 ```
 
-**Note**: Deletion is only allowed when `status == "disabled"`
+**Behavior**:
+
+| Current vote state | Result |
+|---|---|
+| `disabled` (draft) | Deleted: `204 No Content`; no notices are sent |
+| `active` (before `end_time`) | Cancelled: `204 No Content`; the vote and its responses are permanently removed, recipients receive a cancellation email, and ITX removes the response records asynchronously |
+| `ended` (ended early manually or automatically, or past its `end_time`) | `400 Bad Request` passed through from ITX (`ended polls cannot be deleted`) |
+| Unknown or already-removed vote | `403 Forbidden` from Heimdall's `writer` check when OpenFGA is enabled (the deployed default), because the vote has no relations; `404 Not Found` passed through from ITX when OpenFGA is disabled, or for a repeated delete that arrives before the vote's relations are removed |
+
+Cancellation is irreversible. Unlike `POST /votes/{vote_uid}/end`, which preserves the vote and its results, it removes the vote. A draft past its `end_time` is still deletable, because ITX treats only non-draft votes past their `end_time` as ended. The authority is `writer` on `vote:{vote_uid}`: any user holding that relation can delete or cancel the vote, not only the user who created it, and ordinary voters cannot cancel it.
 
 ---
 
@@ -545,6 +591,7 @@ x-scope: manage:voting
 | `committee_uid` | `committee_id` | UUID format |
 | `committee_uids` | `committee_ids` | Array of UUIDs |
 | `poll_questions[].choices[].choice_text` | `choices[]` | Flattened to string array in ITX request |
+| `allow_vote_change` | `allow_vote_change` | Optional; sent only when provided. Omitted → ITX defaults to `true` on create and keeps the stored value on update |
 
 ### Response Fields (ITX → LFXv2)
 
@@ -554,6 +601,9 @@ x-scope: manage:voting
 | `project_id` | `project_uid` | Salesforce ID |
 | `committee_id` | `committee_uid` | UUID |
 | `choices[]` | `poll_questions[].choices[]` | Expanded to objects with `choice_id` and `choice_text` |
+| `allow_vote_change` | `allow_vote_change` | Always a boolean on vote, ballot and vote-link reads; absent upstream (legacy) → `true` |
+| `can_change_vote` | `can_change_vote` (ballot reads), `ballot.can_change_vote` (vote-link ballot) | Passed through; omitted when ITX omits it, never computed by the proxy |
+| `num_response_received`, `total_voting_request_invitations` (poll) | `would_end_vote` (ballot reads), `ballot.would_end_vote` (vote-link ballot) | Computed by the proxy; counts never returned on vote links |
 
 ---
 
@@ -576,7 +626,7 @@ HTTP Status Codes:
 - `401` - Unauthorized (invalid/missing JWT)
 - `403` - Forbidden (insufficient permissions)
 - `404` - Not Found (vote does not exist)
-- `409` - Conflict (business rule violation)
+- `409` - Conflict (business rule violation). Ballot updates (`PUT /vote_responses/{vote_response_uid}`, `PUT /vote_links/responses`) return 409 with ITX's message `this poll does not allow changing a submitted vote` when the vote's `allow_vote_change` is `false`
 - `500` - Internal Server Error
 - `503` - Service Unavailable (ITX service down)
 
@@ -636,16 +686,21 @@ x-scope: manage:voting
 | Status | Can Update? | Can Delete? | Can Activate? | Description |
 |--------|-------------|-------------|---------------|-------------|
 | `disabled` | ✅ Yes | ✅ Yes | ✅ Yes | Initial state, not yet sent |
-| `active` | ❌ No | ❌ No | N/A | Currently accepting votes |
+| `active` | ❌ No | ✅ Yes (cancels) | N/A | Currently accepting votes |
 | `ended` | ❌ No | ❌ No | N/A | Voting period closed |
+
+Deleting an active vote cancels it (see [DELETE /votes/{vote_uid}](#delete-votesvote_uid-delete-or-cancel-vote)). `ended` includes votes ended early, manually or automatically, and votes past their `end_time`.
 
 ### Poll Types
 
-| Type | Description | `num_winners` Required? |
-|------|-------------|------------------------|
-| `generic` | Simple poll | No |
-| `condorcet_irv` | Condorcet IRV voting | No |
-| `meek_stv` | Meek STV (Single Transferable Vote) | Yes (must be ≥ 2) |
+| Type | Description | `num_winners` |
+|------|-------------|---------------|
+| `generic` | Simple poll | Not used; forwarded only if explicitly provided |
+| `condorcet_irv` | Condorcet IRV voting | Not used; forwarded only if explicitly provided |
+| `instant_runoff_vote` | Instant runoff voting | Not used; forwarded only if explicitly provided |
+| `meek_stv` | Meek STV (Single Transferable Vote) | Optional; defaults to 2 on create when omitted, must be 2–10 when provided; omitted update counts are resolved by ITX |
+
+`num_winners` is sent upstream only when explicitly provided in the request — the one exception is a `meek_stv` create, which defaults to 2 winners when omitted. All updates leave omitted counts absent from the ITX request, including explicit `meek_stv` updates, so ITX can preserve the stored count or resolve a method transition as described above. Responses omit `num_winners` entirely when no winner count is stored upstream.
 
 ---
 
@@ -700,6 +755,7 @@ Content-Type: application/json
   "total_voting_request_invitations": 25,
   "num_response_received": 10,
   "allow_abstain": false,
+  "allow_vote_change": true,
   "poll_questions": [...]
 }
 ```
@@ -728,6 +784,62 @@ x-scope: manage:voting
 ```
 
 **Response** (200 OK): Same structure as ITX `GetPoll` response (see GET above).
+
+---
+
+## POST /votes/{vote_uid}/end (End Vote)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `POST /votes/{vote_uid}/end`
+
+**Required permission**: `writer` on `vote:{vote_uid}`
+
+**Headers**:
+
+```http
+Authorization: Bearer <heimdall-jwt-token>
+```
+
+**Path Parameters**:
+
+- `vote_uid` (string, UUID): The vote identifier
+
+**Request Body**: None (there is no `reason` field; ITX records no reason for an early end)
+
+**Response** (200 OK): Same structure as `GET /votes/{vote_uid}`. For an active vote the result has `status: "ended"`, `early_end_time` set to the moment the vote was ended, and the original `end_time` preserved.
+
+**Behavior**:
+
+| Current vote state | Result |
+|---|---|
+| `active` | Ended: `status: "ended"`, `early_end_time` stamped, `end_time` preserved |
+| `ended` | `200 OK` with the current state (idempotent no-op) |
+| `disabled` | `409 Conflict` — the service reads the vote from ITX first and never calls the ITX end endpoint |
+| `active` but already past its scheduled `end_time` | `400 Bad Request` passed through from ITX (`poll is already past its scheduled end time`) |
+
+Extending an ended vote reactivates it and clears `early_end_time` (see the `extend` section above). Status changes flow through the same NATS KV eventing path as any other status change.
+
+Ending keeps the vote and its results; to remove an active vote instead, cancel it with `DELETE /votes/{vote_uid}`.
+
+---
+
+### ITX Service API (Underlying)
+
+**Endpoint**: `POST /v2/voting/poll/{poll_id}/end`
+
+**Headers**:
+
+```http
+Authorization: Bearer <oauth2-m2m-token>
+x-scope: manage:voting
+```
+
+**Request Body**: None
+
+**Response** (200 OK): Same structure as ITX `GetPoll` response (see GET above).
+
+**Errors**: ITX returns `400` for a disabled poll (`poll has not started`) and for an active poll past its `end_time`, `409` when a concurrent extend wins the race, and `404` when the poll does not exist.
 
 ---
 
@@ -804,11 +916,15 @@ Content-Type: application/json
 ```json
 {
   "recipient_ids": [
-    "user-uuid-1",
-    "user-uuid-2"
-  ]
+    "cba14f40-1636-11ec-9621-0242ac130002",
+    "cba14f40-1636-11ec-9621-0242ac130003"
+  ],
+  "personalized_links": true
 }
 ```
+
+- `recipient_ids` (required): **vote response (ballot) UIDs** — the ITX `vote_id` of each recipient's ballot, not user IDs. ITX rejects the whole request with a 400 if any ID is not an active ballot of this vote whose voter is still a committee member.
+- `personalized_links` (optional, default `false`): when `true`, each recipient's email links to a personal HMAC-signed URL that lets them submit or update their vote response without logging in (see [Personalized Vote Links](vote-links.md)). Returns 503 if the service has no signing keys configured, and 400 if `recipient_ids` is empty.
 
 **Response** (204 No Content):
 
@@ -830,18 +946,26 @@ Content-Type: application/json
 x-scope: manage:voting
 ```
 
-**Request Body**:
+**Request Body** (`personalized_links` false or omitted — unchanged):
 
 ```json
 {
-  "recipient_ids": [
-    "user-uuid-1",
-    "user-uuid-2"
-  ]
+  "recipient_ids": ["cba14f40-1636-11ec-9621-0242ac130002"]
 }
 ```
 
-**Note**: `recipient_ids` are passed through to ITX without transformation.
+**Request Body** (`personalized_links: true`):
+
+```json
+{
+  "recipient_ids": ["cba14f40-1636-11ec-9621-0242ac130002"],
+  "recipient_links": {
+    "cba14f40-1636-11ec-9621-0242ac130002": "https://app.lfx.dev/votes/8f3c2a1e-4b5d-4e6f-9a7b-1c2d3e4f5a6b#vote_token=<signed-vote-token>"
+  }
+}
+```
+
+**Note**: `recipient_ids` are passed through to ITX without transformation. `recipient_links` is keyed by `vote_id`; ITX uses each value as that recipient's `VotingLink` in place of the standard Self Serve link. **`recipient_links` requires ITX support** — see [Personalized Vote Links](vote-links.md#itx-dependency).
 
 **Response** (200 OK or 204 No Content):
 
@@ -893,22 +1017,89 @@ Authorization: Bearer <heimdall-jwt-token>
         {"choice_id": "c1-uuid", "vote_count": 14, "percentage": 77.8},
         {"choice_id": "c2-uuid", "vote_count": 10, "percentage": 55.6}
       ],
-      "ranked_choice_votes": [],
-      "ranked_choice_winner_info": null,
-      "irv_round_summary": [],
-      "meek_stv_round_summary": []
+      "ranked_choice_winner_info": {"poll_choices": [], "condorcet_irv_used_for_eliminations": false}
     }
   ],
   "comment_results": [
     {
-      "prompt": "Any additional comments?",
-      "comments": ["Great candidates this year.", "No objections."]
+      "prompt": {"prompt_id": "p1-uuid", "prompt": "Any additional comments?"},
+      "responses": [
+        {
+          "vote_id": "v1-uuid",
+          "user_id": "example-user-id",
+          "comment_text": "Great candidates this year.",
+          "user_name": "Example User",
+          "profile_picture": "https://example.org/avatar.png",
+          "vote_creation_time": "2026-02-10T15:04:05Z",
+          "abstained": false
+        },
+        {
+          "vote_id": "v2-uuid",
+          "user_id": "example-user-id-2",
+          "comment_text": "No objections.",
+          "user_name": "Example Voter",
+          "profile_picture": "https://example.org/avatar2.png",
+          "vote_creation_time": "2026-02-11T09:30:00Z",
+          "abstained": false
+        }
+      ]
     }
   ]
 }
 ```
 
-**Note**: `ranked_choice_votes`, `irv_round_summary`, and `meek_stv_round_summary` are populated only for the corresponding `poll_type` values (`condorcet_irv`, `instant_runoff_vote`, `meek_stv`). For `generic` polls, only `generic_choice_votes` is populated.
+#### Held and final pseudo-anonymous results
+
+For a pseudo-anonymous vote (`pseudo_anonymity: true`), ITX withholds results until the vote ends. V2 forwards what ITX supplies and does not decide, infer or enforce the hold itself.
+
+Held response (synthetic example) — only the flag, participation counts and deadline are returned:
+
+```json
+{
+  "results_held": true,
+  "num_recipients": 25,
+  "num_votes_cast": 18,
+  "poll_end_time": "2030-02-15T23:59:59Z",
+  "poll_end_time_timezone": "America/New_York"
+}
+```
+
+Final response for an ended pseudo-anonymous vote (synthetic example) — comments carry text only, in the order ITX returned them, and duplicate text is not merged:
+
+```json
+{
+  "num_recipients": 25,
+  "num_votes_cast": 18,
+  "num_abstained": 2,
+  "poll_end_time": "2030-02-15T23:59:59Z",
+  "comment_results": [
+    {
+      "prompt": {"prompt_id": "c02bdbaf-53b1-4d47-bc04-dd7e459dd308", "prompt": "Any additional comments?"},
+      "responses": [
+        {"comment_text": "No objections."},
+        {"comment_text": "No objections."}
+      ]
+    }
+  ]
+}
+```
+
+Field presence:
+
+| Field | Meaning when present | Meaning when absent |
+| --- | --- | --- |
+| `results_held` | `true`: results are withheld. `false`: supplied explicitly by ITX and preserved as-is. | Not a held or final signal on its own. V2 never fills in `false`. Clients must not treat absence as a final state independently of the vote's own status. |
+| `poll_results`, `num_abstained`, `comment_results` | Result data ITX supplied. An explicit `num_abstained: 0` is preserved. | Not available (for example while results are held). Clients must not substitute zero counts. |
+| `comment_results[].responses[].vote_id`, `vote_creation_time`, `abstained` | Supplied for named votes, including `abstained: false`. | Omitted for ended pseudo-anonymous comments. Clients must not rely on them for tracking. |
+| `comment_results[].responses[].user_id`, `user_name`, `profile_picture` | Supplied for named votes. | Omitted for pseudo-anonymous votes. |
+
+Named-vote results are unchanged: ballot identifiers, legitimate zero counts and explicit `abstained` true/false values are preserved. Only comment response identifiers in `comment_results[].responses[]` are affected; ballot identifiers used for ballot submission, personal responses and manager views are not removed.
+
+Optional top-level arrays (`poll_results`, `comment_results`) follow the standard Goa encoder, so an empty array is omitted rather than serialized as `[]`; an exact `[]` versus absent distinction is not guaranteed. The per-prompt `responses` array remains required and is always an array.
+
+**Callers and rollout**: Direct V2 callers must honor `results_held` and the optional fields above; Self Serve normalizes its own held response arrays but that handling does not apply to other clients. Because these fields are now optional in the published schema, clients generated from an earlier schema may reject held or text-only responses until regenerated. The backend privacy restriction comes from ITX (ITX #3920, tracked with Self Serve #3913/#3916) and must be deployed there; V2 alone stays compatible with legacy full results but does not independently withhold data.
+
+**Note**: `ranked_choice_votes`, `irv_round_summary`, and `meek_stv_round_summary` are populated only for the corresponding `poll_type` values (`condorcet_irv`, `instant_runoff_vote`, `meek_stv`). For `generic` polls, only `generic_choice_votes` is populated. Unpopulated optional keys are omitted from the response entirely (never serialized as `null` or `[]`), which is why the example above has no `ranked_choice_votes` / `irv_round_summary` / `meek_stv_round_summary` keys. `ranked_choice_winner_info` is always present (ITX emits it for every poll type), with `poll_choices: []` when no winner has been determined (the HTTP encoder normalizes nil choices to an empty array). On comment responses, `user_id`, `user_name`, and `profile_picture` are absent entirely when the poll has `pseudo_anonymity` enabled.
 
 ---
 
@@ -923,7 +1114,7 @@ Authorization: Bearer <oauth2-m2m-token>
 x-scope: manage:voting
 ```
 
-**Response**: Same structure — results are passed through from ITX without field transformation.
+**Response**: Same structure — results are passed through from ITX without field transformation. Optional fields ITX omits (`results_held`, `num_abstained`, comment `vote_id`/`vote_creation_time`/`abstained`) stay absent in the V2 response.
 
 ---
 
@@ -1059,9 +1250,12 @@ Authorization: Bearer <heimdall-jwt-token>
   "vote_response_uid": "vr-uuid-123",
   "vote_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
   "project_uid": "c01adbaf-53b1-4d47-bc04-dd7e459dd301",
-  "vote_status": "voted",
+  "vote_status": "responded",
   "abstained": false,
   "allow_abstain": false,
+  "allow_vote_change": true,
+  "can_change_vote": true,
+  "would_end_vote": false,
   "vote_creation_time": "2026-01-25T14:30:00Z",
   "user_name": "Alice Johnson",
   "profile_picture": "https://example.com/alice.jpg",
@@ -1100,11 +1294,48 @@ Authorization: Bearer <heimdall-jwt-token>
 
 **Note**: The `ses_*` fields reflect email delivery and engagement tracking from AWS SES. `project_uid` is mapped from the ITX v1 Salesforce ID back to a LFXv2 UUID.
 
+**Vote change fields**: `allow_vote_change` is inherited from the vote and always present; votes created before the setting existed report `true`. `can_change_vote` is ITX's answer to whether this ballot can still be changed with `PUT /vote_responses/{vote_response_uid}`: `true` only when the ballot has been submitted, the voter has not been removed, the vote allows changes, and the vote is active and before its end time. The proxy passes it through unchanged and omits it when ITX does not report it; it never computes or defaults the value.
+
+**Last-voter signal**: `would_end_vote` is always present. It is `true` when submitting this
+pending ballot now would be the final response that ends the vote: the ballot's
+`vote_status` is `awaiting_response`, the voter has not been removed, the vote is `active`,
+it has at least one invitation, and `num_response_received + 1 >= total_voting_request_invitations`.
+This mirrors ITX's own auto-end check, which ends the vote once every invited voter has
+responded. The proxy computes it from ITX's poll counts. It is `false` for submitted ballots
+(changing a response never ends the vote), removed voters, and ended or disabled votes.
+When the proxy cannot read the vote's counts, it still returns the ballot, with
+`would_end_vote: false`. It describes the moment of the read and can change if another voter responds or a voter
+is added or removed afterwards.
+
+**Consistency and failure limits**: This is an advisory signal, not a reservation or a
+guarantee of closure. ITX's poll read recomputes `num_response_received` from non-removed
+submitted ballots using strongly consistent reads, and `total_voting_request_invitations`
+excludes removed voters. If ITX cannot reconcile the invitations with the vote index, the
+poll read fails (HTTP 500) rather than returning a stale count, and this ballot read then
+reports `would_end_vote: false` instead of failing. Auto-end uses the stored poll counter instead, and counters that drifted before the
+atomic membership-update fix are not repaired by a ballot read. If ITX saves a ballot but
+its separate response-count increment fails, the submission still succeeds (HTTP 201
+upstream), but the stored counter may prevent auto-end; the vote can remain open until its
+scheduled or manual end. Re-reading before submit picks up responses made since the last
+read but cannot make the read and submission atomic. The V2 signal does not override ITX's
+final submit-time checks.
+
 ---
 
 ### ITX Service API (Underlying)
 
 **Endpoint**: `GET /v2/voting/vote/{vote_id}`
+
+For a pending ballot (`vote_status` `awaiting_response`, voter not removed), the proxy also calls
+`GET /v2/voting/poll/{poll_id}` to compute `would_end_vote`. Its advisory context deadline is
+at most five seconds after the lookup starts, capped at ten seconds from service entry
+(including the required ballot read and ID mapping). An earlier caller deadline shortens
+it further, reserving one second for the response; an exhausted advisory budget skips the
+call. If the lookup returns an error, including a context timeout, the proxy logs a warning
+and returns the ballot with `would_end_vote: false`. Other ballots skip it. These deadlines
+bound context-aware ITX HTTP work, not a wall-clock guarantee: existing OAuth token-renewal
+waits use a background context and can still outlast the advisory deadline. Required ballot
+reads and personalized vote-link reads retain their existing timeouts.
 
 **Headers**:
 
@@ -1155,6 +1386,14 @@ Content-Type: application/json
 ```
 (empty body)
 ```
+
+**Errors**: `409` with ITX's message when the vote's `allow_vote_change` is `false` and a ballot was already submitted:
+
+```json
+{ "code": "409", "message": "this poll does not allow changing a submitted vote" }
+```
+
+An ended vote still returns ITX's `400` first. A repeated first submission keeps ITX's existing `400`.
 
 ---
 
@@ -1224,6 +1463,136 @@ x-scope: manage:voting
 ```
 (empty body)
 ```
+
+---
+
+## POST /vote_links/responses (Submit Vote Response by Link)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `POST /vote_links/responses`
+
+**Required permission**: none — Heimdall admits the request anonymously. The `vote_token` from a personalized vote link is the only authorization; the service verifies its HMAC signature. See [Personalized Vote Links](vote-links.md).
+
+**Headers**:
+
+```http
+Content-Type: application/json
+```
+
+**Request Body**:
+
+```json
+{
+  "vote_token": "<signed-vote-token>",
+  "user_vote_content": [
+    {
+      "question_id": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+      "choice_ids": ["b03cdbaf-53b1-4d47-bc04-dd7e459dd309"]
+    }
+  ],
+  "abstain": false,
+  "comment_responses": []
+}
+```
+
+The ballot is identified **only** by the token. The body has no `vote_response_uid`, and any such field is ignored.
+
+**Response** (204 No Content). Errors:
+
+| Status | Cause |
+|---|---|
+| 400 | Payload validation, or ITX rejection (`poll has ended`, `vote is not awaiting response`, `vote cannot be submitted for a removed voter`, ...) |
+| 404 | `invalid voting link` — malformed, tampered, or unknown-key token |
+| 503 | Personalized vote links are not configured on this service |
+
+### ITX Service API (Underlying)
+
+`POST /v2/voting/vote` with `vote_id` set to the token's vote response UID — identical to [POST /vote_responses](#post-vote_responses-submit-vote-response).
+
+---
+
+## POST /vote_links/ballot (Get Ballot by Link)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `POST /vote_links/ballot`
+
+**Required permission**: none. Heimdall admits the request anonymously; the `vote_token` is the only authorization. See [Personalized Vote Links](vote-links.md#reading-the-ballot).
+
+**Request Body**:
+
+```json
+{ "vote_token": "<signed-vote-token>" }
+```
+
+**Response** (200 OK):
+
+```json
+{
+  "vote_uid": "8f3c2a1e-4b5d-4e6f-9a7b-1c2d3e4f5a6b",
+  "project_uid": "7cad5a8d-19d0-41a4-81a6-043453daf9ee",
+  "project_slug": "cncf",
+  "name": "TSC election",
+  "description": "Pick one",
+  "status": "active",
+  "end_time": "2026-12-01T23:59:59Z",
+  "poll_type": "generic",
+  "allow_abstain": true,
+  "allow_vote_change": true,
+  "pseudo_anonymity": false,
+  "poll_questions": [
+    { "question_id": "q1", "prompt": "Who?", "type": "single_choice",
+      "choices": [ { "choice_id": "c-a", "choice_text": "Alice" } ] }
+  ],
+  "ballot": {
+    "vote_status": "responded",
+    "already_voted": true,
+    "voter_removed": false,
+    "can_change_vote": true,
+    "would_end_vote": false,
+    "abstained": false,
+    "poll_answers": [ { "question_id": "q1", "prompt": "Who?", "type": "single_choice",
+      "user_choice": [ { "choice_id": "c-a", "choice_text": "Alice" } ] } ],
+    "comment_responses": []
+  }
+}
+```
+
+- `ballot.abstained`, `ballot.poll_answers` and `ballot.comment_responses` are present only after voting, and never on pseudo-anonymous votes. If ITX omits `pseudo_anonymity` or returns `null`, the vote is treated (and reported) as pseudo-anonymous.
+- Optional vote fields (`end_time_timezone`, `early_end_time`, `num_winners`, `poll_comment_prompts`) follow the same rules as `GET /votes/{vote_uid}`.
+- `project_uid` is the v2 project UID. `project_slug` is ITX's poll `project_name`, which holds the slug, and is omitted when empty. Use the query service for other project details.
+- `allow_vote_change` (from the vote; legacy votes report `true`) and `ballot.can_change_vote` (passed through from ITX, omitted when ITX omits it) are returned on regular and pseudo-anonymous votes alike. Neither reveals ballot contents.
+- `ballot.would_end_vote` is always present and follows the same rule as `would_end_vote` on
+  [GET /vote_responses/{vote_response_uid}](#get-vote_responsesvote_response_uid-get-vote-response):
+  `true` only when submitting this pending ballot now would be the final response that
+  ends the vote. It is computed by the proxy from the poll's `num_response_received` and
+  `total_voting_request_invitations`, which are never returned. It is returned on
+  pseudo-anonymous votes too and describes the moment of the read.
+
+**Errors**: 404 `invalid voting link` (bad token, or the ballot isn't part of the token's vote), 404 from ITX (deleted vote or ballot), 500 (ITX could not read the vote's response counts), 503 (not configured, ITX unavailable, or the project ID can't be mapped).
+
+### ITX Service API (Underlying)
+
+`GET /v2/voting/vote/{vote_id}` (ballot from the token's `r`), then `GET /v2/voting/poll/{poll_id}` (vote from the token's `v`). The ITX vote response's `voter_removed` field is mapped to `ballot.voter_removed`. The poll's `project_id` (SFID) is mapped to `project_uid` via `lfx.lookup_v1_mapping`.
+
+---
+
+## PUT /vote_links/responses (Update Vote Response by Link)
+
+### LFXv2 Proxy API
+
+**Endpoint**: `PUT /vote_links/responses`
+
+**Required permission**: none — authorized by `vote_token`, as for `POST /vote_links/responses`.
+
+**Request Body**: same fields as `POST /vote_links/responses`. As with `PUT /vote_responses/{vote_response_uid}`, omitting `comment_responses` preserves existing comments; including it (even as `[]`) replaces them.
+
+**Response** (204 No Content). Errors are as for `POST /vote_links/responses`; ITX returns 400 when no ballot has been submitted yet (`vote_status != responded`), and 409 `this poll does not allow changing a submitted vote` when the vote's `allow_vote_change` is `false`.
+
+### ITX Service API (Underlying)
+
+`PUT /v2/voting/vote/{vote_id}` with `vote_id` from the token — identical to [PUT /vote_responses/{vote_response_uid}](#put-vote_responsesvote_response_uid-update-vote-response).
 
 ---
 

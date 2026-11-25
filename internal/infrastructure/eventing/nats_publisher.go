@@ -36,17 +36,38 @@ const (
 
 // NATSPublisher implements the EventPublisher interface
 type NATSPublisher struct {
-	conn   *nats.Conn
-	logger *slog.Logger
+	conn                     *nats.Conn
+	logger                   *slog.Logger
+	participantGrantsEnabled bool
+}
+
+// PublisherOption configures a NATSPublisher.
+type PublisherOption func(*NATSPublisher)
+
+// WithParticipantGrants enables writing `participant` tuples on votes (member_put) for vote
+// response create/update. It is off by default so a deploy cannot grant `vote#viewer` while
+// already-indexed responses are still gated on it (which would let participants read each
+// other's ballots): reindex the responses to `vote_response#auditor` first, then enable it.
+// Revocations (member_remove on a removed voter or a soft delete) are never gated.
+func WithParticipantGrants(enabled bool) PublisherOption {
+	return func(p *NATSPublisher) { p.participantGrantsEnabled = enabled }
 }
 
 // NewNATSPublisher creates a new NATS publisher
-func NewNATSPublisher(conn *nats.Conn, logger *slog.Logger) *NATSPublisher {
-	return &NATSPublisher{
+func NewNATSPublisher(conn *nats.Conn, logger *slog.Logger, opts ...PublisherOption) *NATSPublisher {
+	p := &NATSPublisher{
 		conn:   conn,
 		logger: logger,
 	}
+	for _, opt := range opts {
+		opt(p)
+	}
+	return p
 }
+
+// voteParticipantRelation is the vote relation that grants an invited voter viewer access
+// (vote#viewer includes participant); it is written per response via member_put.
+const voteParticipantRelation = "participant"
 
 // PublishVoteEvent publishes a vote (poll) event to indexer and FGA-sync
 func (p *NATSPublisher) PublishVoteEvent(ctx context.Context, action string, vote *domain.VoteData) error {
@@ -81,9 +102,20 @@ func (p *NATSPublisher) PublishVoteResponseEvent(ctx context.Context, action str
 		if err := p.sendDeleteAccessMessage(ctx, "vote_response", voteResponse.UID); err != nil {
 			return fmt.Errorf("failed to send vote response delete access message: %w", err)
 		}
+		// delete_access removes only vote_response:{uid}; the participant tuple lives on the vote,
+		// so it needs its own removal. Skipped when the delete event could not identify the voter.
+		if err := p.sendVoteParticipantMessage(ctx, voteResponse, true); err != nil {
+			return fmt.Errorf("failed to remove vote participant: %w", err)
+		}
 	} else {
 		if err := p.sendVoteResponseAccessMessage(ctx, voteResponse); err != nil {
 			return fmt.Errorf("failed to send vote response access message: %w", err)
+		}
+		// Grants wait for the rollout flag; revoking a removed voter never does.
+		if voteResponse.VoterRemoved || p.participantGrantsEnabled {
+			if err := p.sendVoteParticipantMessage(ctx, voteResponse, voteResponse.VoterRemoved); err != nil {
+				return fmt.Errorf("failed to send vote participant access message: %w", err)
+			}
 		}
 	}
 
@@ -215,6 +247,9 @@ func (p *NATSPublisher) sendVoteAccessMessage(ctx context.Context, vote *domain.
 			UID:        vote.VoteUID,
 			Public:     false,
 			References: references,
+			// participant tuples are managed per vote response via member_put/member_remove;
+			// update_access is a full sync and would otherwise delete them on every vote update.
+			ExcludeRelations: []string{voteParticipantRelation},
 		},
 	}
 
@@ -265,9 +300,12 @@ func buildVoteResponseIndexingConfig(data *domain.VoteResponseData) *indexerType
 	}
 
 	return &indexerTypes.IndexingConfig{
-		ObjectID:             data.UID,
-		AccessCheckObject:    fmt.Sprintf("vote:%s", data.VoteUID),
-		AccessCheckRelation:  "viewer",
+		ObjectID: data.UID,
+		// A response is private to its owner and the vote's auditors (vote_response#auditor is
+		// `owner or auditor from vote`). Gating on vote#viewer instead would expose every voter's
+		// ballot (poll_answers) to every vote participant.
+		AccessCheckObject:    fmt.Sprintf("vote_response:%s", data.UID),
+		AccessCheckRelation:  "auditor",
 		HistoryCheckObject:   fmt.Sprintf("vote_response:%s", data.UID),
 		HistoryCheckRelation: "auditor",
 		SortName:             data.Username,
@@ -317,6 +355,56 @@ func (p *NATSPublisher) sendVoteResponseAccessMessage(ctx context.Context, data 
 	}
 
 	return nil
+}
+
+// sendVoteParticipantMessage makes the vote response's user a participant of the parent vote.
+// vote#viewer is [user:*] or auditor or participant, and the indexed vote_response rows and
+// GET /votes/{uid} are both gated on vote#viewer, so an invitee needs this tuple to see the
+// vote. A removed voter (VoterRemoved) loses it. Skipped when there is no username or vote
+// to attach it to, mirroring the vote_response owner tuple.
+func (p *NATSPublisher) sendVoteParticipantMessage(ctx context.Context, data *domain.VoteResponseData, remove bool) error {
+	subject, msgBytes, err := newVoteParticipantMessage(data.VoteUID, data.Username, remove)
+	if err != nil {
+		return err
+	}
+	if subject == "" {
+		return nil
+	}
+
+	if err := p.publishWithSpan(ctx, subject, msgBytes); err != nil {
+		return fmt.Errorf("failed to publish vote participant message to subject %s: %w", subject, err)
+	}
+
+	return nil
+}
+
+// newVoteParticipantMessage builds the fga-sync message that makes username a participant of
+// the vote (member_put), or removes them (member_remove) when remove is true. It returns an
+// empty subject when there is no username or vote to attach it to.
+func newVoteParticipantMessage(voteUID, username string, remove bool) (subject string, payload []byte, err error) {
+	if username == "" || voteUID == "" {
+		return "", nil, nil
+	}
+
+	operation, subject := "member_put", fgaconstants.GenericMemberPutSubject
+	if remove {
+		operation, subject = "member_remove", fgaconstants.GenericMemberRemoveSubject
+	}
+
+	payload, err = json.Marshal(fgatypes.GenericFGAMessage{
+		ObjectType: "vote",
+		Operation:  operation,
+		Data: fgatypes.GenericMemberData{
+			UID:       voteUID,
+			Username:  username,
+			Relations: []string{voteParticipantRelation},
+		},
+	})
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to marshal %s message: %w", operation, err)
+	}
+
+	return subject, payload, nil
 }
 
 // sendDeleteAccessMessage sends a delete access message to FGA-sync

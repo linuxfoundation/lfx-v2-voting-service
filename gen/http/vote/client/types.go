@@ -43,10 +43,16 @@ type CreateVoteRequestBody struct {
 	PseudoAnonymity bool `form:"pseudo_anonymity" json:"pseudo_anonymity" xml:"pseudo_anonymity"`
 	// Type of poll
 	PollType string `form:"poll_type" json:"poll_type" xml:"poll_type"`
-	// Number of winners (meek_stv only)
-	NumWinners int `form:"num_winners" json:"num_winners" xml:"num_winners"`
+	// Number of winners. Sent upstream only when explicitly provided; meek_stv
+	// creates default to 2 when omitted. Updates leave omitted counts for ITX to
+	// resolve.
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow voters to abstain
 	AllowAbstain bool `form:"allow_abstain" json:"allow_abstain" xml:"allow_abstain"`
+	// Allow voters to change a submitted ballot (choices, comments or abstention)
+	// until the vote ends. Omitted on create means allowed; omitted on update
+	// preserves the stored value.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
 	// Quorum percentage required
 	QuorumPercentage *int `form:"quorum_percentage,omitempty" json:"quorum_percentage,omitempty" xml:"quorum_percentage,omitempty"`
 	// Winning threshold percentage
@@ -80,11 +86,17 @@ type UpdateVoteRequestBody struct {
 	// Enable pseudo-anonymity
 	PseudoAnonymity bool `form:"pseudo_anonymity" json:"pseudo_anonymity" xml:"pseudo_anonymity"`
 	// Type of poll
-	PollType string `form:"poll_type" json:"poll_type" xml:"poll_type"`
-	// Number of winners (meek_stv only)
-	NumWinners int `form:"num_winners" json:"num_winners" xml:"num_winners"`
+	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
+	// Number of winners. Sent upstream only when explicitly provided; meek_stv
+	// creates default to 2 when omitted. Updates leave omitted counts for ITX to
+	// resolve.
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow voters to abstain
 	AllowAbstain bool `form:"allow_abstain" json:"allow_abstain" xml:"allow_abstain"`
+	// Allow voters to change a submitted ballot (choices, comments or abstention)
+	// until the vote ends. Omitted on create means allowed; omitted on update
+	// preserves the stored value.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
 	// Quorum percentage required
 	QuorumPercentage *int `form:"quorum_percentage,omitempty" json:"quorum_percentage,omitempty" xml:"quorum_percentage,omitempty"`
 	// Winning threshold percentage
@@ -104,8 +116,12 @@ type ExtendVoteRequestBody struct {
 // BulkResendVoteRequestBody is the type of the "vote" service
 // "bulk_resend_vote" endpoint HTTP request body.
 type BulkResendVoteRequestBody struct {
-	// List of recipient IDs to resend vote email to
+	// Vote response (ballot) IDs to resend the vote email to
 	RecipientIds []string `form:"recipient_ids" json:"recipient_ids" xml:"recipient_ids"`
+	// When true, each recipient's email links to a personal HMAC-signed URL that
+	// lets them submit or update their vote response without logging in. When
+	// false or omitted, recipients receive the standard vote link.
+	PersonalizedLinks bool `form:"personalized_links" json:"personalized_links" xml:"personalized_links"`
 }
 
 // CreateVoteResponseRequestBody is the type of the "vote" service
@@ -119,31 +135,80 @@ type CreateVoteResponseRequestBody struct {
 	UserVoteContent []*VoteAnswerInputRequestBody `form:"user_vote_content,omitempty" json:"user_vote_content,omitempty" xml:"user_vote_content,omitempty"`
 	// Whether to abstain from voting
 	Abstain bool `form:"abstain" json:"abstain" xml:"abstain"`
-	// The voter's free-text responses to the poll's comment prompts. Optional;
-	// only meaningful if the poll has poll_comment_prompts. Allowed regardless of
-	// whether abstain is true — an abstaining voter skips the ballot but may still
-	// comment. Each prompt_id must match one of the poll's comment prompts and
-	// must not repeat; each comment_text is required (cannot be empty after
-	// trimming) and is rejected with a 400 if longer than 5000 characters.
+	// The voter's free-text responses to the poll's comment prompts. Allowed
+	// regardless of whether abstain is true — an abstaining voter skips the ballot
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Optional; only meaningful if the poll has poll_comment_prompts.
 	CommentResponses []*CommentResponseRequestBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
 }
 
 // UpdateVoteResponseRequestBody is the type of the "vote" service
 // "update_vote_response" endpoint HTTP request body.
 type UpdateVoteResponseRequestBody struct {
-	// Updated vote answers
+	// Vote answers
 	UserVoteContent []*VoteAnswerInputRequestBody `form:"user_vote_content,omitempty" json:"user_vote_content,omitempty" xml:"user_vote_content,omitempty"`
 	// Whether to abstain from voting
 	Abstain bool `form:"abstain" json:"abstain" xml:"abstain"`
 	// The voter's free-text responses to the poll's comment prompts. Allowed
 	// regardless of whether abstain is true — an abstaining voter skips the ballot
-	// but may still comment. Otherwise, omitting this field entirely preserves the
-	// vote's existing comments untouched; including it (even as an empty array)
-	// validates and replaces them. Each prompt_id must match one of the poll's
-	// comment prompts and must not repeat; each comment_text is required (cannot
-	// be empty after trimming) and is rejected with a 400 if longer than 5000
-	// characters.
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Omitting this field entirely preserves the vote's existing comments
+	// untouched; including it (even as an empty array) validates and replaces them.
 	CommentResponses []*CommentResponseRequestBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
+}
+
+// CreateVoteResponseByLinkRequestBody is the type of the "vote" service
+// "create_vote_response_by_link" endpoint HTTP request body.
+type CreateVoteResponseByLinkRequestBody struct {
+	// Signed token from the personalized vote link (the vote_token in the emailed
+	// URL's fragment). Identifies the ballot; treat it as a credential and never
+	// log it.
+	VoteToken string `form:"vote_token" json:"vote_token" xml:"vote_token"`
+	// Vote answers
+	UserVoteContent []*VoteAnswerInputRequestBody `form:"user_vote_content,omitempty" json:"user_vote_content,omitempty" xml:"user_vote_content,omitempty"`
+	// Whether to abstain from voting
+	Abstain bool `form:"abstain" json:"abstain" xml:"abstain"`
+	// The voter's free-text responses to the poll's comment prompts. Allowed
+	// regardless of whether abstain is true — an abstaining voter skips the ballot
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Optional; only meaningful if the poll has poll_comment_prompts.
+	CommentResponses []*CommentResponseRequestBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
+}
+
+// UpdateVoteResponseByLinkRequestBody is the type of the "vote" service
+// "update_vote_response_by_link" endpoint HTTP request body.
+type UpdateVoteResponseByLinkRequestBody struct {
+	// Signed token from the personalized vote link (the vote_token in the emailed
+	// URL's fragment). Identifies the ballot; treat it as a credential and never
+	// log it.
+	VoteToken string `form:"vote_token" json:"vote_token" xml:"vote_token"`
+	// Vote answers
+	UserVoteContent []*VoteAnswerInputRequestBody `form:"user_vote_content,omitempty" json:"user_vote_content,omitempty" xml:"user_vote_content,omitempty"`
+	// Whether to abstain from voting
+	Abstain bool `form:"abstain" json:"abstain" xml:"abstain"`
+	// The voter's free-text responses to the poll's comment prompts. Allowed
+	// regardless of whether abstain is true — an abstaining voter skips the ballot
+	// but may still comment. Each prompt_id must match one of the poll's comment
+	// prompts and must not repeat; each comment_text is required (cannot be empty
+	// after trimming) and is rejected with a 400 if longer than 5000 characters.
+	// Omitting this field entirely preserves the vote's existing comments
+	// untouched; including it (even as an empty array) validates and replaces them.
+	CommentResponses []*CommentResponseRequestBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
+}
+
+// GetVoteBallotByLinkRequestBody is the type of the "vote" service
+// "get_vote_ballot_by_link" endpoint HTTP request body.
+type GetVoteBallotByLinkRequestBody struct {
+	// Signed token from the personalized vote link (the vote_token in the emailed
+	// URL's fragment). Identifies the ballot; treat it as a credential and never
+	// log it.
+	VoteToken string `form:"vote_token" json:"vote_token" xml:"vote_token"`
 }
 
 // CreateVoteResponseBody is the type of the "vote" service "create_vote"
@@ -164,9 +229,9 @@ type CreateVoteResponseBody struct {
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
 	// Absent when no timezone is stored.
 	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
-	// Actual close time when the poll auto-ended early because all voters
-	// responded before end_time. Absent when the poll closed on schedule or is
-	// still active. RFC3339.
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
 	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
 	// Vote status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
@@ -196,10 +261,13 @@ type CreateVoteResponseBody struct {
 	PollCommentPrompts []*PollCommentPromptResponseBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
 	// Poll type
 	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
-	// Number of winners (meek_stv only)
+	// Number of winners. Absent when no winner count is stored upstream.
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Whether voters may change a submitted ballot until the vote ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
 }
 
 // GetVoteResponseBody is the type of the "vote" service "get_vote" endpoint
@@ -220,9 +288,9 @@ type GetVoteResponseBody struct {
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
 	// Absent when no timezone is stored.
 	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
-	// Actual close time when the poll auto-ended early because all voters
-	// responded before end_time. Absent when the poll closed on schedule or is
-	// still active. RFC3339.
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
 	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
 	// Vote status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
@@ -252,10 +320,13 @@ type GetVoteResponseBody struct {
 	PollCommentPrompts []*PollCommentPromptResponseBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
 	// Poll type
 	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
-	// Number of winners (meek_stv only)
+	// Number of winners. Absent when no winner count is stored upstream.
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Whether voters may change a submitted ballot until the vote ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
 }
 
 // UpdateVoteResponseBody is the type of the "vote" service "update_vote"
@@ -276,9 +347,9 @@ type UpdateVoteResponseBody struct {
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
 	// Absent when no timezone is stored.
 	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
-	// Actual close time when the poll auto-ended early because all voters
-	// responded before end_time. Absent when the poll closed on schedule or is
-	// still active. RFC3339.
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
 	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
 	// Vote status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
@@ -308,10 +379,13 @@ type UpdateVoteResponseBody struct {
 	PollCommentPrompts []*PollCommentPromptResponseBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
 	// Poll type
 	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
-	// Number of winners (meek_stv only)
+	// Number of winners. Absent when no winner count is stored upstream.
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Whether voters may change a submitted ballot until the vote ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
 }
 
 // ExtendVoteResponseBody is the type of the "vote" service "extend_vote"
@@ -332,9 +406,9 @@ type ExtendVoteResponseBody struct {
 	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
 	// Absent when no timezone is stored.
 	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
-	// Actual close time when the poll auto-ended early because all voters
-	// responded before end_time. Absent when the poll closed on schedule or is
-	// still active. RFC3339.
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
 	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
 	// Vote status
 	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
@@ -364,24 +438,91 @@ type ExtendVoteResponseBody struct {
 	PollCommentPrompts []*PollCommentPromptResponseBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
 	// Poll type
 	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
-	// Number of winners (meek_stv only)
+	// Number of winners. Absent when no winner count is stored upstream.
 	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
 	// Allow abstain
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Whether voters may change a submitted ballot until the vote ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
+}
+
+// EndVoteResponseBody is the type of the "vote" service "end_vote" endpoint
+// HTTP response body.
+type EndVoteResponseBody struct {
+	// Vote identifier
+	UID *string `form:"uid,omitempty" json:"uid,omitempty" xml:"uid,omitempty"`
+	// Vote name
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// Vote description
+	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	// Creation time
+	CreationTime *string `form:"creation_time,omitempty" json:"creation_time,omitempty" xml:"creation_time,omitempty"`
+	// Last modified time
+	LastModifiedTime *string `form:"last_modified_time,omitempty" json:"last_modified_time,omitempty" xml:"last_modified_time,omitempty"`
+	// End time
+	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Absent when no timezone is stored.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
+	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
+	// Vote status
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// Project UID
+	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	// Project name
+	ProjectName *string `form:"project_name,omitempty" json:"project_name,omitempty" xml:"project_name,omitempty"`
+	// Committee UID
+	CommitteeUID *string `form:"committee_uid,omitempty" json:"committee_uid,omitempty" xml:"committee_uid,omitempty"`
+	// Committee name
+	CommitteeName *string `form:"committee_name,omitempty" json:"committee_name,omitempty" xml:"committee_name,omitempty"`
+	// Committee voting status filters
+	CommitteeFilters []string `form:"committee_filters,omitempty" json:"committee_filters,omitempty" xml:"committee_filters,omitempty"`
+	// Committee type
+	CommitteeType *string `form:"committee_type,omitempty" json:"committee_type,omitempty" xml:"committee_type,omitempty"`
+	// Committee voting status
+	CommitteeVotingStatus *bool `form:"committee_voting_status,omitempty" json:"committee_voting_status,omitempty" xml:"committee_voting_status,omitempty"`
+	// Pseudo-anonymity enabled
+	PseudoAnonymity *bool `form:"pseudo_anonymity,omitempty" json:"pseudo_anonymity,omitempty" xml:"pseudo_anonymity,omitempty"`
+	// Total invitations sent
+	TotalVotingRequestInvitations *int `form:"total_voting_request_invitations,omitempty" json:"total_voting_request_invitations,omitempty" xml:"total_voting_request_invitations,omitempty"`
+	// Responses received
+	NumResponseReceived *int `form:"num_response_received,omitempty" json:"num_response_received,omitempty" xml:"num_response_received,omitempty"`
+	// Vote questions
+	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Comment prompts for the vote
+	PollCommentPrompts []*PollCommentPromptResponseBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
+	// Poll type
+	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
+	// Number of winners. Absent when no winner count is stored upstream.
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
+	// Allow abstain
+	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Whether voters may change a submitted ballot until the vote ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
 }
 
 // GetVoteResultsResponseBody is the type of the "vote" service
 // "get_vote_results" endpoint HTTP response body.
 type GetVoteResultsResponseBody struct {
-	// Poll results data
+	// True when the results are withheld because the vote is pseudo-anonymous and
+	// has not ended. An explicit false from ITX is preserved as-is; clients must
+	// not treat absence as a held or final state on its own. While held, only the
+	// participation counts and poll_end_time are returned.
+	ResultsHeld *bool `form:"results_held,omitempty" json:"results_held,omitempty" xml:"results_held,omitempty"`
+	// Poll results data. Absent while results are held.
 	PollResults []*PollResultItemResponseBody `form:"poll_results,omitempty" json:"poll_results,omitempty" xml:"poll_results,omitempty"`
-	// Comment results
+	// Comment results. Absent while results are held.
 	CommentResults []*CommentResultItemResponseBody `form:"comment_results,omitempty" json:"comment_results,omitempty" xml:"comment_results,omitempty"`
 	// Number of recipients
 	NumRecipients *int `form:"num_recipients,omitempty" json:"num_recipients,omitempty" xml:"num_recipients,omitempty"`
 	// Number of votes cast
 	NumVotesCast *int `form:"num_votes_cast,omitempty" json:"num_votes_cast,omitempty" xml:"num_votes_cast,omitempty"`
-	// Number who abstained
+	// Number who abstained. Absent while results are held.
 	NumAbstained *int `form:"num_abstained,omitempty" json:"num_abstained,omitempty" xml:"num_abstained,omitempty"`
 	// Poll end time
 	PollEndTime *string `form:"poll_end_time,omitempty" json:"poll_end_time,omitempty" xml:"poll_end_time,omitempty"`
@@ -405,6 +546,17 @@ type GetVoteResponseResponseBody struct {
 	Abstained *bool `form:"abstained,omitempty" json:"abstained,omitempty" xml:"abstained,omitempty"`
 	// Whether abstention is allowed
 	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Whether the vote lets voters change a submitted ballot until it ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
+	// Whether this submitted ballot can still be changed with PUT
+	// /vote_responses/{vote_response_uid}. Omitted when ITX does not report it.
+	CanChangeVote *bool `form:"can_change_vote,omitempty" json:"can_change_vote,omitempty" xml:"can_change_vote,omitempty"`
+	// Whether submitting this pending ballot now would be the final response that
+	// ends the vote. False once a ballot is submitted, for removed voters, and
+	// when the vote is not active. Also false when the vote's response counts
+	// cannot be read; the ballot is still returned.
+	WouldEndVote *bool `form:"would_end_vote,omitempty" json:"would_end_vote,omitempty" xml:"would_end_vote,omitempty"`
 	// Vote creation time
 	VoteCreationTime *string `form:"vote_creation_time,omitempty" json:"vote_creation_time,omitempty" xml:"vote_creation_time,omitempty"`
 	// Voter name
@@ -452,6 +604,50 @@ type GetVoteResponseResponseBody struct {
 	// The voter's free-text responses to the poll's comment prompts. Always an
 	// array (empty if the poll has no comment prompts or the voter left none).
 	CommentResponses []*CommentResponseResponseBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
+}
+
+// GetVoteBallotByLinkResponseBody is the type of the "vote" service
+// "get_vote_ballot_by_link" endpoint HTTP response body.
+type GetVoteBallotByLinkResponseBody struct {
+	// Vote identifier
+	VoteUID *string `form:"vote_uid,omitempty" json:"vote_uid,omitempty" xml:"vote_uid,omitempty"`
+	// LFX project UID the vote belongs to
+	ProjectUID *string `form:"project_uid,omitempty" json:"project_uid,omitempty" xml:"project_uid,omitempty"`
+	// LFX project slug. Absent when no slug is stored upstream.
+	ProjectSlug *string `form:"project_slug,omitempty" json:"project_slug,omitempty" xml:"project_slug,omitempty"`
+	// Vote name
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+	// Vote description
+	Description *string `form:"description,omitempty" json:"description,omitempty" xml:"description,omitempty"`
+	// Vote status; ballots can be submitted or updated only while active
+	Status *string `form:"status,omitempty" json:"status,omitempty" xml:"status,omitempty"`
+	// End time
+	EndTime *string `form:"end_time,omitempty" json:"end_time,omitempty" xml:"end_time,omitempty"`
+	// IANA timezone name used to interpret end_time (e.g. "America/New_York").
+	// Absent when no timezone is stored.
+	EndTimeTimezone *string `form:"end_time_timezone,omitempty" json:"end_time_timezone,omitempty" xml:"end_time_timezone,omitempty"`
+	// Actual close time when the poll ended before end_time, either manually or
+	// automatically after all voters responded. Absent when the poll closed on
+	// schedule or is still active. RFC3339.
+	EarlyEndTime *string `form:"early_end_time,omitempty" json:"early_end_time,omitempty" xml:"early_end_time,omitempty"`
+	// Poll type
+	PollType *string `form:"poll_type,omitempty" json:"poll_type,omitempty" xml:"poll_type,omitempty"`
+	// Number of winners. Absent when no winner count is stored upstream.
+	NumWinners *int `form:"num_winners,omitempty" json:"num_winners,omitempty" xml:"num_winners,omitempty"`
+	// Whether abstaining is allowed
+	AllowAbstain *bool `form:"allow_abstain,omitempty" json:"allow_abstain,omitempty" xml:"allow_abstain,omitempty"`
+	// Whether the vote lets voters change a submitted ballot until it ends. Votes
+	// created before this setting existed report true.
+	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
+	// Whether the vote is pseudo-anonymous; if so, ballot contents are never
+	// returned
+	PseudoAnonymity *bool `form:"pseudo_anonymity,omitempty" json:"pseudo_anonymity,omitempty" xml:"pseudo_anonymity,omitempty"`
+	// Vote questions with their choices
+	PollQuestions []*PollQuestionResponseBody `form:"poll_questions,omitempty" json:"poll_questions,omitempty" xml:"poll_questions,omitempty"`
+	// Comment prompts for the vote
+	PollCommentPrompts []*PollCommentPromptResponseBody `form:"poll_comment_prompts,omitempty" json:"poll_comment_prompts,omitempty" xml:"poll_comment_prompts,omitempty"`
+	// The link holder's own ballot
+	Ballot *VoteLinkBallotResponseBody `form:"ballot,omitempty" json:"ballot,omitempty" xml:"ballot,omitempty"`
 }
 
 // CreateVoteBadRequestResponseBody is the type of the "vote" service
@@ -731,6 +927,69 @@ type ExtendVoteServiceUnavailableResponseBody struct {
 // ExtendVoteUnauthorizedResponseBody is the type of the "vote" service
 // "extend_vote" endpoint HTTP response body for the "Unauthorized" error.
 type ExtendVoteUnauthorizedResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// EndVoteBadRequestResponseBody is the type of the "vote" service "end_vote"
+// endpoint HTTP response body for the "BadRequest" error.
+type EndVoteBadRequestResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// EndVoteConflictResponseBody is the type of the "vote" service "end_vote"
+// endpoint HTTP response body for the "Conflict" error.
+type EndVoteConflictResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// EndVoteForbiddenResponseBody is the type of the "vote" service "end_vote"
+// endpoint HTTP response body for the "Forbidden" error.
+type EndVoteForbiddenResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// EndVoteInternalServerErrorResponseBody is the type of the "vote" service
+// "end_vote" endpoint HTTP response body for the "InternalServerError" error.
+type EndVoteInternalServerErrorResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// EndVoteNotFoundResponseBody is the type of the "vote" service "end_vote"
+// endpoint HTTP response body for the "NotFound" error.
+type EndVoteNotFoundResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// EndVoteServiceUnavailableResponseBody is the type of the "vote" service
+// "end_vote" endpoint HTTP response body for the "ServiceUnavailable" error.
+type EndVoteServiceUnavailableResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// EndVoteUnauthorizedResponseBody is the type of the "vote" service "end_vote"
+// endpoint HTTP response body for the "Unauthorized" error.
+type EndVoteUnauthorizedResponseBody struct {
 	// HTTP status code
 	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
 	// Error message
@@ -1028,6 +1287,15 @@ type UpdateVoteResponseBadRequestResponseBody struct {
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
 }
 
+// UpdateVoteResponseConflictResponseBody is the type of the "vote" service
+// "update_vote_response" endpoint HTTP response body for the "Conflict" error.
+type UpdateVoteResponseConflictResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
 // UpdateVoteResponseForbiddenResponseBody is the type of the "vote" service
 // "update_vote_response" endpoint HTTP response body for the "Forbidden" error.
 type UpdateVoteResponseForbiddenResponseBody struct {
@@ -1070,6 +1338,206 @@ type UpdateVoteResponseServiceUnavailableResponseBody struct {
 // "update_vote_response" endpoint HTTP response body for the "Unauthorized"
 // error.
 type UpdateVoteResponseUnauthorizedResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CreateVoteResponseByLinkBadRequestResponseBody is the type of the "vote"
+// service "create_vote_response_by_link" endpoint HTTP response body for the
+// "BadRequest" error.
+type CreateVoteResponseByLinkBadRequestResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CreateVoteResponseByLinkConflictResponseBody is the type of the "vote"
+// service "create_vote_response_by_link" endpoint HTTP response body for the
+// "Conflict" error.
+type CreateVoteResponseByLinkConflictResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CreateVoteResponseByLinkForbiddenResponseBody is the type of the "vote"
+// service "create_vote_response_by_link" endpoint HTTP response body for the
+// "Forbidden" error.
+type CreateVoteResponseByLinkForbiddenResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CreateVoteResponseByLinkInternalServerErrorResponseBody is the type of the
+// "vote" service "create_vote_response_by_link" endpoint HTTP response body
+// for the "InternalServerError" error.
+type CreateVoteResponseByLinkInternalServerErrorResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CreateVoteResponseByLinkNotFoundResponseBody is the type of the "vote"
+// service "create_vote_response_by_link" endpoint HTTP response body for the
+// "NotFound" error.
+type CreateVoteResponseByLinkNotFoundResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CreateVoteResponseByLinkServiceUnavailableResponseBody is the type of the
+// "vote" service "create_vote_response_by_link" endpoint HTTP response body
+// for the "ServiceUnavailable" error.
+type CreateVoteResponseByLinkServiceUnavailableResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// CreateVoteResponseByLinkUnauthorizedResponseBody is the type of the "vote"
+// service "create_vote_response_by_link" endpoint HTTP response body for the
+// "Unauthorized" error.
+type CreateVoteResponseByLinkUnauthorizedResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateVoteResponseByLinkBadRequestResponseBody is the type of the "vote"
+// service "update_vote_response_by_link" endpoint HTTP response body for the
+// "BadRequest" error.
+type UpdateVoteResponseByLinkBadRequestResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateVoteResponseByLinkConflictResponseBody is the type of the "vote"
+// service "update_vote_response_by_link" endpoint HTTP response body for the
+// "Conflict" error.
+type UpdateVoteResponseByLinkConflictResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateVoteResponseByLinkForbiddenResponseBody is the type of the "vote"
+// service "update_vote_response_by_link" endpoint HTTP response body for the
+// "Forbidden" error.
+type UpdateVoteResponseByLinkForbiddenResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateVoteResponseByLinkInternalServerErrorResponseBody is the type of the
+// "vote" service "update_vote_response_by_link" endpoint HTTP response body
+// for the "InternalServerError" error.
+type UpdateVoteResponseByLinkInternalServerErrorResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateVoteResponseByLinkNotFoundResponseBody is the type of the "vote"
+// service "update_vote_response_by_link" endpoint HTTP response body for the
+// "NotFound" error.
+type UpdateVoteResponseByLinkNotFoundResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateVoteResponseByLinkServiceUnavailableResponseBody is the type of the
+// "vote" service "update_vote_response_by_link" endpoint HTTP response body
+// for the "ServiceUnavailable" error.
+type UpdateVoteResponseByLinkServiceUnavailableResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// UpdateVoteResponseByLinkUnauthorizedResponseBody is the type of the "vote"
+// service "update_vote_response_by_link" endpoint HTTP response body for the
+// "Unauthorized" error.
+type UpdateVoteResponseByLinkUnauthorizedResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetVoteBallotByLinkBadRequestResponseBody is the type of the "vote" service
+// "get_vote_ballot_by_link" endpoint HTTP response body for the "BadRequest"
+// error.
+type GetVoteBallotByLinkBadRequestResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetVoteBallotByLinkForbiddenResponseBody is the type of the "vote" service
+// "get_vote_ballot_by_link" endpoint HTTP response body for the "Forbidden"
+// error.
+type GetVoteBallotByLinkForbiddenResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetVoteBallotByLinkInternalServerErrorResponseBody is the type of the "vote"
+// service "get_vote_ballot_by_link" endpoint HTTP response body for the
+// "InternalServerError" error.
+type GetVoteBallotByLinkInternalServerErrorResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetVoteBallotByLinkNotFoundResponseBody is the type of the "vote" service
+// "get_vote_ballot_by_link" endpoint HTTP response body for the "NotFound"
+// error.
+type GetVoteBallotByLinkNotFoundResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetVoteBallotByLinkServiceUnavailableResponseBody is the type of the "vote"
+// service "get_vote_ballot_by_link" endpoint HTTP response body for the
+// "ServiceUnavailable" error.
+type GetVoteBallotByLinkServiceUnavailableResponseBody struct {
+	// HTTP status code
+	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
+	// Error message
+	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
+}
+
+// GetVoteBallotByLinkUnauthorizedResponseBody is the type of the "vote"
+// service "get_vote_ballot_by_link" endpoint HTTP response body for the
+// "Unauthorized" error.
+type GetVoteBallotByLinkUnauthorizedResponseBody struct {
 	// HTTP status code
 	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
 	// Error message
@@ -1132,33 +1600,6 @@ type ResendVoteResponseUnauthorizedResponseBody struct {
 	Code *string `form:"code,omitempty" json:"code,omitempty" xml:"code,omitempty"`
 	// Error message
 	Message *string `form:"message,omitempty" json:"message,omitempty" xml:"message,omitempty"`
-}
-
-// PollQuestionRequestBody is used to define fields on request body types.
-type PollQuestionRequestBody struct {
-	// Question identifier
-	QuestionID *string `form:"question_id,omitempty" json:"question_id,omitempty" xml:"question_id,omitempty"`
-	// Question prompt
-	Prompt string `form:"prompt" json:"prompt" xml:"prompt"`
-	// Question type
-	Type string `form:"type" json:"type" xml:"type"`
-	// Answer choices
-	Choices []*PollChoiceRequestBody `form:"choices" json:"choices" xml:"choices"`
-}
-
-// PollChoiceRequestBody is used to define fields on request body types.
-type PollChoiceRequestBody struct {
-	// Choice identifier
-	ChoiceID *string `form:"choice_id,omitempty" json:"choice_id,omitempty" xml:"choice_id,omitempty"`
-	// Choice text
-	ChoiceText string `form:"choice_text" json:"choice_text" xml:"choice_text"`
-}
-
-// PollCommentPromptInputRequestBody is used to define fields on request body
-// types.
-type PollCommentPromptInputRequestBody struct {
-	// Comment prompt text
-	Prompt string `form:"prompt" json:"prompt" xml:"prompt"`
 }
 
 // PollQuestionResponseBody is used to define fields on response body types.
@@ -1360,7 +1801,8 @@ type CommentResultItemResponseBody struct {
 // CommentResponseWithUserResponseBody is used to define fields on response
 // body types.
 type CommentResponseWithUserResponseBody struct {
-	// The vote that submitted this comment
+	// The vote that submitted this comment. Absent for comments on an ended
+	// pseudo-anonymous poll, which carry the comment text only.
 	VoteID *string `form:"vote_id,omitempty" json:"vote_id,omitempty" xml:"vote_id,omitempty"`
 	// The LFX identifier of the voter who submitted this comment. Absent entirely
 	// when the poll has pseudo_anonymity enabled.
@@ -1373,37 +1815,12 @@ type CommentResponseWithUserResponseBody struct {
 	// URL of the voter's profile picture. Absent entirely when the poll has
 	// pseudo_anonymity enabled.
 	ProfilePicture *string `form:"profile_picture,omitempty" json:"profile_picture,omitempty" xml:"profile_picture,omitempty"`
-	// The time the voter submitted this comment (their vote_creation_time)
+	// The time the voter submitted this comment (their vote_creation_time). Absent
+	// for comments on an ended pseudo-anonymous poll.
 	VoteCreationTime *string `form:"vote_creation_time,omitempty" json:"vote_creation_time,omitempty" xml:"vote_creation_time,omitempty"`
 	// Whether the voter who submitted this comment abstained from voting on the
-	// poll
+	// poll. Absent for comments on an ended pseudo-anonymous poll.
 	Abstained *bool `form:"abstained,omitempty" json:"abstained,omitempty" xml:"abstained,omitempty"`
-}
-
-// VoteAnswerInputRequestBody is used to define fields on request body types.
-type VoteAnswerInputRequestBody struct {
-	// Question identifier
-	QuestionID string `form:"question_id" json:"question_id" xml:"question_id"`
-	// Selected choice IDs
-	ChoiceIds []string `form:"choice_ids,omitempty" json:"choice_ids,omitempty" xml:"choice_ids,omitempty"`
-	// Ranked choices
-	RankedChoices []*RankedChoiceInputRequestBody `form:"ranked_choices,omitempty" json:"ranked_choices,omitempty" xml:"ranked_choices,omitempty"`
-}
-
-// RankedChoiceInputRequestBody is used to define fields on request body types.
-type RankedChoiceInputRequestBody struct {
-	// Choice identifier
-	ChoiceID string `form:"choice_id" json:"choice_id" xml:"choice_id"`
-	// Choice rank (1-based)
-	ChoiceRank int `form:"choice_rank" json:"choice_rank" xml:"choice_rank"`
-}
-
-// CommentResponseRequestBody is used to define fields on request body types.
-type CommentResponseRequestBody struct {
-	// The comment prompt this response answers
-	PromptID string `form:"prompt_id" json:"prompt_id" xml:"prompt_id"`
-	// The voter's free-text response
-	CommentText string `form:"comment_text" json:"comment_text" xml:"comment_text"`
 }
 
 // VoteAnswerResponseBody is used to define fields on response body types.
@@ -1447,6 +1864,85 @@ type CommentResponseResponseBody struct {
 	CommentText *string `form:"comment_text,omitempty" json:"comment_text,omitempty" xml:"comment_text,omitempty"`
 }
 
+// VoteLinkBallotResponseBody is used to define fields on response body types.
+type VoteLinkBallotResponseBody struct {
+	// Ballot status from ITX, e.g. awaiting_response or responded
+	VoteStatus *string `form:"vote_status,omitempty" json:"vote_status,omitempty" xml:"vote_status,omitempty"`
+	// True when a ballot has been submitted (vote_status responded, or ended after
+	// voting), so changes use PUT /vote_links/responses while the vote is active
+	AlreadyVoted *bool `form:"already_voted,omitempty" json:"already_voted,omitempty" xml:"already_voted,omitempty"`
+	// True when the recipient was removed from the vote and can no longer vote
+	VoterRemoved *bool `form:"voter_removed,omitempty" json:"voter_removed,omitempty" xml:"voter_removed,omitempty"`
+	// Whether this submitted ballot can still be changed with PUT
+	// /vote_links/responses. Returned on pseudo-anonymous votes too; omitted when
+	// ITX does not report it.
+	CanChangeVote *bool `form:"can_change_vote,omitempty" json:"can_change_vote,omitempty" xml:"can_change_vote,omitempty"`
+	// Whether submitting this pending ballot now would be the final response that
+	// ends the vote. False once a ballot is submitted, for removed voters, and
+	// when the vote is not active. Returned on pseudo-anonymous votes too;
+	// response counts are never returned.
+	WouldEndVote *bool `form:"would_end_vote,omitempty" json:"would_end_vote,omitempty" xml:"would_end_vote,omitempty"`
+	// Whether the submitted ballot abstained. Omitted on pseudo-anonymous votes.
+	Abstained *bool `form:"abstained,omitempty" json:"abstained,omitempty" xml:"abstained,omitempty"`
+	// The submitted answers. Omitted on pseudo-anonymous votes and before voting.
+	PollAnswers []*VoteAnswerResponseBody `form:"poll_answers,omitempty" json:"poll_answers,omitempty" xml:"poll_answers,omitempty"`
+	// The submitted comments. Omitted on pseudo-anonymous votes and before voting.
+	CommentResponses []*CommentResponseResponseBody `form:"comment_responses,omitempty" json:"comment_responses,omitempty" xml:"comment_responses,omitempty"`
+}
+
+// PollQuestionRequestBody is used to define fields on request body types.
+type PollQuestionRequestBody struct {
+	// Question identifier
+	QuestionID *string `form:"question_id,omitempty" json:"question_id,omitempty" xml:"question_id,omitempty"`
+	// Question prompt
+	Prompt string `form:"prompt" json:"prompt" xml:"prompt"`
+	// Question type
+	Type string `form:"type" json:"type" xml:"type"`
+	// Answer choices
+	Choices []*PollChoiceRequestBody `form:"choices" json:"choices" xml:"choices"`
+}
+
+// PollChoiceRequestBody is used to define fields on request body types.
+type PollChoiceRequestBody struct {
+	// Choice identifier
+	ChoiceID *string `form:"choice_id,omitempty" json:"choice_id,omitempty" xml:"choice_id,omitempty"`
+	// Choice text
+	ChoiceText string `form:"choice_text" json:"choice_text" xml:"choice_text"`
+}
+
+// PollCommentPromptInputRequestBody is used to define fields on request body
+// types.
+type PollCommentPromptInputRequestBody struct {
+	// Comment prompt text
+	Prompt string `form:"prompt" json:"prompt" xml:"prompt"`
+}
+
+// VoteAnswerInputRequestBody is used to define fields on request body types.
+type VoteAnswerInputRequestBody struct {
+	// Question identifier
+	QuestionID string `form:"question_id" json:"question_id" xml:"question_id"`
+	// Selected choice IDs
+	ChoiceIds []string `form:"choice_ids,omitempty" json:"choice_ids,omitempty" xml:"choice_ids,omitempty"`
+	// Ranked choices
+	RankedChoices []*RankedChoiceInputRequestBody `form:"ranked_choices,omitempty" json:"ranked_choices,omitempty" xml:"ranked_choices,omitempty"`
+}
+
+// RankedChoiceInputRequestBody is used to define fields on request body types.
+type RankedChoiceInputRequestBody struct {
+	// Choice identifier
+	ChoiceID string `form:"choice_id" json:"choice_id" xml:"choice_id"`
+	// Choice rank (1-based)
+	ChoiceRank int `form:"choice_rank" json:"choice_rank" xml:"choice_rank"`
+}
+
+// CommentResponseRequestBody is used to define fields on request body types.
+type CommentResponseRequestBody struct {
+	// The comment prompt this response answers
+	PromptID string `form:"prompt_id" json:"prompt_id" xml:"prompt_id"`
+	// The voter's free-text response
+	CommentText string `form:"comment_text" json:"comment_text" xml:"comment_text"`
+}
+
 // NewCreateVoteRequestBody builds the HTTP request body from the payload of
 // the "create_vote" endpoint of the "vote" service.
 func NewCreateVoteRequestBody(p *vote.CreateVotePayload) *CreateVoteRequestBody {
@@ -1461,6 +1957,7 @@ func NewCreateVoteRequestBody(p *vote.CreateVotePayload) *CreateVoteRequestBody 
 		PollType:                   p.PollType,
 		NumWinners:                 p.NumWinners,
 		AllowAbstain:               p.AllowAbstain,
+		AllowVoteChange:            p.AllowVoteChange,
 		QuorumPercentage:           p.QuorumPercentage,
 		WinningThresholdPercentage: p.WinningThresholdPercentage,
 	}
@@ -1508,12 +2005,6 @@ func NewCreateVoteRequestBody(p *vote.CreateVotePayload) *CreateVoteRequestBody 
 		var zero string
 		if body.PollType == zero {
 			body.PollType = "generic"
-		}
-	}
-	{
-		var zero int
-		if body.NumWinners == zero {
-			body.NumWinners = 2
 		}
 	}
 	{
@@ -1539,6 +2030,7 @@ func NewUpdateVoteRequestBody(p *vote.UpdateVotePayload) *UpdateVoteRequestBody 
 		PollType:                   p.PollType,
 		NumWinners:                 p.NumWinners,
 		AllowAbstain:               p.AllowAbstain,
+		AllowVoteChange:            p.AllowVoteChange,
 		QuorumPercentage:           p.QuorumPercentage,
 		WinningThresholdPercentage: p.WinningThresholdPercentage,
 	}
@@ -1583,18 +2075,6 @@ func NewUpdateVoteRequestBody(p *vote.UpdateVotePayload) *UpdateVoteRequestBody 
 		}
 	}
 	{
-		var zero string
-		if body.PollType == zero {
-			body.PollType = "generic"
-		}
-	}
-	{
-		var zero int
-		if body.NumWinners == zero {
-			body.NumWinners = 2
-		}
-	}
-	{
 		var zero bool
 		if body.AllowAbstain == zero {
 			body.AllowAbstain = false
@@ -1616,7 +2096,9 @@ func NewExtendVoteRequestBody(p *vote.ExtendVotePayload) *ExtendVoteRequestBody 
 // NewBulkResendVoteRequestBody builds the HTTP request body from the payload
 // of the "bulk_resend_vote" endpoint of the "vote" service.
 func NewBulkResendVoteRequestBody(p *vote.BulkResendVotePayload) *BulkResendVoteRequestBody {
-	body := &BulkResendVoteRequestBody{}
+	body := &BulkResendVoteRequestBody{
+		PersonalizedLinks: p.PersonalizedLinks,
+	}
 	if p.RecipientIds != nil {
 		body.RecipientIds = make([]string, len(p.RecipientIds))
 		for i, val := range p.RecipientIds {
@@ -1624,6 +2106,12 @@ func NewBulkResendVoteRequestBody(p *vote.BulkResendVotePayload) *BulkResendVote
 		}
 	} else {
 		body.RecipientIds = []string{}
+	}
+	{
+		var zero bool
+		if body.PersonalizedLinks == zero {
+			body.PersonalizedLinks = false
+		}
 	}
 	return body
 }
@@ -1688,9 +2176,78 @@ func NewUpdateVoteResponseRequestBody(p *vote.UpdateVoteResponsePayload) *Update
 	return body
 }
 
-// NewCreateVoteVoteResultCreated builds a "vote" service "create_vote"
-// endpoint result from a HTTP "Created" response.
-func NewCreateVoteVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResult {
+// NewCreateVoteResponseByLinkRequestBody builds the HTTP request body from the
+// payload of the "create_vote_response_by_link" endpoint of the "vote" service.
+func NewCreateVoteResponseByLinkRequestBody(p *vote.CreateVoteResponseByLinkPayload) *CreateVoteResponseByLinkRequestBody {
+	body := &CreateVoteResponseByLinkRequestBody{
+		VoteToken: p.VoteToken,
+		Abstain:   p.Abstain,
+	}
+	if p.UserVoteContent != nil {
+		body.UserVoteContent = make([]*VoteAnswerInputRequestBody, len(p.UserVoteContent))
+		for i, val := range p.UserVoteContent {
+			if val == nil {
+				body.UserVoteContent[i] = nil
+				continue
+			}
+			body.UserVoteContent[i] = marshalVoteVoteAnswerInputToVoteAnswerInputRequestBody(val)
+		}
+	}
+	if p.CommentResponses != nil {
+		body.CommentResponses = make([]*CommentResponseRequestBody, len(p.CommentResponses))
+		for i, val := range p.CommentResponses {
+			if val == nil {
+				body.CommentResponses[i] = nil
+				continue
+			}
+			body.CommentResponses[i] = marshalVoteCommentResponseToCommentResponseRequestBody(val)
+		}
+	}
+	return body
+}
+
+// NewUpdateVoteResponseByLinkRequestBody builds the HTTP request body from the
+// payload of the "update_vote_response_by_link" endpoint of the "vote" service.
+func NewUpdateVoteResponseByLinkRequestBody(p *vote.UpdateVoteResponseByLinkPayload) *UpdateVoteResponseByLinkRequestBody {
+	body := &UpdateVoteResponseByLinkRequestBody{
+		VoteToken: p.VoteToken,
+		Abstain:   p.Abstain,
+	}
+	if p.UserVoteContent != nil {
+		body.UserVoteContent = make([]*VoteAnswerInputRequestBody, len(p.UserVoteContent))
+		for i, val := range p.UserVoteContent {
+			if val == nil {
+				body.UserVoteContent[i] = nil
+				continue
+			}
+			body.UserVoteContent[i] = marshalVoteVoteAnswerInputToVoteAnswerInputRequestBody(val)
+		}
+	}
+	if p.CommentResponses != nil {
+		body.CommentResponses = make([]*CommentResponseRequestBody, len(p.CommentResponses))
+		for i, val := range p.CommentResponses {
+			if val == nil {
+				body.CommentResponses[i] = nil
+				continue
+			}
+			body.CommentResponses[i] = marshalVoteCommentResponseToCommentResponseRequestBody(val)
+		}
+	}
+	return body
+}
+
+// NewGetVoteBallotByLinkRequestBody builds the HTTP request body from the
+// payload of the "get_vote_ballot_by_link" endpoint of the "vote" service.
+func NewGetVoteBallotByLinkRequestBody(p *vote.GetVoteBallotByLinkPayload) *GetVoteBallotByLinkRequestBody {
+	body := &GetVoteBallotByLinkRequestBody{
+		VoteToken: p.VoteToken,
+	}
+	return body
+}
+
+// NewCreateVoteResultCreated builds a "vote" service "create_vote" endpoint
+// result from a HTTP "Created" response.
+func NewCreateVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResult {
 	v := &vote.VoteResult{
 		UID:                           *body.UID,
 		Name:                          *body.Name,
@@ -1712,6 +2269,7 @@ func NewCreateVoteVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResu
 		NumResponseReceived:           body.NumResponseReceived,
 		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+		AllowVoteChange:               *body.AllowVoteChange,
 	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
@@ -1826,9 +2384,9 @@ func NewCreateVoteUnauthorized(body *CreateVoteUnauthorizedResponseBody) *vote.U
 	return v
 }
 
-// NewGetVoteVoteResultOK builds a "vote" service "get_vote" endpoint result
-// from a HTTP "OK" response.
-func NewGetVoteVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
+// NewGetVoteResultOK builds a "vote" service "get_vote" endpoint result from a
+// HTTP "OK" response.
+func NewGetVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
 	v := &vote.VoteResult{
 		UID:                           *body.UID,
 		Name:                          *body.Name,
@@ -1850,6 +2408,7 @@ func NewGetVoteVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
 		NumResponseReceived:           body.NumResponseReceived,
 		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+		AllowVoteChange:               *body.AllowVoteChange,
 	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
@@ -1951,9 +2510,9 @@ func NewGetVoteUnauthorized(body *GetVoteUnauthorizedResponseBody) *vote.Unautho
 	return v
 }
 
-// NewUpdateVoteVoteResultOK builds a "vote" service "update_vote" endpoint
-// result from a HTTP "OK" response.
-func NewUpdateVoteVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
+// NewUpdateVoteResultOK builds a "vote" service "update_vote" endpoint result
+// from a HTTP "OK" response.
+func NewUpdateVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
 	v := &vote.VoteResult{
 		UID:                           *body.UID,
 		Name:                          *body.Name,
@@ -1975,6 +2534,7 @@ func NewUpdateVoteVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
 		NumResponseReceived:           body.NumResponseReceived,
 		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+		AllowVoteChange:               *body.AllowVoteChange,
 	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
@@ -2144,9 +2704,9 @@ func NewDeleteVoteUnauthorized(body *DeleteVoteUnauthorizedResponseBody) *vote.U
 	return v
 }
 
-// NewExtendVoteVoteResultOK builds a "vote" service "extend_vote" endpoint
-// result from a HTTP "OK" response.
-func NewExtendVoteVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
+// NewExtendVoteResultOK builds a "vote" service "extend_vote" endpoint result
+// from a HTTP "OK" response.
+func NewExtendVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
 	v := &vote.VoteResult{
 		UID:                           *body.UID,
 		Name:                          *body.Name,
@@ -2168,6 +2728,7 @@ func NewExtendVoteVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
 		NumResponseReceived:           body.NumResponseReceived,
 		NumWinners:                    body.NumWinners,
 		AllowAbstain:                  body.AllowAbstain,
+		AllowVoteChange:               *body.AllowVoteChange,
 	}
 	if body.PollType != nil {
 		v.PollType = *body.PollType
@@ -2263,6 +2824,142 @@ func NewExtendVoteServiceUnavailable(body *ExtendVoteServiceUnavailableResponseB
 // NewExtendVoteUnauthorized builds a vote service extend_vote endpoint
 // Unauthorized error.
 func NewExtendVoteUnauthorized(body *ExtendVoteUnauthorizedResponseBody) *vote.UnauthorizedError {
+	v := &vote.UnauthorizedError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewEndVoteResultOK builds a "vote" service "end_vote" endpoint result from a
+// HTTP "OK" response.
+func NewEndVoteResultOK(body *EndVoteResponseBody) *vote.VoteResult {
+	v := &vote.VoteResult{
+		UID:                           *body.UID,
+		Name:                          *body.Name,
+		Description:                   *body.Description,
+		CreationTime:                  body.CreationTime,
+		LastModifiedTime:              body.LastModifiedTime,
+		EndTime:                       body.EndTime,
+		EndTimeTimezone:               body.EndTimeTimezone,
+		EarlyEndTime:                  body.EarlyEndTime,
+		Status:                        *body.Status,
+		ProjectUID:                    *body.ProjectUID,
+		ProjectName:                   body.ProjectName,
+		CommitteeUID:                  *body.CommitteeUID,
+		CommitteeName:                 body.CommitteeName,
+		CommitteeType:                 body.CommitteeType,
+		CommitteeVotingStatus:         body.CommitteeVotingStatus,
+		PseudoAnonymity:               body.PseudoAnonymity,
+		TotalVotingRequestInvitations: body.TotalVotingRequestInvitations,
+		NumResponseReceived:           body.NumResponseReceived,
+		NumWinners:                    body.NumWinners,
+		AllowAbstain:                  body.AllowAbstain,
+		AllowVoteChange:               *body.AllowVoteChange,
+	}
+	if body.PollType != nil {
+		v.PollType = *body.PollType
+	}
+	if body.CommitteeFilters != nil {
+		v.CommitteeFilters = make([]string, len(body.CommitteeFilters))
+		for i, val := range body.CommitteeFilters {
+			v.CommitteeFilters[i] = val
+		}
+	}
+	if body.PollQuestions != nil {
+		v.PollQuestions = make([]*vote.PollQuestion, len(body.PollQuestions))
+		for i, val := range body.PollQuestions {
+			if val == nil {
+				v.PollQuestions[i] = nil
+				continue
+			}
+			v.PollQuestions[i] = unmarshalPollQuestionResponseBodyToVotePollQuestion(val)
+		}
+	}
+	if body.PollCommentPrompts != nil {
+		v.PollCommentPrompts = make([]*vote.PollCommentPrompt, len(body.PollCommentPrompts))
+		for i, val := range body.PollCommentPrompts {
+			if val == nil {
+				v.PollCommentPrompts[i] = nil
+				continue
+			}
+			v.PollCommentPrompts[i] = unmarshalPollCommentPromptResponseBodyToVotePollCommentPrompt(val)
+		}
+	}
+	if body.PollType == nil {
+		v.PollType = "generic"
+	}
+
+	return v
+}
+
+// NewEndVoteBadRequest builds a vote service end_vote endpoint BadRequest
+// error.
+func NewEndVoteBadRequest(body *EndVoteBadRequestResponseBody) *vote.BadRequestError {
+	v := &vote.BadRequestError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewEndVoteConflict builds a vote service end_vote endpoint Conflict error.
+func NewEndVoteConflict(body *EndVoteConflictResponseBody) *vote.ConflictError {
+	v := &vote.ConflictError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewEndVoteForbidden builds a vote service end_vote endpoint Forbidden error.
+func NewEndVoteForbidden(body *EndVoteForbiddenResponseBody) *vote.ForbiddenError {
+	v := &vote.ForbiddenError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewEndVoteInternalServerError builds a vote service end_vote endpoint
+// InternalServerError error.
+func NewEndVoteInternalServerError(body *EndVoteInternalServerErrorResponseBody) *vote.InternalServerError {
+	v := &vote.InternalServerError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewEndVoteNotFound builds a vote service end_vote endpoint NotFound error.
+func NewEndVoteNotFound(body *EndVoteNotFoundResponseBody) *vote.NotFoundError {
+	v := &vote.NotFoundError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewEndVoteServiceUnavailable builds a vote service end_vote endpoint
+// ServiceUnavailable error.
+func NewEndVoteServiceUnavailable(body *EndVoteServiceUnavailableResponseBody) *vote.ServiceUnavailableError {
+	v := &vote.ServiceUnavailableError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewEndVoteUnauthorized builds a vote service end_vote endpoint Unauthorized
+// error.
+func NewEndVoteUnauthorized(body *EndVoteUnauthorizedResponseBody) *vote.UnauthorizedError {
 	v := &vote.UnauthorizedError{
 		Code:    *body.Code,
 		Message: *body.Message,
@@ -2403,23 +3100,26 @@ func NewBulkResendVoteUnauthorized(body *BulkResendVoteUnauthorizedResponseBody)
 	return v
 }
 
-// NewGetVoteResultsVoteResultsResultOK builds a "vote" service
-// "get_vote_results" endpoint result from a HTTP "OK" response.
-func NewGetVoteResultsVoteResultsResultOK(body *GetVoteResultsResponseBody) *vote.VoteResultsResult {
+// NewGetVoteResultsResultOK builds a "vote" service "get_vote_results"
+// endpoint result from a HTTP "OK" response.
+func NewGetVoteResultsResultOK(body *GetVoteResultsResponseBody) *vote.VoteResultsResult {
 	v := &vote.VoteResultsResult{
+		ResultsHeld:         body.ResultsHeld,
 		NumRecipients:       *body.NumRecipients,
 		NumVotesCast:        *body.NumVotesCast,
-		NumAbstained:        *body.NumAbstained,
+		NumAbstained:        body.NumAbstained,
 		PollEndTime:         body.PollEndTime,
 		PollEndTimeTimezone: body.PollEndTimeTimezone,
 	}
-	v.PollResults = make([]*vote.PollResultItem, len(body.PollResults))
-	for i, val := range body.PollResults {
-		if val == nil {
-			v.PollResults[i] = nil
-			continue
+	if body.PollResults != nil {
+		v.PollResults = make([]*vote.PollResultItem, len(body.PollResults))
+		for i, val := range body.PollResults {
+			if val == nil {
+				v.PollResults[i] = nil
+				continue
+			}
+			v.PollResults[i] = unmarshalPollResultItemResponseBodyToVotePollResultItem(val)
 		}
-		v.PollResults[i] = unmarshalPollResultItemResponseBodyToVotePollResultItem(val)
 	}
 	if body.CommentResults != nil {
 		v.CommentResults = make([]*vote.CommentResultItem, len(body.CommentResults))
@@ -2567,9 +3267,9 @@ func NewCreateVoteResponseUnauthorized(body *CreateVoteResponseUnauthorizedRespo
 	return v
 }
 
-// NewGetVoteResponseVoteResponseResultOK builds a "vote" service
-// "get_vote_response" endpoint result from a HTTP "OK" response.
-func NewGetVoteResponseVoteResponseResultOK(body *GetVoteResponseResponseBody) *vote.VoteResponseResult {
+// NewGetVoteResponseResultOK builds a "vote" service "get_vote_response"
+// endpoint result from a HTTP "OK" response.
+func NewGetVoteResponseResultOK(body *GetVoteResponseResponseBody) *vote.VoteResponseResult {
 	v := &vote.VoteResponseResult{
 		VoteResponseUID:        *body.VoteResponseUID,
 		VoteUID:                *body.VoteUID,
@@ -2577,6 +3277,9 @@ func NewGetVoteResponseVoteResponseResultOK(body *GetVoteResponseResponseBody) *
 		VoteStatus:             *body.VoteStatus,
 		Abstained:              body.Abstained,
 		AllowAbstain:           body.AllowAbstain,
+		AllowVoteChange:        *body.AllowVoteChange,
+		CanChangeVote:          body.CanChangeVote,
+		WouldEndVote:           *body.WouldEndVote,
 		VoteCreationTime:       body.VoteCreationTime,
 		UserName:               body.UserName,
 		ProfilePicture:         body.ProfilePicture,
@@ -2698,6 +3401,17 @@ func NewUpdateVoteResponseBadRequest(body *UpdateVoteResponseBadRequestResponseB
 	return v
 }
 
+// NewUpdateVoteResponseConflict builds a vote service update_vote_response
+// endpoint Conflict error.
+func NewUpdateVoteResponseConflict(body *UpdateVoteResponseConflictResponseBody) *vote.ConflictError {
+	v := &vote.ConflictError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
 // NewUpdateVoteResponseForbidden builds a vote service update_vote_response
 // endpoint Forbidden error.
 func NewUpdateVoteResponseForbidden(body *UpdateVoteResponseForbiddenResponseBody) *vote.ForbiddenError {
@@ -2745,6 +3459,275 @@ func NewUpdateVoteResponseServiceUnavailable(body *UpdateVoteResponseServiceUnav
 // NewUpdateVoteResponseUnauthorized builds a vote service update_vote_response
 // endpoint Unauthorized error.
 func NewUpdateVoteResponseUnauthorized(body *UpdateVoteResponseUnauthorizedResponseBody) *vote.UnauthorizedError {
+	v := &vote.UnauthorizedError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateVoteResponseByLinkBadRequest builds a vote service
+// create_vote_response_by_link endpoint BadRequest error.
+func NewCreateVoteResponseByLinkBadRequest(body *CreateVoteResponseByLinkBadRequestResponseBody) *vote.BadRequestError {
+	v := &vote.BadRequestError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateVoteResponseByLinkConflict builds a vote service
+// create_vote_response_by_link endpoint Conflict error.
+func NewCreateVoteResponseByLinkConflict(body *CreateVoteResponseByLinkConflictResponseBody) *vote.ConflictError {
+	v := &vote.ConflictError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateVoteResponseByLinkForbidden builds a vote service
+// create_vote_response_by_link endpoint Forbidden error.
+func NewCreateVoteResponseByLinkForbidden(body *CreateVoteResponseByLinkForbiddenResponseBody) *vote.ForbiddenError {
+	v := &vote.ForbiddenError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateVoteResponseByLinkInternalServerError builds a vote service
+// create_vote_response_by_link endpoint InternalServerError error.
+func NewCreateVoteResponseByLinkInternalServerError(body *CreateVoteResponseByLinkInternalServerErrorResponseBody) *vote.InternalServerError {
+	v := &vote.InternalServerError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateVoteResponseByLinkNotFound builds a vote service
+// create_vote_response_by_link endpoint NotFound error.
+func NewCreateVoteResponseByLinkNotFound(body *CreateVoteResponseByLinkNotFoundResponseBody) *vote.NotFoundError {
+	v := &vote.NotFoundError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateVoteResponseByLinkServiceUnavailable builds a vote service
+// create_vote_response_by_link endpoint ServiceUnavailable error.
+func NewCreateVoteResponseByLinkServiceUnavailable(body *CreateVoteResponseByLinkServiceUnavailableResponseBody) *vote.ServiceUnavailableError {
+	v := &vote.ServiceUnavailableError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewCreateVoteResponseByLinkUnauthorized builds a vote service
+// create_vote_response_by_link endpoint Unauthorized error.
+func NewCreateVoteResponseByLinkUnauthorized(body *CreateVoteResponseByLinkUnauthorizedResponseBody) *vote.UnauthorizedError {
+	v := &vote.UnauthorizedError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateVoteResponseByLinkBadRequest builds a vote service
+// update_vote_response_by_link endpoint BadRequest error.
+func NewUpdateVoteResponseByLinkBadRequest(body *UpdateVoteResponseByLinkBadRequestResponseBody) *vote.BadRequestError {
+	v := &vote.BadRequestError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateVoteResponseByLinkConflict builds a vote service
+// update_vote_response_by_link endpoint Conflict error.
+func NewUpdateVoteResponseByLinkConflict(body *UpdateVoteResponseByLinkConflictResponseBody) *vote.ConflictError {
+	v := &vote.ConflictError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateVoteResponseByLinkForbidden builds a vote service
+// update_vote_response_by_link endpoint Forbidden error.
+func NewUpdateVoteResponseByLinkForbidden(body *UpdateVoteResponseByLinkForbiddenResponseBody) *vote.ForbiddenError {
+	v := &vote.ForbiddenError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateVoteResponseByLinkInternalServerError builds a vote service
+// update_vote_response_by_link endpoint InternalServerError error.
+func NewUpdateVoteResponseByLinkInternalServerError(body *UpdateVoteResponseByLinkInternalServerErrorResponseBody) *vote.InternalServerError {
+	v := &vote.InternalServerError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateVoteResponseByLinkNotFound builds a vote service
+// update_vote_response_by_link endpoint NotFound error.
+func NewUpdateVoteResponseByLinkNotFound(body *UpdateVoteResponseByLinkNotFoundResponseBody) *vote.NotFoundError {
+	v := &vote.NotFoundError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateVoteResponseByLinkServiceUnavailable builds a vote service
+// update_vote_response_by_link endpoint ServiceUnavailable error.
+func NewUpdateVoteResponseByLinkServiceUnavailable(body *UpdateVoteResponseByLinkServiceUnavailableResponseBody) *vote.ServiceUnavailableError {
+	v := &vote.ServiceUnavailableError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewUpdateVoteResponseByLinkUnauthorized builds a vote service
+// update_vote_response_by_link endpoint Unauthorized error.
+func NewUpdateVoteResponseByLinkUnauthorized(body *UpdateVoteResponseByLinkUnauthorizedResponseBody) *vote.UnauthorizedError {
+	v := &vote.UnauthorizedError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetVoteBallotByLinkVoteLinkBallotResultOK builds a "vote" service
+// "get_vote_ballot_by_link" endpoint result from a HTTP "OK" response.
+func NewGetVoteBallotByLinkVoteLinkBallotResultOK(body *GetVoteBallotByLinkResponseBody) *vote.VoteLinkBallotResult {
+	v := &vote.VoteLinkBallotResult{
+		VoteUID:         *body.VoteUID,
+		ProjectUID:      *body.ProjectUID,
+		ProjectSlug:     body.ProjectSlug,
+		Name:            *body.Name,
+		Description:     *body.Description,
+		Status:          *body.Status,
+		EndTime:         body.EndTime,
+		EndTimeTimezone: body.EndTimeTimezone,
+		EarlyEndTime:    body.EarlyEndTime,
+		NumWinners:      body.NumWinners,
+		AllowAbstain:    body.AllowAbstain,
+		AllowVoteChange: *body.AllowVoteChange,
+		PseudoAnonymity: *body.PseudoAnonymity,
+	}
+	if body.PollType != nil {
+		v.PollType = *body.PollType
+	}
+	if body.PollType == nil {
+		v.PollType = "generic"
+	}
+	if body.PollQuestions != nil {
+		v.PollQuestions = make([]*vote.PollQuestion, len(body.PollQuestions))
+		for i, val := range body.PollQuestions {
+			if val == nil {
+				v.PollQuestions[i] = nil
+				continue
+			}
+			v.PollQuestions[i] = unmarshalPollQuestionResponseBodyToVotePollQuestion(val)
+		}
+	}
+	if body.PollCommentPrompts != nil {
+		v.PollCommentPrompts = make([]*vote.PollCommentPrompt, len(body.PollCommentPrompts))
+		for i, val := range body.PollCommentPrompts {
+			if val == nil {
+				v.PollCommentPrompts[i] = nil
+				continue
+			}
+			v.PollCommentPrompts[i] = unmarshalPollCommentPromptResponseBodyToVotePollCommentPrompt(val)
+		}
+	}
+	v.Ballot = unmarshalVoteLinkBallotResponseBodyToVoteVoteLinkBallot(body.Ballot)
+
+	return v
+}
+
+// NewGetVoteBallotByLinkBadRequest builds a vote service
+// get_vote_ballot_by_link endpoint BadRequest error.
+func NewGetVoteBallotByLinkBadRequest(body *GetVoteBallotByLinkBadRequestResponseBody) *vote.BadRequestError {
+	v := &vote.BadRequestError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetVoteBallotByLinkForbidden builds a vote service
+// get_vote_ballot_by_link endpoint Forbidden error.
+func NewGetVoteBallotByLinkForbidden(body *GetVoteBallotByLinkForbiddenResponseBody) *vote.ForbiddenError {
+	v := &vote.ForbiddenError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetVoteBallotByLinkInternalServerError builds a vote service
+// get_vote_ballot_by_link endpoint InternalServerError error.
+func NewGetVoteBallotByLinkInternalServerError(body *GetVoteBallotByLinkInternalServerErrorResponseBody) *vote.InternalServerError {
+	v := &vote.InternalServerError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetVoteBallotByLinkNotFound builds a vote service get_vote_ballot_by_link
+// endpoint NotFound error.
+func NewGetVoteBallotByLinkNotFound(body *GetVoteBallotByLinkNotFoundResponseBody) *vote.NotFoundError {
+	v := &vote.NotFoundError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetVoteBallotByLinkServiceUnavailable builds a vote service
+// get_vote_ballot_by_link endpoint ServiceUnavailable error.
+func NewGetVoteBallotByLinkServiceUnavailable(body *GetVoteBallotByLinkServiceUnavailableResponseBody) *vote.ServiceUnavailableError {
+	v := &vote.ServiceUnavailableError{
+		Code:    *body.Code,
+		Message: *body.Message,
+	}
+
+	return v
+}
+
+// NewGetVoteBallotByLinkUnauthorized builds a vote service
+// get_vote_ballot_by_link endpoint Unauthorized error.
+func NewGetVoteBallotByLinkUnauthorized(body *GetVoteBallotByLinkUnauthorizedResponseBody) *vote.UnauthorizedError {
 	v := &vote.UnauthorizedError{
 		Code:    *body.Code,
 		Message: *body.Message,
@@ -2820,7 +3803,7 @@ func NewResendVoteResponseUnauthorized(body *ResendVoteResponseUnauthorizedRespo
 }
 
 // ValidateCreateVoteResponseBody runs the validations defined on
-// create_vote_response_body
+// CreateVoteResponseBody
 func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
 	if body.UID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
@@ -2840,6 +3823,9 @@ func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
+	if body.AllowVoteChange == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("allow_vote_change", "body"))
+	}
 	if body.UID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
@@ -2867,14 +3853,14 @@ func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
 	}
 	for _, e := range body.PollQuestions {
 		if e != nil {
-			if err2 := ValidatePollQuestionResponseBody(e); err2 != nil {
+			if err2 := validatePollQuestionResponseBody(e, "body.poll_questions[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
 	}
 	for _, e := range body.PollCommentPrompts {
 		if e != nil {
-			if err2 := ValidatePollCommentPromptResponseBody(e); err2 != nil {
+			if err2 := validatePollCommentPromptResponseBody(e, "body.poll_comment_prompts[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -2888,7 +3874,7 @@ func ValidateCreateVoteResponseBody(body *CreateVoteResponseBody) (err error) {
 }
 
 // ValidateGetVoteResponseBody runs the validations defined on
-// get_vote_response_body
+// GetVoteResponseBody
 func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
 	if body.UID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
@@ -2908,6 +3894,9 @@ func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
+	if body.AllowVoteChange == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("allow_vote_change", "body"))
+	}
 	if body.UID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
@@ -2935,14 +3924,14 @@ func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
 	}
 	for _, e := range body.PollQuestions {
 		if e != nil {
-			if err2 := ValidatePollQuestionResponseBody(e); err2 != nil {
+			if err2 := validatePollQuestionResponseBody(e, "body.poll_questions[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
 	}
 	for _, e := range body.PollCommentPrompts {
 		if e != nil {
-			if err2 := ValidatePollCommentPromptResponseBody(e); err2 != nil {
+			if err2 := validatePollCommentPromptResponseBody(e, "body.poll_comment_prompts[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -2956,7 +3945,7 @@ func ValidateGetVoteResponseBody(body *GetVoteResponseBody) (err error) {
 }
 
 // ValidateUpdateVoteResponseBody runs the validations defined on
-// update_vote_response_body
+// UpdateVoteResponseBody
 func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
 	if body.UID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
@@ -2976,6 +3965,9 @@ func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
+	if body.AllowVoteChange == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("allow_vote_change", "body"))
+	}
 	if body.UID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
@@ -3003,14 +3995,14 @@ func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
 	}
 	for _, e := range body.PollQuestions {
 		if e != nil {
-			if err2 := ValidatePollQuestionResponseBody(e); err2 != nil {
+			if err2 := validatePollQuestionResponseBody(e, "body.poll_questions[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
 	}
 	for _, e := range body.PollCommentPrompts {
 		if e != nil {
-			if err2 := ValidatePollCommentPromptResponseBody(e); err2 != nil {
+			if err2 := validatePollCommentPromptResponseBody(e, "body.poll_comment_prompts[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -3024,7 +4016,7 @@ func ValidateUpdateVoteResponseBody(body *UpdateVoteResponseBody) (err error) {
 }
 
 // ValidateExtendVoteResponseBody runs the validations defined on
-// extend_vote_response_body
+// ExtendVoteResponseBody
 func ValidateExtendVoteResponseBody(body *ExtendVoteResponseBody) (err error) {
 	if body.UID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
@@ -3044,6 +4036,9 @@ func ValidateExtendVoteResponseBody(body *ExtendVoteResponseBody) (err error) {
 	if body.CommitteeUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
 	}
+	if body.AllowVoteChange == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("allow_vote_change", "body"))
+	}
 	if body.UID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
 	}
@@ -3071,14 +4066,85 @@ func ValidateExtendVoteResponseBody(body *ExtendVoteResponseBody) (err error) {
 	}
 	for _, e := range body.PollQuestions {
 		if e != nil {
-			if err2 := ValidatePollQuestionResponseBody(e); err2 != nil {
+			if err2 := validatePollQuestionResponseBody(e, "body.poll_questions[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
 	}
 	for _, e := range body.PollCommentPrompts {
 		if e != nil {
-			if err2 := ValidatePollCommentPromptResponseBody(e); err2 != nil {
+			if err2 := validatePollCommentPromptResponseBody(e, "body.poll_comment_prompts[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if body.PollType != nil {
+		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
+		}
+	}
+	return
+}
+
+// ValidateEndVoteResponseBody runs the validations defined on
+// EndVoteResponseBody
+func ValidateEndVoteResponseBody(body *EndVoteResponseBody) (err error) {
+	if body.UID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("uid", "body"))
+	}
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Description == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("description", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.ProjectUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("project_uid", "body"))
+	}
+	if body.CommitteeUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("committee_uid", "body"))
+	}
+	if body.AllowVoteChange == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("allow_vote_change", "body"))
+	}
+	if body.UID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.uid", *body.UID, goa.FormatUUID))
+	}
+	if body.CreationTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.creation_time", *body.CreationTime, goa.FormatDateTime))
+	}
+	if body.LastModifiedTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.last_modified_time", *body.LastModifiedTime, goa.FormatDateTime))
+	}
+	if body.EndTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", *body.EndTime, goa.FormatDateTime))
+	}
+	if body.EndTimeTimezone != nil {
+		if utf8.RuneCountInString(*body.EndTimeTimezone) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.end_time_timezone", *body.EndTimeTimezone, utf8.RuneCountInString(*body.EndTimeTimezone), 1, true))
+		}
+	}
+	if body.EarlyEndTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.early_end_time", *body.EarlyEndTime, goa.FormatDateTime))
+	}
+	if body.Status != nil {
+		if !(*body.Status == "disabled" || *body.Status == "active" || *body.Status == "ended") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"disabled", "active", "ended"}))
+		}
+	}
+	for _, e := range body.PollQuestions {
+		if e != nil {
+			if err2 := validatePollQuestionResponseBody(e, "body.poll_questions[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.PollCommentPrompts {
+		if e != nil {
+			if err2 := validatePollCommentPromptResponseBody(e, "body.poll_comment_prompts[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -3092,30 +4158,24 @@ func ValidateExtendVoteResponseBody(body *ExtendVoteResponseBody) (err error) {
 }
 
 // ValidateGetVoteResultsResponseBody runs the validations defined on
-// get_vote_results_response_body
+// GetVoteResultsResponseBody
 func ValidateGetVoteResultsResponseBody(body *GetVoteResultsResponseBody) (err error) {
-	if body.PollResults == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("poll_results", "body"))
-	}
 	if body.NumRecipients == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("num_recipients", "body"))
 	}
 	if body.NumVotesCast == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("num_votes_cast", "body"))
 	}
-	if body.NumAbstained == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("num_abstained", "body"))
-	}
 	for _, e := range body.PollResults {
 		if e != nil {
-			if err2 := ValidatePollResultItemResponseBody(e); err2 != nil {
+			if err2 := validatePollResultItemResponseBody(e, "body.poll_results[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
 	}
 	for _, e := range body.CommentResults {
 		if e != nil {
-			if err2 := ValidateCommentResultItemResponseBody(e); err2 != nil {
+			if err2 := validateCommentResultItemResponseBody(e, "body.comment_results[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -3127,7 +4187,7 @@ func ValidateGetVoteResultsResponseBody(body *GetVoteResultsResponseBody) (err e
 }
 
 // ValidateGetVoteResponseResponseBody runs the validations defined on
-// get_vote_response_response_body
+// GetVoteResponseResponseBody
 func ValidateGetVoteResponseResponseBody(body *GetVoteResponseResponseBody) (err error) {
 	if body.VoteResponseUID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("vote_response_uid", "body"))
@@ -3144,6 +4204,12 @@ func ValidateGetVoteResponseResponseBody(body *GetVoteResponseResponseBody) (err
 	if body.CommentResponses == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("comment_responses", "body"))
 	}
+	if body.WouldEndVote == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("would_end_vote", "body"))
+	}
+	if body.AllowVoteChange == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("allow_vote_change", "body"))
+	}
 	if body.VoteResponseUID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_response_uid", *body.VoteResponseUID, goa.FormatUUID))
 	}
@@ -3155,14 +4221,14 @@ func ValidateGetVoteResponseResponseBody(body *GetVoteResponseResponseBody) (err
 	}
 	for _, e := range body.PollAnswers {
 		if e != nil {
-			if err2 := ValidateVoteAnswerResponseBody(e); err2 != nil {
+			if err2 := validateVoteAnswerResponseBody(e, "body.poll_answers[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
 	}
 	for _, e := range body.CommentResponses {
 		if e != nil {
-			if err2 := ValidateCommentResponseResponseBody(e); err2 != nil {
+			if err2 := validateCommentResponseResponseBody(e, "body.comment_responses[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -3170,8 +4236,84 @@ func ValidateGetVoteResponseResponseBody(body *GetVoteResponseResponseBody) (err
 	return
 }
 
+// ValidateGetVoteBallotByLinkResponseBody runs the validations defined on
+// GetVoteBallotByLinkResponseBody
+func ValidateGetVoteBallotByLinkResponseBody(body *GetVoteBallotByLinkResponseBody) (err error) {
+	if body.VoteUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_uid", "body"))
+	}
+	if body.ProjectUID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("project_uid", "body"))
+	}
+	if body.Name == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("name", "body"))
+	}
+	if body.Description == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("description", "body"))
+	}
+	if body.Status == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("status", "body"))
+	}
+	if body.PseudoAnonymity == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("pseudo_anonymity", "body"))
+	}
+	if body.Ballot == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("ballot", "body"))
+	}
+	if body.AllowVoteChange == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("allow_vote_change", "body"))
+	}
+	if body.VoteUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_uid", *body.VoteUID, goa.FormatUUID))
+	}
+	if body.ProjectUID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.project_uid", *body.ProjectUID, goa.FormatUUID))
+	}
+	if body.Status != nil {
+		if !(*body.Status == "disabled" || *body.Status == "active" || *body.Status == "ended") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.status", *body.Status, []any{"disabled", "active", "ended"}))
+		}
+	}
+	if body.EndTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.end_time", *body.EndTime, goa.FormatDateTime))
+	}
+	if body.EndTimeTimezone != nil {
+		if utf8.RuneCountInString(*body.EndTimeTimezone) < 1 {
+			err = goa.MergeErrors(err, goa.InvalidLengthError("body.end_time_timezone", *body.EndTimeTimezone, utf8.RuneCountInString(*body.EndTimeTimezone), 1, true))
+		}
+	}
+	if body.EarlyEndTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.early_end_time", *body.EarlyEndTime, goa.FormatDateTime))
+	}
+	if body.PollType != nil {
+		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
+		}
+	}
+	for _, e := range body.PollQuestions {
+		if e != nil {
+			if err2 := validatePollQuestionResponseBody(e, "body.poll_questions[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.PollCommentPrompts {
+		if e != nil {
+			if err2 := validatePollCommentPromptResponseBody(e, "body.poll_comment_prompts[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if body.Ballot != nil {
+		if err2 := validateVoteLinkBallotResponseBody(body.Ballot, "body.ballot"); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	return
+}
+
 // ValidateCreateVoteBadRequestResponseBody runs the validations defined on
-// create_vote_BadRequest_response_body
+// CreateVoteBadRequestResponseBody
 func ValidateCreateVoteBadRequestResponseBody(body *CreateVoteBadRequestResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3183,7 +4325,7 @@ func ValidateCreateVoteBadRequestResponseBody(body *CreateVoteBadRequestResponse
 }
 
 // ValidateCreateVoteConflictResponseBody runs the validations defined on
-// create_vote_Conflict_response_body
+// CreateVoteConflictResponseBody
 func ValidateCreateVoteConflictResponseBody(body *CreateVoteConflictResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3195,7 +4337,7 @@ func ValidateCreateVoteConflictResponseBody(body *CreateVoteConflictResponseBody
 }
 
 // ValidateCreateVoteForbiddenResponseBody runs the validations defined on
-// create_vote_Forbidden_response_body
+// CreateVoteForbiddenResponseBody
 func ValidateCreateVoteForbiddenResponseBody(body *CreateVoteForbiddenResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3207,7 +4349,7 @@ func ValidateCreateVoteForbiddenResponseBody(body *CreateVoteForbiddenResponseBo
 }
 
 // ValidateCreateVoteInternalServerErrorResponseBody runs the validations
-// defined on create_vote_InternalServerError_response_body
+// defined on CreateVoteInternalServerErrorResponseBody
 func ValidateCreateVoteInternalServerErrorResponseBody(body *CreateVoteInternalServerErrorResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3219,7 +4361,7 @@ func ValidateCreateVoteInternalServerErrorResponseBody(body *CreateVoteInternalS
 }
 
 // ValidateCreateVoteNotFoundResponseBody runs the validations defined on
-// create_vote_NotFound_response_body
+// CreateVoteNotFoundResponseBody
 func ValidateCreateVoteNotFoundResponseBody(body *CreateVoteNotFoundResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3231,7 +4373,7 @@ func ValidateCreateVoteNotFoundResponseBody(body *CreateVoteNotFoundResponseBody
 }
 
 // ValidateCreateVoteServiceUnavailableResponseBody runs the validations
-// defined on create_vote_ServiceUnavailable_response_body
+// defined on CreateVoteServiceUnavailableResponseBody
 func ValidateCreateVoteServiceUnavailableResponseBody(body *CreateVoteServiceUnavailableResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3243,7 +4385,7 @@ func ValidateCreateVoteServiceUnavailableResponseBody(body *CreateVoteServiceUna
 }
 
 // ValidateCreateVoteUnauthorizedResponseBody runs the validations defined on
-// create_vote_Unauthorized_response_body
+// CreateVoteUnauthorizedResponseBody
 func ValidateCreateVoteUnauthorizedResponseBody(body *CreateVoteUnauthorizedResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3255,7 +4397,7 @@ func ValidateCreateVoteUnauthorizedResponseBody(body *CreateVoteUnauthorizedResp
 }
 
 // ValidateGetVoteBadRequestResponseBody runs the validations defined on
-// get_vote_BadRequest_response_body
+// GetVoteBadRequestResponseBody
 func ValidateGetVoteBadRequestResponseBody(body *GetVoteBadRequestResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3267,7 +4409,7 @@ func ValidateGetVoteBadRequestResponseBody(body *GetVoteBadRequestResponseBody) 
 }
 
 // ValidateGetVoteForbiddenResponseBody runs the validations defined on
-// get_vote_Forbidden_response_body
+// GetVoteForbiddenResponseBody
 func ValidateGetVoteForbiddenResponseBody(body *GetVoteForbiddenResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3279,7 +4421,7 @@ func ValidateGetVoteForbiddenResponseBody(body *GetVoteForbiddenResponseBody) (e
 }
 
 // ValidateGetVoteInternalServerErrorResponseBody runs the validations defined
-// on get_vote_InternalServerError_response_body
+// on GetVoteInternalServerErrorResponseBody
 func ValidateGetVoteInternalServerErrorResponseBody(body *GetVoteInternalServerErrorResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3291,7 +4433,7 @@ func ValidateGetVoteInternalServerErrorResponseBody(body *GetVoteInternalServerE
 }
 
 // ValidateGetVoteNotFoundResponseBody runs the validations defined on
-// get_vote_NotFound_response_body
+// GetVoteNotFoundResponseBody
 func ValidateGetVoteNotFoundResponseBody(body *GetVoteNotFoundResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3303,7 +4445,7 @@ func ValidateGetVoteNotFoundResponseBody(body *GetVoteNotFoundResponseBody) (err
 }
 
 // ValidateGetVoteServiceUnavailableResponseBody runs the validations defined
-// on get_vote_ServiceUnavailable_response_body
+// on GetVoteServiceUnavailableResponseBody
 func ValidateGetVoteServiceUnavailableResponseBody(body *GetVoteServiceUnavailableResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3315,7 +4457,7 @@ func ValidateGetVoteServiceUnavailableResponseBody(body *GetVoteServiceUnavailab
 }
 
 // ValidateGetVoteUnauthorizedResponseBody runs the validations defined on
-// get_vote_Unauthorized_response_body
+// GetVoteUnauthorizedResponseBody
 func ValidateGetVoteUnauthorizedResponseBody(body *GetVoteUnauthorizedResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3327,7 +4469,7 @@ func ValidateGetVoteUnauthorizedResponseBody(body *GetVoteUnauthorizedResponseBo
 }
 
 // ValidateUpdateVoteBadRequestResponseBody runs the validations defined on
-// update_vote_BadRequest_response_body
+// UpdateVoteBadRequestResponseBody
 func ValidateUpdateVoteBadRequestResponseBody(body *UpdateVoteBadRequestResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3339,7 +4481,7 @@ func ValidateUpdateVoteBadRequestResponseBody(body *UpdateVoteBadRequestResponse
 }
 
 // ValidateUpdateVoteForbiddenResponseBody runs the validations defined on
-// update_vote_Forbidden_response_body
+// UpdateVoteForbiddenResponseBody
 func ValidateUpdateVoteForbiddenResponseBody(body *UpdateVoteForbiddenResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3351,7 +4493,7 @@ func ValidateUpdateVoteForbiddenResponseBody(body *UpdateVoteForbiddenResponseBo
 }
 
 // ValidateUpdateVoteInternalServerErrorResponseBody runs the validations
-// defined on update_vote_InternalServerError_response_body
+// defined on UpdateVoteInternalServerErrorResponseBody
 func ValidateUpdateVoteInternalServerErrorResponseBody(body *UpdateVoteInternalServerErrorResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3363,7 +4505,7 @@ func ValidateUpdateVoteInternalServerErrorResponseBody(body *UpdateVoteInternalS
 }
 
 // ValidateUpdateVoteNotFoundResponseBody runs the validations defined on
-// update_vote_NotFound_response_body
+// UpdateVoteNotFoundResponseBody
 func ValidateUpdateVoteNotFoundResponseBody(body *UpdateVoteNotFoundResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3375,7 +4517,7 @@ func ValidateUpdateVoteNotFoundResponseBody(body *UpdateVoteNotFoundResponseBody
 }
 
 // ValidateUpdateVoteServiceUnavailableResponseBody runs the validations
-// defined on update_vote_ServiceUnavailable_response_body
+// defined on UpdateVoteServiceUnavailableResponseBody
 func ValidateUpdateVoteServiceUnavailableResponseBody(body *UpdateVoteServiceUnavailableResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3387,7 +4529,7 @@ func ValidateUpdateVoteServiceUnavailableResponseBody(body *UpdateVoteServiceUna
 }
 
 // ValidateUpdateVoteUnauthorizedResponseBody runs the validations defined on
-// update_vote_Unauthorized_response_body
+// UpdateVoteUnauthorizedResponseBody
 func ValidateUpdateVoteUnauthorizedResponseBody(body *UpdateVoteUnauthorizedResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3399,7 +4541,7 @@ func ValidateUpdateVoteUnauthorizedResponseBody(body *UpdateVoteUnauthorizedResp
 }
 
 // ValidateDeleteVoteBadRequestResponseBody runs the validations defined on
-// delete_vote_BadRequest_response_body
+// DeleteVoteBadRequestResponseBody
 func ValidateDeleteVoteBadRequestResponseBody(body *DeleteVoteBadRequestResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3411,7 +4553,7 @@ func ValidateDeleteVoteBadRequestResponseBody(body *DeleteVoteBadRequestResponse
 }
 
 // ValidateDeleteVoteForbiddenResponseBody runs the validations defined on
-// delete_vote_Forbidden_response_body
+// DeleteVoteForbiddenResponseBody
 func ValidateDeleteVoteForbiddenResponseBody(body *DeleteVoteForbiddenResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3423,7 +4565,7 @@ func ValidateDeleteVoteForbiddenResponseBody(body *DeleteVoteForbiddenResponseBo
 }
 
 // ValidateDeleteVoteInternalServerErrorResponseBody runs the validations
-// defined on delete_vote_InternalServerError_response_body
+// defined on DeleteVoteInternalServerErrorResponseBody
 func ValidateDeleteVoteInternalServerErrorResponseBody(body *DeleteVoteInternalServerErrorResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3435,7 +4577,7 @@ func ValidateDeleteVoteInternalServerErrorResponseBody(body *DeleteVoteInternalS
 }
 
 // ValidateDeleteVoteNotFoundResponseBody runs the validations defined on
-// delete_vote_NotFound_response_body
+// DeleteVoteNotFoundResponseBody
 func ValidateDeleteVoteNotFoundResponseBody(body *DeleteVoteNotFoundResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3447,7 +4589,7 @@ func ValidateDeleteVoteNotFoundResponseBody(body *DeleteVoteNotFoundResponseBody
 }
 
 // ValidateDeleteVoteServiceUnavailableResponseBody runs the validations
-// defined on delete_vote_ServiceUnavailable_response_body
+// defined on DeleteVoteServiceUnavailableResponseBody
 func ValidateDeleteVoteServiceUnavailableResponseBody(body *DeleteVoteServiceUnavailableResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3459,7 +4601,7 @@ func ValidateDeleteVoteServiceUnavailableResponseBody(body *DeleteVoteServiceUna
 }
 
 // ValidateDeleteVoteUnauthorizedResponseBody runs the validations defined on
-// delete_vote_Unauthorized_response_body
+// DeleteVoteUnauthorizedResponseBody
 func ValidateDeleteVoteUnauthorizedResponseBody(body *DeleteVoteUnauthorizedResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3471,7 +4613,7 @@ func ValidateDeleteVoteUnauthorizedResponseBody(body *DeleteVoteUnauthorizedResp
 }
 
 // ValidateExtendVoteBadRequestResponseBody runs the validations defined on
-// extend_vote_BadRequest_response_body
+// ExtendVoteBadRequestResponseBody
 func ValidateExtendVoteBadRequestResponseBody(body *ExtendVoteBadRequestResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3483,7 +4625,7 @@ func ValidateExtendVoteBadRequestResponseBody(body *ExtendVoteBadRequestResponse
 }
 
 // ValidateExtendVoteForbiddenResponseBody runs the validations defined on
-// extend_vote_Forbidden_response_body
+// ExtendVoteForbiddenResponseBody
 func ValidateExtendVoteForbiddenResponseBody(body *ExtendVoteForbiddenResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3495,7 +4637,7 @@ func ValidateExtendVoteForbiddenResponseBody(body *ExtendVoteForbiddenResponseBo
 }
 
 // ValidateExtendVoteInternalServerErrorResponseBody runs the validations
-// defined on extend_vote_InternalServerError_response_body
+// defined on ExtendVoteInternalServerErrorResponseBody
 func ValidateExtendVoteInternalServerErrorResponseBody(body *ExtendVoteInternalServerErrorResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3507,7 +4649,7 @@ func ValidateExtendVoteInternalServerErrorResponseBody(body *ExtendVoteInternalS
 }
 
 // ValidateExtendVoteNotFoundResponseBody runs the validations defined on
-// extend_vote_NotFound_response_body
+// ExtendVoteNotFoundResponseBody
 func ValidateExtendVoteNotFoundResponseBody(body *ExtendVoteNotFoundResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3519,7 +4661,7 @@ func ValidateExtendVoteNotFoundResponseBody(body *ExtendVoteNotFoundResponseBody
 }
 
 // ValidateExtendVoteServiceUnavailableResponseBody runs the validations
-// defined on extend_vote_ServiceUnavailable_response_body
+// defined on ExtendVoteServiceUnavailableResponseBody
 func ValidateExtendVoteServiceUnavailableResponseBody(body *ExtendVoteServiceUnavailableResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3531,7 +4673,7 @@ func ValidateExtendVoteServiceUnavailableResponseBody(body *ExtendVoteServiceUna
 }
 
 // ValidateExtendVoteUnauthorizedResponseBody runs the validations defined on
-// extend_vote_Unauthorized_response_body
+// ExtendVoteUnauthorizedResponseBody
 func ValidateExtendVoteUnauthorizedResponseBody(body *ExtendVoteUnauthorizedResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3542,8 +4684,92 @@ func ValidateExtendVoteUnauthorizedResponseBody(body *ExtendVoteUnauthorizedResp
 	return
 }
 
+// ValidateEndVoteBadRequestResponseBody runs the validations defined on
+// EndVoteBadRequestResponseBody
+func ValidateEndVoteBadRequestResponseBody(body *EndVoteBadRequestResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateEndVoteConflictResponseBody runs the validations defined on
+// EndVoteConflictResponseBody
+func ValidateEndVoteConflictResponseBody(body *EndVoteConflictResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateEndVoteForbiddenResponseBody runs the validations defined on
+// EndVoteForbiddenResponseBody
+func ValidateEndVoteForbiddenResponseBody(body *EndVoteForbiddenResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateEndVoteInternalServerErrorResponseBody runs the validations defined
+// on EndVoteInternalServerErrorResponseBody
+func ValidateEndVoteInternalServerErrorResponseBody(body *EndVoteInternalServerErrorResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateEndVoteNotFoundResponseBody runs the validations defined on
+// EndVoteNotFoundResponseBody
+func ValidateEndVoteNotFoundResponseBody(body *EndVoteNotFoundResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateEndVoteServiceUnavailableResponseBody runs the validations defined
+// on EndVoteServiceUnavailableResponseBody
+func ValidateEndVoteServiceUnavailableResponseBody(body *EndVoteServiceUnavailableResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateEndVoteUnauthorizedResponseBody runs the validations defined on
+// EndVoteUnauthorizedResponseBody
+func ValidateEndVoteUnauthorizedResponseBody(body *EndVoteUnauthorizedResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
 // ValidateEnableVoteBadRequestResponseBody runs the validations defined on
-// enable_vote_BadRequest_response_body
+// EnableVoteBadRequestResponseBody
 func ValidateEnableVoteBadRequestResponseBody(body *EnableVoteBadRequestResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3555,7 +4781,7 @@ func ValidateEnableVoteBadRequestResponseBody(body *EnableVoteBadRequestResponse
 }
 
 // ValidateEnableVoteForbiddenResponseBody runs the validations defined on
-// enable_vote_Forbidden_response_body
+// EnableVoteForbiddenResponseBody
 func ValidateEnableVoteForbiddenResponseBody(body *EnableVoteForbiddenResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3567,7 +4793,7 @@ func ValidateEnableVoteForbiddenResponseBody(body *EnableVoteForbiddenResponseBo
 }
 
 // ValidateEnableVoteInternalServerErrorResponseBody runs the validations
-// defined on enable_vote_InternalServerError_response_body
+// defined on EnableVoteInternalServerErrorResponseBody
 func ValidateEnableVoteInternalServerErrorResponseBody(body *EnableVoteInternalServerErrorResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3579,7 +4805,7 @@ func ValidateEnableVoteInternalServerErrorResponseBody(body *EnableVoteInternalS
 }
 
 // ValidateEnableVoteNotFoundResponseBody runs the validations defined on
-// enable_vote_NotFound_response_body
+// EnableVoteNotFoundResponseBody
 func ValidateEnableVoteNotFoundResponseBody(body *EnableVoteNotFoundResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3591,7 +4817,7 @@ func ValidateEnableVoteNotFoundResponseBody(body *EnableVoteNotFoundResponseBody
 }
 
 // ValidateEnableVoteServiceUnavailableResponseBody runs the validations
-// defined on enable_vote_ServiceUnavailable_response_body
+// defined on EnableVoteServiceUnavailableResponseBody
 func ValidateEnableVoteServiceUnavailableResponseBody(body *EnableVoteServiceUnavailableResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3603,7 +4829,7 @@ func ValidateEnableVoteServiceUnavailableResponseBody(body *EnableVoteServiceUna
 }
 
 // ValidateEnableVoteUnauthorizedResponseBody runs the validations defined on
-// enable_vote_Unauthorized_response_body
+// EnableVoteUnauthorizedResponseBody
 func ValidateEnableVoteUnauthorizedResponseBody(body *EnableVoteUnauthorizedResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3615,7 +4841,7 @@ func ValidateEnableVoteUnauthorizedResponseBody(body *EnableVoteUnauthorizedResp
 }
 
 // ValidateBulkResendVoteBadRequestResponseBody runs the validations defined on
-// bulk_resend_vote_BadRequest_response_body
+// BulkResendVoteBadRequestResponseBody
 func ValidateBulkResendVoteBadRequestResponseBody(body *BulkResendVoteBadRequestResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3627,7 +4853,7 @@ func ValidateBulkResendVoteBadRequestResponseBody(body *BulkResendVoteBadRequest
 }
 
 // ValidateBulkResendVoteForbiddenResponseBody runs the validations defined on
-// bulk_resend_vote_Forbidden_response_body
+// BulkResendVoteForbiddenResponseBody
 func ValidateBulkResendVoteForbiddenResponseBody(body *BulkResendVoteForbiddenResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3639,7 +4865,7 @@ func ValidateBulkResendVoteForbiddenResponseBody(body *BulkResendVoteForbiddenRe
 }
 
 // ValidateBulkResendVoteInternalServerErrorResponseBody runs the validations
-// defined on bulk_resend_vote_InternalServerError_response_body
+// defined on BulkResendVoteInternalServerErrorResponseBody
 func ValidateBulkResendVoteInternalServerErrorResponseBody(body *BulkResendVoteInternalServerErrorResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3651,7 +4877,7 @@ func ValidateBulkResendVoteInternalServerErrorResponseBody(body *BulkResendVoteI
 }
 
 // ValidateBulkResendVoteNotFoundResponseBody runs the validations defined on
-// bulk_resend_vote_NotFound_response_body
+// BulkResendVoteNotFoundResponseBody
 func ValidateBulkResendVoteNotFoundResponseBody(body *BulkResendVoteNotFoundResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3663,7 +4889,7 @@ func ValidateBulkResendVoteNotFoundResponseBody(body *BulkResendVoteNotFoundResp
 }
 
 // ValidateBulkResendVoteServiceUnavailableResponseBody runs the validations
-// defined on bulk_resend_vote_ServiceUnavailable_response_body
+// defined on BulkResendVoteServiceUnavailableResponseBody
 func ValidateBulkResendVoteServiceUnavailableResponseBody(body *BulkResendVoteServiceUnavailableResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3675,7 +4901,7 @@ func ValidateBulkResendVoteServiceUnavailableResponseBody(body *BulkResendVoteSe
 }
 
 // ValidateBulkResendVoteUnauthorizedResponseBody runs the validations defined
-// on bulk_resend_vote_Unauthorized_response_body
+// on BulkResendVoteUnauthorizedResponseBody
 func ValidateBulkResendVoteUnauthorizedResponseBody(body *BulkResendVoteUnauthorizedResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3687,7 +4913,7 @@ func ValidateBulkResendVoteUnauthorizedResponseBody(body *BulkResendVoteUnauthor
 }
 
 // ValidateGetVoteResultsBadRequestResponseBody runs the validations defined on
-// get_vote_results_BadRequest_response_body
+// GetVoteResultsBadRequestResponseBody
 func ValidateGetVoteResultsBadRequestResponseBody(body *GetVoteResultsBadRequestResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3699,7 +4925,7 @@ func ValidateGetVoteResultsBadRequestResponseBody(body *GetVoteResultsBadRequest
 }
 
 // ValidateGetVoteResultsForbiddenResponseBody runs the validations defined on
-// get_vote_results_Forbidden_response_body
+// GetVoteResultsForbiddenResponseBody
 func ValidateGetVoteResultsForbiddenResponseBody(body *GetVoteResultsForbiddenResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3711,7 +4937,7 @@ func ValidateGetVoteResultsForbiddenResponseBody(body *GetVoteResultsForbiddenRe
 }
 
 // ValidateGetVoteResultsInternalServerErrorResponseBody runs the validations
-// defined on get_vote_results_InternalServerError_response_body
+// defined on GetVoteResultsInternalServerErrorResponseBody
 func ValidateGetVoteResultsInternalServerErrorResponseBody(body *GetVoteResultsInternalServerErrorResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3723,7 +4949,7 @@ func ValidateGetVoteResultsInternalServerErrorResponseBody(body *GetVoteResultsI
 }
 
 // ValidateGetVoteResultsNotFoundResponseBody runs the validations defined on
-// get_vote_results_NotFound_response_body
+// GetVoteResultsNotFoundResponseBody
 func ValidateGetVoteResultsNotFoundResponseBody(body *GetVoteResultsNotFoundResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3735,7 +4961,7 @@ func ValidateGetVoteResultsNotFoundResponseBody(body *GetVoteResultsNotFoundResp
 }
 
 // ValidateGetVoteResultsServiceUnavailableResponseBody runs the validations
-// defined on get_vote_results_ServiceUnavailable_response_body
+// defined on GetVoteResultsServiceUnavailableResponseBody
 func ValidateGetVoteResultsServiceUnavailableResponseBody(body *GetVoteResultsServiceUnavailableResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3747,7 +4973,7 @@ func ValidateGetVoteResultsServiceUnavailableResponseBody(body *GetVoteResultsSe
 }
 
 // ValidateGetVoteResultsUnauthorizedResponseBody runs the validations defined
-// on get_vote_results_Unauthorized_response_body
+// on GetVoteResultsUnauthorizedResponseBody
 func ValidateGetVoteResultsUnauthorizedResponseBody(body *GetVoteResultsUnauthorizedResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3759,7 +4985,7 @@ func ValidateGetVoteResultsUnauthorizedResponseBody(body *GetVoteResultsUnauthor
 }
 
 // ValidateCreateVoteResponseBadRequestResponseBody runs the validations
-// defined on create_vote_response_BadRequest_response_body
+// defined on CreateVoteResponseBadRequestResponseBody
 func ValidateCreateVoteResponseBadRequestResponseBody(body *CreateVoteResponseBadRequestResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3771,7 +4997,7 @@ func ValidateCreateVoteResponseBadRequestResponseBody(body *CreateVoteResponseBa
 }
 
 // ValidateCreateVoteResponseForbiddenResponseBody runs the validations defined
-// on create_vote_response_Forbidden_response_body
+// on CreateVoteResponseForbiddenResponseBody
 func ValidateCreateVoteResponseForbiddenResponseBody(body *CreateVoteResponseForbiddenResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3783,7 +5009,7 @@ func ValidateCreateVoteResponseForbiddenResponseBody(body *CreateVoteResponseFor
 }
 
 // ValidateCreateVoteResponseInternalServerErrorResponseBody runs the
-// validations defined on create_vote_response_InternalServerError_response_body
+// validations defined on CreateVoteResponseInternalServerErrorResponseBody
 func ValidateCreateVoteResponseInternalServerErrorResponseBody(body *CreateVoteResponseInternalServerErrorResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3795,7 +5021,7 @@ func ValidateCreateVoteResponseInternalServerErrorResponseBody(body *CreateVoteR
 }
 
 // ValidateCreateVoteResponseNotFoundResponseBody runs the validations defined
-// on create_vote_response_NotFound_response_body
+// on CreateVoteResponseNotFoundResponseBody
 func ValidateCreateVoteResponseNotFoundResponseBody(body *CreateVoteResponseNotFoundResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3807,7 +5033,7 @@ func ValidateCreateVoteResponseNotFoundResponseBody(body *CreateVoteResponseNotF
 }
 
 // ValidateCreateVoteResponseServiceUnavailableResponseBody runs the
-// validations defined on create_vote_response_ServiceUnavailable_response_body
+// validations defined on CreateVoteResponseServiceUnavailableResponseBody
 func ValidateCreateVoteResponseServiceUnavailableResponseBody(body *CreateVoteResponseServiceUnavailableResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3819,7 +5045,7 @@ func ValidateCreateVoteResponseServiceUnavailableResponseBody(body *CreateVoteRe
 }
 
 // ValidateCreateVoteResponseUnauthorizedResponseBody runs the validations
-// defined on create_vote_response_Unauthorized_response_body
+// defined on CreateVoteResponseUnauthorizedResponseBody
 func ValidateCreateVoteResponseUnauthorizedResponseBody(body *CreateVoteResponseUnauthorizedResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3831,7 +5057,7 @@ func ValidateCreateVoteResponseUnauthorizedResponseBody(body *CreateVoteResponse
 }
 
 // ValidateGetVoteResponseBadRequestResponseBody runs the validations defined
-// on get_vote_response_BadRequest_response_body
+// on GetVoteResponseBadRequestResponseBody
 func ValidateGetVoteResponseBadRequestResponseBody(body *GetVoteResponseBadRequestResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3843,7 +5069,7 @@ func ValidateGetVoteResponseBadRequestResponseBody(body *GetVoteResponseBadReque
 }
 
 // ValidateGetVoteResponseForbiddenResponseBody runs the validations defined on
-// get_vote_response_Forbidden_response_body
+// GetVoteResponseForbiddenResponseBody
 func ValidateGetVoteResponseForbiddenResponseBody(body *GetVoteResponseForbiddenResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3855,7 +5081,7 @@ func ValidateGetVoteResponseForbiddenResponseBody(body *GetVoteResponseForbidden
 }
 
 // ValidateGetVoteResponseInternalServerErrorResponseBody runs the validations
-// defined on get_vote_response_InternalServerError_response_body
+// defined on GetVoteResponseInternalServerErrorResponseBody
 func ValidateGetVoteResponseInternalServerErrorResponseBody(body *GetVoteResponseInternalServerErrorResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3867,7 +5093,7 @@ func ValidateGetVoteResponseInternalServerErrorResponseBody(body *GetVoteRespons
 }
 
 // ValidateGetVoteResponseNotFoundResponseBody runs the validations defined on
-// get_vote_response_NotFound_response_body
+// GetVoteResponseNotFoundResponseBody
 func ValidateGetVoteResponseNotFoundResponseBody(body *GetVoteResponseNotFoundResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3879,7 +5105,7 @@ func ValidateGetVoteResponseNotFoundResponseBody(body *GetVoteResponseNotFoundRe
 }
 
 // ValidateGetVoteResponseServiceUnavailableResponseBody runs the validations
-// defined on get_vote_response_ServiceUnavailable_response_body
+// defined on GetVoteResponseServiceUnavailableResponseBody
 func ValidateGetVoteResponseServiceUnavailableResponseBody(body *GetVoteResponseServiceUnavailableResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3891,7 +5117,7 @@ func ValidateGetVoteResponseServiceUnavailableResponseBody(body *GetVoteResponse
 }
 
 // ValidateGetVoteResponseUnauthorizedResponseBody runs the validations defined
-// on get_vote_response_Unauthorized_response_body
+// on GetVoteResponseUnauthorizedResponseBody
 func ValidateGetVoteResponseUnauthorizedResponseBody(body *GetVoteResponseUnauthorizedResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3903,7 +5129,7 @@ func ValidateGetVoteResponseUnauthorizedResponseBody(body *GetVoteResponseUnauth
 }
 
 // ValidateUpdateVoteResponseBadRequestResponseBody runs the validations
-// defined on update_vote_response_BadRequest_response_body
+// defined on UpdateVoteResponseBadRequestResponseBody
 func ValidateUpdateVoteResponseBadRequestResponseBody(body *UpdateVoteResponseBadRequestResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3914,8 +5140,20 @@ func ValidateUpdateVoteResponseBadRequestResponseBody(body *UpdateVoteResponseBa
 	return
 }
 
+// ValidateUpdateVoteResponseConflictResponseBody runs the validations defined
+// on UpdateVoteResponseConflictResponseBody
+func ValidateUpdateVoteResponseConflictResponseBody(body *UpdateVoteResponseConflictResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
 // ValidateUpdateVoteResponseForbiddenResponseBody runs the validations defined
-// on update_vote_response_Forbidden_response_body
+// on UpdateVoteResponseForbiddenResponseBody
 func ValidateUpdateVoteResponseForbiddenResponseBody(body *UpdateVoteResponseForbiddenResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3927,7 +5165,7 @@ func ValidateUpdateVoteResponseForbiddenResponseBody(body *UpdateVoteResponseFor
 }
 
 // ValidateUpdateVoteResponseInternalServerErrorResponseBody runs the
-// validations defined on update_vote_response_InternalServerError_response_body
+// validations defined on UpdateVoteResponseInternalServerErrorResponseBody
 func ValidateUpdateVoteResponseInternalServerErrorResponseBody(body *UpdateVoteResponseInternalServerErrorResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3939,7 +5177,7 @@ func ValidateUpdateVoteResponseInternalServerErrorResponseBody(body *UpdateVoteR
 }
 
 // ValidateUpdateVoteResponseNotFoundResponseBody runs the validations defined
-// on update_vote_response_NotFound_response_body
+// on UpdateVoteResponseNotFoundResponseBody
 func ValidateUpdateVoteResponseNotFoundResponseBody(body *UpdateVoteResponseNotFoundResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3951,7 +5189,7 @@ func ValidateUpdateVoteResponseNotFoundResponseBody(body *UpdateVoteResponseNotF
 }
 
 // ValidateUpdateVoteResponseServiceUnavailableResponseBody runs the
-// validations defined on update_vote_response_ServiceUnavailable_response_body
+// validations defined on UpdateVoteResponseServiceUnavailableResponseBody
 func ValidateUpdateVoteResponseServiceUnavailableResponseBody(body *UpdateVoteResponseServiceUnavailableResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3963,7 +5201,7 @@ func ValidateUpdateVoteResponseServiceUnavailableResponseBody(body *UpdateVoteRe
 }
 
 // ValidateUpdateVoteResponseUnauthorizedResponseBody runs the validations
-// defined on update_vote_response_Unauthorized_response_body
+// defined on UpdateVoteResponseUnauthorizedResponseBody
 func ValidateUpdateVoteResponseUnauthorizedResponseBody(body *UpdateVoteResponseUnauthorizedResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3974,8 +5212,250 @@ func ValidateUpdateVoteResponseUnauthorizedResponseBody(body *UpdateVoteResponse
 	return
 }
 
+// ValidateCreateVoteResponseByLinkBadRequestResponseBody runs the validations
+// defined on CreateVoteResponseByLinkBadRequestResponseBody
+func ValidateCreateVoteResponseByLinkBadRequestResponseBody(body *CreateVoteResponseByLinkBadRequestResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCreateVoteResponseByLinkConflictResponseBody runs the validations
+// defined on CreateVoteResponseByLinkConflictResponseBody
+func ValidateCreateVoteResponseByLinkConflictResponseBody(body *CreateVoteResponseByLinkConflictResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCreateVoteResponseByLinkForbiddenResponseBody runs the validations
+// defined on CreateVoteResponseByLinkForbiddenResponseBody
+func ValidateCreateVoteResponseByLinkForbiddenResponseBody(body *CreateVoteResponseByLinkForbiddenResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCreateVoteResponseByLinkInternalServerErrorResponseBody runs the
+// validations defined on
+// CreateVoteResponseByLinkInternalServerErrorResponseBody
+func ValidateCreateVoteResponseByLinkInternalServerErrorResponseBody(body *CreateVoteResponseByLinkInternalServerErrorResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCreateVoteResponseByLinkNotFoundResponseBody runs the validations
+// defined on CreateVoteResponseByLinkNotFoundResponseBody
+func ValidateCreateVoteResponseByLinkNotFoundResponseBody(body *CreateVoteResponseByLinkNotFoundResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCreateVoteResponseByLinkServiceUnavailableResponseBody runs the
+// validations defined on CreateVoteResponseByLinkServiceUnavailableResponseBody
+func ValidateCreateVoteResponseByLinkServiceUnavailableResponseBody(body *CreateVoteResponseByLinkServiceUnavailableResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateCreateVoteResponseByLinkUnauthorizedResponseBody runs the
+// validations defined on CreateVoteResponseByLinkUnauthorizedResponseBody
+func ValidateCreateVoteResponseByLinkUnauthorizedResponseBody(body *CreateVoteResponseByLinkUnauthorizedResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateVoteResponseByLinkBadRequestResponseBody runs the validations
+// defined on UpdateVoteResponseByLinkBadRequestResponseBody
+func ValidateUpdateVoteResponseByLinkBadRequestResponseBody(body *UpdateVoteResponseByLinkBadRequestResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateVoteResponseByLinkConflictResponseBody runs the validations
+// defined on UpdateVoteResponseByLinkConflictResponseBody
+func ValidateUpdateVoteResponseByLinkConflictResponseBody(body *UpdateVoteResponseByLinkConflictResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateVoteResponseByLinkForbiddenResponseBody runs the validations
+// defined on UpdateVoteResponseByLinkForbiddenResponseBody
+func ValidateUpdateVoteResponseByLinkForbiddenResponseBody(body *UpdateVoteResponseByLinkForbiddenResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateVoteResponseByLinkInternalServerErrorResponseBody runs the
+// validations defined on
+// UpdateVoteResponseByLinkInternalServerErrorResponseBody
+func ValidateUpdateVoteResponseByLinkInternalServerErrorResponseBody(body *UpdateVoteResponseByLinkInternalServerErrorResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateVoteResponseByLinkNotFoundResponseBody runs the validations
+// defined on UpdateVoteResponseByLinkNotFoundResponseBody
+func ValidateUpdateVoteResponseByLinkNotFoundResponseBody(body *UpdateVoteResponseByLinkNotFoundResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateVoteResponseByLinkServiceUnavailableResponseBody runs the
+// validations defined on UpdateVoteResponseByLinkServiceUnavailableResponseBody
+func ValidateUpdateVoteResponseByLinkServiceUnavailableResponseBody(body *UpdateVoteResponseByLinkServiceUnavailableResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateUpdateVoteResponseByLinkUnauthorizedResponseBody runs the
+// validations defined on UpdateVoteResponseByLinkUnauthorizedResponseBody
+func ValidateUpdateVoteResponseByLinkUnauthorizedResponseBody(body *UpdateVoteResponseByLinkUnauthorizedResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetVoteBallotByLinkBadRequestResponseBody runs the validations
+// defined on GetVoteBallotByLinkBadRequestResponseBody
+func ValidateGetVoteBallotByLinkBadRequestResponseBody(body *GetVoteBallotByLinkBadRequestResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetVoteBallotByLinkForbiddenResponseBody runs the validations
+// defined on GetVoteBallotByLinkForbiddenResponseBody
+func ValidateGetVoteBallotByLinkForbiddenResponseBody(body *GetVoteBallotByLinkForbiddenResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetVoteBallotByLinkInternalServerErrorResponseBody runs the
+// validations defined on GetVoteBallotByLinkInternalServerErrorResponseBody
+func ValidateGetVoteBallotByLinkInternalServerErrorResponseBody(body *GetVoteBallotByLinkInternalServerErrorResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetVoteBallotByLinkNotFoundResponseBody runs the validations defined
+// on GetVoteBallotByLinkNotFoundResponseBody
+func ValidateGetVoteBallotByLinkNotFoundResponseBody(body *GetVoteBallotByLinkNotFoundResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetVoteBallotByLinkServiceUnavailableResponseBody runs the
+// validations defined on GetVoteBallotByLinkServiceUnavailableResponseBody
+func ValidateGetVoteBallotByLinkServiceUnavailableResponseBody(body *GetVoteBallotByLinkServiceUnavailableResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
+// ValidateGetVoteBallotByLinkUnauthorizedResponseBody runs the validations
+// defined on GetVoteBallotByLinkUnauthorizedResponseBody
+func ValidateGetVoteBallotByLinkUnauthorizedResponseBody(body *GetVoteBallotByLinkUnauthorizedResponseBody) (err error) {
+	if body.Code == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", "body"))
+	}
+	return
+}
+
 // ValidateResendVoteResponseBadRequestResponseBody runs the validations
-// defined on resend_vote_response_BadRequest_response_body
+// defined on ResendVoteResponseBadRequestResponseBody
 func ValidateResendVoteResponseBadRequestResponseBody(body *ResendVoteResponseBadRequestResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3987,7 +5467,7 @@ func ValidateResendVoteResponseBadRequestResponseBody(body *ResendVoteResponseBa
 }
 
 // ValidateResendVoteResponseForbiddenResponseBody runs the validations defined
-// on resend_vote_response_Forbidden_response_body
+// on ResendVoteResponseForbiddenResponseBody
 func ValidateResendVoteResponseForbiddenResponseBody(body *ResendVoteResponseForbiddenResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -3999,7 +5479,7 @@ func ValidateResendVoteResponseForbiddenResponseBody(body *ResendVoteResponseFor
 }
 
 // ValidateResendVoteResponseInternalServerErrorResponseBody runs the
-// validations defined on resend_vote_response_InternalServerError_response_body
+// validations defined on ResendVoteResponseInternalServerErrorResponseBody
 func ValidateResendVoteResponseInternalServerErrorResponseBody(body *ResendVoteResponseInternalServerErrorResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -4011,7 +5491,7 @@ func ValidateResendVoteResponseInternalServerErrorResponseBody(body *ResendVoteR
 }
 
 // ValidateResendVoteResponseNotFoundResponseBody runs the validations defined
-// on resend_vote_response_NotFound_response_body
+// on ResendVoteResponseNotFoundResponseBody
 func ValidateResendVoteResponseNotFoundResponseBody(body *ResendVoteResponseNotFoundResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -4023,7 +5503,7 @@ func ValidateResendVoteResponseNotFoundResponseBody(body *ResendVoteResponseNotF
 }
 
 // ValidateResendVoteResponseServiceUnavailableResponseBody runs the
-// validations defined on resend_vote_response_ServiceUnavailable_response_body
+// validations defined on ResendVoteResponseServiceUnavailableResponseBody
 func ValidateResendVoteResponseServiceUnavailableResponseBody(body *ResendVoteResponseServiceUnavailableResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -4035,7 +5515,7 @@ func ValidateResendVoteResponseServiceUnavailableResponseBody(body *ResendVoteRe
 }
 
 // ValidateResendVoteResponseUnauthorizedResponseBody runs the validations
-// defined on resend_vote_response_Unauthorized_response_body
+// defined on ResendVoteResponseUnauthorizedResponseBody
 func ValidateResendVoteResponseUnauthorizedResponseBody(body *ResendVoteResponseUnauthorizedResponseBody) (err error) {
 	if body.Code == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("code", "body"))
@@ -4046,39 +5526,7 @@ func ValidateResendVoteResponseUnauthorizedResponseBody(body *ResendVoteResponse
 	return
 }
 
-// ValidatePollQuestionRequestBody runs the validations defined on
-// PollQuestionRequestBody
-func ValidatePollQuestionRequestBody(body *PollQuestionRequestBody) (err error) {
-	if body.Choices == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("choices", "body"))
-	}
-	if body.QuestionID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.question_id", *body.QuestionID, goa.FormatUUID))
-	}
-	if !(body.Type == "single_choice" || body.Type == "multiple_choice") {
-		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"single_choice", "multiple_choice"}))
-	}
-	for _, e := range body.Choices {
-		if e != nil {
-			if err2 := ValidatePollChoiceRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
-	}
-	return
-}
-
-// ValidatePollChoiceRequestBody runs the validations defined on
-// PollChoiceRequestBody
-func ValidatePollChoiceRequestBody(body *PollChoiceRequestBody) (err error) {
-	if body.ChoiceID != nil {
-		err = goa.MergeErrors(err, goa.ValidateFormat("body.choice_id", *body.ChoiceID, goa.FormatUUID))
-	}
-	return
-}
-
-// ValidatePollQuestionResponseBody runs the validations defined on
-// PollQuestionResponseBody
+// ValidatePollQuestionResponseBody runs the validations defined on PollQuestion
 func ValidatePollQuestionResponseBody(body *PollQuestionResponseBody) (err error) {
 	if body.Prompt == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("prompt", "body"))
@@ -4099,7 +5547,7 @@ func ValidatePollQuestionResponseBody(body *PollQuestionResponseBody) (err error
 	}
 	for _, e := range body.Choices {
 		if e != nil {
-			if err2 := ValidatePollChoiceResponseBody(e); err2 != nil {
+			if err2 := validatePollChoiceResponseBody(e, "body.choices[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -4107,8 +5555,37 @@ func ValidatePollQuestionResponseBody(body *PollQuestionResponseBody) (err error
 	return
 }
 
-// ValidatePollChoiceResponseBody runs the validations defined on
-// PollChoiceResponseBody
+// validatePollQuestionResponseBody checks PollQuestion and reports errors
+// using the path supplied by its caller
+func validatePollQuestionResponseBody(body *PollQuestionResponseBody, path string) (err error) {
+	if body.Prompt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("prompt", path))
+	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", path))
+	}
+	if body.Choices == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choices", path))
+	}
+	if body.QuestionID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat(path+".question_id", *body.QuestionID, goa.FormatUUID))
+	}
+	if body.Type != nil {
+		if !(*body.Type == "single_choice" || *body.Type == "multiple_choice") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(path+".type", *body.Type, []any{"single_choice", "multiple_choice"}))
+		}
+	}
+	for _, e := range body.Choices {
+		if e != nil {
+			if err2 := validatePollChoiceResponseBody(e, path+".choices[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidatePollChoiceResponseBody runs the validations defined on PollChoice
 func ValidatePollChoiceResponseBody(body *PollChoiceResponseBody) (err error) {
 	if body.ChoiceText == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("choice_text", "body"))
@@ -4119,8 +5596,20 @@ func ValidatePollChoiceResponseBody(body *PollChoiceResponseBody) (err error) {
 	return
 }
 
+// validatePollChoiceResponseBody checks PollChoice and reports errors using
+// the path supplied by its caller
+func validatePollChoiceResponseBody(body *PollChoiceResponseBody, path string) (err error) {
+	if body.ChoiceText == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_text", path))
+	}
+	if body.ChoiceID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat(path+".choice_id", *body.ChoiceID, goa.FormatUUID))
+	}
+	return
+}
+
 // ValidatePollCommentPromptResponseBody runs the validations defined on
-// PollCommentPromptResponseBody
+// PollCommentPrompt
 func ValidatePollCommentPromptResponseBody(body *PollCommentPromptResponseBody) (err error) {
 	if body.PromptID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("prompt_id", "body"))
@@ -4134,46 +5623,108 @@ func ValidatePollCommentPromptResponseBody(body *PollCommentPromptResponseBody) 
 	return
 }
 
+// validatePollCommentPromptResponseBody checks PollCommentPrompt and reports
+// errors using the path supplied by its caller
+func validatePollCommentPromptResponseBody(body *PollCommentPromptResponseBody, path string) (err error) {
+	if body.PromptID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("prompt_id", path))
+	}
+	if body.Prompt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("prompt", path))
+	}
+	if body.PromptID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat(path+".prompt_id", *body.PromptID, goa.FormatUUID))
+	}
+	return
+}
+
 // ValidatePollResultItemResponseBody runs the validations defined on
-// PollResultItemResponseBody
+// PollResultItem
 func ValidatePollResultItemResponseBody(body *PollResultItemResponseBody) (err error) {
 	if body.Question == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("question", "body"))
 	}
 	if body.Question != nil {
-		if err2 := ValidatePollQuestionDetailResponseBody(body.Question); err2 != nil {
+		if err2 := validatePollQuestionDetailResponseBody(body.Question, "body.question"); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
 	for _, e := range body.GenericChoiceVotes {
 		if e != nil {
-			if err2 := ValidateGenericChoiceVoteResponseBody(e); err2 != nil {
+			if err2 := validateGenericChoiceVoteResponseBody(e, "body.generic_choice_votes[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
 	}
 	for _, e := range body.RankedChoiceVotes {
 		if e != nil {
-			if err2 := ValidateRankedChoiceVoteResponseBody(e); err2 != nil {
+			if err2 := validateRankedChoiceVoteResponseBody(e, "body.ranked_choice_votes[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
 	}
 	if body.RankedChoiceWinnerInfo != nil {
-		if err2 := ValidateRankedChoiceWinnerInfoResponseBody(body.RankedChoiceWinnerInfo); err2 != nil {
+		if err2 := validateRankedChoiceWinnerInfoResponseBody(body.RankedChoiceWinnerInfo, "body.ranked_choice_winner_info"); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
 	for _, e := range body.IrvRoundSummary {
 		if e != nil {
-			if err2 := ValidateIRVRoundSummaryResponseBody(e); err2 != nil {
+			if err2 := validateIRVRoundSummaryResponseBody(e, "body.irv_round_summary[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
 	}
 	for _, e := range body.MeekStvRoundSummary {
 		if e != nil {
-			if err2 := ValidateMeekSTVRoundSummaryResponseBody(e); err2 != nil {
+			if err2 := validateMeekSTVRoundSummaryResponseBody(e, "body.meek_stv_round_summary[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// validatePollResultItemResponseBody checks PollResultItem and reports errors
+// using the path supplied by its caller
+func validatePollResultItemResponseBody(body *PollResultItemResponseBody, path string) (err error) {
+	if body.Question == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("question", path))
+	}
+	if body.Question != nil {
+		if err2 := validatePollQuestionDetailResponseBody(body.Question, path+".question"); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	for _, e := range body.GenericChoiceVotes {
+		if e != nil {
+			if err2 := validateGenericChoiceVoteResponseBody(e, path+".generic_choice_votes[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.RankedChoiceVotes {
+		if e != nil {
+			if err2 := validateRankedChoiceVoteResponseBody(e, path+".ranked_choice_votes[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	if body.RankedChoiceWinnerInfo != nil {
+		if err2 := validateRankedChoiceWinnerInfoResponseBody(body.RankedChoiceWinnerInfo, path+".ranked_choice_winner_info"); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	for _, e := range body.IrvRoundSummary {
+		if e != nil {
+			if err2 := validateIRVRoundSummaryResponseBody(e, path+".irv_round_summary[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.MeekStvRoundSummary {
+		if e != nil {
+			if err2 := validateMeekSTVRoundSummaryResponseBody(e, path+".meek_stv_round_summary[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -4182,7 +5733,7 @@ func ValidatePollResultItemResponseBody(body *PollResultItemResponseBody) (err e
 }
 
 // ValidatePollQuestionDetailResponseBody runs the validations defined on
-// PollQuestionDetailResponseBody
+// PollQuestionDetail
 func ValidatePollQuestionDetailResponseBody(body *PollQuestionDetailResponseBody) (err error) {
 	if body.QuestionID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("question_id", "body"))
@@ -4201,7 +5752,35 @@ func ValidatePollQuestionDetailResponseBody(body *PollQuestionDetailResponseBody
 	}
 	for _, e := range body.Choices {
 		if e != nil {
-			if err2 := ValidatePollChoiceResponseBody(e); err2 != nil {
+			if err2 := validatePollChoiceResponseBody(e, "body.choices[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// validatePollQuestionDetailResponseBody checks PollQuestionDetail and reports
+// errors using the path supplied by its caller
+func validatePollQuestionDetailResponseBody(body *PollQuestionDetailResponseBody, path string) (err error) {
+	if body.QuestionID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("question_id", path))
+	}
+	if body.Prompt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("prompt", path))
+	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", path))
+	}
+	if body.Choices == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choices", path))
+	}
+	if body.QuestionID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat(path+".question_id", *body.QuestionID, goa.FormatUUID))
+	}
+	for _, e := range body.Choices {
+		if e != nil {
+			if err2 := validatePollChoiceResponseBody(e, path+".choices[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -4210,7 +5789,7 @@ func ValidatePollQuestionDetailResponseBody(body *PollQuestionDetailResponseBody
 }
 
 // ValidateGenericChoiceVoteResponseBody runs the validations defined on
-// GenericChoiceVoteResponseBody
+// GenericChoiceVote
 func ValidateGenericChoiceVoteResponseBody(body *GenericChoiceVoteResponseBody) (err error) {
 	if body.ChoiceID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", "body"))
@@ -4227,8 +5806,26 @@ func ValidateGenericChoiceVoteResponseBody(body *GenericChoiceVoteResponseBody) 
 	return
 }
 
+// validateGenericChoiceVoteResponseBody checks GenericChoiceVote and reports
+// errors using the path supplied by its caller
+func validateGenericChoiceVoteResponseBody(body *GenericChoiceVoteResponseBody, path string) (err error) {
+	if body.ChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", path))
+	}
+	if body.VoteCount == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_count", path))
+	}
+	if body.Percentage == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("percentage", path))
+	}
+	if body.ChoiceID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat(path+".choice_id", *body.ChoiceID, goa.FormatUUID))
+	}
+	return
+}
+
 // ValidateRankedChoiceVoteResponseBody runs the validations defined on
-// RankedChoiceVoteResponseBody
+// RankedChoiceVote
 func ValidateRankedChoiceVoteResponseBody(body *RankedChoiceVoteResponseBody) (err error) {
 	if body.ChoiceID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", "body"))
@@ -4241,14 +5838,14 @@ func ValidateRankedChoiceVoteResponseBody(body *RankedChoiceVoteResponseBody) (e
 	}
 	for _, e := range body.RankCounts {
 		if e != nil {
-			if err2 := ValidateRankCountResponseBody(e); err2 != nil {
+			if err2 := validateRankCountResponseBody(e, "body.rank_counts[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
 	}
 	for _, e := range body.CondorcetMatrix {
 		if e != nil {
-			if err2 := ValidateCondorcetMatrixEntryResponseBody(e); err2 != nil {
+			if err2 := validateCondorcetMatrixEntryResponseBody(e, "body.condorcet_matrix[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -4256,8 +5853,36 @@ func ValidateRankedChoiceVoteResponseBody(body *RankedChoiceVoteResponseBody) (e
 	return
 }
 
-// ValidateRankCountResponseBody runs the validations defined on
-// RankCountResponseBody
+// validateRankedChoiceVoteResponseBody checks RankedChoiceVote and reports
+// errors using the path supplied by its caller
+func validateRankedChoiceVoteResponseBody(body *RankedChoiceVoteResponseBody, path string) (err error) {
+	if body.ChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", path))
+	}
+	if body.RankCounts == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("rank_counts", path))
+	}
+	if body.ChoiceID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat(path+".choice_id", *body.ChoiceID, goa.FormatUUID))
+	}
+	for _, e := range body.RankCounts {
+		if e != nil {
+			if err2 := validateRankCountResponseBody(e, path+".rank_counts[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.CondorcetMatrix {
+		if e != nil {
+			if err2 := validateCondorcetMatrixEntryResponseBody(e, path+".condorcet_matrix[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateRankCountResponseBody runs the validations defined on RankCount
 func ValidateRankCountResponseBody(body *RankCountResponseBody) (err error) {
 	if body.Rank == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("rank", "body"))
@@ -4273,8 +5898,25 @@ func ValidateRankCountResponseBody(body *RankCountResponseBody) (err error) {
 	return
 }
 
+// validateRankCountResponseBody checks RankCount and reports errors using the
+// path supplied by its caller
+func validateRankCountResponseBody(body *RankCountResponseBody, path string) (err error) {
+	if body.Rank == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("rank", path))
+	}
+	if body.Count == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("count", path))
+	}
+	if body.Rank != nil {
+		if *body.Rank < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError(path+".rank", *body.Rank, 1, true))
+		}
+	}
+	return
+}
+
 // ValidateCondorcetMatrixEntryResponseBody runs the validations defined on
-// CondorcetMatrixEntryResponseBody
+// CondorcetMatrixEntry
 func ValidateCondorcetMatrixEntryResponseBody(body *CondorcetMatrixEntryResponseBody) (err error) {
 	if body.ChoiceID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", "body"))
@@ -4294,15 +5936,52 @@ func ValidateCondorcetMatrixEntryResponseBody(body *CondorcetMatrixEntryResponse
 	return
 }
 
+// validateCondorcetMatrixEntryResponseBody checks CondorcetMatrixEntry and
+// reports errors using the path supplied by its caller
+func validateCondorcetMatrixEntryResponseBody(body *CondorcetMatrixEntryResponseBody, path string) (err error) {
+	if body.ChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", path))
+	}
+	if body.OtherChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("other_choice_id", path))
+	}
+	if body.ChoiceIDWins == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id_wins", path))
+	}
+	if body.OtherChoiceIDWins == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("other_choice_id_wins", path))
+	}
+	if body.Result == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("result", path))
+	}
+	return
+}
+
 // ValidateRankedChoiceWinnerInfoResponseBody runs the validations defined on
-// RankedChoiceWinnerInfoResponseBody
+// RankedChoiceWinnerInfo
 func ValidateRankedChoiceWinnerInfoResponseBody(body *RankedChoiceWinnerInfoResponseBody) (err error) {
 	if body.PollChoices == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("poll_choices", "body"))
 	}
 	for _, e := range body.PollChoices {
 		if e != nil {
-			if err2 := ValidatePollChoiceResponseBody(e); err2 != nil {
+			if err2 := validatePollChoiceResponseBody(e, "body.poll_choices[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// validateRankedChoiceWinnerInfoResponseBody checks RankedChoiceWinnerInfo and
+// reports errors using the path supplied by its caller
+func validateRankedChoiceWinnerInfoResponseBody(body *RankedChoiceWinnerInfoResponseBody, path string) (err error) {
+	if body.PollChoices == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("poll_choices", path))
+	}
+	for _, e := range body.PollChoices {
+		if e != nil {
+			if err2 := validatePollChoiceResponseBody(e, path+".poll_choices[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -4311,7 +5990,7 @@ func ValidateRankedChoiceWinnerInfoResponseBody(body *RankedChoiceWinnerInfoResp
 }
 
 // ValidateIRVRoundSummaryResponseBody runs the validations defined on
-// IRVRoundSummaryResponseBody
+// IRVRoundSummary
 func ValidateIRVRoundSummaryResponseBody(body *IRVRoundSummaryResponseBody) (err error) {
 	if body.RoundNumber == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("round_number", "body"))
@@ -4333,14 +6012,14 @@ func ValidateIRVRoundSummaryResponseBody(body *IRVRoundSummaryResponseBody) (err
 	}
 	for _, e := range body.Votes {
 		if e != nil {
-			if err2 := ValidateVoteCountResponseBody(e); err2 != nil {
+			if err2 := validateVoteCountResponseBody(e, "body.votes[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
 	}
 	for _, e := range body.TransferredVotes {
 		if e != nil {
-			if err2 := ValidateVoteCountResponseBody(e); err2 != nil {
+			if err2 := validateVoteCountResponseBody(e, "body.transferred_votes[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -4348,8 +6027,45 @@ func ValidateIRVRoundSummaryResponseBody(body *IRVRoundSummaryResponseBody) (err
 	return
 }
 
-// ValidateVoteCountResponseBody runs the validations defined on
-// VoteCountResponseBody
+// validateIRVRoundSummaryResponseBody checks IRVRoundSummary and reports
+// errors using the path supplied by its caller
+func validateIRVRoundSummaryResponseBody(body *IRVRoundSummaryResponseBody, path string) (err error) {
+	if body.RoundNumber == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("round_number", path))
+	}
+	if body.Votes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("votes", path))
+	}
+	if body.TotalVotes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("total_votes", path))
+	}
+	if body.ExhaustedVotes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("exhausted_votes", path))
+	}
+	if body.Threshold == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("threshold", path))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", path))
+	}
+	for _, e := range body.Votes {
+		if e != nil {
+			if err2 := validateVoteCountResponseBody(e, path+".votes[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.TransferredVotes {
+		if e != nil {
+			if err2 := validateVoteCountResponseBody(e, path+".transferred_votes[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateVoteCountResponseBody runs the validations defined on VoteCount
 func ValidateVoteCountResponseBody(body *VoteCountResponseBody) (err error) {
 	if body.ChoiceID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", "body"))
@@ -4360,8 +6076,20 @@ func ValidateVoteCountResponseBody(body *VoteCountResponseBody) (err error) {
 	return
 }
 
+// validateVoteCountResponseBody checks VoteCount and reports errors using the
+// path supplied by its caller
+func validateVoteCountResponseBody(body *VoteCountResponseBody, path string) (err error) {
+	if body.ChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", path))
+	}
+	if body.VoteCount == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_count", path))
+	}
+	return
+}
+
 // ValidateMeekSTVRoundSummaryResponseBody runs the validations defined on
-// MeekSTVRoundSummaryResponseBody
+// MeekSTVRoundSummary
 func ValidateMeekSTVRoundSummaryResponseBody(body *MeekSTVRoundSummaryResponseBody) (err error) {
 	if body.RoundNumber == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("round_number", "body"))
@@ -4383,35 +6111,94 @@ func ValidateMeekSTVRoundSummaryResponseBody(body *MeekSTVRoundSummaryResponseBo
 	}
 	for _, e := range body.Votes {
 		if e != nil {
-			if err2 := ValidateMeekSTVVoteCountResponseBody(e); err2 != nil {
+			if err2 := validateMeekSTVVoteCountResponseBody(e, "body.votes[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
 	}
 	for _, e := range body.ElectedChoices {
 		if e != nil {
-			if err2 := ValidateMeekSTVElectedChoiceResponseBody(e); err2 != nil {
+			if err2 := validateMeekSTVElectedChoiceResponseBody(e, "body.elected_choices[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
 	}
 	for _, e := range body.EliminatedChoices {
 		if e != nil {
-			if err2 := ValidateMeekSTVVoteCountResponseBody(e); err2 != nil {
+			if err2 := validateMeekSTVVoteCountResponseBody(e, "body.eliminated_choices[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
 	}
 	for _, e := range body.TransferredVotes {
 		if e != nil {
-			if err2 := ValidateMeekSTVVoteCountResponseBody(e); err2 != nil {
+			if err2 := validateMeekSTVVoteCountResponseBody(e, "body.transferred_votes[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
 	}
 	for _, e := range body.SurplusVotes {
 		if e != nil {
-			if err2 := ValidateMeekSTVVoteCountResponseBody(e); err2 != nil {
+			if err2 := validateMeekSTVVoteCountResponseBody(e, "body.surplus_votes[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// validateMeekSTVRoundSummaryResponseBody checks MeekSTVRoundSummary and
+// reports errors using the path supplied by its caller
+func validateMeekSTVRoundSummaryResponseBody(body *MeekSTVRoundSummaryResponseBody, path string) (err error) {
+	if body.RoundNumber == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("round_number", path))
+	}
+	if body.Votes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("votes", path))
+	}
+	if body.TotalVotes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("total_votes", path))
+	}
+	if body.ExhaustedVotes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("exhausted_votes", path))
+	}
+	if body.Threshold == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("threshold", path))
+	}
+	if body.Message == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("message", path))
+	}
+	for _, e := range body.Votes {
+		if e != nil {
+			if err2 := validateMeekSTVVoteCountResponseBody(e, path+".votes[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.ElectedChoices {
+		if e != nil {
+			if err2 := validateMeekSTVElectedChoiceResponseBody(e, path+".elected_choices[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.EliminatedChoices {
+		if e != nil {
+			if err2 := validateMeekSTVVoteCountResponseBody(e, path+".eliminated_choices[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.TransferredVotes {
+		if e != nil {
+			if err2 := validateMeekSTVVoteCountResponseBody(e, path+".transferred_votes[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.SurplusVotes {
+		if e != nil {
+			if err2 := validateMeekSTVVoteCountResponseBody(e, path+".surplus_votes[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -4420,7 +6207,7 @@ func ValidateMeekSTVRoundSummaryResponseBody(body *MeekSTVRoundSummaryResponseBo
 }
 
 // ValidateMeekSTVVoteCountResponseBody runs the validations defined on
-// MeekSTVVoteCountResponseBody
+// MeekSTVVoteCount
 func ValidateMeekSTVVoteCountResponseBody(body *MeekSTVVoteCountResponseBody) (err error) {
 	if body.ChoiceID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", "body"))
@@ -4431,8 +6218,20 @@ func ValidateMeekSTVVoteCountResponseBody(body *MeekSTVVoteCountResponseBody) (e
 	return
 }
 
+// validateMeekSTVVoteCountResponseBody checks MeekSTVVoteCount and reports
+// errors using the path supplied by its caller
+func validateMeekSTVVoteCountResponseBody(body *MeekSTVVoteCountResponseBody, path string) (err error) {
+	if body.ChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", path))
+	}
+	if body.VoteCount == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_count", path))
+	}
+	return
+}
+
 // ValidateMeekSTVElectedChoiceResponseBody runs the validations defined on
-// MeekSTVElectedChoiceResponseBody
+// MeekSTVElectedChoice
 func ValidateMeekSTVElectedChoiceResponseBody(body *MeekSTVElectedChoiceResponseBody) (err error) {
 	if body.ChoiceID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", "body"))
@@ -4446,8 +6245,23 @@ func ValidateMeekSTVElectedChoiceResponseBody(body *MeekSTVElectedChoiceResponse
 	return
 }
 
+// validateMeekSTVElectedChoiceResponseBody checks MeekSTVElectedChoice and
+// reports errors using the path supplied by its caller
+func validateMeekSTVElectedChoiceResponseBody(body *MeekSTVElectedChoiceResponseBody, path string) (err error) {
+	if body.ChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", path))
+	}
+	if body.VoteCount == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_count", path))
+	}
+	if body.SurplusVotes == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("surplus_votes", path))
+	}
+	return
+}
+
 // ValidateCommentResultItemResponseBody runs the validations defined on
-// CommentResultItemResponseBody
+// CommentResultItem
 func ValidateCommentResultItemResponseBody(body *CommentResultItemResponseBody) (err error) {
 	if body.Prompt == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("prompt", "body"))
@@ -4456,13 +6270,37 @@ func ValidateCommentResultItemResponseBody(body *CommentResultItemResponseBody) 
 		err = goa.MergeErrors(err, goa.MissingFieldError("responses", "body"))
 	}
 	if body.Prompt != nil {
-		if err2 := ValidatePollCommentPromptResponseBody(body.Prompt); err2 != nil {
+		if err2 := validatePollCommentPromptResponseBody(body.Prompt, "body.prompt"); err2 != nil {
 			err = goa.MergeErrors(err, err2)
 		}
 	}
 	for _, e := range body.Responses {
 		if e != nil {
-			if err2 := ValidateCommentResponseWithUserResponseBody(e); err2 != nil {
+			if err2 := validateCommentResponseWithUserResponseBody(e, "body.responses[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// validateCommentResultItemResponseBody checks CommentResultItem and reports
+// errors using the path supplied by its caller
+func validateCommentResultItemResponseBody(body *CommentResultItemResponseBody, path string) (err error) {
+	if body.Prompt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("prompt", path))
+	}
+	if body.Responses == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("responses", path))
+	}
+	if body.Prompt != nil {
+		if err2 := validatePollCommentPromptResponseBody(body.Prompt, path+".prompt"); err2 != nil {
+			err = goa.MergeErrors(err, err2)
+		}
+	}
+	for _, e := range body.Responses {
+		if e != nil {
+			if err2 := validateCommentResponseWithUserResponseBody(e, path+".responses[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -4471,19 +6309,10 @@ func ValidateCommentResultItemResponseBody(body *CommentResultItemResponseBody) 
 }
 
 // ValidateCommentResponseWithUserResponseBody runs the validations defined on
-// CommentResponseWithUserResponseBody
+// CommentResponseWithUser
 func ValidateCommentResponseWithUserResponseBody(body *CommentResponseWithUserResponseBody) (err error) {
-	if body.VoteID == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_id", "body"))
-	}
 	if body.CommentText == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("comment_text", "body"))
-	}
-	if body.VoteCreationTime == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("vote_creation_time", "body"))
-	}
-	if body.Abstained == nil {
-		err = goa.MergeErrors(err, goa.MissingFieldError("abstained", "body"))
 	}
 	if body.VoteID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.vote_id", *body.VoteID, goa.FormatUUID))
@@ -4494,39 +6323,22 @@ func ValidateCommentResponseWithUserResponseBody(body *CommentResponseWithUserRe
 	return
 }
 
-// ValidateVoteAnswerInputRequestBody runs the validations defined on
-// VoteAnswerInputRequestBody
-func ValidateVoteAnswerInputRequestBody(body *VoteAnswerInputRequestBody) (err error) {
-	err = goa.MergeErrors(err, goa.ValidateFormat("body.question_id", body.QuestionID, goa.FormatUUID))
-	for _, e := range body.RankedChoices {
-		if e != nil {
-			if err2 := ValidateRankedChoiceInputRequestBody(e); err2 != nil {
-				err = goa.MergeErrors(err, err2)
-			}
-		}
+// validateCommentResponseWithUserResponseBody checks CommentResponseWithUser
+// and reports errors using the path supplied by its caller
+func validateCommentResponseWithUserResponseBody(body *CommentResponseWithUserResponseBody, path string) (err error) {
+	if body.CommentText == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("comment_text", path))
+	}
+	if body.VoteID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat(path+".vote_id", *body.VoteID, goa.FormatUUID))
+	}
+	if body.VoteCreationTime != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat(path+".vote_creation_time", *body.VoteCreationTime, goa.FormatDateTime))
 	}
 	return
 }
 
-// ValidateRankedChoiceInputRequestBody runs the validations defined on
-// RankedChoiceInputRequestBody
-func ValidateRankedChoiceInputRequestBody(body *RankedChoiceInputRequestBody) (err error) {
-	err = goa.MergeErrors(err, goa.ValidateFormat("body.choice_id", body.ChoiceID, goa.FormatUUID))
-	if body.ChoiceRank < 1 {
-		err = goa.MergeErrors(err, goa.InvalidRangeError("body.choice_rank", body.ChoiceRank, 1, true))
-	}
-	return
-}
-
-// ValidateCommentResponseRequestBody runs the validations defined on
-// CommentResponseRequestBody
-func ValidateCommentResponseRequestBody(body *CommentResponseRequestBody) (err error) {
-	err = goa.MergeErrors(err, goa.ValidateFormat("body.prompt_id", body.PromptID, goa.FormatUUID))
-	return
-}
-
-// ValidateVoteAnswerResponseBody runs the validations defined on
-// VoteAnswerResponseBody
+// ValidateVoteAnswerResponseBody runs the validations defined on VoteAnswer
 func ValidateVoteAnswerResponseBody(body *VoteAnswerResponseBody) (err error) {
 	if body.QuestionID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("question_id", "body"))
@@ -4547,14 +6359,51 @@ func ValidateVoteAnswerResponseBody(body *VoteAnswerResponseBody) (err error) {
 	}
 	for _, e := range body.UserChoice {
 		if e != nil {
-			if err2 := ValidateVoteChoiceAnswerResponseBody(e); err2 != nil {
+			if err2 := validateVoteChoiceAnswerResponseBody(e, "body.user_choice[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
 	}
 	for _, e := range body.RankedUserChoice {
 		if e != nil {
-			if err2 := ValidateRankedVoteChoiceAnswerResponseBody(e); err2 != nil {
+			if err2 := validateRankedVoteChoiceAnswerResponseBody(e, "body.ranked_user_choice[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// validateVoteAnswerResponseBody checks VoteAnswer and reports errors using
+// the path supplied by its caller
+func validateVoteAnswerResponseBody(body *VoteAnswerResponseBody, path string) (err error) {
+	if body.QuestionID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("question_id", path))
+	}
+	if body.Prompt == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("prompt", path))
+	}
+	if body.Type == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("type", path))
+	}
+	if body.QuestionID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat(path+".question_id", *body.QuestionID, goa.FormatUUID))
+	}
+	if body.Type != nil {
+		if !(*body.Type == "single_choice" || *body.Type == "multiple_choice") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError(path+".type", *body.Type, []any{"single_choice", "multiple_choice"}))
+		}
+	}
+	for _, e := range body.UserChoice {
+		if e != nil {
+			if err2 := validateVoteChoiceAnswerResponseBody(e, path+".user_choice[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.RankedUserChoice {
+		if e != nil {
+			if err2 := validateRankedVoteChoiceAnswerResponseBody(e, path+".ranked_user_choice[*]"); err2 != nil {
 				err = goa.MergeErrors(err, err2)
 			}
 		}
@@ -4563,7 +6412,7 @@ func ValidateVoteAnswerResponseBody(body *VoteAnswerResponseBody) (err error) {
 }
 
 // ValidateVoteChoiceAnswerResponseBody runs the validations defined on
-// VoteChoiceAnswerResponseBody
+// VoteChoiceAnswer
 func ValidateVoteChoiceAnswerResponseBody(body *VoteChoiceAnswerResponseBody) (err error) {
 	if body.ChoiceID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", "body"))
@@ -4577,8 +6426,23 @@ func ValidateVoteChoiceAnswerResponseBody(body *VoteChoiceAnswerResponseBody) (e
 	return
 }
 
+// validateVoteChoiceAnswerResponseBody checks VoteChoiceAnswer and reports
+// errors using the path supplied by its caller
+func validateVoteChoiceAnswerResponseBody(body *VoteChoiceAnswerResponseBody, path string) (err error) {
+	if body.ChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", path))
+	}
+	if body.ChoiceText == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_text", path))
+	}
+	if body.ChoiceID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat(path+".choice_id", *body.ChoiceID, goa.FormatUUID))
+	}
+	return
+}
+
 // ValidateRankedVoteChoiceAnswerResponseBody runs the validations defined on
-// RankedVoteChoiceAnswerResponseBody
+// RankedVoteChoiceAnswer
 func ValidateRankedVoteChoiceAnswerResponseBody(body *RankedVoteChoiceAnswerResponseBody) (err error) {
 	if body.ChoiceID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", "body"))
@@ -4600,8 +6464,31 @@ func ValidateRankedVoteChoiceAnswerResponseBody(body *RankedVoteChoiceAnswerResp
 	return
 }
 
+// validateRankedVoteChoiceAnswerResponseBody checks RankedVoteChoiceAnswer and
+// reports errors using the path supplied by its caller
+func validateRankedVoteChoiceAnswerResponseBody(body *RankedVoteChoiceAnswerResponseBody, path string) (err error) {
+	if body.ChoiceID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_id", path))
+	}
+	if body.ChoiceText == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_text", path))
+	}
+	if body.ChoiceRank == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choice_rank", path))
+	}
+	if body.ChoiceID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat(path+".choice_id", *body.ChoiceID, goa.FormatUUID))
+	}
+	if body.ChoiceRank != nil {
+		if *body.ChoiceRank < 1 {
+			err = goa.MergeErrors(err, goa.InvalidRangeError(path+".choice_rank", *body.ChoiceRank, 1, true))
+		}
+	}
+	return
+}
+
 // ValidateCommentResponseResponseBody runs the validations defined on
-// CommentResponseResponseBody
+// CommentResponse
 func ValidateCommentResponseResponseBody(body *CommentResponseResponseBody) (err error) {
 	if body.PromptID == nil {
 		err = goa.MergeErrors(err, goa.MissingFieldError("prompt_id", "body"))
@@ -4612,5 +6499,206 @@ func ValidateCommentResponseResponseBody(body *CommentResponseResponseBody) (err
 	if body.PromptID != nil {
 		err = goa.MergeErrors(err, goa.ValidateFormat("body.prompt_id", *body.PromptID, goa.FormatUUID))
 	}
+	return
+}
+
+// validateCommentResponseResponseBody checks CommentResponse and reports
+// errors using the path supplied by its caller
+func validateCommentResponseResponseBody(body *CommentResponseResponseBody, path string) (err error) {
+	if body.PromptID == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("prompt_id", path))
+	}
+	if body.CommentText == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("comment_text", path))
+	}
+	if body.PromptID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat(path+".prompt_id", *body.PromptID, goa.FormatUUID))
+	}
+	return
+}
+
+// ValidateVoteLinkBallotResponseBody runs the validations defined on
+// VoteLinkBallot
+func ValidateVoteLinkBallotResponseBody(body *VoteLinkBallotResponseBody) (err error) {
+	if body.VoteStatus == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_status", "body"))
+	}
+	if body.AlreadyVoted == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("already_voted", "body"))
+	}
+	if body.VoterRemoved == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("voter_removed", "body"))
+	}
+	if body.WouldEndVote == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("would_end_vote", "body"))
+	}
+	for _, e := range body.PollAnswers {
+		if e != nil {
+			if err2 := validateVoteAnswerResponseBody(e, "body.poll_answers[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.CommentResponses {
+		if e != nil {
+			if err2 := validateCommentResponseResponseBody(e, "body.comment_responses[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// validateVoteLinkBallotResponseBody checks VoteLinkBallot and reports errors
+// using the path supplied by its caller
+func validateVoteLinkBallotResponseBody(body *VoteLinkBallotResponseBody, path string) (err error) {
+	if body.VoteStatus == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("vote_status", path))
+	}
+	if body.AlreadyVoted == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("already_voted", path))
+	}
+	if body.VoterRemoved == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("voter_removed", path))
+	}
+	if body.WouldEndVote == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("would_end_vote", path))
+	}
+	for _, e := range body.PollAnswers {
+		if e != nil {
+			if err2 := validateVoteAnswerResponseBody(e, path+".poll_answers[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	for _, e := range body.CommentResponses {
+		if e != nil {
+			if err2 := validateCommentResponseResponseBody(e, path+".comment_responses[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidatePollQuestionRequestBody runs the validations defined on PollQuestion
+func ValidatePollQuestionRequestBody(body *PollQuestionRequestBody) (err error) {
+	if body.Choices == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choices", "body"))
+	}
+	if body.QuestionID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.question_id", *body.QuestionID, goa.FormatUUID))
+	}
+	if !(body.Type == "single_choice" || body.Type == "multiple_choice") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.type", body.Type, []any{"single_choice", "multiple_choice"}))
+	}
+	for _, e := range body.Choices {
+		if e != nil {
+			if err2 := validatePollChoiceRequestBody(e, "body.choices[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// validatePollQuestionRequestBody checks PollQuestion and reports errors using
+// the path supplied by its caller
+func validatePollQuestionRequestBody(body *PollQuestionRequestBody, path string) (err error) {
+	if body.Choices == nil {
+		err = goa.MergeErrors(err, goa.MissingFieldError("choices", path))
+	}
+	if body.QuestionID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat(path+".question_id", *body.QuestionID, goa.FormatUUID))
+	}
+	if !(body.Type == "single_choice" || body.Type == "multiple_choice") {
+		err = goa.MergeErrors(err, goa.InvalidEnumValueError(path+".type", body.Type, []any{"single_choice", "multiple_choice"}))
+	}
+	for _, e := range body.Choices {
+		if e != nil {
+			if err2 := validatePollChoiceRequestBody(e, path+".choices[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidatePollChoiceRequestBody runs the validations defined on PollChoice
+func ValidatePollChoiceRequestBody(body *PollChoiceRequestBody) (err error) {
+	if body.ChoiceID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat("body.choice_id", *body.ChoiceID, goa.FormatUUID))
+	}
+	return
+}
+
+// validatePollChoiceRequestBody checks PollChoice and reports errors using the
+// path supplied by its caller
+func validatePollChoiceRequestBody(body *PollChoiceRequestBody, path string) (err error) {
+	if body.ChoiceID != nil {
+		err = goa.MergeErrors(err, goa.ValidateFormat(path+".choice_id", *body.ChoiceID, goa.FormatUUID))
+	}
+	return
+}
+
+// ValidateVoteAnswerInputRequestBody runs the validations defined on
+// VoteAnswerInput
+func ValidateVoteAnswerInputRequestBody(body *VoteAnswerInputRequestBody) (err error) {
+	err = goa.MergeErrors(err, goa.ValidateFormat("body.question_id", body.QuestionID, goa.FormatUUID))
+	for _, e := range body.RankedChoices {
+		if e != nil {
+			if err2 := validateRankedChoiceInputRequestBody(e, "body.ranked_choices[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// validateVoteAnswerInputRequestBody checks VoteAnswerInput and reports errors
+// using the path supplied by its caller
+func validateVoteAnswerInputRequestBody(body *VoteAnswerInputRequestBody, path string) (err error) {
+	err = goa.MergeErrors(err, goa.ValidateFormat(path+".question_id", body.QuestionID, goa.FormatUUID))
+	for _, e := range body.RankedChoices {
+		if e != nil {
+			if err2 := validateRankedChoiceInputRequestBody(e, path+".ranked_choices[*]"); err2 != nil {
+				err = goa.MergeErrors(err, err2)
+			}
+		}
+	}
+	return
+}
+
+// ValidateRankedChoiceInputRequestBody runs the validations defined on
+// RankedChoiceInput
+func ValidateRankedChoiceInputRequestBody(body *RankedChoiceInputRequestBody) (err error) {
+	err = goa.MergeErrors(err, goa.ValidateFormat("body.choice_id", body.ChoiceID, goa.FormatUUID))
+	if body.ChoiceRank < 1 {
+		err = goa.MergeErrors(err, goa.InvalidRangeError("body.choice_rank", body.ChoiceRank, 1, true))
+	}
+	return
+}
+
+// validateRankedChoiceInputRequestBody checks RankedChoiceInput and reports
+// errors using the path supplied by its caller
+func validateRankedChoiceInputRequestBody(body *RankedChoiceInputRequestBody, path string) (err error) {
+	err = goa.MergeErrors(err, goa.ValidateFormat(path+".choice_id", body.ChoiceID, goa.FormatUUID))
+	if body.ChoiceRank < 1 {
+		err = goa.MergeErrors(err, goa.InvalidRangeError(path+".choice_rank", body.ChoiceRank, 1, true))
+	}
+	return
+}
+
+// ValidateCommentResponseRequestBody runs the validations defined on
+// CommentResponse
+func ValidateCommentResponseRequestBody(body *CommentResponseRequestBody) (err error) {
+	err = goa.MergeErrors(err, goa.ValidateFormat("body.prompt_id", body.PromptID, goa.FormatUUID))
+	return
+}
+
+// validateCommentResponseRequestBody checks CommentResponse and reports errors
+// using the path supplied by its caller
+func validateCommentResponseRequestBody(body *CommentResponseRequestBody, path string) (err error) {
+	err = goa.MergeErrors(err, goa.ValidateFormat(path+".prompt_id", body.PromptID, goa.FormatUUID))
 	return
 }

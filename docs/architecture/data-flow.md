@@ -106,8 +106,8 @@ This is the asynchronous path. It runs entirely independently of the HTTP API pa
 sequenceDiagram
     participant V1KV as NATS KV: v1-objects
     participant Proc as EventProcessor
-    participant Router as KvHandler (router)
-    participant Handler as Entity Handler<br/>(vote / vote_response / vote_result)
+    participant Router as kvMessageHandler (NATS adapter)
+    participant Handler as eventsync.Syncer<br/>(vote / vote_response / vote_result specs)
     participant IDMap as ID Mapper (NATS)
     participant Mappings as NATS KV: v1-mappings
     participant Pub as NATSPublisher
@@ -116,8 +116,8 @@ sequenceDiagram
 
     V1KV->>Proc: JetStream message (KV PUT or DEL)
     Proc->>Router: kvMessageHandler(msg)
-    Router->>Router: route by key prefix<br/>(itx-poll.* / itx-poll-vote.* / itx-poll-results.*)
-    Router->>Handler: handleVoteUpdate / handleVoteDelete / etc.
+    Router->>Handler: Sync(Entry)
+    Handler->>Handler: route by key prefix<br/>(itx-poll.* / itx-poll-vote.* / itx-poll-results.*)
     Handler->>Handler: decode payload (JSON or msgpack)
     Handler->>Handler: unmarshal into PollDBRaw / VoteDBRaw / PollResultDBRaw<br/>(custom UnmarshalJSON: coerce string→int)
     Handler->>Mappings: get v1-mappings key → determine create vs update
@@ -130,7 +130,8 @@ sequenceDiagram
     Pub->>Indexer: NATS publish lfx.index.vote (IndexerMessageEnvelope)
     Pub->>FGA: NATS publish lfx.fga-sync.update_access (GenericFGAMessage)
     Handler->>Mappings: store tracking key (value "1" or "!del")
-    Handler-->>Proc: Ack (success) or Nak (transient error)
+    Handler-->>Router: Outcome (Ack or Retry)
+    Router-->>Proc: ACK, or NAK with backoff
 ```
 
 **Error classification:**
@@ -139,10 +140,10 @@ sequenceDiagram
 - `domain.ErrorTypeInternal` without a transient keyword → ACK (skip permanently)
 - Invalid data, missing fields, malformed JSON → ACK (skip permanently)
 
-See `isTransientError` in `cmd/voting-api/eventing/vote_event_handler.go` for the authoritative implementation.
+See `isTransientError` in `internal/service/eventsync/resource.go` for the authoritative implementation.
 
-**Evidence:** `cmd/voting-api/eventing/kv_handler.go`, `vote_event_handler.go`,
-`vote_response_event_handler.go`, `vote_result_event_handler.go`,
+**Evidence:** `cmd/voting-api/eventing/kv_handler.go`, `internal/service/eventsync/syncer.go`,
+`resource.go`, `vote.go`, `vote_response.go`, `vote_result.go`,
 `internal/infrastructure/eventing/nats_publisher.go`, `docs/event-processing.md`
 
 ---

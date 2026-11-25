@@ -3,8 +3,13 @@
 
 package itx
 
-// PollSource marks polls created through the LFX self-serve proxy, so ITX links
-// the poll-ended email back to the self-serve app instead of PCC.
+import "encoding/json"
+
+// PollSource marks the poll's origin so ITX routes the creator's poll-ended results
+// link back to the creating surface and selects the destination for voter emails.
+// For self_serve, invitation, extension, resend, and reminder emails open the
+// Self Serve vote page at /votes/{poll_id}. Other stored origins, including pcc,
+// unknown, and empty legacy values, retain the configured MyProfile/OpenProfile link.
 type PollSource string
 
 // PollSourceSelfServe is the source value for polls created via the self-serve proxy.
@@ -28,6 +33,7 @@ type CreatePollRequest struct {
 	PollType                   string              `json:"poll_type,omitempty"`
 	NumWinners                 *int                `json:"num_winners,omitempty"`
 	AllowAbstain               bool                `json:"allow_abstain"`
+	AllowVoteChange            *bool               `json:"allow_vote_change,omitempty"` // omitted: ITX defaults to true on create, preserves on update
 	QuorumPercentage           *int                `json:"quorum_percentage,omitempty"`
 	WinningThresholdPercentage *int                `json:"winning_threshold_percentage,omitempty"`
 }
@@ -58,6 +64,7 @@ type UpdatePollRequest struct {
 	PollType                   string              `json:"poll_type,omitempty"`
 	NumWinners                 *int                `json:"num_winners,omitempty"`
 	AllowAbstain               bool                `json:"allow_abstain"`
+	AllowVoteChange            *bool               `json:"allow_vote_change,omitempty"` // omitted: ITX defaults to true on create, preserves on update
 	QuorumPercentage           *int                `json:"quorum_percentage,omitempty"`
 	WinningThresholdPercentage *int                `json:"winning_threshold_percentage,omitempty"`
 }
@@ -71,6 +78,10 @@ type ExtendPollRequest struct {
 // BulkResendRequest represents the request to bulk resend poll emails in ITX
 type BulkResendRequest struct {
 	RecipientIDs []string `json:"recipient_ids"`
+	// RecipientLinks maps a recipient (vote_id) to the personalized voting link ITX puts
+	// in that recipient's email instead of the standard link. Omitted when empty, so a
+	// request without personalized links is unchanged on the wire.
+	RecipientLinks map[string]string `json:"recipient_links,omitempty"`
 }
 
 // PollQuestionInput represents a question in the request
@@ -117,6 +128,29 @@ type PollResponse struct {
 	PollType                      string                    `json:"poll_type,omitempty"`
 	NumWinners                    int                       `json:"num_winners,omitempty"`
 	AllowAbstain                  bool                      `json:"allow_abstain"`
+	AllowVoteChange               *bool                     `json:"allow_vote_change"` // nil when ITX predates the setting; see VoteChangeAllowed
+	// PseudoAnonymityKnown is true only when ITX sent pseudo_anonymity as a JSON bool. It is
+	// false when the field is missing or null, so callers that must protect ballot privacy can
+	// fail closed. Not serialized.
+	PseudoAnonymityKnown bool `json:"-"`
+}
+
+// UnmarshalJSON decodes a PollResponse and records whether pseudo_anonymity was present as a
+// bool. PseudoAnonymity itself decodes exactly as before (missing or null → false).
+func (p *PollResponse) UnmarshalJSON(data []byte) error {
+	type pollResponseAlias PollResponse
+	aux := struct {
+		*pollResponseAlias
+		// Shadows the embedded field of the same JSON name, so a missing or null value
+		// is distinguishable from false.
+		PseudoAnonymity *bool `json:"pseudo_anonymity"`
+	}{pollResponseAlias: (*pollResponseAlias)(p)}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	p.PseudoAnonymityKnown = aux.PseudoAnonymity != nil
+	p.PseudoAnonymity = aux.PseudoAnonymity != nil && *aux.PseudoAnonymity
+	return nil
 }
 
 // PollQuestionOutput represents a question in the response
@@ -172,6 +206,34 @@ type RankedChoiceInput struct {
 	ChoiceRank int    `json:"choice_rank"`
 }
 
+// VoteChangeAllowed resolves an ITX allow_vote_change value. Nil means the poll predates the
+// setting, which ITX treats as allowed.
+func VoteChangeAllowed(v *bool) bool {
+	return v == nil || *v
+}
+
+// ITX vote_status values for a ballot that has been submitted.
+const (
+	// VoteStatusResponded is a submitted ballot on a poll that has not ended.
+	VoteStatusResponded = "responded"
+	// VoteStatusEnded is a submitted ballot on a poll that has ended. An unsubmitted
+	// ballot on an ended poll is "awaiting_response_but_poll_ended" instead.
+	VoteStatusEnded = "ended"
+)
+
+// ITX status values that decide whether a ballot is still waiting to be cast.
+const (
+	// VoteStatusAwaitingResponse is an unsubmitted ballot on a poll that has not ended.
+	VoteStatusAwaitingResponse = "awaiting_response"
+	// PollStatusActive is an open poll whose end time has not passed.
+	PollStatusActive = "active"
+)
+
+// IsSubmittedVoteStatus reports whether an ITX vote_status means the ballot was submitted.
+func IsSubmittedVoteStatus(status string) bool {
+	return status == VoteStatusResponded || status == VoteStatusEnded
+}
+
 // VoteResponse represents a vote response from ITX
 type VoteResponse struct {
 	VoteID                 string            `json:"vote_id"`
@@ -180,6 +242,8 @@ type VoteResponse struct {
 	VoteStatus             string            `json:"vote_status"`
 	Abstained              bool              `json:"abstained"`
 	AllowAbstain           bool              `json:"allow_abstain"`
+	AllowVoteChange        *bool             `json:"allow_vote_change"`         // inherited from the poll; nil when ITX predates the setting
+	CanChangeVote          *bool             `json:"can_change_vote,omitempty"` // ITX's per-ballot eligibility; nil when not reported, never computed
 	VoteCreationTime       string            `json:"vote_creation_time"`
 	UserName               string            `json:"user_name"`
 	ProfilePicture         string            `json:"profile_picture"`
@@ -203,6 +267,9 @@ type VoteResponse struct {
 	SESLinkClickedLastTime string            `json:"ses_link_clicked_last_time,omitempty"`
 	PollAnswers            []PollAnswer      `json:"poll_answers"`
 	CommentResponses       []CommentResponse `json:"comment_responses"`
+	// VoterRemoved is true once the recipient was removed from the vote; ITX then rejects
+	// submissions and updates for this ballot.
+	VoterRemoved bool `json:"voter_removed"`
 }
 
 // PollAnswer represents a vote answer in the response
@@ -228,12 +295,17 @@ type RankedPollChoiceAnswer struct {
 }
 
 // VoteResults represents the aggregated results of a poll/vote from ITX
+//
+// ResultsHeld and NumAbstained are pointers so an absent field stays absent: ITX omits
+// results_held once results are unlocked and omits num_abstained (with the per-option
+// totals and comments) while pseudo-anonymous results are held.
 type VoteResults struct {
-	PollResults         []PollResult    `json:"poll_results"`
-	CommentResults      []CommentResult `json:"comment_results"`
+	PollResults         []PollResult    `json:"poll_results,omitempty"`
+	CommentResults      []CommentResult `json:"comment_results,omitempty"`
+	ResultsHeld         *bool           `json:"results_held,omitempty"`
 	NumRecipients       int             `json:"num_recipients"`
 	NumVotesCast        int             `json:"num_votes_cast"`
-	NumAbstained        int             `json:"num_abstained"`
+	NumAbstained        *int            `json:"num_abstained,omitempty"`
 	PollEndTime         string          `json:"poll_end_time"`
 	PollEndTimeTimezone string          `json:"poll_end_time_timezone,omitempty"`
 }
@@ -346,12 +418,14 @@ type CommentResult struct {
 
 // CommentResponseWithUser represents a voter's comment response with attribution, as returned in results.
 // UserID, UserName, and ProfilePicture are omitted by ITX when the poll has pseudo_anonymity enabled.
+// For ended pseudo-anonymous polls ITX also omits VoteID, VoteCreationTime and Abstained, so those
+// are pointers: a supplied false/empty value stays present and a missing one stays absent.
 type CommentResponseWithUser struct {
-	VoteID           string `json:"vote_id"`
-	UserID           string `json:"user_id,omitempty"`
-	CommentText      string `json:"comment_text"`
-	UserName         string `json:"user_name,omitempty"`
-	ProfilePicture   string `json:"profile_picture,omitempty"`
-	VoteCreationTime string `json:"vote_creation_time"`
-	Abstained        bool   `json:"abstained"`
+	VoteID           *string `json:"vote_id,omitempty"`
+	UserID           string  `json:"user_id,omitempty"`
+	CommentText      string  `json:"comment_text"`
+	UserName         string  `json:"user_name,omitempty"`
+	ProfilePicture   string  `json:"profile_picture,omitempty"`
+	VoteCreationTime *string `json:"vote_creation_time,omitempty"`
+	Abstained        *bool   `json:"abstained,omitempty"`
 }

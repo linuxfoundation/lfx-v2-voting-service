@@ -105,9 +105,28 @@ app:
     # and the invite_accepted enrichment subscriber.
     INVITES_ENABLED:
       value: false
+    # VOTE_PARTICIPANT_GRANTS_ENABLED gates writing the vote `participant` FGA tuple for each
+    # voter. Keep it false until every indexed vote_response has been reindexed to the
+    # vote_response#auditor access check (scripts/reindex-vote-responses); enabling it earlier
+    # lets participants read other voters' not-yet-reindexed ballots. Revocations are never gated.
+    VOTE_PARTICIPANT_GRANTS_ENABLED:
+      value: false
     # LFX_SELF_SERVE_BASE_URL overrides the base URL embedded in invite emails.
     # Defaults to the environment-appropriate app URL derived from LFX_ENVIRONMENT.
     LFX_SELF_SERVE_BASE_URL:
+      value: ""
+    # Personalized vote links (bulk_resend personalized_links=true). Format:
+    # "kid1:base64key,kid2:base64key" with keys of at least 32 bytes. When the secret key
+    # is absent the feature is disabled and the service starts normally.
+    VOTE_LINK_SIGNING_KEYS:
+      valueFrom:
+        secretKeyRef:
+          name: lfx-v2-voting-service
+          key: VOTE_LINK_SIGNING_KEYS
+          optional: true
+    # VOTE_LINK_ACTIVE_KID optionally overrides the signing key. Leave it empty: the first key
+    # listed in VOTE_LINK_SIGNING_KEYS signs, so rotation only changes the one Secret value.
+    VOTE_LINK_ACTIVE_KID:
       value: ""
 
     # OpenTelemetry configuration
@@ -123,11 +142,6 @@ traefik:
   gateway:
     name: lfx-platform-gateway
     namespace: lfx
-
-# global is the configuration for the global settings
-global:
-  # awsRegion is the AWS region for the External Secrets Operator
-  awsRegion: us-west-2
 
 # lfx is the configuration for LFX platform
 lfx:
@@ -171,26 +185,3 @@ heimdall:
   enabled: true
   url: http://lfx-platform-heimdall.lfx.svc.cluster.local:4456
   add_middleware: false
-
-# External Secrets Operator
-externalSecretsOperator:
-  # Enable/disable External Secrets Operator integration
-  enabled: false
-
-  # ExternalSecret configuration
-  externalSecret:
-    # How often to refresh secrets from AWS
-    refreshInterval: "10m"
-
-    # Secret data mappings
-    # REQUIRED: Secrets must exist in AWS Secrets Manager (global.awsRegion)
-    # NOTE: client_private_key should be stored as raw PEM format (not base64-encoded)
-    data:
-      - secretKey: ITX_CLIENT_ID
-        remoteRef:
-          key: /cloudops/managed-secrets/auth0/LFX_V2_Voting_Service
-          property: client_id
-      - secretKey: ITX_CLIENT_PRIVATE_KEY
-        remoteRef:
-          key: /cloudops/managed-secrets/auth0/LFX_V2_Voting_Service
-          property: client_private_key
