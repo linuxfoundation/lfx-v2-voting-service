@@ -149,7 +149,7 @@ func PseudoAnonymityAttribute() {
 // withDefault enables the create-only default.
 func PollTypeAttribute(withDefault bool) {
 	Attribute("poll_type", String, "Type of poll", func() {
-		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
+		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote", "majority")
 		if withDefault {
 			Default("generic")
 		}
@@ -269,7 +269,7 @@ var VoteResult = Type("VoteResult", func() {
 	Attribute("poll_questions", ArrayOf(PollQuestion), "Vote questions")
 	Attribute("poll_comment_prompts", ArrayOf(PollCommentPrompt), "Comment prompts for the vote")
 	Attribute("poll_type", String, "Poll type", func() {
-		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
+		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote", "majority")
 		Default("generic")
 	})
 	Attribute("num_winners", Int, "Number of winners. Absent when no winner count is stored upstream.")
@@ -278,6 +278,8 @@ var VoteResult = Type("VoteResult", func() {
 		"Votes created before this setting existed report true.", func() {
 		Example(false)
 	})
+	Attribute("quorum_percentage", Int, "Quorum percentage set for a majority vote. Absent when none is stored.")
+	Attribute("winning_threshold_percentage", Int, "Winning threshold percentage set for a majority vote. Absent when none is stored.")
 
 	Required("uid", "name", "description", "status", "project_uid", "committee_uid", "allow_vote_change")
 })
@@ -513,7 +515,7 @@ var VoteLinkBallotResult = Type("VoteLinkBallotResult", func() {
 		Format(FormatDateTime)
 	})
 	Attribute("poll_type", String, "Poll type", func() {
-		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
+		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote", "majority")
 		Default("generic")
 	})
 	Attribute("num_winners", Int, "Number of winners. Absent when no winner count is stored upstream.")

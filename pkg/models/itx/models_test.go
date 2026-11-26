@@ -43,6 +43,34 @@ func TestPollResponseUnmarshal_PseudoAnonymityPresence(t *testing.T) {
 	})
 }
 
+// TestPollResponseUnmarshal_MajorityRules guards the majority quorum and winning threshold
+// read: stored values decode as set, and a poll without them leaves both nil.
+func TestPollResponseUnmarshal_MajorityRules(t *testing.T) {
+	t.Run("both present", func(t *testing.T) {
+		var p PollResponse
+		body := `{"poll_id":"p1","poll_type":"majority","quorum_percentage":50,"winning_threshold_percentage":66}`
+		if err := json.Unmarshal([]byte(body), &p); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if p.QuorumPercentage == nil || *p.QuorumPercentage != 50 {
+			t.Errorf("QuorumPercentage=%v, want 50", p.QuorumPercentage)
+		}
+		if p.WinningThresholdPercentage == nil || *p.WinningThresholdPercentage != 66 {
+			t.Errorf("WinningThresholdPercentage=%v, want 66", p.WinningThresholdPercentage)
+		}
+	})
+
+	t.Run("both absent", func(t *testing.T) {
+		var p PollResponse
+		if err := json.Unmarshal([]byte(`{"poll_id":"p1","poll_type":"majority"}`), &p); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if p.QuorumPercentage != nil || p.WinningThresholdPercentage != nil {
+			t.Errorf("QuorumPercentage=%v WinningThresholdPercentage=%v, want both nil", p.QuorumPercentage, p.WinningThresholdPercentage)
+		}
+	})
+}
+
 func TestIsSubmittedVoteStatus(t *testing.T) {
 	for status, want := range map[string]bool{
 		"responded":                        true,

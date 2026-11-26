@@ -129,6 +129,8 @@ type PollResponse struct {
 	NumWinners                    int                       `json:"num_winners,omitempty"`
 	AllowAbstain                  bool                      `json:"allow_abstain"`
 	AllowVoteChange               *bool                     `json:"allow_vote_change"` // nil when ITX predates the setting; see VoteChangeAllowed
+	QuorumPercentage              *int                      `json:"quorum_percentage,omitempty"`
+	WinningThresholdPercentage    *int                      `json:"winning_threshold_percentage,omitempty"`
 	// PseudoAnonymityKnown is true only when ITX sent pseudo_anonymity as a JSON bool. It is
 	// false when the field is missing or null, so callers that must protect ballot privacy can
 	// fail closed. Not serialized.

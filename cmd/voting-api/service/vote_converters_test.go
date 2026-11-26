@@ -189,6 +189,46 @@ func TestConvertPollResponseToVoteResultAllowVoteChange(t *testing.T) {
 	}
 }
 
+// TestConvertPollResponseToVoteResultMajorityRules guards the read hop for the majority
+// quorum and winning threshold: stored values pass through unchanged, and a vote without
+// them (majority or not) gains no new values.
+func TestConvertPollResponseToVoteResultMajorityRules(t *testing.T) {
+	tests := []struct {
+		name          string
+		poll          *itx.PollResponse
+		wantQuorum    *int
+		wantThreshold *int
+	}{
+		{
+			name: "majority with both set",
+			poll: &itx.PollResponse{
+				PollType:                   "majority",
+				QuorumPercentage:           utils.IntPtr(50),
+				WinningThresholdPercentage: utils.IntPtr(66),
+			},
+			wantQuorum:    utils.IntPtr(50),
+			wantThreshold: utils.IntPtr(66),
+		},
+		{
+			name: "majority with neither set",
+			poll: &itx.PollResponse{PollType: "majority"},
+		},
+		{
+			name: "generic",
+			poll: &itx.PollResponse{PollType: "generic"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertPollResponseToVoteResult(tt.poll)
+
+			assert.Equal(t, tt.poll.PollType, result.PollType)
+			assert.Equal(t, tt.wantQuorum, result.QuorumPercentage)
+			assert.Equal(t, tt.wantThreshold, result.WinningThresholdPercentage)
+		})
+	}
+}
+
 // TestConvertVoteResultsToResultPresence guards optional-field presence on the results hop:
 // held and anonymous shapes must not gain zero/false/empty metadata, and named results
 // must keep legitimate zero and false values.

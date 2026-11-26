@@ -909,6 +909,11 @@ type VoteResult struct {
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
 	AllowVoteChange bool
+	// Quorum percentage set for a majority vote. Absent when none is stored.
+	QuorumPercentage *int
+	// Winning threshold percentage set for a majority vote. Absent when none is
+	// stored.
+	WinningThresholdPercentage *int
 }
 
 // VoteResultsResult is the result type of the vote service get_vote_results

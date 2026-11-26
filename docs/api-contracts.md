@@ -96,7 +96,7 @@ Content-Type: application/json
     {"prompt": "Any additional comments?"}
   ],
   "pseudo_anonymity": false,
-  "poll_type": "generic",
+  "poll_type": "majority",
   "allow_abstain": false,
   "allow_vote_change": true,
   "quorum_percentage": 50,
@@ -132,6 +132,9 @@ Content-Type: application/json
   "num_response_received": 0,
   "allow_abstain": false,
   "allow_vote_change": true,
+  "poll_type": "majority",
+  "quorum_percentage": 50,
+  "winning_threshold_percentage": 50,
   "poll_questions": [
     {
       "question_id": "q1-uuid",
@@ -196,7 +199,7 @@ x-scope: manage:voting
     {"prompt": "Any additional comments?"}
   ],
   "pseudo_anonymity": false,
-  "poll_type": "generic",
+  "poll_type": "majority",
   "allow_abstain": false,
   "allow_vote_change": true,
   "quorum_percentage": 50,
@@ -301,9 +304,14 @@ Authorization: Bearer <heimdall-jwt-token>
   "num_response_received": 10,
   "allow_abstain": false,
   "allow_vote_change": true,
+  "poll_type": "majority",
+  "quorum_percentage": 50,
+  "winning_threshold_percentage": 50,
   "poll_questions": [...]
 }
 ```
+
+`quorum_percentage` and `winning_threshold_percentage` are read-only on the response and pass through exactly as ITX stores them for a `majority` vote; the proxy applies no defaults. Both are omitted when none is stored, so a Majority vote without rules and every other poll type read as before. Create, update, extend and end responses carry the same fields.
 
 When a poll ends early, either manually or automatically because all eligible voters respond (by voting or being removed) before its scheduled `end_time`, ITX stamps `early_end_time` with the actual close time and preserves the original `end_time`. Extending an ended poll reactivates it and clears `early_end_time`. The proxy forwards `early_end_time` as a read-only field, present for both manual and automatic early endings, and normalizes zero-value timestamps to absent (mirroring ITX, since the NATS KV ingress reads raw DynamoDB attributes):
 
@@ -448,9 +456,14 @@ Merged ITX PR #285 also validates the resolved Meek STV winner count against **e
   "status": "disabled",
   "project_uid": "c01adbaf-53b1-4d47-bc04-dd7e459dd301",
   "committee_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+  "poll_type": "majority",
+  "quorum_percentage": 60,
+  "winning_threshold_percentage": 60,
   "poll_questions": [...]
 }
 ```
+
+**Majority rules on update:** ITX replaces the stored poll on every update and keeps `quorum_percentage` and `winning_threshold_percentage` only when the effective type is `majority`. An update that omits them clears any stored values, and a change to another type drops them. Callers editing a Majority vote must resend both values to keep them.
 
 **Note**: Updates are only allowed when `status == "disabled"`
 
@@ -495,7 +508,7 @@ x-scope: manage:voting
     {"prompt": "Comments?"}
   ],
   "pseudo_anonymity": true,
-  "poll_type": "generic",
+  "poll_type": "majority",
   "allow_abstain": true,
   "allow_vote_change": true,
   "quorum_percentage": 60,
@@ -602,6 +615,7 @@ x-scope: manage:voting
 | `committee_id` | `committee_uid` | UUID |
 | `choices[]` | `poll_questions[].choices[]` | Expanded to objects with `choice_id` and `choice_text` |
 | `allow_vote_change` | `allow_vote_change` | Always a boolean on vote, ballot and vote-link reads; absent upstream (legacy) → `true` |
+| `quorum_percentage`, `winning_threshold_percentage` | `quorum_percentage`, `winning_threshold_percentage` | Majority votes only; passed through as stored on vote reads and on create, update, extend and end responses; omitted when ITX stores none |
 | `can_change_vote` | `can_change_vote` (ballot reads), `ballot.can_change_vote` (vote-link ballot) | Passed through; omitted when ITX omits it, never computed by the proxy |
 | `num_response_received`, `total_voting_request_invitations` (poll) | `would_end_vote` (ballot reads), `ballot.would_end_vote` (vote-link ballot) | Computed by the proxy; counts never returned on vote links |
 
@@ -699,8 +713,11 @@ Deleting an active vote cancels it (see [DELETE /votes/{vote_uid}](#delete-votes
 | `condorcet_irv` | Condorcet IRV voting | Not used; forwarded only if explicitly provided |
 | `instant_runoff_vote` | Instant runoff voting | Not used; forwarded only if explicitly provided |
 | `meek_stv` | Meek STV (Single Transferable Vote) | Optional; defaults to 2 on create when omitted, must be 2–10 when provided; omitted update counts are resolved by ITX |
+| `majority` | Majority vote, with optional `quorum_percentage` and `winning_threshold_percentage` | Not used; forwarded only if explicitly provided |
 
 `num_winners` is sent upstream only when explicitly provided in the request — the one exception is a `meek_stv` create, which defaults to 2 winners when omitted. All updates leave omitted counts absent from the ITX request, including explicit `meek_stv` updates, so ITX can preserve the stored count or resolve a method transition as described above. Responses omit `num_winners` entirely when no winner count is stored upstream.
+
+For `majority` votes, `quorum_percentage` and `winning_threshold_percentage` are forwarded when provided. The voting service accepts 0–100; ITX rejects values outside 1–100 with a 400 and stores them only for `majority`. ITX computes no Majority winner on the results endpoint; clients judge the outcome from the vote counts and these two values.
 
 ---
 
