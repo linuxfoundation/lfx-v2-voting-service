@@ -197,8 +197,10 @@ func PollCommentPromptsAttribute() {
 }
 
 // QuorumPercentageAttribute is the DSL attribute for quorum percentage.
+// ITX stores it only for majority votes and clears it on an update that omits it.
 func QuorumPercentageAttribute() {
-	Attribute("quorum_percentage", Int, "Quorum percentage required", func() {
+	Attribute("quorum_percentage", Int, "Quorum percentage required. Stored by ITX only for a majority vote, which requires 1–100. "+
+		"An update that omits it clears the stored value, so resend it on every majority update.", func() {
 		Minimum(0)
 		Maximum(100)
 		Example(50)
@@ -206,8 +208,10 @@ func QuorumPercentageAttribute() {
 }
 
 // WinningThresholdPercentageAttribute is the DSL attribute for winning threshold percentage.
+// ITX stores it only for majority votes and clears it on an update that omits it.
 func WinningThresholdPercentageAttribute() {
-	Attribute("winning_threshold_percentage", Int, "Winning threshold percentage", func() {
+	Attribute("winning_threshold_percentage", Int, "Winning threshold percentage. Stored by ITX only for a majority vote, which requires 1–100. "+
+		"An update that omits it clears the stored value, so resend it on every majority update.", func() {
 		Minimum(0)
 		Maximum(100)
 		Example(51)

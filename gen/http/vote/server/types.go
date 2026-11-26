@@ -53,9 +53,13 @@ type CreateVoteRequestBody struct {
 	// until the vote ends. Omitted on create means allowed; omitted on update
 	// preserves the stored value.
 	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
-	// Quorum percentage required
+	// Quorum percentage required. Stored by ITX only for a majority vote, which
+	// requires 1–100. An update that omits it clears the stored value, so resend
+	// it on every majority update.
 	QuorumPercentage *int `form:"quorum_percentage,omitempty" json:"quorum_percentage,omitempty" xml:"quorum_percentage,omitempty"`
-	// Winning threshold percentage
+	// Winning threshold percentage. Stored by ITX only for a majority vote, which
+	// requires 1–100. An update that omits it clears the stored value, so resend
+	// it on every majority update.
 	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
 }
 
@@ -97,9 +101,13 @@ type UpdateVoteRequestBody struct {
 	// until the vote ends. Omitted on create means allowed; omitted on update
 	// preserves the stored value.
 	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
-	// Quorum percentage required
+	// Quorum percentage required. Stored by ITX only for a majority vote, which
+	// requires 1–100. An update that omits it clears the stored value, so resend
+	// it on every majority update.
 	QuorumPercentage *int `form:"quorum_percentage,omitempty" json:"quorum_percentage,omitempty" xml:"quorum_percentage,omitempty"`
-	// Winning threshold percentage
+	// Winning threshold percentage. Stored by ITX only for a majority vote, which
+	// requires 1–100. An update that omits it clears the stored value, so resend
+	// it on every majority update.
 	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
 }
 

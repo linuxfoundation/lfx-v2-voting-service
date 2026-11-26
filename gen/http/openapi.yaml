@@ -3220,14 +3220,14 @@ definitions:
                 example: false
             quorum_percentage:
                 type: integer
-                description: Quorum percentage required
+                description: Quorum percentage required. Stored by ITX only for a majority vote, which requires 1–100. An update that omits it clears the stored value, so resend it on every majority update.
                 example: 50
                 format: int64
                 minimum: 0
                 maximum: 100
             winning_threshold_percentage:
                 type: integer
-                description: Winning threshold percentage
+                description: Winning threshold percentage. Stored by ITX only for a majority vote, which requires 1–100. An update that omits it clears the stored value, so resend it on every majority update.
                 example: 51
                 format: int64
                 minimum: 0
@@ -6428,14 +6428,14 @@ definitions:
                 example: true
             quorum_percentage:
                 type: integer
-                description: Quorum percentage required
+                description: Quorum percentage required. Stored by ITX only for a majority vote, which requires 1–100. An update that omits it clears the stored value, so resend it on every majority update.
                 example: 50
                 format: int64
                 minimum: 0
                 maximum: 100
             winning_threshold_percentage:
                 type: integer
-                description: Winning threshold percentage
+                description: Winning threshold percentage. Stored by ITX only for a majority vote, which requires 1–100. An update that omits it clears the stored value, so resend it on every majority update.
                 example: 51
                 format: int64
                 minimum: 0
