@@ -367,6 +367,10 @@ func TestConvertMapToVoteData(t *testing.T) {
 			},
 			{name: "legacy string", value: "abc@clients", set: true},
 			{name: "legacy machine client map", value: map[string]interface{}{"username": "abc@clients"}, set: true},
+			{name: "empty string", value: "", set: true},
+			{name: "empty map", value: map[string]interface{}{}, set: true},
+			{name: "empty fields", value: map[string]interface{}{"username": "", "name": ""}, set: true},
+			{name: "whitespace fields", value: map[string]interface{}{"username": "  ", "name": "\t"}, set: true},
 			{name: "null", value: nil, set: true},
 			{name: "absent"},
 		}
