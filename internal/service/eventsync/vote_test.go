@@ -338,16 +338,32 @@ func TestConvertMapToVoteData(t *testing.T) {
 
 	t.Run("maps the creator, dropping legacy or missing values", func(t *testing.T) {
 		tests := []struct {
-			name  string
-			value interface{}
-			set   bool
-			want  *itx.PollCreator
+			name     string
+			value    interface{}
+			set      bool
+			want     *itx.PollCreator
+			wantWire map[string]interface{}
 		}{
 			{
-				name:  "creator map",
-				value: map[string]interface{}{"id": "u-1", "username": "jdoe", "name": "Jane Doe", "email": "jane@example.com"},
-				set:   true,
-				want:  &itx.PollCreator{Username: "jdoe", Name: "Jane Doe"},
+				name:     "creator map",
+				value:    map[string]interface{}{"id": "u-1", "username": "jdoe", "name": "Jane Doe", "email": "jane@example.com"},
+				set:      true,
+				want:     &itx.PollCreator{Username: "jdoe", Name: "Jane Doe"},
+				wantWire: map[string]interface{}{"username": "jdoe", "name": "Jane Doe"},
+			},
+			{
+				name:     "username only",
+				value:    map[string]interface{}{"username": "jdoe"},
+				set:      true,
+				want:     &itx.PollCreator{Username: "jdoe"},
+				wantWire: map[string]interface{}{"username": "jdoe"},
+			},
+			{
+				name:     "name only",
+				value:    map[string]interface{}{"name": "Jane Doe"},
+				set:      true,
+				want:     &itx.PollCreator{Name: "Jane Doe"},
+				wantWire: map[string]interface{}{"name": "Jane Doe"},
 			},
 			{name: "legacy string", value: "abc@clients", set: true},
 			{name: "legacy machine client map", value: map[string]interface{}{"username": "abc@clients"}, set: true},
@@ -370,8 +386,8 @@ func TestConvertMapToVoteData(t *testing.T) {
 					assert.NotContains(t, wire, "created_by", "nil creator is omitted from the indexer payload")
 					return
 				}
-				assert.Equal(t, map[string]interface{}{"username": "jdoe", "name": "Jane Doe"}, wire["created_by"],
-					"only username and name are indexed")
+				assert.Equal(t, tt.wantWire, wire["created_by"],
+					"only non-empty username and name are indexed")
 			})
 		}
 	})

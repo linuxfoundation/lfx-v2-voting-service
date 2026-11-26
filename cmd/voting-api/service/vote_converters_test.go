@@ -202,6 +202,7 @@ func TestConvertPollResponseToVoteResultCreatedBy(t *testing.T) {
 	}{
 		{name: "full creator", creator: itx.PollCreator{Username: "jdoe", Name: "Jane Doe"}, wantUsername: utils.StringPtr("jdoe"), wantName: utils.StringPtr("Jane Doe")},
 		{name: "name only", creator: itx.PollCreator{Name: "Jane Doe"}, wantName: utils.StringPtr("Jane Doe")},
+		{name: "username only", creator: itx.PollCreator{Username: "jdoe"}, wantUsername: utils.StringPtr("jdoe")},
 		{name: "legacy machine client", creator: itx.PollCreator{Username: "abc@clients"}, wantNil: true},
 		{name: "empty", wantNil: true},
 	}
