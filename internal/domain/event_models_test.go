@@ -347,6 +347,32 @@ func TestPollDBRaw_UnmarshalJSON(t *testing.T) {
 		var p PollDBRaw
 		assert.Error(t, p.UnmarshalJSON([]byte(`{"poll_id":`)))
 	})
+
+	t.Run("decodes the creator and tolerates legacy or missing values", func(t *testing.T) {
+		cases := []struct {
+			name string
+			in   string
+			want itx.PollCreator
+		}{
+			{
+				name: "object",
+				in:   `{"poll_id":"poll-1","num_winners":"2","created_by":{"id":"u-1","username":"jdoe","name":"Jane Doe","email":"jane@example.com"}}`,
+				want: itx.PollCreator{Username: "jdoe", Name: "Jane Doe"},
+			},
+			{name: "legacy string", in: `{"poll_id":"poll-1","num_winners":"2","created_by":"abc@clients"}`},
+			{name: "null", in: `{"poll_id":"poll-1","num_winners":"2","created_by":null}`},
+			{name: "absent", in: `{"poll_id":"poll-1","num_winners":"2"}`},
+		}
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				var p PollDBRaw
+				require.NoError(t, json.Unmarshal([]byte(tc.in), &p))
+				assert.Equal(t, tc.want, p.CreatedBy)
+				assert.Equal(t, "poll-1", p.PollID, "other fields still decode")
+				assert.Equal(t, 2, p.NumWinners, "other fields still decode")
+			})
+		}
+	})
 }
 
 func TestRankedChoiceAnswerRaw_UnmarshalJSON(t *testing.T) {

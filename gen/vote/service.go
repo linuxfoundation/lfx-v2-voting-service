@@ -708,6 +708,14 @@ type VoteCount struct {
 	Percentage *float64
 }
 
+// Creator of a vote
+type VoteCreator struct {
+	// LFID username of the vote's creator
+	Username *string
+	// Display name of the vote's creator
+	Name *string
+}
+
 // The link holder's own ballot
 type VoteLinkBallot struct {
 	// Ballot status from ITX, e.g. awaiting_response or responded
@@ -909,6 +917,8 @@ type VoteResult struct {
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
 	AllowVoteChange bool
+	// Who created the vote. Absent when no creator is recorded.
+	CreatedBy *VoteCreator
 }
 
 // VoteResultsResult is the result type of the vote service get_vote_results

@@ -18,6 +18,7 @@ import (
 	indexerTypes "github.com/linuxfoundation/lfx-v2-indexer-service/pkg/types"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/constants"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 	"github.com/nats-io/nats-server/v2/server"
 	"github.com/nats-io/nats.go"
 	"github.com/stretchr/testify/assert"
@@ -32,6 +33,7 @@ func TestBuildVoteIndexingConfig_Contract(t *testing.T) {
 		Description:  "A description",
 		ProjectUID:   "proj-111",
 		CommitteeUID: "comm-222",
+		CreatedBy:    &itx.PollCreator{Username: "jdoe", Name: "Jane Doe"},
 	}
 
 	cfg := buildVoteIndexingConfig(data)
@@ -47,10 +49,11 @@ func TestBuildVoteIndexingConfig_Contract(t *testing.T) {
 	assertField(t, "SortName", cfg.SortName, data.Name)
 	assertField(t, "Fulltext", cfg.Fulltext, fmt.Sprintf("%s %s", data.Name, data.Description))
 
-	// Tags — exactly these two entries, no more
+	// Tags — exactly these three entries, no more
 	assertExactSlice(t, "Tags", cfg.Tags, []string{
 		fmt.Sprintf("committee_uid:%s", data.CommitteeUID),
 		fmt.Sprintf("project_uid:%s", data.ProjectUID),
+		"created_by:jdoe",
 	})
 
 	// Parent refs — exactly these two entries, no more
@@ -60,13 +63,25 @@ func TestBuildVoteIndexingConfig_Contract(t *testing.T) {
 	})
 }
 
+func TestBuildVoteIndexingConfig_CreatorWithoutUsernameHasNoTag(t *testing.T) {
+	data := &domain.VoteData{
+		VoteUID:    "v1",
+		ProjectUID: "proj-111",
+		CreatedBy:  &itx.PollCreator{Name: "Jane Doe"},
+	}
+
+	cfg := buildVoteIndexingConfig(data)
+
+	assertExactSlice(t, "Tags", cfg.Tags, []string{"project_uid:proj-111"})
+}
+
 func TestBuildVoteIndexingConfig_EmptyOptionalFields(t *testing.T) {
 	data := &domain.VoteData{VoteUID: "v1"}
 
 	cfg := buildVoteIndexingConfig(data)
 
 	if len(cfg.Tags) != 0 {
-		t.Errorf("expected no tags when ProjectUID and CommitteeUID are empty, got %v", cfg.Tags)
+		t.Errorf("expected no tags when ProjectUID, CommitteeUID and CreatedBy are empty, got %v", cfg.Tags)
 	}
 	if len(cfg.ParentRefs) != 0 {
 		t.Errorf("expected no parent refs when UIDs are empty, got %v", cfg.ParentRefs)

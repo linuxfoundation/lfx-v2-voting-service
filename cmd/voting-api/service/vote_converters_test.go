@@ -189,6 +189,37 @@ func TestConvertPollResponseToVoteResultAllowVoteChange(t *testing.T) {
 	}
 }
 
+// TestConvertPollResponseToVoteResultCreatedBy guards the creator hop: a recorded creator
+// reaches the API as username + name, while a missing or legacy machine-client creator is
+// omitted rather than surfaced as an empty object.
+func TestConvertPollResponseToVoteResultCreatedBy(t *testing.T) {
+	tests := []struct {
+		name         string
+		creator      itx.PollCreator
+		wantNil      bool
+		wantUsername *string
+		wantName     *string
+	}{
+		{name: "full creator", creator: itx.PollCreator{Username: "jdoe", Name: "Jane Doe"}, wantUsername: utils.StringPtr("jdoe"), wantName: utils.StringPtr("Jane Doe")},
+		{name: "name only", creator: itx.PollCreator{Name: "Jane Doe"}, wantName: utils.StringPtr("Jane Doe")},
+		{name: "legacy machine client", creator: itx.PollCreator{Username: "abc@clients"}, wantNil: true},
+		{name: "empty", wantNil: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertPollResponseToVoteResult(&itx.PollResponse{CreatedBy: tt.creator})
+
+			if tt.wantNil {
+				assert.Nil(t, result.CreatedBy)
+				return
+			}
+			require.NotNil(t, result.CreatedBy)
+			assert.Equal(t, tt.wantUsername, result.CreatedBy.Username)
+			assert.Equal(t, tt.wantName, result.CreatedBy.Name)
+		})
+	}
+}
+
 // TestConvertVoteResultsToResultPresence guards optional-field presence on the results hop:
 // held and anonymous shapes must not gain zero/false/empty metadata, and named results
 // must keep legitimate zero and false values.

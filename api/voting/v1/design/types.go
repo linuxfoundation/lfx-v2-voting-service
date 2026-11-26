@@ -278,8 +278,22 @@ var VoteResult = Type("VoteResult", func() {
 		"Votes created before this setting existed report true.", func() {
 		Example(false)
 	})
+	Attribute("created_by", VoteCreator, "Who created the vote. Absent when no creator is recorded.")
 
 	Required("uid", "name", "description", "status", "project_uid", "committee_uid", "allow_vote_change")
+})
+
+// VoteCreator identifies the user who created a vote. It carries only the LFID username
+// and display name; the creator's email and user id are never exposed.
+var VoteCreator = Type("VoteCreator", func() {
+	Description("Creator of a vote")
+
+	Attribute("username", String, "LFID username of the vote's creator", func() {
+		Example("jdoe")
+	})
+	Attribute("name", String, "Display name of the vote's creator", func() {
+		Example("Jane Doe")
+	})
 })
 
 // PollQuestion represents a question in a vote

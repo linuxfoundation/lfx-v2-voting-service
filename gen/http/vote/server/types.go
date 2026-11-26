@@ -268,6 +268,8 @@ type CreateVoteResponseBody struct {
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
 	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
+	// Who created the vote. Absent when no creator is recorded.
+	CreatedBy *VoteCreatorResponseBody `form:"created_by,omitempty" json:"created_by,omitempty" xml:"created_by,omitempty"`
 }
 
 // GetVoteResponseBody is the type of the "vote" service "get_vote" endpoint
@@ -327,6 +329,8 @@ type GetVoteResponseBody struct {
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
 	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
+	// Who created the vote. Absent when no creator is recorded.
+	CreatedBy *VoteCreatorResponseBody `form:"created_by,omitempty" json:"created_by,omitempty" xml:"created_by,omitempty"`
 }
 
 // UpdateVoteResponseBody is the type of the "vote" service "update_vote"
@@ -386,6 +390,8 @@ type UpdateVoteResponseBody struct {
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
 	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
+	// Who created the vote. Absent when no creator is recorded.
+	CreatedBy *VoteCreatorResponseBody `form:"created_by,omitempty" json:"created_by,omitempty" xml:"created_by,omitempty"`
 }
 
 // ExtendVoteResponseBody is the type of the "vote" service "extend_vote"
@@ -445,6 +451,8 @@ type ExtendVoteResponseBody struct {
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
 	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
+	// Who created the vote. Absent when no creator is recorded.
+	CreatedBy *VoteCreatorResponseBody `form:"created_by,omitempty" json:"created_by,omitempty" xml:"created_by,omitempty"`
 }
 
 // EndVoteResponseBody is the type of the "vote" service "end_vote" endpoint
@@ -504,6 +512,8 @@ type EndVoteResponseBody struct {
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
 	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
+	// Who created the vote. Absent when no creator is recorded.
+	CreatedBy *VoteCreatorResponseBody `form:"created_by,omitempty" json:"created_by,omitempty" xml:"created_by,omitempty"`
 }
 
 // GetVoteResultsResponseBody is the type of the "vote" service
@@ -1631,6 +1641,14 @@ type PollCommentPromptResponseBody struct {
 	Prompt string `form:"prompt" json:"prompt" xml:"prompt"`
 }
 
+// VoteCreatorResponseBody is used to define fields on response body types.
+type VoteCreatorResponseBody struct {
+	// LFID username of the vote's creator
+	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	// Display name of the vote's creator
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+}
+
 // PollResultItemResponseBody is used to define fields on response body types.
 type PollResultItemResponseBody struct {
 	// Question details
@@ -2002,6 +2020,9 @@ func NewCreateVoteResponseBody(res *vote.VoteResult) *CreateVoteResponseBody {
 			body.PollType = "generic"
 		}
 	}
+	if res.CreatedBy != nil {
+		body.CreatedBy = marshalVoteVoteCreatorToVoteCreatorResponseBody(res.CreatedBy)
+	}
 	return body
 }
 
@@ -2063,6 +2084,9 @@ func NewGetVoteResponseBody(res *vote.VoteResult) *GetVoteResponseBody {
 		if body.PollType == zero {
 			body.PollType = "generic"
 		}
+	}
+	if res.CreatedBy != nil {
+		body.CreatedBy = marshalVoteVoteCreatorToVoteCreatorResponseBody(res.CreatedBy)
 	}
 	return body
 }
@@ -2126,6 +2150,9 @@ func NewUpdateVoteResponseBody(res *vote.VoteResult) *UpdateVoteResponseBody {
 			body.PollType = "generic"
 		}
 	}
+	if res.CreatedBy != nil {
+		body.CreatedBy = marshalVoteVoteCreatorToVoteCreatorResponseBody(res.CreatedBy)
+	}
 	return body
 }
 
@@ -2188,6 +2215,9 @@ func NewExtendVoteResponseBody(res *vote.VoteResult) *ExtendVoteResponseBody {
 			body.PollType = "generic"
 		}
 	}
+	if res.CreatedBy != nil {
+		body.CreatedBy = marshalVoteVoteCreatorToVoteCreatorResponseBody(res.CreatedBy)
+	}
 	return body
 }
 
@@ -2249,6 +2279,9 @@ func NewEndVoteResponseBody(res *vote.VoteResult) *EndVoteResponseBody {
 		if body.PollType == zero {
 			body.PollType = "generic"
 		}
+	}
+	if res.CreatedBy != nil {
+		body.CreatedBy = marshalVoteVoteCreatorToVoteCreatorResponseBody(res.CreatedBy)
 	}
 	return body
 }

@@ -3,7 +3,10 @@
 
 package itx
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"strings"
+)
 
 // PollSource marks the poll's origin so ITX routes the creator's poll-ended results
 // link back to the creating surface and selects the destination for voter emails.
@@ -129,6 +132,7 @@ type PollResponse struct {
 	NumWinners                    int                       `json:"num_winners,omitempty"`
 	AllowAbstain                  bool                      `json:"allow_abstain"`
 	AllowVoteChange               *bool                     `json:"allow_vote_change"` // nil when ITX predates the setting; see VoteChangeAllowed
+	CreatedBy                     PollCreator               `json:"created_by"`        // see NormalizePollCreator before exposing it
 	// PseudoAnonymityKnown is true only when ITX sent pseudo_anonymity as a JSON bool. It is
 	// false when the field is missing or null, so callers that must protect ballot privacy can
 	// fail closed. Not serialized.
@@ -151,6 +155,49 @@ func (p *PollResponse) UnmarshalJSON(data []byte) error {
 	p.PseudoAnonymityKnown = aux.PseudoAnonymity != nil
 	p.PseudoAnonymity = aux.PseudoAnonymity != nil && *aux.PseudoAnonymity
 	return nil
+}
+
+// legacyClientCreatorSuffix marks a legacy poll creator that is an Auth0 machine client
+// ("<client id>@clients"), not a person.
+const legacyClientCreatorSuffix = "@clients"
+
+// PollCreator is the viewer-safe part of the ITX created_by object: the creator's LFID
+// username and display name. ITX also stores the creator's id, email and profile
+// picture; they are deliberately not decoded, so they can never reach the API or index.
+type PollCreator struct {
+	Username string `json:"username,omitempty"`
+	Name     string `json:"name,omitempty"`
+}
+
+// UnmarshalJSON decodes the created_by object and never returns an error. Legacy polls
+// store created_by as a bare string, and a creator with an unexpected JSON type, null or
+// a non-string field decodes to an empty value, so a malformed creator cannot fail
+// decoding of the poll that contains it.
+func (c *PollCreator) UnmarshalJSON(data []byte) error {
+	*c = PollCreator{}
+	var obj map[string]any
+	if json.Unmarshal(data, &obj) != nil {
+		// Not an object (legacy string, number, array): treat as no recorded creator.
+		return nil
+	}
+	c.Username, _ = obj["username"].(string)
+	c.Name, _ = obj["name"].(string)
+	return nil
+}
+
+// NormalizePollCreator returns the creator to expose, or nil when none is recorded. It
+// trims both fields, drops a legacy machine-client username ("<id>@clients"), and
+// returns nil when neither a username nor a name remains.
+func NormalizePollCreator(c PollCreator) *PollCreator {
+	username := strings.TrimSpace(c.Username)
+	if strings.HasSuffix(username, legacyClientCreatorSuffix) {
+		username = ""
+	}
+	name := strings.TrimSpace(c.Name)
+	if username == "" && name == "" {
+		return nil
+	}
+	return &PollCreator{Username: username, Name: name}
 }
 
 // PollQuestionOutput represents a question in the response
