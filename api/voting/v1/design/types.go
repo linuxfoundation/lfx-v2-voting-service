@@ -282,8 +282,12 @@ var VoteResult = Type("VoteResult", func() {
 		"Votes created before this setting existed report true.", func() {
 		Example(false)
 	})
-	Attribute("quorum_percentage", Int, "Quorum percentage set for a majority vote. Absent when none is stored.")
-	Attribute("winning_threshold_percentage", Int, "Winning threshold percentage set for a majority vote. Absent when none is stored.")
+	Attribute("quorum_percentage", Int, "Quorum percentage set for a majority vote. Absent when none is stored.", func() {
+		Example(50)
+	})
+	Attribute("winning_threshold_percentage", Int, "Winning threshold percentage set for a majority vote. Absent when none is stored.", func() {
+		Example(51)
+	})
 	Attribute("created_by", VoteCreator, "Who created the vote. Absent when no creator is recorded.")
 
 	Required("uid", "name", "description", "status", "project_uid", "committee_uid", "allow_vote_change")
