@@ -1210,6 +1210,8 @@ func TestVoteMethodContract(t *testing.T) {
 		wantType    string
 		wantWinners string
 		wantChange  string
+		wantQuorum  string
+		wantWinPct  string
 		invalid     string
 	}{
 		{name: "update omitted", method: http.MethodPut},
@@ -1228,10 +1230,14 @@ func TestVoteMethodContract(t *testing.T) {
 		{name: "update allow_vote_change null", method: http.MethodPut, extra: `,"allow_vote_change":null`},
 		{name: "update allow_vote_change false", method: http.MethodPut, extra: `,"allow_vote_change":false`, wantChange: "false"},
 		{name: "update allow_vote_change true", method: http.MethodPut, extra: `,"allow_vote_change":true`, wantChange: "true"},
+		{name: "update majority with rules", method: http.MethodPut, extra: `,"poll_type":"majority","quorum_percentage":60,"winning_threshold_percentage":66`, wantType: `"majority"`, wantQuorum: "60", wantWinPct: "66"},
+		{name: "update majority omitted rules", method: http.MethodPut, extra: `,"poll_type":"majority"`, wantType: `"majority"`},
 		{name: "create omitted", method: http.MethodPost, wantType: `"generic"`},
 		{name: "create generic omitted count", method: http.MethodPost, extra: `,"poll_type":"generic"`, wantType: `"generic"`},
 		{name: "create condorcet omitted count", method: http.MethodPost, extra: `,"poll_type":"condorcet_irv"`, wantType: `"condorcet_irv"`},
 		{name: "create instant runoff omitted count", method: http.MethodPost, extra: `,"poll_type":"instant_runoff_vote"`, wantType: `"instant_runoff_vote"`},
+		{name: "create majority with rules", method: http.MethodPost, extra: `,"poll_type":"majority","quorum_percentage":60,"winning_threshold_percentage":66`, wantType: `"majority"`, wantQuorum: "60", wantWinPct: "66"},
+		{name: "create majority omitted rules", method: http.MethodPost, extra: `,"poll_type":"majority"`, wantType: `"majority"`},
 		{name: "create generic explicit count", method: http.MethodPost, extra: `,"poll_type":"generic","num_winners":4`, wantType: `"generic"`, wantWinners: "4"},
 		{name: "create STV omitted count", method: http.MethodPost, extra: `,"poll_type":"meek_stv"`, wantType: `"meek_stv"`, wantWinners: "2"},
 		{name: "create STV explicit count", method: http.MethodPost, extra: `,"poll_type":"meek_stv","num_winners":4`, wantType: `"meek_stv"`, wantWinners: "4"},
@@ -1274,7 +1280,7 @@ func TestVoteMethodContract(t *testing.T) {
 				t.Helper()
 				select {
 				case got := <-wire:
-					for key, want := range map[string]string{"poll_type": tt.wantType, "num_winners": tt.wantWinners, "allow_vote_change": tt.wantChange} {
+					for key, want := range map[string]string{"poll_type": tt.wantType, "num_winners": tt.wantWinners, "allow_vote_change": tt.wantChange, "quorum_percentage": tt.wantQuorum, "winning_threshold_percentage": tt.wantWinPct} {
 						value, present := got[key]
 						if want == "" && present {
 							t.Errorf("%s must be absent, got %s", key, value)

@@ -3209,12 +3209,13 @@ definitions:
                 type: string
                 description: Type of poll
                 default: generic
-                example: condorcet_irv
+                example: majority
                 enum:
                     - generic
                     - condorcet_irv
                     - meek_stv
                     - instant_runoff_vote
+                    - majority
             project_uid:
                 type: string
                 description: LFX Project UID
@@ -3226,14 +3227,14 @@ definitions:
                 example: true
             quorum_percentage:
                 type: integer
-                description: Quorum percentage required
+                description: Quorum percentage required. Stored by ITX only for a majority vote, which requires 1–100. An update that omits it clears the stored value, so resend it on every majority update.
                 example: 50
                 format: int64
                 minimum: 0
                 maximum: 100
             winning_threshold_percentage:
                 type: integer
-                description: Winning threshold percentage
+                description: Winning threshold percentage. Stored by ITX only for a majority vote, which requires 1–100. An update that omits it clears the stored value, so resend it on every majority update.
                 example: 51
                 format: int64
                 minimum: 0
@@ -3278,7 +3279,7 @@ definitions:
                   prompt: Who should be elected to the TSC?
                   question_id: b479cb66-8b68-48ec-a636-9a46b745a54f
                   type: single_choice
-            poll_type: meek_stv
+            poll_type: generic
             project_uid: a09P000000DsCBuIRT
             pseudo_anonymity: true
             quorum_percentage: 50
@@ -3673,12 +3674,13 @@ definitions:
                 type: string
                 description: Poll type
                 default: generic
-                example: condorcet_irv
+                example: generic
                 enum:
                     - generic
                     - condorcet_irv
                     - meek_stv
                     - instant_runoff_vote
+                    - majority
             project_slug:
                 type: string
                 description: LFX project slug. Absent when no slug is stored upstream.
@@ -3754,7 +3756,7 @@ definitions:
                   prompt: Who should be elected to the TSC?
                   question_id: cce6deee-1823-4bfc-96c6-cd609425f1d1
                   type: single_choice
-            poll_type: instant_runoff_vote
+            poll_type: meek_stv
             project_slug: cncf
             project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
             pseudo_anonymity: false
@@ -4233,12 +4235,13 @@ definitions:
                 type: string
                 description: Poll type
                 default: generic
-                example: generic
+                example: condorcet_irv
                 enum:
                     - generic
                     - condorcet_irv
                     - meek_stv
                     - instant_runoff_vote
+                    - majority
             project_name:
                 type: string
                 description: Project name
@@ -4251,6 +4254,11 @@ definitions:
                 type: boolean
                 description: Pseudo-anonymity enabled
                 example: false
+            quorum_percentage:
+                type: integer
+                description: Quorum percentage set for a majority vote. Absent when none is stored.
+                example: 50
+                format: int64
             status:
                 type: string
                 description: Vote status
@@ -4269,6 +4277,11 @@ definitions:
                 description: Vote identifier
                 example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
                 format: uuid
+            winning_threshold_percentage:
+                type: integer
+                description: Winning threshold percentage set for a majority vote. Absent when none is stored.
+                example: 51
+                format: int64
         example:
             allow_abstain: false
             allow_vote_change: false
@@ -4345,13 +4358,15 @@ definitions:
                   prompt: Who should be elected to the TSC?
                   question_id: cce6deee-1823-4bfc-96c6-cd609425f1d1
                   type: single_choice
-            poll_type: generic
+            poll_type: meek_stv
             project_name: Omnis eos ut rem cupiditate velit.
             project_uid: Asperiores quae quasi rem.
             pseudo_anonymity: true
+            quorum_percentage: 50
             status: disabled
             total_voting_request_invitations: 7498564418010495728
             uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+            winning_threshold_percentage: 51
         required:
             - uid
             - name
@@ -6325,12 +6340,13 @@ definitions:
             poll_type:
                 type: string
                 description: Type of poll
-                example: generic
+                example: majority
                 enum:
                     - generic
                     - condorcet_irv
                     - meek_stv
                     - instant_runoff_vote
+                    - majority
             project_uid:
                 type: string
                 description: LFX Project UID
@@ -6342,14 +6358,14 @@ definitions:
                 example: true
             quorum_percentage:
                 type: integer
-                description: Quorum percentage required
+                description: Quorum percentage required. Stored by ITX only for a majority vote, which requires 1–100. An update that omits it clears the stored value, so resend it on every majority update.
                 example: 50
                 format: int64
                 minimum: 0
                 maximum: 100
             winning_threshold_percentage:
                 type: integer
-                description: Winning threshold percentage
+                description: Winning threshold percentage. Stored by ITX only for a majority vote, which requires 1–100. An update that omits it clears the stored value, so resend it on every majority update.
                 example: 51
                 format: int64
                 minimum: 0

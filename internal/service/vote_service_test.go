@@ -389,6 +389,7 @@ func TestVoteNumWinnersResolution(t *testing.T) {
 		{name: "generic omitted stays omitted", pollType: "generic"},
 		{name: "condorcet_irv omitted stays omitted", pollType: "condorcet_irv"},
 		{name: "instant_runoff_vote omitted stays omitted", pollType: "instant_runoff_vote"},
+		{name: "majority omitted stays omitted", pollType: "majority"},
 		{name: "meek_stv omitted defaults only on create", pollType: "meek_stv", wantCreate: utils.IntPtr(2)},
 		{name: "meek_stv explicit passes through", pollType: "meek_stv", numWinners: utils.IntPtr(5), wantCreate: utils.IntPtr(5), wantUpdate: utils.IntPtr(5)},
 		{name: "generic explicit passes through", pollType: "generic", numWinners: utils.IntPtr(4), wantCreate: utils.IntPtr(4), wantUpdate: utils.IntPtr(4)},

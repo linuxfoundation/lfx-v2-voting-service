@@ -53,9 +53,13 @@ type CreateVoteRequestBody struct {
 	// until the vote ends. Omitted on create means allowed; omitted on update
 	// preserves the stored value.
 	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
-	// Quorum percentage required
+	// Quorum percentage required. Stored by ITX only for a majority vote, which
+	// requires 1–100. An update that omits it clears the stored value, so resend
+	// it on every majority update.
 	QuorumPercentage *int `form:"quorum_percentage,omitempty" json:"quorum_percentage,omitempty" xml:"quorum_percentage,omitempty"`
-	// Winning threshold percentage
+	// Winning threshold percentage. Stored by ITX only for a majority vote, which
+	// requires 1–100. An update that omits it clears the stored value, so resend
+	// it on every majority update.
 	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
 }
 
@@ -97,9 +101,13 @@ type UpdateVoteRequestBody struct {
 	// until the vote ends. Omitted on create means allowed; omitted on update
 	// preserves the stored value.
 	AllowVoteChange *bool `form:"allow_vote_change,omitempty" json:"allow_vote_change,omitempty" xml:"allow_vote_change,omitempty"`
-	// Quorum percentage required
+	// Quorum percentage required. Stored by ITX only for a majority vote, which
+	// requires 1–100. An update that omits it clears the stored value, so resend
+	// it on every majority update.
 	QuorumPercentage *int `form:"quorum_percentage,omitempty" json:"quorum_percentage,omitempty" xml:"quorum_percentage,omitempty"`
-	// Winning threshold percentage
+	// Winning threshold percentage. Stored by ITX only for a majority vote, which
+	// requires 1–100. An update that omits it clears the stored value, so resend
+	// it on every majority update.
 	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
 }
 
@@ -268,6 +276,11 @@ type CreateVoteResponseBody struct {
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
 	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
+	// Quorum percentage set for a majority vote. Absent when none is stored.
+	QuorumPercentage *int `form:"quorum_percentage,omitempty" json:"quorum_percentage,omitempty" xml:"quorum_percentage,omitempty"`
+	// Winning threshold percentage set for a majority vote. Absent when none is
+	// stored.
+	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
 	// Who created the vote. Absent when no creator is recorded.
 	CreatedBy *VoteCreatorResponseBody `form:"created_by,omitempty" json:"created_by,omitempty" xml:"created_by,omitempty"`
 }
@@ -329,6 +342,11 @@ type GetVoteResponseBody struct {
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
 	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
+	// Quorum percentage set for a majority vote. Absent when none is stored.
+	QuorumPercentage *int `form:"quorum_percentage,omitempty" json:"quorum_percentage,omitempty" xml:"quorum_percentage,omitempty"`
+	// Winning threshold percentage set for a majority vote. Absent when none is
+	// stored.
+	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
 	// Who created the vote. Absent when no creator is recorded.
 	CreatedBy *VoteCreatorResponseBody `form:"created_by,omitempty" json:"created_by,omitempty" xml:"created_by,omitempty"`
 }
@@ -390,6 +408,11 @@ type UpdateVoteResponseBody struct {
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
 	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
+	// Quorum percentage set for a majority vote. Absent when none is stored.
+	QuorumPercentage *int `form:"quorum_percentage,omitempty" json:"quorum_percentage,omitempty" xml:"quorum_percentage,omitempty"`
+	// Winning threshold percentage set for a majority vote. Absent when none is
+	// stored.
+	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
 	// Who created the vote. Absent when no creator is recorded.
 	CreatedBy *VoteCreatorResponseBody `form:"created_by,omitempty" json:"created_by,omitempty" xml:"created_by,omitempty"`
 }
@@ -451,6 +474,11 @@ type ExtendVoteResponseBody struct {
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
 	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
+	// Quorum percentage set for a majority vote. Absent when none is stored.
+	QuorumPercentage *int `form:"quorum_percentage,omitempty" json:"quorum_percentage,omitempty" xml:"quorum_percentage,omitempty"`
+	// Winning threshold percentage set for a majority vote. Absent when none is
+	// stored.
+	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
 	// Who created the vote. Absent when no creator is recorded.
 	CreatedBy *VoteCreatorResponseBody `form:"created_by,omitempty" json:"created_by,omitempty" xml:"created_by,omitempty"`
 }
@@ -512,6 +540,11 @@ type EndVoteResponseBody struct {
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
 	AllowVoteChange bool `form:"allow_vote_change" json:"allow_vote_change" xml:"allow_vote_change"`
+	// Quorum percentage set for a majority vote. Absent when none is stored.
+	QuorumPercentage *int `form:"quorum_percentage,omitempty" json:"quorum_percentage,omitempty" xml:"quorum_percentage,omitempty"`
+	// Winning threshold percentage set for a majority vote. Absent when none is
+	// stored.
+	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
 	// Who created the vote. Absent when no creator is recorded.
 	CreatedBy *VoteCreatorResponseBody `form:"created_by,omitempty" json:"created_by,omitempty" xml:"created_by,omitempty"`
 }
@@ -1987,6 +2020,8 @@ func NewCreateVoteResponseBody(res *vote.VoteResult) *CreateVoteResponseBody {
 		NumWinners:                    res.NumWinners,
 		AllowAbstain:                  res.AllowAbstain,
 		AllowVoteChange:               res.AllowVoteChange,
+		QuorumPercentage:              res.QuorumPercentage,
+		WinningThresholdPercentage:    res.WinningThresholdPercentage,
 	}
 	if res.CommitteeFilters != nil {
 		body.CommitteeFilters = make([]string, len(res.CommitteeFilters))
@@ -2052,6 +2087,8 @@ func NewGetVoteResponseBody(res *vote.VoteResult) *GetVoteResponseBody {
 		NumWinners:                    res.NumWinners,
 		AllowAbstain:                  res.AllowAbstain,
 		AllowVoteChange:               res.AllowVoteChange,
+		QuorumPercentage:              res.QuorumPercentage,
+		WinningThresholdPercentage:    res.WinningThresholdPercentage,
 	}
 	if res.CommitteeFilters != nil {
 		body.CommitteeFilters = make([]string, len(res.CommitteeFilters))
@@ -2117,6 +2154,8 @@ func NewUpdateVoteResponseBody(res *vote.VoteResult) *UpdateVoteResponseBody {
 		NumWinners:                    res.NumWinners,
 		AllowAbstain:                  res.AllowAbstain,
 		AllowVoteChange:               res.AllowVoteChange,
+		QuorumPercentage:              res.QuorumPercentage,
+		WinningThresholdPercentage:    res.WinningThresholdPercentage,
 	}
 	if res.CommitteeFilters != nil {
 		body.CommitteeFilters = make([]string, len(res.CommitteeFilters))
@@ -2182,6 +2221,8 @@ func NewExtendVoteResponseBody(res *vote.VoteResult) *ExtendVoteResponseBody {
 		NumWinners:                    res.NumWinners,
 		AllowAbstain:                  res.AllowAbstain,
 		AllowVoteChange:               res.AllowVoteChange,
+		QuorumPercentage:              res.QuorumPercentage,
+		WinningThresholdPercentage:    res.WinningThresholdPercentage,
 	}
 	if res.CommitteeFilters != nil {
 		body.CommitteeFilters = make([]string, len(res.CommitteeFilters))
@@ -2247,6 +2288,8 @@ func NewEndVoteResponseBody(res *vote.VoteResult) *EndVoteResponseBody {
 		NumWinners:                    res.NumWinners,
 		AllowAbstain:                  res.AllowAbstain,
 		AllowVoteChange:               res.AllowVoteChange,
+		QuorumPercentage:              res.QuorumPercentage,
+		WinningThresholdPercentage:    res.WinningThresholdPercentage,
 	}
 	if res.CommitteeFilters != nil {
 		body.CommitteeFilters = make([]string, len(res.CommitteeFilters))
@@ -3906,8 +3949,8 @@ func ValidateCreateVoteRequestBody(body *CreateVoteRequestBody) (err error) {
 		}
 	}
 	if body.PollType != nil {
-		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
+		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote" || *body.PollType == "majority") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote", "majority"}))
 		}
 	}
 	if body.NumWinners != nil {
@@ -4002,8 +4045,8 @@ func ValidateUpdateVoteRequestBody(body *UpdateVoteRequestBody) (err error) {
 		}
 	}
 	if body.PollType != nil {
-		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote") {
-			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote"}))
+		if !(*body.PollType == "generic" || *body.PollType == "condorcet_irv" || *body.PollType == "meek_stv" || *body.PollType == "instant_runoff_vote" || *body.PollType == "majority") {
+			err = goa.MergeErrors(err, goa.InvalidEnumValueError("body.poll_type", *body.PollType, []any{"generic", "condorcet_irv", "meek_stv", "instant_runoff_vote", "majority"}))
 		}
 	}
 	if body.NumWinners != nil {

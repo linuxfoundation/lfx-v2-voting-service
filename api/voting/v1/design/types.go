@@ -149,7 +149,7 @@ func PseudoAnonymityAttribute() {
 // withDefault enables the create-only default.
 func PollTypeAttribute(withDefault bool) {
 	Attribute("poll_type", String, "Type of poll", func() {
-		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
+		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote", "majority")
 		if withDefault {
 			Default("generic")
 		}
@@ -197,8 +197,10 @@ func PollCommentPromptsAttribute() {
 }
 
 // QuorumPercentageAttribute is the DSL attribute for quorum percentage.
+// ITX stores it only for majority votes and clears it on an update that omits it.
 func QuorumPercentageAttribute() {
-	Attribute("quorum_percentage", Int, "Quorum percentage required", func() {
+	Attribute("quorum_percentage", Int, "Quorum percentage required. Stored by ITX only for a majority vote, which requires 1–100. "+
+		"An update that omits it clears the stored value, so resend it on every majority update.", func() {
 		Minimum(0)
 		Maximum(100)
 		Example(50)
@@ -206,8 +208,10 @@ func QuorumPercentageAttribute() {
 }
 
 // WinningThresholdPercentageAttribute is the DSL attribute for winning threshold percentage.
+// ITX stores it only for majority votes and clears it on an update that omits it.
 func WinningThresholdPercentageAttribute() {
-	Attribute("winning_threshold_percentage", Int, "Winning threshold percentage", func() {
+	Attribute("winning_threshold_percentage", Int, "Winning threshold percentage. Stored by ITX only for a majority vote, which requires 1–100. "+
+		"An update that omits it clears the stored value, so resend it on every majority update.", func() {
 		Minimum(0)
 		Maximum(100)
 		Example(51)
@@ -269,7 +273,7 @@ var VoteResult = Type("VoteResult", func() {
 	Attribute("poll_questions", ArrayOf(PollQuestion), "Vote questions")
 	Attribute("poll_comment_prompts", ArrayOf(PollCommentPrompt), "Comment prompts for the vote")
 	Attribute("poll_type", String, "Poll type", func() {
-		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
+		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote", "majority")
 		Default("generic")
 	})
 	Attribute("num_winners", Int, "Number of winners. Absent when no winner count is stored upstream.")
@@ -277,6 +281,12 @@ var VoteResult = Type("VoteResult", func() {
 	Attribute("allow_vote_change", Boolean, "Whether voters may change a submitted ballot until the vote ends. "+
 		"Votes created before this setting existed report true.", func() {
 		Example(false)
+	})
+	Attribute("quorum_percentage", Int, "Quorum percentage set for a majority vote. Absent when none is stored.", func() {
+		Example(50)
+	})
+	Attribute("winning_threshold_percentage", Int, "Winning threshold percentage set for a majority vote. Absent when none is stored.", func() {
+		Example(51)
 	})
 	Attribute("created_by", VoteCreator, "Who created the vote. Absent when no creator is recorded.")
 
@@ -527,7 +537,7 @@ var VoteLinkBallotResult = Type("VoteLinkBallotResult", func() {
 		Format(FormatDateTime)
 	})
 	Attribute("poll_type", String, "Poll type", func() {
-		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote")
+		Enum("generic", "condorcet_irv", "meek_stv", "instant_runoff_vote", "majority")
 		Default("generic")
 	})
 	Attribute("num_winners", Int, "Number of winners. Absent when no winner count is stored upstream.")

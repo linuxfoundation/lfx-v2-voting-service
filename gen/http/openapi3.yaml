@@ -99,7 +99,7 @@ paths:
                                       prompt: Who should be elected to the TSC?
                                       question_id: cce6deee-1823-4bfc-96c6-cd609425f1d1
                                       type: single_choice
-                                poll_type: instant_runoff_vote
+                                poll_type: majority
                                 project_slug: cncf
                                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                                 pseudo_anonymity: true
@@ -822,7 +822,7 @@ paths:
                                   prompt: Who should be elected to the TSC?
                                   question_id: b479cb66-8b68-48ec-a636-9a46b745a54f
                                   type: single_choice
-                            poll_type: condorcet_irv
+                            poll_type: majority
                             project_uid: a09P000000DsCBuIRT
                             pseudo_anonymity: true
                             quorum_percentage: 50
@@ -898,13 +898,15 @@ paths:
                                       prompt: Who should be elected to the TSC?
                                       question_id: cce6deee-1823-4bfc-96c6-cd609425f1d1
                                       type: single_choice
-                                poll_type: generic
+                                poll_type: majority
                                 project_name: Eum odit.
                                 project_uid: Voluptatibus quas consequuntur.
                                 pseudo_anonymity: false
+                                quorum_percentage: 50
                                 status: disabled
                                 total_voting_request_invitations: 2045188537648374916
                                 uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                                winning_threshold_percentage: 51
                 "400":
                     description: 'BadRequest: Bad request'
                     content:
@@ -1153,13 +1155,15 @@ paths:
                                       prompt: Who should be elected to the TSC?
                                       question_id: cce6deee-1823-4bfc-96c6-cd609425f1d1
                                       type: single_choice
-                                poll_type: condorcet_irv
+                                poll_type: generic
                                 project_name: Consequatur deleniti tenetur non laborum.
                                 project_uid: Corrupti non accusamus magni.
                                 pseudo_anonymity: true
+                                quorum_percentage: 50
                                 status: disabled
                                 total_voting_request_invitations: 3417354471537724900
                                 uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                                winning_threshold_percentage: 51
                 "400":
                     description: 'BadRequest: Bad request'
                     content:
@@ -1280,7 +1284,7 @@ paths:
                                   prompt: Who should be elected to the TSC?
                                   question_id: b479cb66-8b68-48ec-a636-9a46b745a54f
                                   type: single_choice
-                            poll_type: instant_runoff_vote
+                            poll_type: meek_stv
                             project_uid: a09P000000DsCBuIRT
                             pseudo_anonymity: false
                             quorum_percentage: 50
@@ -1358,13 +1362,15 @@ paths:
                                       prompt: Who should be elected to the TSC?
                                       question_id: cce6deee-1823-4bfc-96c6-cd609425f1d1
                                       type: single_choice
-                                poll_type: generic
+                                poll_type: majority
                                 project_name: Quidem iure sit.
                                 project_uid: Iure eaque enim.
                                 pseudo_anonymity: true
+                                quorum_percentage: 50
                                 status: disabled
                                 total_voting_request_invitations: 8702061917033836691
                                 uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                                winning_threshold_percentage: 51
                 "400":
                     description: 'BadRequest: Bad request'
                     content:
@@ -1685,13 +1691,15 @@ paths:
                                       prompt: Who should be elected to the TSC?
                                       question_id: cce6deee-1823-4bfc-96c6-cd609425f1d1
                                       type: single_choice
-                                poll_type: condorcet_irv
+                                poll_type: generic
                                 project_name: Porro laudantium et cum placeat.
                                 project_uid: In sit ut sed explicabo ad nulla.
                                 pseudo_anonymity: true
+                                quorum_percentage: 50
                                 status: disabled
                                 total_voting_request_invitations: 6099824406185552472
                                 uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                                winning_threshold_percentage: 51
                 "400":
                     description: 'BadRequest: Bad request'
                     content:
@@ -1873,13 +1881,15 @@ paths:
                                       prompt: Who should be elected to the TSC?
                                       question_id: cce6deee-1823-4bfc-96c6-cd609425f1d1
                                       type: single_choice
-                                poll_type: generic
+                                poll_type: majority
                                 project_name: Iste aliquid facilis.
                                 project_uid: Repudiandae voluptatem reprehenderit officiis sapiente tempore pariatur.
                                 pseudo_anonymity: false
+                                quorum_percentage: 50
                                 status: disabled
                                 total_voting_request_invitations: 8663403051390720077
                                 uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                                winning_threshold_percentage: 51
                 "400":
                     description: 'BadRequest: Bad request'
                     content:
@@ -3400,12 +3410,13 @@ components:
                     type: string
                     description: Type of poll
                     default: generic
-                    example: condorcet_irv
+                    example: generic
                     enum:
                         - generic
                         - condorcet_irv
                         - meek_stv
                         - instant_runoff_vote
+                        - majority
                 project_uid:
                     type: string
                     description: LFX Project UID
@@ -3417,14 +3428,14 @@ components:
                     example: true
                 quorum_percentage:
                     type: integer
-                    description: Quorum percentage required
+                    description: Quorum percentage required. Stored by ITX only for a majority vote, which requires 1–100. An update that omits it clears the stored value, so resend it on every majority update.
                     example: 50
                     format: int64
                     minimum: 0
                     maximum: 100
                 winning_threshold_percentage:
                     type: integer
-                    description: Winning threshold percentage
+                    description: Winning threshold percentage. Stored by ITX only for a majority vote, which requires 1–100. An update that omits it clears the stored value, so resend it on every majority update.
                     example: 51
                     format: int64
                     minimum: 0
@@ -3488,7 +3499,7 @@ components:
                       prompt: Who should be elected to the TSC?
                       question_id: b479cb66-8b68-48ec-a636-9a46b745a54f
                       type: single_choice
-                poll_type: generic
+                poll_type: condorcet_irv
                 project_uid: a09P000000DsCBuIRT
                 pseudo_anonymity: false
                 quorum_percentage: 50
@@ -5104,12 +5115,13 @@ components:
                 poll_type:
                     type: string
                     description: Type of poll
-                    example: instant_runoff_vote
+                    example: condorcet_irv
                     enum:
                         - generic
                         - condorcet_irv
                         - meek_stv
                         - instant_runoff_vote
+                        - majority
                 project_uid:
                     type: string
                     description: LFX Project UID
@@ -5121,14 +5133,14 @@ components:
                     example: false
                 quorum_percentage:
                     type: integer
-                    description: Quorum percentage required
+                    description: Quorum percentage required. Stored by ITX only for a majority vote, which requires 1–100. An update that omits it clears the stored value, so resend it on every majority update.
                     example: 50
                     format: int64
                     minimum: 0
                     maximum: 100
                 winning_threshold_percentage:
                     type: integer
-                    description: Winning threshold percentage
+                    description: Winning threshold percentage. Stored by ITX only for a majority vote, which requires 1–100. An update that omits it clears the stored value, so resend it on every majority update.
                     example: 51
                     format: int64
                     minimum: 0
@@ -5172,7 +5184,7 @@ components:
                       prompt: Who should be elected to the TSC?
                       question_id: b479cb66-8b68-48ec-a636-9a46b745a54f
                       type: single_choice
-                poll_type: instant_runoff_vote
+                poll_type: condorcet_irv
                 project_uid: a09P000000DsCBuIRT
                 pseudo_anonymity: true
                 quorum_percentage: 50
@@ -5585,12 +5597,13 @@ components:
                     type: string
                     description: Poll type
                     default: generic
-                    example: meek_stv
+                    example: instant_runoff_vote
                     enum:
                         - generic
                         - condorcet_irv
                         - meek_stv
                         - instant_runoff_vote
+                        - majority
                 project_slug:
                     type: string
                     description: LFX project slug. Absent when no slug is stored upstream.
@@ -5681,7 +5694,7 @@ components:
                       prompt: Who should be elected to the TSC?
                       question_id: 5de700c1-f574-4766-9ebf-bca757ef9343
                       type: single_choice
-                poll_type: generic
+                poll_type: condorcet_irv
                 project_slug: cncf
                 project_uid: 7cad5a8d-19d0-41a4-81a6-043453daf9ee
                 pseudo_anonymity: true
@@ -6121,12 +6134,13 @@ components:
                     type: string
                     description: Poll type
                     default: generic
-                    example: generic
+                    example: meek_stv
                     enum:
                         - generic
                         - condorcet_irv
                         - meek_stv
                         - instant_runoff_vote
+                        - majority
                 project_name:
                     type: string
                     description: Project name
@@ -6139,6 +6153,11 @@ components:
                     type: boolean
                     description: Pseudo-anonymity enabled
                     example: true
+                quorum_percentage:
+                    type: integer
+                    description: Quorum percentage set for a majority vote. Absent when none is stored.
+                    example: 50
+                    format: int64
                 status:
                     type: string
                     description: Vote status
@@ -6157,6 +6176,11 @@ components:
                     description: Vote identifier
                     example: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
                     format: uuid
+                winning_threshold_percentage:
+                    type: integer
+                    description: Winning threshold percentage set for a majority vote. Absent when none is stored.
+                    example: 51
+                    format: int64
             description: Vote details
             example:
                 allow_abstain: false
@@ -6210,13 +6234,15 @@ components:
                       prompt: Who should be elected to the TSC?
                       question_id: 5de700c1-f574-4766-9ebf-bca757ef9343
                       type: single_choice
-                poll_type: condorcet_irv
+                poll_type: majority
                 project_name: Voluptas nisi facere illo possimus eius et.
                 project_uid: Sequi culpa.
                 pseudo_anonymity: true
+                quorum_percentage: 50
                 status: disabled
                 total_voting_request_invitations: 5911921647246552867
                 uid: a02bdbaf-53b1-4d47-bc04-dd7e459dd308
+                winning_threshold_percentage: 51
             required:
                 - uid
                 - name

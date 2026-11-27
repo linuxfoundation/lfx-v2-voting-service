@@ -96,7 +96,7 @@ Content-Type: application/json
     {"prompt": "Any additional comments?"}
   ],
   "pseudo_anonymity": false,
-  "poll_type": "generic",
+  "poll_type": "majority",
   "allow_abstain": false,
   "allow_vote_change": true,
   "quorum_percentage": 50,
@@ -132,6 +132,9 @@ Content-Type: application/json
   "num_response_received": 0,
   "allow_abstain": false,
   "allow_vote_change": true,
+  "poll_type": "majority",
+  "quorum_percentage": 50,
+  "winning_threshold_percentage": 50,
   "poll_questions": [
     {
       "question_id": "q1-uuid",
@@ -196,7 +199,7 @@ x-scope: manage:voting
     {"prompt": "Any additional comments?"}
   ],
   "pseudo_anonymity": false,
-  "poll_type": "generic",
+  "poll_type": "majority",
   "allow_abstain": false,
   "allow_vote_change": true,
   "quorum_percentage": 50,
@@ -301,6 +304,9 @@ Authorization: Bearer <heimdall-jwt-token>
   "num_response_received": 10,
   "allow_abstain": false,
   "allow_vote_change": true,
+  "poll_type": "majority",
+  "quorum_percentage": 50,
+  "winning_threshold_percentage": 50,
   "created_by": {
     "username": "jdoe",
     "name": "Jane Doe"
@@ -308,6 +314,8 @@ Authorization: Bearer <heimdall-jwt-token>
   "poll_questions": [...]
 }
 ```
+
+`quorum_percentage` and `winning_threshold_percentage` are read-only on the response and pass through exactly as ITX stores them for a `majority` vote; the proxy applies no defaults. Both are omitted when none is stored, so a Majority vote without rules and every other poll type read as before. Create, update, extend and end responses carry the same fields.
 
 **Creator:** `created_by` identifies who created the vote, as the creator's LFID `username` and display `name` only; the proxy never returns the creator's email, id or profile picture. It is omitted when no creator is recorded, including legacy polls whose creator ITX stored as a bare string or a machine client (`<id>@clients`). A creator with a name but no username is returned with `name` only. Every endpoint that returns the vote (create, get, update, extend and end) carries it; the vote-link ballot does not.
 
@@ -463,9 +471,14 @@ Merged ITX PR #285 also validates the resolved Meek STV winner count against **e
   "status": "disabled",
   "project_uid": "c01adbaf-53b1-4d47-bc04-dd7e459dd301",
   "committee_uid": "a02bdbaf-53b1-4d47-bc04-dd7e459dd308",
+  "poll_type": "majority",
+  "quorum_percentage": 60,
+  "winning_threshold_percentage": 60,
   "poll_questions": [...]
 }
 ```
+
+**Majority rules on update:** ITX replaces the stored poll on every update and keeps `quorum_percentage` and `winning_threshold_percentage` only when the effective type is `majority`. An update that omits them clears any stored values, and a change to another type drops them. Callers editing a Majority vote must resend both values to keep them.
 
 **Note**: Updates are only allowed when `status == "disabled"`
 
@@ -510,7 +523,7 @@ x-scope: manage:voting
     {"prompt": "Comments?"}
   ],
   "pseudo_anonymity": true,
-  "poll_type": "generic",
+  "poll_type": "majority",
   "allow_abstain": true,
   "allow_vote_change": true,
   "quorum_percentage": 60,
@@ -617,6 +630,7 @@ x-scope: manage:voting
 | `committee_id` | `committee_uid` | UUID |
 | `choices[]` | `poll_questions[].choices[]` | Expanded to objects with `choice_id` and `choice_text` |
 | `allow_vote_change` | `allow_vote_change` | Always a boolean on vote, ballot and vote-link reads; absent upstream (legacy) → `true` |
+| `quorum_percentage`, `winning_threshold_percentage` | `quorum_percentage`, `winning_threshold_percentage` | Majority votes only; passed through as stored on vote reads and on create, update, extend and end responses; omitted when ITX stores none |
 | `created_by` | `created_by` | Vote reads only. `username` and `name` only (`id`, `email`, `profile_picture` dropped); omitted when not recorded, a legacy bare string, or a machine client (`<id>@clients`) |
 | `can_change_vote` | `can_change_vote` (ballot reads), `ballot.can_change_vote` (vote-link ballot) | Passed through; omitted when ITX omits it, never computed by the proxy |
 | `num_response_received`, `total_voting_request_invitations` (poll) | `would_end_vote` (ballot reads), `ballot.would_end_vote` (vote-link ballot) | Computed by the proxy; counts never returned on vote links |
@@ -715,8 +729,11 @@ Deleting an active vote cancels it (see [DELETE /votes/{vote_uid}](#delete-votes
 | `condorcet_irv` | Condorcet IRV voting | Not used; forwarded only if explicitly provided |
 | `instant_runoff_vote` | Instant runoff voting | Not used; forwarded only if explicitly provided |
 | `meek_stv` | Meek STV (Single Transferable Vote) | Optional; defaults to 2 on create when omitted, must be 2–10 when provided; omitted update counts are resolved by ITX |
+| `majority` | Majority vote, with optional `quorum_percentage` and `winning_threshold_percentage` | Not used; forwarded only if explicitly provided |
 
 `num_winners` is sent upstream only when explicitly provided in the request — the one exception is a `meek_stv` create, which defaults to 2 winners when omitted. All updates leave omitted counts absent from the ITX request, including explicit `meek_stv` updates, so ITX can preserve the stored count or resolve a method transition as described above. Responses omit `num_winners` entirely when no winner count is stored upstream.
+
+For `majority` votes, `quorum_percentage` and `winning_threshold_percentage` are forwarded when provided. The voting service accepts 0–100; ITX rejects values outside 1–100 with a 400 and stores them only for `majority`. ITX computes no Majority winner on the results endpoint; clients judge the outcome from the vote counts and these two values.
 
 ---
 
@@ -1115,7 +1132,7 @@ Optional top-level arrays (`poll_results`, `comment_results`) follow the standar
 
 **Callers and rollout**: Direct V2 callers must honor `results_held` and the optional fields above; Self Serve normalizes its own held response arrays but that handling does not apply to other clients. Because these fields are now optional in the published schema, clients generated from an earlier schema may reject held or text-only responses until regenerated. The backend privacy restriction comes from ITX (ITX #3920, tracked with Self Serve #3913/#3916) and must be deployed there; V2 alone stays compatible with legacy full results but does not independently withhold data.
 
-**Note**: `ranked_choice_votes`, `irv_round_summary`, and `meek_stv_round_summary` are populated only for the corresponding `poll_type` values (`condorcet_irv`, `instant_runoff_vote`, `meek_stv`). For `generic` polls, only `generic_choice_votes` is populated. Unpopulated optional keys are omitted from the response entirely (never serialized as `null` or `[]`), which is why the example above has no `ranked_choice_votes` / `irv_round_summary` / `meek_stv_round_summary` keys. `ranked_choice_winner_info` is always present (ITX emits it for every poll type), with `poll_choices: []` when no winner has been determined (the HTTP encoder normalizes nil choices to an empty array). On comment responses, `user_id`, `user_name`, and `profile_picture` are absent entirely when the poll has `pseudo_anonymity` enabled.
+**Note**: `ranked_choice_votes`, `irv_round_summary`, and `meek_stv_round_summary` are populated only for the corresponding `poll_type` values (`condorcet_irv`, `instant_runoff_vote`, `meek_stv`). For `generic` and `majority` polls, only `generic_choice_votes` is populated, and ITX computes no winner for `majority`. Unpopulated optional keys are omitted from the response entirely (never serialized as `null` or `[]`), which is why the example above has no `ranked_choice_votes` / `irv_round_summary` / `meek_stv_round_summary` keys. `ranked_choice_winner_info` is always present (ITX emits it for every poll type), with `poll_choices: []` when no winner has been determined (the HTTP encoder normalizes nil choices to an empty array). On comment responses, `user_id`, `user_name`, and `profile_picture` are absent entirely when the poll has `pseudo_anonymity` enabled.
 
 ---
 

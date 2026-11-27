@@ -222,9 +222,13 @@ type CreateVotePayload struct {
 	// until the vote ends. Omitted on create means allowed; omitted on update
 	// preserves the stored value.
 	AllowVoteChange *bool
-	// Quorum percentage required
+	// Quorum percentage required. Stored by ITX only for a majority vote, which
+	// requires 1–100. An update that omits it clears the stored value, so resend
+	// it on every majority update.
 	QuorumPercentage *int
-	// Winning threshold percentage
+	// Winning threshold percentage. Stored by ITX only for a majority vote, which
+	// requires 1–100. An update that omits it clears the stored value, so resend
+	// it on every majority update.
 	WinningThresholdPercentage *int
 }
 
@@ -616,9 +620,13 @@ type UpdateVotePayload struct {
 	// until the vote ends. Omitted on create means allowed; omitted on update
 	// preserves the stored value.
 	AllowVoteChange *bool
-	// Quorum percentage required
+	// Quorum percentage required. Stored by ITX only for a majority vote, which
+	// requires 1–100. An update that omits it clears the stored value, so resend
+	// it on every majority update.
 	QuorumPercentage *int
-	// Winning threshold percentage
+	// Winning threshold percentage. Stored by ITX only for a majority vote, which
+	// requires 1–100. An update that omits it clears the stored value, so resend
+	// it on every majority update.
 	WinningThresholdPercentage *int
 }
 
@@ -917,6 +925,11 @@ type VoteResult struct {
 	// Whether voters may change a submitted ballot until the vote ends. Votes
 	// created before this setting existed report true.
 	AllowVoteChange bool
+	// Quorum percentage set for a majority vote. Absent when none is stored.
+	QuorumPercentage *int
+	// Winning threshold percentage set for a majority vote. Absent when none is
+	// stored.
+	WinningThresholdPercentage *int
 	// Who created the vote. Absent when no creator is recorded.
 	CreatedBy *VoteCreator
 }
