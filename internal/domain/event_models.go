@@ -40,6 +40,7 @@ type PollDBRaw struct {
 	NumWinners                    int                           `json:"num_winners"`
 	AllowAbstain                  bool                          `json:"allow_abstain"`
 	AllowVoteChange               *bool                         `json:"allow_vote_change"` // nil for legacy polls; resolve with itx.VoteChangeAllowed
+	CreatedBy                     itx.PollCreator               `json:"created_by"`        // tolerant: legacy string or malformed → empty
 }
 
 // UnmarshalJSON implements custom unmarshaling to handle both string and int inputs for numeric fields.
@@ -70,6 +71,7 @@ func (p *PollDBRaw) UnmarshalJSON(data []byte) error {
 		NumWinners                    interface{}                   `json:"num_winners"`
 		AllowAbstain                  bool                          `json:"allow_abstain"`
 		AllowVoteChange               *bool                         `json:"allow_vote_change"`
+		CreatedBy                     itx.PollCreator               `json:"created_by"`
 	}{}
 
 	if err := json.Unmarshal(data, &tmp); err != nil {
@@ -159,6 +161,7 @@ func (p *PollDBRaw) UnmarshalJSON(data []byte) error {
 	p.PseudoAnonymity = tmp.PseudoAnonymity
 	p.AllowAbstain = tmp.AllowAbstain
 	p.AllowVoteChange = tmp.AllowVoteChange
+	p.CreatedBy = tmp.CreatedBy
 
 	return nil
 }
@@ -467,7 +470,8 @@ type VoteData struct {
 	PseudoAnonymity               bool                          `json:"pseudo_anonymity"`
 	NumWinners                    int                           `json:"num_winners"` // Int in v2
 	AllowAbstain                  bool                          `json:"allow_abstain"`
-	AllowVoteChange               bool                          `json:"allow_vote_change"` // resolved: legacy polls without the setting index as true
+	AllowVoteChange               bool                          `json:"allow_vote_change"`    // resolved: legacy polls without the setting index as true
+	CreatedBy                     *itx.PollCreator              `json:"created_by,omitempty"` // username + name only; nil when no creator is recorded
 }
 
 // VoteResponseData represents v2 vote response data after transformation

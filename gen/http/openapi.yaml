@@ -3387,6 +3387,22 @@ definitions:
             - vote_response_uid
             - vote_uid
             - abstain
+    VoteCreator:
+        title: VoteCreator
+        type: object
+        properties:
+            name:
+                type: string
+                description: Display name of the vote's creator
+                example: Jane Doe
+            username:
+                type: string
+                description: LFID username of the vote's creator
+                example: jdoe
+        description: Creator of a vote
+        example:
+            name: Jane Doe
+            username: jdoe
     VoteExtendVoteRequestBody:
         title: VoteExtendVoteRequestBody
         type: object
@@ -4124,6 +4140,8 @@ definitions:
                 type: boolean
                 description: Committee voting status
                 example: true
+            created_by:
+                $ref: '#/definitions/VoteCreator'
             creation_time:
                 type: string
                 description: Creation time
@@ -4261,6 +4279,9 @@ definitions:
             committee_type: Aliquam ratione nobis a quo.
             committee_uid: Neque et qui ea soluta sed.
             committee_voting_status: true
+            created_by:
+                name: Jane Doe
+                username: jdoe
             creation_time: "1993-10-04T19:30:31Z"
             description: Praesentium similique ipsam deserunt alias quis.
             early_end_time: "2026-02-10T14:32:11Z"

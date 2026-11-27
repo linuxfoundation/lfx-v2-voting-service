@@ -844,6 +844,9 @@ paths:
                                 committee_type: Dolor perferendis.
                                 committee_uid: Et autem aperiam molestias hic incidunt doloremque.
                                 committee_voting_status: true
+                                created_by:
+                                    name: Jane Doe
+                                    username: jdoe
                                 creation_time: "2016-01-25T14:23:36Z"
                                 description: Sed quas et pariatur.
                                 early_end_time: "2026-02-10T14:32:11Z"
@@ -1082,6 +1085,9 @@ paths:
                                 committee_type: Quam est consectetur.
                                 committee_uid: Ut temporibus unde aut quia quis.
                                 committee_voting_status: false
+                                created_by:
+                                    name: Jane Doe
+                                    username: jdoe
                                 creation_time: "1998-09-13T04:11:59Z"
                                 description: Dignissimos voluptatem id sit porro consectetur.
                                 early_end_time: "2026-02-10T14:32:11Z"
@@ -1296,6 +1302,9 @@ paths:
                                 committee_type: Molestias ipsam.
                                 committee_uid: Necessitatibus molestias.
                                 committee_voting_status: true
+                                created_by:
+                                    name: Jane Doe
+                                    username: jdoe
                                 creation_time: "1991-04-27T09:26:30Z"
                                 description: Nihil iste dolore ut similique.
                                 early_end_time: "2026-02-10T14:32:11Z"
@@ -1618,6 +1627,9 @@ paths:
                                 committee_type: Sequi voluptas magni sint debitis.
                                 committee_uid: Aliquam repellat ut nemo nam rem.
                                 committee_voting_status: false
+                                created_by:
+                                    name: Jane Doe
+                                    username: jdoe
                                 creation_time: "1996-05-23T15:45:39Z"
                                 description: Velit voluptatem.
                                 early_end_time: "2026-02-10T14:32:11Z"
@@ -1791,6 +1803,9 @@ paths:
                                 committee_type: Velit quia suscipit rem ipsam porro.
                                 committee_uid: Ad similique eligendi nisi eveniet.
                                 committee_voting_status: false
+                                created_by:
+                                    name: Jane Doe
+                                    username: jdoe
                                 creation_time: "1985-08-24T06:14:20Z"
                                 description: Officia earum laudantium commodi.
                                 early_end_time: "2026-02-10T14:32:11Z"
@@ -5360,6 +5375,21 @@ components:
             required:
                 - choice_id
                 - vote_count
+        VoteCreator:
+            type: object
+            properties:
+                name:
+                    type: string
+                    description: Display name of the vote's creator
+                    example: Jane Doe
+                username:
+                    type: string
+                    description: LFID username of the vote's creator
+                    example: jdoe
+            description: Creator of a vote
+            example:
+                name: Jane Doe
+                username: jdoe
         VoteLinkBallot:
             type: object
             properties:
@@ -5986,6 +6016,8 @@ components:
                     type: boolean
                     description: Committee voting status
                     example: false
+                created_by:
+                    $ref: '#/components/schemas/VoteCreator'
                 creation_time:
                     type: string
                     description: Creation time
@@ -6136,6 +6168,9 @@ components:
                 committee_type: Molestias est temporibus perferendis facere laudantium.
                 committee_uid: Cum iste libero quas qui maxime consequuntur.
                 committee_voting_status: true
+                created_by:
+                    name: Jane Doe
+                    username: jdoe
                 creation_time: "2003-07-09T10:53:48Z"
                 description: Quia voluptatem ullam.
                 early_end_time: "2026-02-10T14:32:11Z"

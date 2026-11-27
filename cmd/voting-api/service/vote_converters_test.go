@@ -4,11 +4,13 @@
 package service
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	voteserver "github.com/linuxfoundation/lfx-v2-voting-service/gen/http/vote/server"
 	votesvc "github.com/linuxfoundation/lfx-v2-voting-service/gen/vote"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/utils"
@@ -187,6 +189,68 @@ func TestConvertPollResponseToVoteResultAllowVoteChange(t *testing.T) {
 			assert.Equal(t, tt.want, result.AllowVoteChange)
 		})
 	}
+}
+
+// TestConvertPollResponseToVoteResultCreatedBy guards the creator hop: a recorded creator
+// reaches the API as username + name, while a missing or legacy machine-client creator is
+// omitted rather than surfaced as an empty object.
+func TestConvertPollResponseToVoteResultCreatedBy(t *testing.T) {
+	tests := []struct {
+		name         string
+		creator      itx.PollCreator
+		wantNil      bool
+		wantUsername *string
+		wantName     *string
+	}{
+		{name: "full creator", creator: itx.PollCreator{Username: "jdoe", Name: "Jane Doe"}, wantUsername: utils.StringPtr("jdoe"), wantName: utils.StringPtr("Jane Doe")},
+		{name: "name only", creator: itx.PollCreator{Name: "Jane Doe"}, wantName: utils.StringPtr("Jane Doe")},
+		{name: "username only", creator: itx.PollCreator{Username: "jdoe"}, wantUsername: utils.StringPtr("jdoe")},
+		{name: "legacy machine client", creator: itx.PollCreator{Username: "abc@clients"}, wantNil: true},
+		{name: "empty", wantNil: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ConvertPollResponseToVoteResult(&itx.PollResponse{CreatedBy: tt.creator})
+
+			if tt.wantNil {
+				assert.Nil(t, result.CreatedBy)
+				return
+			}
+			require.NotNil(t, result.CreatedBy)
+			assert.Equal(t, tt.wantUsername, result.CreatedBy.Username)
+			assert.Equal(t, tt.wantName, result.CreatedBy.Name)
+		})
+	}
+
+	t.Run("older votes omit empty creators from the HTTP response", func(t *testing.T) {
+		tests := []struct {
+			name string
+			body string
+		}{
+			{name: "absent", body: `{"poll_id":"p1","name":"Older vote"}`},
+			{name: "null", body: `{"poll_id":"p1","name":"Older vote","created_by":null}`},
+			{name: "empty string", body: `{"poll_id":"p1","name":"Older vote","created_by":""}`},
+			{name: "empty object", body: `{"poll_id":"p1","name":"Older vote","created_by":{}}`},
+			{name: "empty fields", body: `{"poll_id":"p1","name":"Older vote","created_by":{"username":"","name":""}}`},
+			{name: "whitespace fields", body: `{"poll_id":"p1","name":"Older vote","created_by":{"username":"  ","name":"\t"}}`},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				var poll itx.PollResponse
+				require.NoError(t, json.Unmarshal([]byte(tt.body), &poll))
+
+				result := ConvertPollResponseToVoteResult(&poll)
+				assert.Nil(t, result.CreatedBy)
+				body, err := json.Marshal(voteserver.NewGetVoteResponseBody(result))
+				require.NoError(t, err)
+				var wire map[string]any
+				require.NoError(t, json.Unmarshal(body, &wire))
+				assert.NotContains(t, wire, "created_by")
+				assert.Equal(t, "p1", wire["uid"])
+				assert.Equal(t, "Older vote", wire["name"])
+			})
+		}
+	})
 }
 
 // TestConvertVoteResultsToResultPresence guards optional-field presence on the results hop:

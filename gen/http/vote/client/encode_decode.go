@@ -2962,6 +2962,20 @@ func unmarshalPollCommentPromptResponseBodyToVotePollCommentPrompt(v *PollCommen
 	return res
 }
 
+// unmarshalVoteCreatorResponseBodyToVoteVoteCreator builds a value of type
+// *vote.VoteCreator from a value of type *VoteCreatorResponseBody.
+func unmarshalVoteCreatorResponseBodyToVoteVoteCreator(v *VoteCreatorResponseBody) *vote.VoteCreator {
+	if v == nil {
+		return nil
+	}
+	res := &vote.VoteCreator{
+		Username: v.Username,
+		Name:     v.Name,
+	}
+
+	return res
+}
+
 // unmarshalPollResultItemResponseBodyToVotePollResultItem builds a value of
 // type *vote.PollResultItem from a value of type *PollResultItemResponseBody.
 func unmarshalPollResultItemResponseBodyToVotePollResultItem(v *PollResultItemResponseBody) *vote.PollResultItem {

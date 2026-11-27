@@ -301,9 +301,15 @@ Authorization: Bearer <heimdall-jwt-token>
   "num_response_received": 10,
   "allow_abstain": false,
   "allow_vote_change": true,
+  "created_by": {
+    "username": "jdoe",
+    "name": "Jane Doe"
+  },
   "poll_questions": [...]
 }
 ```
+
+**Creator:** `created_by` identifies who created the vote, as the creator's LFID `username` and display `name` only; the proxy never returns the creator's email, id or profile picture. It is omitted when no creator is recorded, including legacy polls whose creator ITX stored as a bare string or a machine client (`<id>@clients`). A creator with a name but no username is returned with `name` only. Every endpoint that returns the vote (create, get, update, extend and end) carries it; the vote-link ballot does not.
 
 When a poll ends early, either manually or automatically because all eligible voters respond (by voting or being removed) before its scheduled `end_time`, ITX stamps `early_end_time` with the actual close time and preserves the original `end_time`. Extending an ended poll reactivates it and clears `early_end_time`. The proxy forwards `early_end_time` as a read-only field, present for both manual and automatic early endings, and normalizes zero-value timestamps to absent (mirroring ITX, since the NATS KV ingress reads raw DynamoDB attributes):
 
@@ -355,9 +361,18 @@ x-scope: manage:voting
   "num_response_received": 10,
   "allow_abstain": false,
   "allow_vote_change": true,
+  "created_by": {
+    "id": "auth0|jdoe",
+    "username": "jdoe",
+    "name": "Jane Doe",
+    "email": "jane@example.com",
+    "profile_picture": "https://example.com/jdoe.png"
+  },
   "poll_questions": [...]
 }
 ```
+
+ITX returns the full `created_by` object (legacy polls may hold a bare string instead). The proxy keeps only `username` and `name`; see the Response Fields table.
 
 ---
 
@@ -602,6 +617,7 @@ x-scope: manage:voting
 | `committee_id` | `committee_uid` | UUID |
 | `choices[]` | `poll_questions[].choices[]` | Expanded to objects with `choice_id` and `choice_text` |
 | `allow_vote_change` | `allow_vote_change` | Always a boolean on vote, ballot and vote-link reads; absent upstream (legacy) → `true` |
+| `created_by` | `created_by` | Vote reads only. `username` and `name` only (`id`, `email`, `profile_picture` dropped); omitted when not recorded, a legacy bare string, or a machine client (`<id>@clients`) |
 | `can_change_vote` | `can_change_vote` (ballot reads), `ballot.can_change_vote` (vote-link ballot) | Passed through; omitted when ITX omits it, never computed by the proxy |
 | `num_response_received`, `total_voting_request_invitations` (poll) | `would_end_vote` (ballot reads), `ballot.would_end_vote` (vote-link ballot) | Computed by the proxy; counts never returned on vote links |
 
