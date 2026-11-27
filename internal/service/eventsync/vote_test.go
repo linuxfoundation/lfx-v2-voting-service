@@ -13,6 +13,7 @@ import (
 
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/domain"
 	"github.com/linuxfoundation/lfx-v2-voting-service/internal/logging"
+	"github.com/linuxfoundation/lfx-v2-voting-service/pkg/models/itx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -331,6 +332,66 @@ func TestConvertMapToVoteData(t *testing.T) {
 				wire := marshalVoteData(t, result)
 				assert.Contains(t, wire, "allow_vote_change")
 				assert.Equal(t, tt.want, wire["allow_vote_change"])
+			})
+		}
+	})
+
+	t.Run("maps the creator, dropping legacy or missing values", func(t *testing.T) {
+		tests := []struct {
+			name     string
+			value    interface{}
+			set      bool
+			want     *itx.PollCreator
+			wantWire map[string]interface{}
+		}{
+			{
+				name:     "creator map",
+				value:    map[string]interface{}{"id": "u-1", "username": "jdoe", "name": "Jane Doe", "email": "jane@example.com"},
+				set:      true,
+				want:     &itx.PollCreator{Username: "jdoe", Name: "Jane Doe"},
+				wantWire: map[string]interface{}{"username": "jdoe", "name": "Jane Doe"},
+			},
+			{
+				name:     "username only",
+				value:    map[string]interface{}{"username": "jdoe"},
+				set:      true,
+				want:     &itx.PollCreator{Username: "jdoe"},
+				wantWire: map[string]interface{}{"username": "jdoe"},
+			},
+			{
+				name:     "name only",
+				value:    map[string]interface{}{"name": "Jane Doe"},
+				set:      true,
+				want:     &itx.PollCreator{Name: "Jane Doe"},
+				wantWire: map[string]interface{}{"name": "Jane Doe"},
+			},
+			{name: "legacy string", value: "abc@clients", set: true},
+			{name: "legacy machine client map", value: map[string]interface{}{"username": "abc@clients"}, set: true},
+			{name: "empty string", value: "", set: true},
+			{name: "empty map", value: map[string]interface{}{}, set: true},
+			{name: "empty fields", value: map[string]interface{}{"username": "", "name": ""}, set: true},
+			{name: "whitespace fields", value: map[string]interface{}{"username": "  ", "name": "\t"}, set: true},
+			{name: "null", value: nil, set: true},
+			{name: "absent"},
+		}
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				v1Data := votePayload("poll-creator")
+				if tt.set {
+					v1Data["created_by"] = tt.value
+				}
+
+				result, err := convertMapToVoteData(context.Background(), v1Data, &mockIDMapper{}, slog.Default())
+				require.NoError(t, err)
+				assert.Equal(t, tt.want, result.CreatedBy)
+
+				wire := marshalVoteData(t, result)
+				if tt.want == nil {
+					assert.NotContains(t, wire, "created_by", "nil creator is omitted from the indexer payload")
+					return
+				}
+				assert.Equal(t, tt.wantWire, wire["created_by"],
+					"only non-empty username and name are indexed")
 			})
 		}
 	})

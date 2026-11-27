@@ -272,3 +272,98 @@ func TestVoteChangeFieldsJSON(t *testing.T) {
 		}
 	})
 }
+
+func TestPollCreatorUnmarshal(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want PollCreator
+	}{
+		{name: "object", body: `{"username":"jdoe","name":"Jane Doe"}`, want: PollCreator{Username: "jdoe", Name: "Jane Doe"}},
+		{name: "object with private fields", body: `{"id":"u-1","username":"jdoe","name":"Jane Doe","email":"jane@example.com","profile_picture":"https://example.com/p.png"}`, want: PollCreator{Username: "jdoe", Name: "Jane Doe"}},
+		{name: "legacy string", body: `"b7OEC8YkK0ClvTxsIsW48q2RursqnQfl@clients"`},
+		{name: "null", body: `null`},
+		{name: "number", body: `42`},
+		{name: "array", body: `["jdoe"]`},
+		{name: "non-string fields", body: `{"username":7,"name":true}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := PollCreator{Username: "stale", Name: "stale"}
+			if err := json.Unmarshal([]byte(tt.body), &got); err != nil {
+				t.Fatalf("unmarshal: %v", err)
+			}
+			if got != tt.want {
+				t.Errorf("got %+v, want %+v", got, tt.want)
+			}
+		})
+	}
+
+	t.Run("marshals only username and name", func(t *testing.T) {
+		var c PollCreator
+		body := `{"id":"u-1","username":"jdoe","name":"Jane Doe","email":"jane@example.com","profile_picture":"p.png"}`
+		if err := json.Unmarshal([]byte(body), &c); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		out, err := json.Marshal(c)
+		if err != nil {
+			t.Fatalf("marshal: %v", err)
+		}
+		if string(out) != `{"username":"jdoe","name":"Jane Doe"}` {
+			t.Errorf("marshalled %s", out)
+		}
+	})
+}
+
+func TestNormalizePollCreator(t *testing.T) {
+	tests := []struct {
+		name string
+		in   PollCreator
+		want *PollCreator
+	}{
+		{name: "full creator", in: PollCreator{Username: "jdoe", Name: "Jane Doe"}, want: &PollCreator{Username: "jdoe", Name: "Jane Doe"}},
+		{name: "trims whitespace", in: PollCreator{Username: " jdoe ", Name: " Jane Doe\t"}, want: &PollCreator{Username: "jdoe", Name: "Jane Doe"}},
+		{name: "name only", in: PollCreator{Name: "Jane Doe"}, want: &PollCreator{Name: "Jane Doe"}},
+		{name: "username only", in: PollCreator{Username: "jdoe"}, want: &PollCreator{Username: "jdoe"}},
+		{name: "legacy machine client", in: PollCreator{Username: "b7OEC8YkK0ClvTxsIsW48q2RursqnQfl@clients"}, want: nil},
+		{name: "whitespace only", in: PollCreator{Username: "  ", Name: "\t"}, want: nil},
+		{name: "empty", want: nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NormalizePollCreator(tt.in)
+			switch {
+			case tt.want == nil && got != nil:
+				t.Errorf("got %+v, want nil", *got)
+			case tt.want != nil && (got == nil || *got != *tt.want):
+				t.Errorf("got %+v, want %+v", got, *tt.want)
+			}
+		})
+	}
+}
+
+func TestPollResponseUnmarshal_CreatedBy(t *testing.T) {
+	tests := []struct {
+		name string
+		body string
+		want PollCreator
+	}{
+		{name: "present", body: `{"poll_id":"p1","pseudo_anonymity":true,"created_by":{"username":"jdoe","name":"Jane Doe","email":"jane@example.com"}}`, want: PollCreator{Username: "jdoe", Name: "Jane Doe"}},
+		{name: "legacy string", body: `{"poll_id":"p1","pseudo_anonymity":true,"created_by":"abc@clients"}`},
+		{name: "absent", body: `{"poll_id":"p1","pseudo_anonymity":true}`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var p PollResponse
+			if err := json.Unmarshal([]byte(tt.body), &p); err != nil {
+				t.Fatalf("unmarshal: %v", err)
+			}
+			if p.PollID != "p1" || !p.PseudoAnonymity || !p.PseudoAnonymityKnown {
+				t.Errorf("other fields not decoded: %+v", p)
+			}
+			if p.CreatedBy != tt.want {
+				t.Errorf("CreatedBy = %+v, want %+v", p.CreatedBy, tt.want)
+			}
+		})
+	}
+}

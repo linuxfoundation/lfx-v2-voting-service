@@ -160,6 +160,7 @@ func ConvertPollResponseToVoteResult(poll *itx.PollResponse) *votesvc.VoteResult
 
 	result.PollQuestions = convertPollQuestionsToResult(poll.PollQuestions)
 	result.PollCommentPrompts = convertPollCommentPromptsToResult(poll.PollCommentPrompts)
+	result.CreatedBy = convertPollCreatorToResult(poll.CreatedBy)
 
 	return result
 }
@@ -203,6 +204,24 @@ func convertPollCommentPromptsToResult(prompts []itx.PollCommentPromptOutput) []
 		}
 	}
 	return converted
+}
+
+// convertPollCreatorToResult converts the ITX poll creator to its Goa result. It yields nil,
+// so the field is omitted, when no creator is recorded or the creator is a legacy machine
+// client; an empty username or name stays nil within a returned creator.
+func convertPollCreatorToResult(c itx.PollCreator) *votesvc.VoteCreator {
+	creator := itx.NormalizePollCreator(c)
+	if creator == nil {
+		return nil
+	}
+	result := &votesvc.VoteCreator{}
+	if creator.Username != "" {
+		result.Username = utils.StringPtr(creator.Username)
+	}
+	if creator.Name != "" {
+		result.Name = utils.StringPtr(creator.Name)
+	}
+	return result
 }
 
 // ConvertVoteResultsToResult converts ITX VoteResults to Goa VoteResultsResult

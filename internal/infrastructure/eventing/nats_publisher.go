@@ -187,7 +187,7 @@ func (p *NATSPublisher) sendVoteIndexerMessage(ctx context.Context, subject stri
 }
 
 // buildVoteIndexingConfig constructs the IndexingConfig for a vote indexer message.
-// Values must match the access-control table in docs/indexer-contract.md § Vote (Poll).
+// Values must match the access-control and tags tables in docs/indexer-contract.md § Vote (Poll).
 func buildVoteIndexingConfig(data *domain.VoteData) *indexerTypes.IndexingConfig {
 	nameAndAliases := []string{}
 	parentRefs := []string{}
@@ -208,6 +208,9 @@ func buildVoteIndexingConfig(data *domain.VoteData) *indexerTypes.IndexingConfig
 	}
 	if data.ProjectUID != "" {
 		tags = append(tags, fmt.Sprintf("project_uid:%s", data.ProjectUID))
+	}
+	if data.CreatedBy != nil && data.CreatedBy.Username != "" {
+		tags = append(tags, fmt.Sprintf("created_by:%s", data.CreatedBy.Username))
 	}
 
 	return &indexerTypes.IndexingConfig{

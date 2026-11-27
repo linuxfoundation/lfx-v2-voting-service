@@ -62,6 +62,7 @@ These fields are indexed and queryable via `filters` or `cel_filter` in the quer
 | `num_winners` | int | Number of winners — stored for `meek_stv` polls only; 0 for all other poll types |
 | `allow_abstain` | bool | Whether abstaining is allowed |
 | `allow_vote_change` | bool | Whether voters may change a submitted ballot; legacy polls without the setting index as `true` |
+| `created_by` | object | Who created the vote: `username` (LFID username) and `name` (display name), each omitted when empty. Absent when no creator is recorded, including legacy polls whose creator is a bare string or a machine client (`<id>@clients`). The creator's email, id and profile picture are never indexed. Filter with `created_by.username:{username}`. |
 
 #### Poll Question Schema
 
@@ -89,8 +90,11 @@ Each element in `poll_comment_prompts` has:
 | --- | --- | --- |
 | `committee_uid:{value}` | `committee_uid:061a110a-7c38-4cd3-bfcf-fc8511a37f35` | Find votes for a committee |
 | `project_uid:{value}` | `project_uid:cbef1ed5-17dc-4a50-84e2-6cddd70f6878` | Find votes for a project |
+| `created_by:{value}` | `created_by:jdoe` | Find votes created by an LFID username |
 
-> Tags are only emitted when the corresponding UID is non-empty.
+> Tags are only emitted when the corresponding value is non-empty; `created_by:` needs a creator username, so a name-only creator gets no tag.
+
+> **Creator on existing votes:** votes indexed before `created_by` was added gain the `created_by` field and tag only when their `itx-poll` KV record next changes. There is no replay or backfill, so creator filters do not match older votes until then.
 
 ### Access Control (IndexingConfig)
 

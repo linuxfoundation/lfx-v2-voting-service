@@ -281,6 +281,8 @@ type CreateVoteResponseBody struct {
 	// Winning threshold percentage set for a majority vote. Absent when none is
 	// stored.
 	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
+	// Who created the vote. Absent when no creator is recorded.
+	CreatedBy *VoteCreatorResponseBody `form:"created_by,omitempty" json:"created_by,omitempty" xml:"created_by,omitempty"`
 }
 
 // GetVoteResponseBody is the type of the "vote" service "get_vote" endpoint
@@ -345,6 +347,8 @@ type GetVoteResponseBody struct {
 	// Winning threshold percentage set for a majority vote. Absent when none is
 	// stored.
 	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
+	// Who created the vote. Absent when no creator is recorded.
+	CreatedBy *VoteCreatorResponseBody `form:"created_by,omitempty" json:"created_by,omitempty" xml:"created_by,omitempty"`
 }
 
 // UpdateVoteResponseBody is the type of the "vote" service "update_vote"
@@ -409,6 +413,8 @@ type UpdateVoteResponseBody struct {
 	// Winning threshold percentage set for a majority vote. Absent when none is
 	// stored.
 	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
+	// Who created the vote. Absent when no creator is recorded.
+	CreatedBy *VoteCreatorResponseBody `form:"created_by,omitempty" json:"created_by,omitempty" xml:"created_by,omitempty"`
 }
 
 // ExtendVoteResponseBody is the type of the "vote" service "extend_vote"
@@ -473,6 +479,8 @@ type ExtendVoteResponseBody struct {
 	// Winning threshold percentage set for a majority vote. Absent when none is
 	// stored.
 	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
+	// Who created the vote. Absent when no creator is recorded.
+	CreatedBy *VoteCreatorResponseBody `form:"created_by,omitempty" json:"created_by,omitempty" xml:"created_by,omitempty"`
 }
 
 // EndVoteResponseBody is the type of the "vote" service "end_vote" endpoint
@@ -537,6 +545,8 @@ type EndVoteResponseBody struct {
 	// Winning threshold percentage set for a majority vote. Absent when none is
 	// stored.
 	WinningThresholdPercentage *int `form:"winning_threshold_percentage,omitempty" json:"winning_threshold_percentage,omitempty" xml:"winning_threshold_percentage,omitempty"`
+	// Who created the vote. Absent when no creator is recorded.
+	CreatedBy *VoteCreatorResponseBody `form:"created_by,omitempty" json:"created_by,omitempty" xml:"created_by,omitempty"`
 }
 
 // GetVoteResultsResponseBody is the type of the "vote" service
@@ -1691,6 +1701,14 @@ type PollCommentPromptResponseBody struct {
 	Prompt *string `form:"prompt,omitempty" json:"prompt,omitempty" xml:"prompt,omitempty"`
 }
 
+// VoteCreatorResponseBody is used to define fields on response body types.
+type VoteCreatorResponseBody struct {
+	// LFID username of the vote's creator
+	Username *string `form:"username,omitempty" json:"username,omitempty" xml:"username,omitempty"`
+	// Display name of the vote's creator
+	Name *string `form:"name,omitempty" json:"name,omitempty" xml:"name,omitempty"`
+}
+
 // PollResultItemResponseBody is used to define fields on response body types.
 type PollResultItemResponseBody struct {
 	// Question details
@@ -2338,6 +2356,9 @@ func NewCreateVoteVoteResultCreated(body *CreateVoteResponseBody) *vote.VoteResu
 	if body.PollType == nil {
 		v.PollType = "generic"
 	}
+	if body.CreatedBy != nil {
+		v.CreatedBy = unmarshalVoteCreatorResponseBodyToVoteVoteCreator(body.CreatedBy)
+	}
 
 	return v
 }
@@ -2479,6 +2500,9 @@ func NewGetVoteVoteResultOK(body *GetVoteResponseBody) *vote.VoteResult {
 	if body.PollType == nil {
 		v.PollType = "generic"
 	}
+	if body.CreatedBy != nil {
+		v.CreatedBy = unmarshalVoteCreatorResponseBodyToVoteVoteCreator(body.CreatedBy)
+	}
 
 	return v
 }
@@ -2606,6 +2630,9 @@ func NewUpdateVoteVoteResultOK(body *UpdateVoteResponseBody) *vote.VoteResult {
 	}
 	if body.PollType == nil {
 		v.PollType = "generic"
+	}
+	if body.CreatedBy != nil {
+		v.CreatedBy = unmarshalVoteCreatorResponseBodyToVoteVoteCreator(body.CreatedBy)
 	}
 
 	return v
@@ -2803,6 +2830,9 @@ func NewExtendVoteVoteResultOK(body *ExtendVoteResponseBody) *vote.VoteResult {
 	if body.PollType == nil {
 		v.PollType = "generic"
 	}
+	if body.CreatedBy != nil {
+		v.CreatedBy = unmarshalVoteCreatorResponseBodyToVoteVoteCreator(body.CreatedBy)
+	}
 
 	return v
 }
@@ -2932,6 +2962,9 @@ func NewEndVoteVoteResultOK(body *EndVoteResponseBody) *vote.VoteResult {
 	}
 	if body.PollType == nil {
 		v.PollType = "generic"
+	}
+	if body.CreatedBy != nil {
+		v.CreatedBy = unmarshalVoteCreatorResponseBodyToVoteVoteCreator(body.CreatedBy)
 	}
 
 	return v
